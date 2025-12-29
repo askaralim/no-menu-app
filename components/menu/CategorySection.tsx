@@ -9,10 +9,8 @@ interface CategorySectionProps {
 }
 
 export default function CategorySection({ name, drinks }: CategorySectionProps) {
-  // 展示页只显示 enabled 的酒品
-  const enabledDrinks = drinks.filter((d) => d.enabled)
-
-  if (enabledDrinks.length === 0) {
+  // 显示所有酒品，包括禁用的（会显示"售罄"）
+  if (drinks.length === 0) {
     return null
   }
 
@@ -20,8 +18,8 @@ export default function CategorySection({ name, drinks }: CategorySectionProps) 
     <section className="menu-section">
       <h2 className="section-title">{name}</h2>
       <ul className="drink-list">
-        {enabledDrinks.map((drink) => (
-          <DrinkItem key={drink.id} drink={drink} />
+        {drinks.map((drink) => (
+          <DrinkItem key={drink.id} drink={drink} disabled={!drink.enabled} />
         ))}
       </ul>
     </section>

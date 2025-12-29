@@ -39,7 +39,7 @@ export default function DisplayPage() {
 
       if (error) throw error
 
-      // 对每个分类的酒品进行排序
+      // 对每个分类的酒品进行排序（显示所有酒品，包括禁用的）
       const sortedData: CategoryWithDrinks[] = (data || []).map((category: any) => ({
         id: category.id,
         name: category.name,
@@ -47,7 +47,6 @@ export default function DisplayPage() {
         enabled: category.enabled,
         created_at: category.created_at,
         drinks: (category.drinks || [])
-          .filter((d: any) => d.enabled)
           .sort((a: any, b: any) => a.sort_order - b.sort_order)
           .map((drink: any) => ({
             id: drink.id,
@@ -156,9 +155,10 @@ export default function DisplayPage() {
 
   if (loading) {
     return (
-      <div className="display-container">
-        <header className="menu-header">
-          <h1 className="menu-title">酒单</h1>
+      <>
+        <header className="brand-header">
+          <div className="brand-name">淡水路226</div>
+          <div className="brand-sub">COCKTAIL · WHISKY · BEER</div>
         </header>
         <main className="menu-grid">
           <div style={{ 
@@ -171,14 +171,15 @@ export default function DisplayPage() {
             <p style={{ fontSize: '18px', fontWeight: 400 }}>加载中...</p>
           </div>
         </main>
-      </div>
+      </>
     )
   }
 
   return (
-    <div className="display-container">
-      <header className="menu-header">
-        <h1 className="menu-title">淡水路226</h1>
+    <>
+      <header className="brand-header">
+        <div className="brand-name">淡水路226</div>
+        <div className="brand-sub">COCKTAIL · WHISKY · BEER</div>
       </header>
       <main className="menu-grid">
         {categories.length === 0 ? (
@@ -201,7 +202,7 @@ export default function DisplayPage() {
           ))
         )}
       </main>
-    </div>
+    </>
   )
 }
 

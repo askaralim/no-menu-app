@@ -15,16 +15,14 @@ export default function DrinkItem({ drink, disabled }: DrinkItemProps) {
   return (
     <li className={`drink-row ${disabled ? 'disabled' : ''}`}>
       <span className="drink-name">{drink.name}</span>
-      <span className="drink-price">
-        {hasBottlePrice ? (
-          <>
-            <span>¥{drink.price.toFixed(0)}/{priceUnit} </span>
-            <span>¥{drink.price_bottle!.toFixed(0)}/{bottleUnit}</span>
-          </>
-        ) : (
-          <span>¥{drink.price.toFixed(0)}/{priceUnit}</span>
-        )}
-      </span>
+      <div className="drink-prices">
+        <span className="drink-price-cup">
+          {drink.price ? `¥${drink.price.toFixed(0)}/${priceUnit}` : ''}
+        </span>
+        <span className="drink-price-bottle">
+          {hasBottlePrice ? `¥${drink.price_bottle!.toFixed(0)}/${bottleUnit}` : ''}
+        </span>
+      </div>
     </li>
   )
 }
