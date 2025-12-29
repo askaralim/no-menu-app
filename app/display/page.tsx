@@ -156,40 +156,52 @@ export default function DisplayPage() {
 
   if (loading) {
     return (
-      <main className="menu">
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '8rem 1rem',
-          color: 'inherit',
-          opacity: 0.6
-        }}>
-          <p style={{ fontSize: '18px', fontWeight: 400 }}>加载中...</p>
-        </div>
-      </main>
+      <div className="display-container">
+        <header className="menu-header">
+          <h1 className="menu-title">酒单</h1>
+        </header>
+        <main className="menu-grid">
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '8rem 1rem',
+            color: 'inherit',
+            opacity: 0.6,
+            gridColumn: '1 / -1'
+          }}>
+            <p style={{ fontSize: '18px', fontWeight: 400 }}>加载中...</p>
+          </div>
+        </main>
+      </div>
     )
   }
 
   return (
-    <main className="menu">
-      {categories.length === 0 ? (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '8rem 1rem',
-          color: 'inherit',
-          opacity: 0.5
-        }}>
-          <p style={{ fontSize: '18px', fontWeight: 400 }}>暂无酒单数据</p>
-        </div>
-      ) : (
-        categories.map((category) => (
-          <CategorySection
-            key={category.id}
-            name={category.name}
-            drinks={category.drinks}
-          />
-        ))
-      )}
-    </main>
+    <div className="display-container">
+      <header className="menu-header">
+        <h1 className="menu-title">淡水路226</h1>
+      </header>
+      <main className="menu-grid">
+        {categories.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '8rem 1rem',
+            color: 'inherit',
+            opacity: 0.5,
+            gridColumn: '1 / -1'
+          }}>
+            <p style={{ fontSize: '18px', fontWeight: 400 }}>暂无酒单数据</p>
+          </div>
+        ) : (
+          categories.map((category) => (
+            <CategorySection
+              key={category.id}
+              name={category.name}
+              drinks={category.drinks}
+            />
+          ))
+        )}
+      </main>
+    </div>
   )
 }
 

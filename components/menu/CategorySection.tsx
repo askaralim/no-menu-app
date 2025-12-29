@@ -17,8 +17,8 @@ export default function CategorySection({ name, drinks }: CategorySectionProps) 
   }
 
   return (
-    <section className="category">
-      <h2 className="category-title">{name}</h2>
+    <section className="menu-section">
+      <h2 className="section-title">{name}</h2>
       <ul className="drink-list">
         {enabledDrinks.map((drink) => (
           <DrinkItem key={drink.id} drink={drink} />
