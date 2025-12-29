@@ -40,12 +40,28 @@ export default function DisplayPage() {
       if (error) throw error
 
       // 对每个分类的酒品进行排序
-      const sortedData = (data || []).map((category) => ({
-        ...category,
+      const sortedData: CategoryWithDrinks[] = (data || []).map((category: any) => ({
+        id: category.id,
+        name: category.name,
+        sort_order: category.sort_order,
+        enabled: category.enabled,
+        created_at: category.created_at,
         drinks: (category.drinks || [])
           .filter((d: any) => d.enabled)
-          .sort((a: any, b: any) => a.sort_order - b.sort_order),
-      })) as CategoryWithDrinks[]
+          .sort((a: any, b: any) => a.sort_order - b.sort_order)
+          .map((drink: any) => ({
+            id: drink.id,
+            name: drink.name,
+            price: drink.price,
+            price_unit: drink.price_unit,
+            price_bottle: drink.price_bottle,
+            price_unit_bottle: drink.price_unit_bottle,
+            sort_order: drink.sort_order,
+            enabled: drink.enabled,
+            created_at: drink.created_at,
+            category_id: category.id,
+          })),
+      }))
 
       setCategories(sortedData)
     } catch (error) {
