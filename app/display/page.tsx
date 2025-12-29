@@ -20,6 +20,7 @@ export default function DisplayPage() {
           name,
           sort_order,
           enabled,
+          created_at,
           drinks (
             id,
             name,
@@ -28,7 +29,8 @@ export default function DisplayPage() {
             price_bottle,
             price_unit_bottle,
             enabled,
-            sort_order
+            sort_order,
+            created_at
           )
         `
         )
@@ -43,7 +45,7 @@ export default function DisplayPage() {
         drinks: (category.drinks || [])
           .filter((d: any) => d.enabled)
           .sort((a: any, b: any) => a.sort_order - b.sort_order),
-      }))
+      })) as CategoryWithDrinks[]
 
       setCategories(sortedData)
     } catch (error) {
