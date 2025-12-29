@@ -131,8 +131,11 @@ npm run build
 2. 在 Cloudflare Pages 中：
    - 连接你的 Git 仓库
    - 构建命令：`npm run build`
-   - 输出目录：`.next`
+   - 输出目录：`out`（重要：不是 `.next`）
    - 环境变量：添加 `NEXT_PUBLIC_SUPABASE_URL` 和 `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - Node.js 版本：18 或更高
+
+**注意**：项目已配置为静态导出模式，适用于 Cloudflare Pages。所有页面都使用客户端组件，支持 Supabase Realtime 功能。
 
 ## 使用说明
 

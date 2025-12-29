@@ -91,10 +91,15 @@ A: 检查 `.env.local` 文件中的环境变量是否正确。
 2. 在 Cloudflare Pages 中连接仓库
 3. 配置构建设置：
    - 构建命令：`npm run build`
-   - 输出目录：`.next`
+   - 输出目录：`out`（重要：不是 `.next`）
    - Node.js 版本：18 或更高
 4. 添加环境变量：
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 5. 部署
+
+**重要提示**：
+- 输出目录必须是 `out`，不是 `.next`
+- 项目已配置为静态导出模式
+- 所有功能（包括 Realtime）都通过客户端实现，完全支持静态部署
 
