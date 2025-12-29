@@ -239,10 +239,11 @@ body {
 }
 
 .admin-header h1 {
-  font-size: 32px;
-  font-weight: 600;
+  font-size: 36px;
+  font-weight: 700;
   letter-spacing: -0.5px;
-  color: #1a1a1a;
+  color: #111827;
+  margin-bottom: 0;
 }
 
 .admin-section {
@@ -259,17 +260,34 @@ body {
 }
 
 .admin-section h2 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   margin-bottom: 1.5rem;
-  color: #1a1a1a;
-  letter-spacing: -0.2px;
+  color: #111827;
+  letter-spacing: -0.3px;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.admin-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.1px;
+}
+
+.admin-section p {
+  color: #111827;
+  font-weight: 600;
+  margin: 0;
 }
 
 .admin-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
+  font-size: 15px;
 }
 
 .admin-table th,
@@ -287,6 +305,32 @@ body {
   letter-spacing: 0.5px;
   color: #6b7280;
   padding-bottom: 0.75rem;
+}
+
+.admin-table td {
+  font-size: 15px;
+  color: #1a1a1a;
+}
+
+/* 名称列 - 更突出 */
+.admin-table td.name-cell {
+  font-weight: 600;
+  font-size: 17px;
+  color: #111827;
+  letter-spacing: 0.3px;
+}
+
+/* 排序列 - 更突出 */
+.admin-table td.sort-cell {
+  font-weight: 600;
+  font-size: 17px;
+  color: #374151;
+  font-family: 'Courier New', monospace;
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  text-align: center;
+  min-width: 60px;
 }
 
 .admin-table tbody tr {
@@ -323,6 +367,29 @@ body {
 
 .admin-input::placeholder {
   color: #9ca3af;
+}
+
+/* 表单标签样式 */
+.admin-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  font-size: 15px;
+  color: #111827;
+  letter-spacing: 0.1px;
+}
+
+.admin-label-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.admin-label-checkbox span {
+  font-weight: 600;
+  font-size: 15px;
+  color: #111827;
 }
 
 .admin-button {

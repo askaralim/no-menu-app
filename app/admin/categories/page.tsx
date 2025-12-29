@@ -178,8 +178,8 @@ export default function CategoriesPage() {
           <tbody>
             {categories.map((category) => (
               <tr key={category.id}>
-                <td>{category.name}</td>
-                <td>{category.sort_order}</td>
+                <td className="name-cell">{category.name}</td>
+                <td className="sort-cell">{category.sort_order}</td>
                 <td>
                   <label className="toggle-switch">
                     <input

@@ -270,7 +270,7 @@ export default function DrinksPage() {
             {drinks.map((drink) => (
               <tr key={drink.id}>
                 <td>{getCategoryName(drink.category_id)}</td>
-                <td>{drink.name}</td>
+                <td className="name-cell">{drink.name}</td>
                 <td>¥{drink.price.toFixed(2)}/{drink.price_unit || '杯'}</td>
                 <td>
                   {drink.price_bottle ? (
@@ -279,7 +279,7 @@ export default function DrinksPage() {
                     <span style={{ color: '#9ca3af' }}>—</span>
                   )}
                 </td>
-                <td>{drink.sort_order}</td>
+                <td className="sort-cell">{drink.sort_order}</td>
                 <td>
                   <label className="toggle-switch">
                     <input

@@ -104,7 +104,7 @@ export default function SettingsPage() {
         <h2>展示页设置</h2>
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+            <label className="admin-label">
               主题
             </label>
             <select
@@ -125,14 +125,7 @@ export default function SettingsPage() {
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                marginBottom: '0.5rem',
-              }}
-            >
+            <label className="admin-label admin-label-checkbox">
               <input
                 type="checkbox"
                 checked={formData.auto_refresh}
@@ -145,7 +138,7 @@ export default function SettingsPage() {
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+            <label className="admin-label">
               刷新间隔（秒）
             </label>
             <input
