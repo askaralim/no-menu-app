@@ -254,7 +254,8 @@ export default function DrinksPage() {
 
       <div className="admin-section">
         <h2>酒品列表</h2>
-        <table className="admin-table">
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
           <thead>
             <tr>
               <th>分类</th>
@@ -309,6 +310,7 @@ export default function DrinksPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

@@ -99,13 +99,15 @@ body {
   padding: 14px 0;
   font-size: 30px;
   border-bottom: 1px dashed var(--line-soft);
+  min-height: 48px;
 }
 
 .drink-name {
   font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.4;
 }
 
 .drink-prices {
@@ -123,6 +125,7 @@ body {
   font-size: 26px;
   text-align: right;
   min-width: 100px;
+  flex-shrink: 0;
 }
 
 .drink-price-cup {
@@ -228,6 +231,82 @@ body {
 
 
 /* 管理后台样式 - 现代扁平风格 */
+.admin-wrapper {
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+.admin-nav {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.25rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.admin-nav-container {
+  display: flex;
+  gap: 2.5rem;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+.admin-nav-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: #1a1a1a;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.admin-nav-links {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.admin-nav-link {
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  color: #6b7280;
+  border-radius: 8px;
+  font-weight: 400;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.admin-nav-link:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.admin-nav-link.active {
+  color: #3b82f6;
+  font-weight: 500;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.admin-nav-link.active:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+
+.admin-nav-link-external {
+  margin-left: auto;
+}
+
+.admin-nav-link-external:hover {
+  color: #3b82f6;
+}
+
 .admin-container {
   max-width: 1400px;
   margin: 0 auto;
@@ -283,11 +362,19 @@ body {
   margin: 0;
 }
 
+.admin-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
   font-size: 15px;
+  min-width: 800px;
 }
 
 .admin-table th,
@@ -589,12 +676,27 @@ input:checked + .toggle-slider:hover {
   .theme-luxury .drink-row {
     font-size: 20px;
     padding: 10px 0;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+  }
+
+  .theme-dark .drink-name,
+  .theme-minimal .drink-name,
+  .theme-luxury .drink-name {
+    font-size: 18px;
+    line-height: 1.5;
   }
 
   .theme-dark .drink-price,
   .theme-minimal .drink-price,
   .theme-luxury .drink-price {
     font-size: 18px !important;
+  }
+
+  .drink-price-cup,
+  .drink-price-bottle {
+    font-size: 18px;
+    min-width: 80px;
   }
 
   .admin-container {
@@ -612,6 +714,72 @@ input:checked + .toggle-slider:hover {
 
   .admin-input {
     width: 100% !important;
+  }
+
+  .admin-nav {
+    padding: 1rem 1.5rem;
+  }
+
+  .admin-nav-container {
+    gap: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-nav-title {
+    font-size: 1.25rem;
+  }
+
+  .admin-nav-links {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .admin-nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 14px;
+  }
+
+  .admin-nav-link-external {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+
+  .admin-table-wrapper {
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+
+  .admin-table {
+    font-size: 14px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+/* iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .drink-row {
+    align-items: flex-start;
+    padding: 16px 0;
+  }
+
+  .drink-name {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.5;
+    max-width: 100%;
+  }
+
+  .drink-prices {
+    flex-shrink: 0;
   }
 }
 

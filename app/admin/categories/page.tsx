@@ -166,7 +166,8 @@ export default function CategoriesPage() {
 
       <div className="admin-section">
         <h2>分类列表</h2>
-        <table className="admin-table">
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
           <thead>
             <tr>
               <th>名称</th>
@@ -209,6 +210,7 @@ export default function CategoriesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )
