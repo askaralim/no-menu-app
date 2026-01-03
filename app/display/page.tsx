@@ -153,6 +153,124 @@ export default function DisplayPage() {
     }
   }, [])
 
+  // iPad自动滚动脚本
+  useEffect(() => {
+    // 检查内容高度是否超过视口高度
+    const checkIfScrollingNeeded = (): boolean => {
+      const documentHeight = Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight
+      )
+      const viewportHeight = window.innerHeight
+      return documentHeight > viewportHeight
+    }
+
+    // 如果不需要滚动，直接返回
+    if (!checkIfScrollingNeeded()) {
+      return
+    }
+
+    let scrollPosition = window.scrollY || window.pageYOffset
+    let direction: 'down' | 'up' = 'down'
+    let isPaused = false
+    let pauseTimeout: NodeJS.Timeout | null = null
+
+    const scrollStep = 1 // px
+    const scrollInterval = 80 // ms
+    const bottomPause = 6000 // ms
+    const topPause = 3000 // ms
+
+    const getScrollTop = (): number => {
+      return window.scrollY || window.pageYOffset || 0
+    }
+
+    const getScrollBottom = (): number => {
+      const documentHeight = Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight
+      )
+      const viewportHeight = window.innerHeight
+      return documentHeight - viewportHeight
+    }
+
+    const isAtTop = (): boolean => {
+      return getScrollTop() <= 0
+    }
+
+    const isAtBottom = (): boolean => {
+      const scrollTop = getScrollTop()
+      const scrollBottom = getScrollBottom()
+      // 允许1px的误差
+      return scrollTop >= scrollBottom - 1
+    }
+
+    const scroll = (): void => {
+      if (isPaused) {
+        return
+      }
+
+      // 重新检查是否需要滚动（内容可能已改变）
+      if (!checkIfScrollingNeeded()) {
+        return
+      }
+
+      if (direction === 'down') {
+        window.scrollBy(0, scrollStep)
+        scrollPosition = getScrollTop()
+
+        if (isAtBottom()) {
+          isPaused = true
+          // 清除之前的暂停定时器
+          if (pauseTimeout) {
+            clearTimeout(pauseTimeout)
+          }
+          pauseTimeout = setTimeout(() => {
+            isPaused = false
+            direction = 'up'
+            pauseTimeout = null
+          }, bottomPause)
+        }
+      } else {
+        // direction === 'up'
+        window.scrollBy(0, -scrollStep)
+        scrollPosition = getScrollTop()
+
+        if (isAtTop()) {
+          isPaused = true
+          // 清除之前的暂停定时器
+          if (pauseTimeout) {
+            clearTimeout(pauseTimeout)
+          }
+          pauseTimeout = setTimeout(() => {
+            isPaused = false
+            direction = 'down'
+            pauseTimeout = null
+          }, topPause)
+        }
+      }
+    }
+
+    // 初始滚动到顶部
+    window.scrollTo(0, 0)
+
+    // 设置滚动间隔
+    const intervalId = setInterval(scroll, scrollInterval)
+
+    // 清理函数
+    return () => {
+      clearInterval(intervalId)
+      if (pauseTimeout) {
+        clearTimeout(pauseTimeout)
+      }
+    }
+  }, [categories, loading]) // 当内容加载完成后重新初始化滚动
+
   if (loading) {
     return (
       <>
