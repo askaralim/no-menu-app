@@ -777,6 +777,15 @@ input:checked + .toggle-slider:hover {
     border-radius: 0;
   }
 
+  /* Override negative margins for tables in ordering form */
+  .ordering-layout .admin-table-wrapper {
+    margin-left: 0;
+    margin-right: 0;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-radius: 8px;
+  }
+
   .admin-table {
     font-size: 14px;
   }
@@ -795,6 +804,42 @@ input:checked + .toggle-slider:hover {
   display: grid;
   grid-template-columns: 350px 1fr;
   gap: 1.5rem;
+  width: 100%;
+}
+
+.ordering-layout > .admin-section {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 200px);
+  overflow: hidden;
+}
+
+/* Order list container in ordering layout */
+.ordering-layout > .admin-section:first-child {
+  max-height: calc(100vh - 200px);
+}
+
+.ordering-layout > .admin-section:first-child .orders-list-container {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Form section in ordering layout */
+.ordering-layout > .admin-section:last-child {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Override negative margins for tables in ordering form */
+.ordering-layout .admin-table-wrapper {
+  margin-left: 0;
+  margin-right: 0;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  border-radius: 8px;
 }
 
 .orders-layout {
@@ -814,7 +859,7 @@ input:checked + .toggle-slider:hover {
 }
 
 .order-card {
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   margin-bottom: 0.5rem;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
@@ -839,6 +884,18 @@ input:checked + .toggle-slider:hover {
   .ordering-layout {
     grid-template-columns: 300px 1fr;
     gap: 1rem;
+  }
+
+  .ordering-layout > .admin-section {
+    max-height: calc(100vh - 180px);
+  }
+
+  .ordering-layout > .admin-section:first-child {
+    max-height: calc(100vh - 180px);
+  }
+
+  .ordering-layout > .admin-section:last-child {
+    max-height: calc(100vh - 180px);
   }
 
   .orders-layout.with-sidebar {
@@ -887,6 +944,15 @@ input:checked + .toggle-slider:hover {
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Override negative margins for tables in ordering form on mobile */
+  .ordering-layout .admin-table-wrapper {
+    margin-left: 0;
+    margin-right: 0;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-radius: 8px;
+  }
+
   .admin-table {
     min-width: 600px;
   }
@@ -918,8 +984,22 @@ input:checked + .toggle-slider:hover {
   }
 
   /* 订单列表在移动设备上的最大高度 */
-  .orders-list-container {
+  .ordering-layout > .admin-section {
     max-height: none;
+    overflow: visible;
+  }
+
+  .ordering-layout > .admin-section:first-child {
+    max-height: none;
+  }
+
+  .ordering-layout > .admin-section:first-child .orders-list-container {
+    max-height: none;
+  }
+
+  .ordering-layout > .admin-section:last-child {
+    max-height: none;
+    overflow: visible;
   }
 
   /* 状态筛选按钮在移动设备上 */
@@ -942,19 +1022,14 @@ input:checked + .toggle-slider:hover {
     box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
   }
 
-  /* 移动设备上的订单卡片信息更紧凑 */
-  .order-card > div {
-    flex-direction: column;
+  /* 移动设备上的订单卡片信息更紧凑 - 保持单行布局 */
+  .order-card > div > div:first-child {
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 
-  .order-card > div > div:first-child {
+  .order-card > div > div:first-child > span:first-child {
     width: 100%;
-  }
-
-  .order-card > div > div:last-child {
-    width: 100%;
-    text-align: left;
   }
 
   /* 移动设备上的标题和按钮 */

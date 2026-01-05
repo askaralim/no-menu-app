@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { Order, OrderItem, OrderWithItems, Drink, CategoryWithDrinks } from '@/lib/types'
 
@@ -11,7 +12,14 @@ interface CartItem {
   quantity_bottle: number
 }
 
-export default function OrderingPage() {
+function OrderingPageContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const action = searchParams.get('action')
+  const orderId = searchParams.get('id')
+  const isCreating = action === 'new'
+  const isEditing = action === 'edit' && orderId
+
   const [activeOrders, setActiveOrders] = useState<Order[]>([])
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
   const [drinks, setDrinks] = useState<CategoryWithDrinks[]>([])
@@ -99,86 +107,67 @@ export default function OrderingPage() {
 
       if (error) throw error
 
-      const categoriesWithDrinks: CategoryWithDrinks[] = (data || [])
-        .map((cat: any) => ({
-          ...cat,
-          drinks: (cat.drinks || [])
-            .filter((d: Drink) => d.enabled)
-            .sort((a: Drink, b: Drink) => a.sort_order - b.sort_order),
-        }))
-        .filter((cat: CategoryWithDrinks) => cat.drinks.length > 0)
+      const categoriesWithDrinks: CategoryWithDrinks[] = (data || []).map((category: any) => ({
+        id: category.id,
+        name: category.name,
+        sort_order: category.sort_order,
+        enabled: category.enabled,
+        created_at: category.created_at,
+        drinks: (category.drinks || [])
+          .filter((drink: any) => drink.enabled)
+          .sort((a: any, b: any) => a.sort_order - b.sort_order),
+      }))
 
       setDrinks(categoriesWithDrinks)
     } catch (error) {
       console.error('Error fetching drinks:', error)
-    } finally {
-      setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    fetchActiveOrders()
-    fetchDrinks()
-
-    // Subscribe to order changes
-    const channel = supabase
-      .channel('orders-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-        },
-        () => {
-          fetchActiveOrders()
-          if (selectedOrder) {
-            fetchOrderDetails(selectedOrder.id)
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'order_items',
-        },
-        () => {
-          if (selectedOrder) {
-            fetchOrderDetails(selectedOrder.id)
-          }
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [selectedOrder?.id])
-
-  const handleSelectOrder = async (order: Order) => {
-    await fetchOrderDetails(order.id)
   }
 
   const handleNewOrder = () => {
+    router.push('/admin/ordering?action=new')
     setSelectedOrder(null)
-    setCart([])
     setCustomerName('')
+    setCart([])
+  }
+
+  const handleSelectOrder = (order: Order) => {
+    router.push(`/admin/ordering?action=edit&id=${order.id}`)
+  }
+
+  const handleCheckout = async (orderId: string) => {
+    if (!confirm('确定要结账这个订单吗？')) return
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'checked_out', checked_out_at: new Date().toISOString() })
+        .eq('id', orderId)
+
+      if (error) throw error
+
+      fetchActiveOrders()
+    } catch (error) {
+      console.error('Error checking out order:', error)
+      alert('结账失败，请重试')
+    }
   }
 
   const addToCart = (drink: Drink) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.drink_id === drink.id)
-      if (existing) {
-        return prev.map((item) =>
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((item) => item.drink_id === drink.id)
+      if (existingItem) {
+        return prevCart.map((item) =>
           item.drink_id === drink.id
-            ? { ...item, quantity_cup: item.quantity_cup + 1 }
+            ? {
+                ...item,
+                quantity_cup: item.quantity_cup + 1,
+              }
             : item
         )
       }
       return [
-        ...prev,
+        ...prevCart,
         {
           drink_id: drink.id,
           drink,
@@ -190,23 +179,18 @@ export default function OrderingPage() {
   }
 
   const updateCartItem = (drinkId: string, field: 'quantity_cup' | 'quantity_bottle', value: number) => {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.drink_id === drinkId ? { ...item, [field]: Math.max(0, value) } : item
-      )
+    setCart((prevCart) =>
+      prevCart.map((item) => (item.drink_id === drinkId ? { ...item, [field]: value } : item))
     )
   }
 
   const removeFromCart = (drinkId: string) => {
-    setCart((prev) => prev.filter((item) => item.drink_id !== drinkId))
+    setCart((prevCart) => prevCart.filter((item) => item.drink_id !== drinkId))
   }
 
   const calculateCartTotal = () => {
     return cart.reduce((total, item) => {
-      const cupTotal = item.quantity_cup * item.drink.price
-      const bottleTotal =
-        item.quantity_bottle * (item.drink.price_bottle || 0)
-      return total + cupTotal + bottleTotal
+      return total + item.quantity_cup * item.drink.price + item.quantity_bottle * (item.drink.price_bottle || 0)
     }, 0)
   }
 
@@ -216,51 +200,46 @@ export default function OrderingPage() {
       return
     }
 
-    if (cart.length === 0) {
+    const itemsWithQuantity = cart.filter((item) => item.quantity_cup > 0 || item.quantity_bottle > 0)
+    if (itemsWithQuantity.length === 0) {
       alert('请至少添加一个商品')
       return
     }
 
     try {
+      const today = new Date().toISOString().split('T')[0]
+
       if (selectedOrder) {
-        // Update existing order - delete old items and add new ones
-        const { error: deleteError } = await supabase
-          .from('order_items')
-          .delete()
-          .eq('order_id', selectedOrder.id)
-
-        if (deleteError) throw deleteError
-
-        const itemsToInsert = cart
-          .filter((item) => item.quantity_cup > 0 || item.quantity_bottle > 0)
-          .map((item) => ({
-            order_id: selectedOrder.id,
-            drink_id: item.drink_id,
-            quantity_cup: item.quantity_cup,
-            quantity_bottle: item.quantity_bottle,
-            unit_price_cup: item.drink.price,
-            unit_price_bottle: item.drink.price_bottle,
-          }))
-
-        if (itemsToInsert.length > 0) {
-          const { error: insertError } = await supabase
-            .from('order_items')
-            .insert(itemsToInsert)
-
-          if (insertError) throw insertError
-        }
-
-        const { error: updateError } = await supabase
+        // Update existing order
+        const { error: orderError } = await supabase
           .from('orders')
           .update({ customer_name: customerName })
           .eq('id', selectedOrder.id)
 
-        if (updateError) throw updateError
+        if (orderError) throw orderError
 
-        alert('订单已更新')
+        // Delete existing items
+        const { error: deleteError } = await supabase.from('order_items').delete().eq('order_id', selectedOrder.id)
+
+        if (deleteError) throw deleteError
+
+        // Insert new items
+        const orderItems = itemsWithQuantity.map((item) => ({
+          order_id: selectedOrder.id,
+          drink_id: item.drink_id,
+          quantity_cup: item.quantity_cup,
+          quantity_bottle: item.quantity_bottle,
+          unit_price_cup: item.drink.price,
+          unit_price_bottle: item.drink.price_bottle,
+        }))
+
+        const { error: insertError } = await supabase.from('order_items').insert(orderItems)
+
+        if (insertError) throw insertError
+
+        alert('订单更新成功')
       } else {
         // Create new order
-        const today = new Date().toISOString().split('T')[0]
         const { data: newOrder, error: orderError } = await supabase
           .from('orders')
           .insert({
@@ -273,29 +252,28 @@ export default function OrderingPage() {
 
         if (orderError) throw orderError
 
-        const itemsToInsert = cart
-          .filter((item) => item.quantity_cup > 0 || item.quantity_bottle > 0)
-          .map((item) => ({
-            order_id: newOrder.id,
-            drink_id: item.drink_id,
-            quantity_cup: item.quantity_cup,
-            quantity_bottle: item.quantity_bottle,
-            unit_price_cup: item.drink.price,
-            unit_price_bottle: item.drink.price_bottle,
-          }))
+        // Insert order items
+        const orderItems = itemsWithQuantity.map((item) => ({
+          order_id: newOrder.id,
+          drink_id: item.drink_id,
+          quantity_cup: item.quantity_cup,
+          quantity_bottle: item.quantity_bottle,
+          unit_price_cup: item.drink.price,
+          unit_price_bottle: item.drink.price_bottle,
+        }))
 
-        if (itemsToInsert.length > 0) {
-          const { error: itemsError } = await supabase
-            .from('order_items')
-            .insert(itemsToInsert)
+        const { error: insertError } = await supabase.from('order_items').insert(orderItems)
 
-          if (itemsError) throw itemsError
-        }
+        if (insertError) throw insertError
 
-        alert('订单已创建')
-        handleNewOrder()
+        alert('订单创建成功')
       }
 
+      // Reset form and go back to list
+      setCustomerName('')
+      setCart([])
+      setSelectedOrder(null)
+      router.push('/admin/ordering')
       fetchActiveOrders()
     } catch (error) {
       console.error('Error saving order:', error)
@@ -303,29 +281,44 @@ export default function OrderingPage() {
     }
   }
 
-  const handleCheckout = async (orderId: string) => {
-    if (!confirm('确认结账此订单？')) return
-
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          status: 'checked_out',
-          checked_out_at: new Date().toISOString(),
-        })
-        .eq('id', orderId)
-
-      if (error) throw error
-
-      fetchActiveOrders()
-      if (selectedOrder?.id === orderId) {
-        handleNewOrder()
-      }
-    } catch (error) {
-      console.error('Error checking out:', error)
-      alert('操作失败，请重试')
+  useEffect(() => {
+    const loadData = async () => {
+      await Promise.all([fetchActiveOrders(), fetchDrinks()])
+      setLoading(false)
     }
-  }
+    loadData()
+
+    const channel = supabase
+      .channel('ordering-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+        },
+        () => {
+          fetchActiveOrders()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isEditing && orderId) {
+      fetchOrderDetails(orderId)
+    } else if (isCreating) {
+      setSelectedOrder(null)
+      setCustomerName('')
+      setCart([])
+    } else {
+      setSelectedOrder(null)
+    }
+  }, [isEditing, isCreating, orderId])
 
   if (loading) {
     return (
@@ -335,93 +328,24 @@ export default function OrderingPage() {
     )
   }
 
-  return (
-    <div className="admin-container">
-      <div className="admin-header">
-        <h1>点单</h1>
-      </div>
-
-      <div className="ordering-layout">
-        {/* Left: Active Orders List */}
-        <div className="admin-section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ margin: 0 }}>今日订单</h2>
+  // Show form view for create/edit
+  if (isCreating || isEditing) {
+    return (
+      <div className="admin-container">
+        <div className="admin-header">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h1>{isEditing ? '编辑订单' : '新建订单'}</h1>
             <button
-              onClick={handleNewOrder}
-              className="admin-button admin-button-primary"
-              style={{ padding: '0.5rem 1rem', fontSize: '14px' }}
+              onClick={() => router.push('/admin/ordering')}
+              className="admin-button admin-button-secondary"
+              style={{ padding: '0.5rem 1rem' }}
             >
-              + 新订单
+              返回订单列表
             </button>
-          </div>
-
-          <div className="orders-list-container" style={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
-            {activeOrders.length === 0 ? (
-              <p style={{ color: '#9ca3af', textAlign: 'center', padding: '2rem' }}>
-                暂无活跃订单
-              </p>
-            ) : (
-              activeOrders.map((order) => (
-                <div
-                  key={order.id}
-                  onClick={() => handleSelectOrder(order)}
-                  className={`order-card ${selectedOrder?.id === order.id ? 'selected' : ''}`}
-                >
-                  <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
-                    {order.customer_name}
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '0.5rem' }}>
-                    ¥{order.total_amount.toFixed(2)}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        backgroundColor:
-                          order.status === 'active'
-                            ? '#dbeafe'
-                            : order.status === 'checked_out'
-                            ? '#fef3c7'
-                            : '#e5e7eb',
-                        color:
-                          order.status === 'active'
-                            ? '#1e40af'
-                            : order.status === 'checked_out'
-                            ? '#92400e'
-                            : '#374151',
-                      }}
-                    >
-                      {order.status === 'active'
-                        ? '进行中'
-                        : order.status === 'checked_out'
-                        ? '已结账'
-                        : '已完成'}
-                    </span>
-                    {order.status === 'active' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleCheckout(order.id)
-                        }}
-                        className="admin-button admin-button-secondary"
-                        style={{ padding: '0.25rem 0.75rem', fontSize: '12px' }}
-                      >
-                        结账
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         </div>
 
-        {/* Right: Order Form */}
         <div className="admin-section">
-          <h2>{selectedOrder ? '编辑订单' : '新建订单'}</h2>
-
           {/* Customer Name */}
           <div style={{ marginBottom: '1.5rem' }}>
             <label className="admin-label">客户姓名</label>
@@ -574,20 +498,112 @@ export default function OrderingPage() {
               className="admin-button admin-button-primary"
               disabled={!customerName.trim() || cart.filter((i) => i.quantity_cup > 0 || i.quantity_bottle > 0).length === 0}
             >
-              {selectedOrder ? '更新订单' : '创建订单'}
+              {isEditing ? '更新订单' : '创建订单'}
             </button>
-            {selectedOrder && (
-              <button
-                onClick={handleNewOrder}
-                className="admin-button admin-button-secondary"
-              >
-                新建订单
-              </button>
-            )}
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show list view
+  return (
+    <div className="admin-container">
+      <div className="admin-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1>点单</h1>
+          <button
+            onClick={handleNewOrder}
+            className="admin-button admin-button-primary"
+            style={{ padding: '0.5rem 1rem' }}
+          >
+            + 新订单
+          </button>
+        </div>
+      </div>
+
+      <div className="admin-section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ margin: 0 }}>今日订单</h2>
+        </div>
+
+        <div className="orders-list-container">
+          {activeOrders.length === 0 ? (
+            <p style={{ color: '#9ca3af', textAlign: 'center', padding: '2rem' }}>
+              暂无活跃订单
+            </p>
+          ) : (
+            activeOrders.map((order) => (
+              <div
+                key={order.id}
+                onClick={() => handleSelectOrder(order)}
+                className="order-card"
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 600, fontSize: '15px', color: '#111827', whiteSpace: 'nowrap' }}>
+                      {order.customer_name}
+                    </span>
+                    <span style={{ fontSize: '14px', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                      ¥{order.total_amount.toFixed(2)}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        backgroundColor:
+                          order.status === 'active'
+                            ? '#dbeafe'
+                            : order.status === 'checked_out'
+                            ? '#fef3c7'
+                            : '#e5e7eb',
+                        color:
+                          order.status === 'active'
+                            ? '#1e40af'
+                            : order.status === 'checked_out'
+                            ? '#92400e'
+                            : '#374151',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {order.status === 'active'
+                        ? '进行中'
+                        : order.status === 'checked_out'
+                        ? '已结账'
+                        : '已完成'}
+                    </span>
+                  </div>
+                  {order.status === 'active' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCheckout(order.id)
+                      }}
+                      className="admin-button admin-button-secondary"
+                      style={{ padding: '0.25rem 0.75rem', fontSize: '12px', flexShrink: 0 }}
+                    >
+                      结账
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
   )
 }
 
+export default function OrderingPage() {
+  return (
+    <Suspense fallback={
+      <div className="admin-container">
+        <p>加载中...</p>
+      </div>
+    }>
+      <OrderingPageContent />
+    </Suspense>
+  )
+}
