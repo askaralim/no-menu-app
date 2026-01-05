@@ -100,3 +100,6 @@ Desktop.ini
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
+# Documentation (internal use only)
+docs/
+

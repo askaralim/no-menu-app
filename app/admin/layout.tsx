@@ -12,6 +12,8 @@ export default function AdminLayout({
 
   const navItems = [
     { href: '/admin', label: '概览' },
+    { href: '/admin/orders', label: '订单管理' },
+    { href: '/admin/ordering', label: '点单' },
     { href: '/admin/categories', label: '分类管理' },
     { href: '/admin/drinks', label: '酒品管理' },
     { href: '/admin/settings', label: '设置' },

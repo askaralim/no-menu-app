@@ -31,3 +31,34 @@ export interface Settings {
   updated_at: string
 }
 
+export type OrderStatus = 'active' | 'checked_out' | 'finished'
+
+export interface Order {
+  id: string
+  customer_name: string
+  status: OrderStatus
+  order_date: string
+  total_amount: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+  checked_out_at: string | null
+}
+
+export interface OrderItem {
+  id: string
+  order_id: string
+  drink_id: string
+  quantity_cup: number
+  quantity_bottle: number
+  unit_price_cup: number
+  unit_price_bottle: number | null
+  created_at: string
+}
+
+export interface OrderWithItems extends Order {
+  items: (OrderItem & {
+    drink: Drink
+  })[]
+}
+

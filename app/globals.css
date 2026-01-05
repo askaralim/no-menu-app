@@ -787,6 +787,217 @@ input:checked + .toggle-slider:hover {
   }
 }
 
+/* =========================
+   订单系统响应式布局
+   ========================= */
+
+.ordering-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 1.5rem;
+}
+
+.orders-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.orders-layout.with-sidebar {
+  grid-template-columns: 1fr 400px;
+}
+
+.order-details-sidebar {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.order-card {
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #fff;
+  transition: all 0.2s;
+}
+
+.order-card.selected {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.drink-selection-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* iPad 响应式 (768px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .ordering-layout {
+    grid-template-columns: 300px 1fr;
+    gap: 1rem;
+  }
+
+  .orders-layout.with-sidebar {
+    grid-template-columns: 1fr 350px;
+  }
+
+  .order-details-sidebar {
+    max-height: calc(100vh - 2rem);
+  }
+}
+
+/* iPhone / 移动设备响应式 (< 768px) */
+@media (max-width: 768px) {
+  .ordering-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .orders-layout.with-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .order-details-sidebar {
+    position: relative;
+    top: 0;
+    max-height: none;
+    margin-top: 1rem;
+  }
+
+  /* 订单卡片在移动设备上更紧凑 */
+  .order-card {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* 按钮在移动设备上更大，更容易点击 */
+  .admin-button {
+    padding: 0.75rem 1.25rem;
+    font-size: 16px;
+    min-height: 44px; /* iOS 推荐的最小触摸目标 */
+  }
+
+  /* 表格在移动设备上横向滚动 */
+  .admin-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-table {
+    min-width: 600px;
+  }
+
+  /* 商品选择按钮在移动设备上全宽 */
+  .drink-selection-grid {
+    flex-direction: column;
+  }
+
+  .drink-selection-grid button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  /* 输入框在移动设备上更大 */
+  .admin-input {
+    font-size: 16px; /* 防止 iOS 自动缩放 */
+    padding: 0.75rem;
+    min-height: 44px;
+  }
+
+  /* 数量输入框 */
+  input[type="number"] {
+    font-size: 16px;
+    min-height: 44px;
+    width: 80px;
+  }
+
+  /* 订单列表在移动设备上的最大高度 */
+  .orders-list-container {
+    max-height: none;
+  }
+
+  /* 状态筛选按钮在移动设备上 */
+  .status-filter-group {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .status-filter-group button {
+    flex: 1;
+    min-width: calc(50% - 0.25rem);
+  }
+
+  /* 订单详情在移动设备上全屏显示 */
+  .order-details-sidebar {
+    border-top: 2px solid #e5e7eb;
+    padding-top: 1.5rem;
+    background-color: #fff;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 移动设备上的订单卡片信息更紧凑 */
+  .order-card > div {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .order-card > div > div:first-child {
+    width: 100%;
+  }
+
+  .order-card > div > div:last-child {
+    width: 100%;
+    text-align: left;
+  }
+
+  /* 移动设备上的标题和按钮 */
+  .admin-header h1 {
+    font-size: 24px;
+  }
+
+  .admin-section h2 {
+    font-size: 18px;
+  }
+
+  .admin-section h3 {
+    font-size: 16px;
+  }
+
+  /* 移动设备上的表格字体 */
+  .admin-table {
+    font-size: 13px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  /* 移动设备上的表单布局 */
+  .admin-form {
+    gap: 0.75rem;
+  }
+
+  /* 移动设备上的订单表单区域 */
+  .ordering-layout > .admin-section:last-child {
+    padding-bottom: 2rem;
+  }
+
+  /* 移动设备上的商品选择区域 */
+  .ordering-layout .drink-selection-grid {
+    max-height: 300px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* iOS specific fixes */
 @supports (-webkit-touch-callout: none) {
   .drink-row {
@@ -803,6 +1014,20 @@ input:checked + .toggle-slider:hover {
 
   .drink-prices {
     flex-shrink: 0;
+  }
+
+  /* iOS 触摸优化 */
+  .order-card,
+  button,
+  .admin-button {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* 防止 iOS 上的双击缩放 */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 }
 

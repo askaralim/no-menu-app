@@ -141,6 +141,22 @@ export default function DrinksPage() {
     return categories.find((c) => c.id === categoryId)?.name || '未知分类'
   }
 
+  // Group drinks by category
+  const drinksByCategory = categories
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((category) => ({
+      category,
+      drinks: drinks
+        .filter((drink) => drink.category_id === category.id)
+        .sort((a, b) => a.sort_order - b.sort_order),
+    }))
+    .filter((group) => group.drinks.length > 0)
+
+  // Drinks without a valid category
+  const uncategorizedDrinks = drinks
+    .filter((drink) => !categories.find((c) => c.id === drink.category_id))
+    .sort((a, b) => a.sort_order - b.sort_order)
+
   if (loading) {
     return (
       <div className="admin-container">
@@ -254,63 +270,144 @@ export default function DrinksPage() {
 
       <div className="admin-section">
         <h2>酒品列表</h2>
-        <div className="admin-table-wrapper">
-          <table className="admin-table">
-          <thead>
-            <tr>
-              <th>分类</th>
-              <th>名称</th>
-              <th>价格（杯）</th>
-              <th>价格（瓶）</th>
-              <th>排序</th>
-              <th>状态</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {drinks.map((drink) => (
-              <tr key={drink.id}>
-                <td>{getCategoryName(drink.category_id)}</td>
-                <td className="name-cell">{drink.name}</td>
-                <td>¥{drink.price.toFixed(2)}/{drink.price_unit || '杯'}</td>
-                <td>
-                  {drink.price_bottle ? (
-                    <>¥{drink.price_bottle.toFixed(2)}/{drink.price_unit_bottle || '瓶'}</>
-                  ) : (
-                    <span style={{ color: '#9ca3af' }}>—</span>
-                  )}
-                </td>
-                <td className="sort-cell">{drink.sort_order}</td>
-                <td>
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={drink.enabled}
-                      onChange={() => handleToggleEnabled(drink)}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                </td>
-                <td>
-                  <button
-                    onClick={() => handleEdit(drink)}
-                    className="admin-button admin-button-secondary"
-                    style={{ marginRight: '0.5rem' }}
-                  >
-                    编辑
-                  </button>
-                  <button
-                    onClick={() => handleDelete(drink.id)}
-                    className="admin-button admin-button-danger"
-                  >
-                    删除
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
+        {drinksByCategory.map((group) => (
+          <div key={group.category.id} style={{ marginBottom: '2rem' }}>
+            <h3 style={{ 
+              fontSize: '18px', 
+              fontWeight: 600, 
+              color: '#111827', 
+              marginBottom: '1rem',
+              paddingBottom: '0.5rem',
+              borderBottom: '2px solid #e5e7eb'
+            }}>
+              {group.category.name}
+            </h3>
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>名称</th>
+                    <th>价格（杯）</th>
+                    <th>价格（瓶）</th>
+                    <th>排序</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.drinks.map((drink) => (
+                    <tr key={drink.id}>
+                      <td className="name-cell">{drink.name}</td>
+                      <td>¥{drink.price.toFixed(2)}/{drink.price_unit || '杯'}</td>
+                      <td>
+                        {drink.price_bottle ? (
+                          <>¥{drink.price_bottle.toFixed(2)}/{drink.price_unit_bottle || '瓶'}</>
+                        ) : (
+                          <span style={{ color: '#9ca3af' }}>—</span>
+                        )}
+                      </td>
+                      <td className="sort-cell">{drink.sort_order}</td>
+                      <td>
+                        <label className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={drink.enabled}
+                            onChange={() => handleToggleEnabled(drink)}
+                          />
+                          <span className="toggle-slider"></span>
+                        </label>
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => handleEdit(drink)}
+                          className="admin-button admin-button-secondary"
+                          style={{ marginRight: '0.5rem' }}
+                        >
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => handleDelete(drink.id)}
+                          className="admin-button admin-button-danger"
+                        >
+                          删除
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+        {uncategorizedDrinks.length > 0 && (
+          <div style={{ marginTop: '2rem' }}>
+            <h3 style={{ 
+              fontSize: '18px', 
+              fontWeight: 600, 
+              color: '#111827', 
+              marginBottom: '1rem',
+              paddingBottom: '0.5rem',
+              borderBottom: '2px solid #e5e7eb'
+            }}>
+              未分类
+            </h3>
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>名称</th>
+                    <th>价格（杯）</th>
+                    <th>价格（瓶）</th>
+                    <th>排序</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {uncategorizedDrinks.map((drink) => (
+                    <tr key={drink.id}>
+                      <td className="name-cell">{drink.name}</td>
+                      <td>¥{drink.price.toFixed(2)}/{drink.price_unit || '杯'}</td>
+                      <td>
+                        {drink.price_bottle ? (
+                          <>¥{drink.price_bottle.toFixed(2)}/{drink.price_unit_bottle || '瓶'}</>
+                        ) : (
+                          <span style={{ color: '#9ca3af' }}>—</span>
+                        )}
+                      </td>
+                      <td className="sort-cell">{drink.sort_order}</td>
+                      <td>
+                        <label className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={drink.enabled}
+                            onChange={() => handleToggleEnabled(drink)}
+                          />
+                          <span className="toggle-slider"></span>
+                        </label>
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => handleEdit(drink)}
+                          className="admin-button admin-button-secondary"
+                          style={{ marginRight: '0.5rem' }}
+                        >
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => handleDelete(drink.id)}
+                          className="admin-button admin-button-danger"
+                        >
+                          删除
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
