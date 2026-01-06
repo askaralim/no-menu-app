@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { Order, OrderItem, OrderWithItems, Drink, CategoryWithDrinks } from '@/lib/types'
+import { Order, OrderItem, OrderWithItems, Drink, CategoryWithDrinks, BusinessDay } from '@/lib/types'
 
 interface CartItem {
   drink_id: string
@@ -25,17 +25,38 @@ function OrderingPageContent() {
   const [drinks, setDrinks] = useState<CategoryWithDrinks[]>([])
   const [customerName, setCustomerName] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
+  const [currentBusinessDayId, setCurrentBusinessDayId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch active orders (status = 'active' or 'checked_out' for today)
+  // Get or create current open business day
+  const getCurrentBusinessDay = async (): Promise<string | null> => {
+    try {
+      // Call the database function to get or create open business day
+      const { data, error } = await supabase.rpc('get_or_create_open_business_day')
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error getting business day:', error)
+      return null
+    }
+  }
+
+  // Fetch active orders for current open business day
   const fetchActiveOrders = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const businessDayId = await getCurrentBusinessDay()
+      if (!businessDayId) {
+        setActiveOrders([])
+        return
+      }
+
+      setCurrentBusinessDayId(businessDayId)
+
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .in('status', ['active', 'checked_out'])
-        .eq('order_date', today)
+        .eq('business_day_id', businessDayId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -239,12 +260,20 @@ function OrderingPageContent() {
 
         alert('订单更新成功')
       } else {
+        // Get or create current business day
+        const businessDayId = await getCurrentBusinessDay()
+        if (!businessDayId) {
+          alert('无法获取营业日，请重试')
+          return
+        }
+
         // Create new order
         const { data: newOrder, error: orderError } = await supabase
           .from('orders')
           .insert({
             customer_name: customerName,
             order_date: today,
+            business_day_id: businessDayId,
             status: 'active',
           })
           .select()

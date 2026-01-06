@@ -33,11 +33,22 @@ export interface Settings {
 
 export type OrderStatus = 'active' | 'checked_out' | 'finished'
 
+export interface BusinessDay {
+  id: string
+  business_date: string
+  opened_at: string
+  closed_at: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Order {
   id: string
   customer_name: string
   status: OrderStatus
   order_date: string
+  business_day_id: string | null
   total_amount: number
   notes: string | null
   created_at: string

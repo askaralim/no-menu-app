@@ -3,43 +3,70 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { Order, OrderWithItems, OrderStatus } from '@/lib/types'
+import { Order, OrderWithItems, OrderStatus, BusinessDay } from '@/lib/types'
+
+interface BusinessDayWithOrders extends BusinessDay {
+  orders: Order[]
+  totalAmount: number
+}
 
 function OrdersPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const selectedOrderId = searchParams.get('id')
+  const selectedBusinessDayId = searchParams.get('business_day_id')
   
-  const [ordersByDate, setOrdersByDate] = useState<Record<string, Order[]>>({})
+  const [businessDays, setBusinessDays] = useState<BusinessDayWithOrders[]>([])
+  const [availableBusinessDays, setAvailableBusinessDays] = useState<BusinessDay[]>([])
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
   const [loading, setLoading] = useState(true)
 
-  const fetchOrders = async () => {
+  // Fetch all business days
+  const fetchBusinessDays = async () => {
     try {
-      let query = supabase.from('orders').select('*').order('created_at', { ascending: false })
+      const { data: businessDaysData, error: businessDaysError } = await supabase
+        .from('business_days')
+        .select('*')
+        .order('business_date', { ascending: false })
+
+      if (businessDaysError) throw businessDaysError
+
+      // Fetch all orders
+      let ordersQuery = supabase.from('orders').select('*').order('created_at', { ascending: false })
 
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter)
+        ordersQuery = ordersQuery.eq('status', statusFilter)
       }
 
-      const { data, error } = await query
+      if (selectedBusinessDayId) {
+        ordersQuery = ordersQuery.eq('business_day_id', selectedBusinessDayId)
+      }
 
-      if (error) throw error
+      const { data: ordersData, error: ordersError } = await ordersQuery
 
-      // Group orders by date
-      const grouped: Record<string, Order[]> = {}
-      ;(data || []).forEach((order) => {
-        const date = order.order_date || order.created_at.split('T')[0]
-        if (!grouped[date]) {
-          grouped[date] = []
-        }
-        grouped[date].push(order)
-      })
+      if (ordersError) throw ordersError
 
-      setOrdersByDate(grouped)
+      // Group orders by business day and calculate totals
+      const businessDaysWithOrders: BusinessDayWithOrders[] = (businessDaysData || [])
+        .map((bd: BusinessDay) => {
+          const dayOrders = (ordersData || []).filter(
+            (order: Order) => order.business_day_id === bd.id
+          )
+          const totalAmount = dayOrders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0)
+
+          return {
+            ...bd,
+            orders: dayOrders,
+            totalAmount,
+          }
+        })
+        .filter((bd) => bd.orders.length > 0 || !selectedBusinessDayId) // Show all business days if no filter, or only those with orders if filtered
+
+      setBusinessDays(businessDaysWithOrders)
+      setAvailableBusinessDays(businessDaysData || [])
     } catch (error) {
-      console.error('Error fetching orders:', error)
+      console.error('Error fetching business days:', error)
     } finally {
       setLoading(false)
     }
@@ -107,15 +134,37 @@ function OrdersPageContent() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const today = new Date()
+    today.setHours(0, 0, 0, 0)
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
 
-    if (date.toDateString() === today.toDateString()) {
+    const compareDate = new Date(date)
+    compareDate.setHours(0, 0, 0, 0)
+
+    if (compareDate.getTime() === today.getTime()) {
       return '今天'
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (compareDate.getTime() === yesterday.getTime()) {
       return '昨天'
     } else {
       return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+    }
+  }
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const handleBusinessDayChange = (businessDayId: string) => {
+    if (businessDayId === '') {
+      router.push('/admin/orders')
+    } else {
+      router.push(`/admin/orders?business_day_id=${businessDayId}`)
     }
   }
 
@@ -133,9 +182,9 @@ function OrdersPageContent() {
   }
 
   useEffect(() => {
-    fetchOrders()
+    fetchBusinessDays()
 
-    const channel = supabase
+    const ordersChannel = supabase
       .channel('orders-management')
       .on(
         'postgres_changes',
@@ -145,15 +194,31 @@ function OrdersPageContent() {
           table: 'orders',
         },
         () => {
-          fetchOrders()
+          fetchBusinessDays()
+        }
+      )
+      .subscribe()
+
+    const businessDaysChannel = supabase
+      .channel('business-days-management')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'business_days',
+        },
+        () => {
+          fetchBusinessDays()
         }
       )
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(ordersChannel)
+      supabase.removeChannel(businessDaysChannel)
     }
-  }, [statusFilter])
+  }, [statusFilter, selectedBusinessDayId])
 
   useEffect(() => {
     if (selectedOrderId) {
@@ -171,7 +236,6 @@ function OrdersPageContent() {
     )
   }
 
-  const sortedDates = Object.keys(ordersByDate).sort((a, b) => b.localeCompare(a))
 
   return (
     <div className="admin-container">
@@ -327,65 +391,123 @@ function OrdersPageContent() {
       ) : (
         /* Orders List View */
         <>
-          {/* Status Filter */}
+          {/* Filters */}
           <div className="admin-section">
-            <div className="status-filter-group" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-              <button
-                onClick={() => setStatusFilter('all')}
-                className={`admin-button ${statusFilter === 'all' ? 'admin-button-primary' : 'admin-button-secondary'}`}
-                style={{ padding: '0.5rem 1rem' }}
-              >
-                全部
-              </button>
-              <button
-                onClick={() => setStatusFilter('active')}
-                className={`admin-button ${statusFilter === 'active' ? 'admin-button-primary' : 'admin-button-secondary'}`}
-                style={{ padding: '0.5rem 1rem' }}
-              >
-                进行中
-              </button>
-              <button
-                onClick={() => setStatusFilter('checked_out')}
-                className={`admin-button ${statusFilter === 'checked_out' ? 'admin-button-primary' : 'admin-button-secondary'}`}
-                style={{ padding: '0.5rem 1rem' }}
-              >
-                已结账
-              </button>
-              <button
-                onClick={() => setStatusFilter('finished')}
-                className={`admin-button ${statusFilter === 'finished' ? 'admin-button-primary' : 'admin-button-secondary'}`}
-                style={{ padding: '0.5rem 1rem' }}
-              >
-                已完成
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
+              {/* Business Day Selector */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#111827' }}>
+                  选择营业日：
+                </label>
+                <select
+                  value={selectedBusinessDayId || ''}
+                  onChange={(e) => handleBusinessDayChange(e.target.value)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '14px',
+                    minWidth: '200px',
+                    backgroundColor: '#fff',
+                  }}
+                >
+                  <option value="">全部营业日</option>
+                  {availableBusinessDays.map((bd) => (
+                    <option key={bd.id} value={bd.id}>
+                      {formatDate(bd.business_date)} {bd.closed_at ? '(已结束)' : '(进行中)'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div className="status-filter-group" style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  className={`admin-button ${statusFilter === 'all' ? 'admin-button-primary' : 'admin-button-secondary'}`}
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  全部
+                </button>
+                <button
+                  onClick={() => setStatusFilter('active')}
+                  className={`admin-button ${statusFilter === 'active' ? 'admin-button-primary' : 'admin-button-secondary'}`}
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  进行中
+                </button>
+                <button
+                  onClick={() => setStatusFilter('checked_out')}
+                  className={`admin-button ${statusFilter === 'checked_out' ? 'admin-button-primary' : 'admin-button-secondary'}`}
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  已结账
+                </button>
+                <button
+                  onClick={() => setStatusFilter('finished')}
+                  className={`admin-button ${statusFilter === 'finished' ? 'admin-button-primary' : 'admin-button-secondary'}`}
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  已完成
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="orders-layout">
-            {/* Orders List */}
+            {/* Business Days List */}
             <div>
-              {sortedDates.length === 0 ? (
+              {businessDays.length === 0 ? (
                 <div className="admin-section">
                   <p style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
                     暂无订单
                   </p>
                 </div>
               ) : (
-                sortedDates.map((date) => (
-                  <div key={date} className="admin-section" style={{ marginBottom: '1.5rem' }}>
-                    <h2
+                businessDays.map((businessDay) => (
+                  <div key={businessDay.id} className="admin-section" style={{ marginBottom: '1.5rem' }}>
+                    <div
                       style={{
-                        fontSize: '20px',
-                        fontWeight: 700,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                         marginBottom: '1rem',
                         paddingBottom: '0.75rem',
                         borderBottom: '2px solid #e5e7eb',
                       }}
                     >
-                      {formatDate(date)}
-                    </h2>
+                      <div>
+                        <h2
+                          style={{
+                            fontSize: '20px',
+                            fontWeight: 700,
+                            marginBottom: '0.25rem',
+                          }}
+                        >
+                          {formatDate(businessDay.business_date)}
+                        </h2>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          开业: {formatDateTime(businessDay.opened_at)}
+                          {businessDay.closed_at && ` | 结束: ${formatDateTime(businessDay.closed_at)}`}
+                          {!businessDay.closed_at && ' | 进行中'}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          backgroundColor: '#f0f9ff',
+                          borderRadius: '8px',
+                          border: '2px solid #0ea5e9',
+                        }}
+                      >
+                        <div style={{ fontSize: '12px', color: '#0369a1', marginBottom: '0.25rem' }}>营业日总额</div>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>
+                          ¥{businessDay.totalAmount.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {ordersByDate[date].map((order) => {
+                      {businessDay.orders.map((order) => {
                         const statusStyle = getStatusColor(order.status)
                         return (
                           <div
@@ -393,7 +515,7 @@ function OrdersPageContent() {
                             onClick={() => router.push(`/admin/orders?id=${order.id}`)}
                             className={`order-card ${selectedOrderId === order.id ? 'selected' : ''}`}
                           >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <div>
                                 <div style={{ fontWeight: 600, fontSize: '16px', color: '#111827', marginBottom: '0.25rem' }}>
                                   {order.customer_name}
