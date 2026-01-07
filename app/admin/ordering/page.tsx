@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { Order, OrderItem, OrderWithItems, Drink, CategoryWithDrinks, BusinessDay } from '@/lib/types'
@@ -42,7 +42,7 @@ function OrderingPageContent() {
   }
 
   // Fetch active orders for current open business day
-  const fetchActiveOrders = async () => {
+  const fetchActiveOrders = useCallback(async () => {
     try {
       const businessDayId = await getCurrentBusinessDay()
       if (!businessDayId) {
@@ -64,7 +64,7 @@ function OrderingPageContent() {
     } catch (error) {
       console.error('Error fetching orders:', error)
     }
-  }
+  }, [])
 
   // Fetch selected order with items
   const fetchOrderDetails = async (orderId: string) => {
@@ -335,7 +335,7 @@ function OrderingPageContent() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [fetchActiveOrders])
 
   useEffect(() => {
     if (isEditing && orderId) {

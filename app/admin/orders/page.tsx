@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { Order, OrderWithItems, OrderStatus, BusinessDay } from '@/lib/types'
@@ -23,7 +23,7 @@ function OrdersPageContent() {
   const [loading, setLoading] = useState(true)
 
   // Fetch all business days
-  const fetchBusinessDays = async () => {
+  const fetchBusinessDays = useCallback(async () => {
     try {
       const { data: businessDaysData, error: businessDaysError } = await supabase
         .from('business_days')
@@ -70,7 +70,7 @@ function OrdersPageContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter, selectedBusinessDayId])
 
   const fetchOrderDetails = async (orderId: string) => {
     try {
@@ -121,7 +121,7 @@ function OrdersPageContent() {
 
       if (error) throw error
 
-      fetchOrders()
+      fetchBusinessDays()
       if (selectedOrder?.id === orderId) {
         fetchOrderDetails(orderId)
       }
@@ -218,7 +218,7 @@ function OrdersPageContent() {
       supabase.removeChannel(ordersChannel)
       supabase.removeChannel(businessDaysChannel)
     }
-  }, [statusFilter, selectedBusinessDayId])
+  }, [fetchBusinessDays])
 
   useEffect(() => {
     if (selectedOrderId) {
