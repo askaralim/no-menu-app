@@ -228,7 +228,10 @@ function OrderingPageContent() {
     }
 
     try {
-      const today = new Date().toISOString().split('T')[0]
+      // Get today's date in China timezone (UTC+8 / Asia/Shanghai)
+      const now = new Date()
+      const chinaDateString = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }) // Format: YYYY-MM-DD
+      const today = chinaDateString
 
       if (selectedOrder) {
         // Update existing order

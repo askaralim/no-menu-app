@@ -21,12 +21,19 @@ create index idx_business_days_closed on business_days(closed_at) where closed_a
 -- If there's an open business day (even from yesterday), use it
 -- Otherwise, create a new one for today
 -- This allows business days to span across midnight
+-- Uses China timezone (UTC+8 / Asia/Shanghai) for date calculations
 create or replace function get_or_create_open_business_day()
 returns uuid as $$
 declare
   business_day_id uuid;
-  today_date date := current_date;
+  today_date date;
 begin
+  -- Get today's date in China timezone (UTC+8 / Asia/Shanghai)
+  -- now() returns timestamp with time zone (UTC)
+  -- AT TIME ZONE 'Asia/Shanghai' converts it to timestamp without time zone in Shanghai time
+  -- Then we cast to date to get the date in China timezone
+  today_date := (now() AT TIME ZONE 'Asia/Shanghai')::date;
+  
   -- First, try to find any open business day (regardless of date)
   -- This allows orders after midnight to belong to the same bar day
   select id into business_day_id
@@ -35,7 +42,7 @@ begin
   order by opened_at desc
   limit 1;
 
-  -- If no open business day exists, create one for today
+  -- If no open business day exists, create one for today (China timezone)
   if business_day_id is null then
     insert into business_days (business_date, opened_at)
     values (today_date, now())
