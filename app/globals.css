@@ -925,6 +925,18 @@ input:checked + .toggle-slider:hover {
     margin-top: 1rem;
   }
 
+  /* 营业日标题在移动设备上垂直布局 */
+  .business-day-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+
+  .business-day-header > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   /* 订单卡片在移动设备上更紧凑 */
   .order-card {
     padding: 0.75rem;

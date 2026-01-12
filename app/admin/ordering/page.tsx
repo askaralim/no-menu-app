@@ -29,34 +29,51 @@ function OrderingPageContent() {
   const [loading, setLoading] = useState(true)
 
   // Get or create current open business day
-  const getCurrentBusinessDay = async (): Promise<string | null> => {
+  const getCurrentBusinessDay = async (): Promise<{ id: string | null; error: string | null }> => {
     try {
       // Call the database function to get or create open business day
       const { data, error } = await supabase.rpc('get_or_create_open_business_day')
-      if (error) throw error
-      return data
-    } catch (error) {
-      console.error('Error getting business day:', error)
-      return null
+      
+      if (error) {
+        console.error('Error calling get_or_create_open_business_day RPC:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        })
+        return { id: null, error: error.message || '数据库函数调用失败' }
+      }
+      
+      if (!data) {
+        console.error('RPC function returned null or undefined')
+        return { id: null, error: '数据库函数返回空值' }
+      }
+      
+      console.log('Business day retrieved/created:', data)
+      return { id: data, error: null }
+    } catch (error: any) {
+      console.error('Unexpected error getting business day:', error)
+      return { id: null, error: error?.message || '未知错误' }
     }
   }
 
   // Fetch active orders for current open business day
   const fetchActiveOrders = useCallback(async () => {
     try {
-      const businessDayId = await getCurrentBusinessDay()
-      if (!businessDayId) {
+      const result = await getCurrentBusinessDay()
+      if (!result.id) {
+        console.warn('No business day available:', result.error)
         setActiveOrders([])
         return
       }
 
-      setCurrentBusinessDayId(businessDayId)
+      setCurrentBusinessDayId(result.id)
 
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .in('status', ['active', 'checked_out'])
-        .eq('business_day_id', businessDayId)
+        .eq('business_day_id', result.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -264,11 +281,16 @@ function OrderingPageContent() {
         alert('订单更新成功')
       } else {
         // Get or create current business day
-        const businessDayId = await getCurrentBusinessDay()
-        if (!businessDayId) {
-          alert('无法获取营业日，请重试')
+        const result = await getCurrentBusinessDay()
+        if (!result.id) {
+          const errorMsg = result.error 
+            ? `无法获取营业日: ${result.error}\n\n请检查:\n1. 数据库函数 get_or_create_open_business_day 是否存在\n2. 数据库权限设置是否正确\n3. 查看浏览器控制台获取详细错误信息`
+            : '无法获取营业日，请重试'
+          alert(errorMsg)
           return
         }
+        
+        const businessDayId = result.id
 
         // Create new order
         const { data: newOrder, error: orderError } = await supabase

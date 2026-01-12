@@ -22,8 +22,11 @@ create index idx_business_days_closed on business_days(closed_at) where closed_a
 -- Otherwise, create a new one for today
 -- This allows business days to span across midnight
 -- Uses China timezone (UTC+8 / Asia/Shanghai) for date calculations
+-- SECURITY DEFINER allows the function to bypass RLS when inserting
 create or replace function get_or_create_open_business_day()
-returns uuid as $$
+returns uuid
+security definer -- Run with the permissions of the function creator, bypassing RLS
+as $$
 declare
   business_day_id uuid;
   today_date date;
@@ -54,8 +57,11 @@ end;
 $$ language plpgsql;
 
 -- Function to get the current open business day (returns null if none)
+-- SECURITY DEFINER allows the function to bypass RLS when reading
 create or replace function get_current_open_business_day()
-returns uuid as $$
+returns uuid
+security definer -- Run with the permissions of the function creator, bypassing RLS
+as $$
 declare
   business_day_id uuid;
 begin
@@ -66,6 +72,24 @@ begin
   limit 1;
 
   return business_day_id;
+end;
+$$ language plpgsql;
+
+-- Function to close a business day
+-- SECURITY DEFINER allows the function to bypass RLS when updating
+create or replace function close_business_day(business_day_id uuid)
+returns boolean
+security definer -- Run with the permissions of the function creator, bypassing RLS
+as $$
+begin
+  -- Update the business day to set closed_at
+  update business_days
+  set closed_at = now()
+  where id = business_day_id
+    and closed_at is null; -- Only close if not already closed
+
+  -- Return true if a row was updated
+  return found;
 end;
 $$ language plpgsql;
 
@@ -81,8 +105,32 @@ create trigger update_business_days_updated_at before update on business_days
 
 -- RLS Policies for business_days
 alter table public.business_days enable row level security;
-create policy "Allow public read access" on public.business_days for select using (true);
-create policy "Allow authenticated insert access" on public.business_days for insert with check (auth.role() = 'authenticated');
-create policy "Allow authenticated update access" on public.business_days for update using (auth.role() = 'authenticated');
-create policy "Allow authenticated delete access" on public.business_days for delete using (auth.role() = 'authenticated');
+
+-- Drop existing policies if they exist
+drop policy if exists "Allow public read access" on public.business_days;
+drop policy if exists "Allow authenticated insert access" on public.business_days;
+drop policy if exists "Allow authenticated update access" on public.business_days;
+drop policy if exists "Allow authenticated delete access" on public.business_days;
+
+-- Create new policies
+-- Allow public read access
+create policy "Allow public read access" on public.business_days 
+  for select 
+  using (true);
+
+-- Allow authenticated users to insert
+create policy "Allow authenticated insert access" on public.business_days 
+  for insert 
+  with check (auth.uid() is not null);
+
+-- Allow authenticated users to update (including closing business days)
+create policy "Allow authenticated update access" on public.business_days 
+  for update 
+  using (auth.uid() is not null)
+  with check (auth.uid() is not null);
+
+-- Allow authenticated users to delete
+create policy "Allow authenticated delete access" on public.business_days 
+  for delete 
+  using (auth.uid() is not null);
 

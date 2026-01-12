@@ -131,6 +131,36 @@ function OrdersPageContent() {
     }
   }
 
+  const handleCloseBusinessDay = async (businessDayId: string) => {
+    if (!confirm('确定要结束这个营业日吗？结束后将无法再添加新订单到此营业日。')) {
+      return
+    }
+
+    try {
+      console.log('Attempting to close business day:', { businessDayId })
+      
+      // Use RPC function to close business day (bypasses RLS)
+      const { data, error } = await supabase
+        .rpc('close_business_day', { business_day_id: businessDayId })
+
+      if (error) {
+        console.error('Supabase RPC error closing business day:', error)
+        throw error
+      }
+
+      if (!data) {
+        throw new Error('营业日可能已经关闭或不存在')
+      }
+
+      console.log('Successfully closed business day')
+      fetchBusinessDays()
+    } catch (error: any) {
+      console.error('Error closing business day:', error)
+      const errorMessage = error?.message || error?.code || '未知错误'
+      alert(`操作失败: ${errorMessage}。请检查控制台获取更多信息。`)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const today = new Date()
@@ -467,6 +497,7 @@ function OrdersPageContent() {
                 businessDays.map((businessDay) => (
                   <div key={businessDay.id} className="admin-section" style={{ marginBottom: '1.5rem' }}>
                     <div
+                      className="business-day-header"
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -476,7 +507,7 @@ function OrdersPageContent() {
                         borderBottom: '2px solid #e5e7eb',
                       }}
                     >
-                      <div>
+                      <div style={{ flex: 1 }}>
                         <h2
                           style={{
                             fontSize: '20px',
@@ -492,17 +523,35 @@ function OrdersPageContent() {
                           {!businessDay.closed_at && ' | 进行中'}
                         </div>
                       </div>
-                      <div
-                        style={{
-                          padding: '0.75rem 1.5rem',
-                          backgroundColor: '#f0f9ff',
-                          borderRadius: '8px',
-                          border: '2px solid #0ea5e9',
-                        }}
-                      >
-                        <div style={{ fontSize: '12px', color: '#0369a1', marginBottom: '0.25rem' }}>营业日总额</div>
-                        <div style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>
-                          ¥{businessDay.totalAmount.toFixed(2)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        {!businessDay.closed_at && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleCloseBusinessDay(businessDay.id)
+                            }}
+                            className="admin-button admin-button-secondary"
+                            style={{
+                              padding: '0.5rem 1rem',
+                              fontSize: '14px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            结束营业日
+                          </button>
+                        )}
+                        <div
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            backgroundColor: '#f0f9ff',
+                            borderRadius: '8px',
+                            border: '2px solid #0ea5e9',
+                          }}
+                        >
+                          <div style={{ fontSize: '12px', color: '#0369a1', marginBottom: '0.25rem' }}>营业日总额</div>
+                          <div style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>
+                            ¥{businessDay.totalAmount.toFixed(2)}
+                          </div>
                         </div>
                       </div>
                     </div>
