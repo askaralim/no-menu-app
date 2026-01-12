@@ -39,28 +39,31 @@ export default function DisplayPage() {
 
       if (error) throw error
 
-      // 对每个分类的酒品进行排序（显示所有酒品，包括禁用的）
-      const sortedData: CategoryWithDrinks[] = (data || []).map((category: any) => ({
-        id: category.id,
-        name: category.name,
-        sort_order: category.sort_order,
-        enabled: category.enabled,
-        created_at: category.created_at,
-        drinks: (category.drinks || [])
-          .sort((a: any, b: any) => a.sort_order - b.sort_order)
-          .map((drink: any) => ({
-            id: drink.id,
-            name: drink.name,
-            price: drink.price,
-            price_unit: drink.price_unit,
-            price_bottle: drink.price_bottle,
-            price_unit_bottle: drink.price_unit_bottle,
-            sort_order: drink.sort_order,
-            enabled: drink.enabled,
-            created_at: drink.created_at,
-            category_id: category.id,
-          })),
-      }))
+      // 对每个分类的酒品进行排序，只显示已启用的酒品
+      const sortedData: CategoryWithDrinks[] = (data || [])
+        .map((category: any) => ({
+          id: category.id,
+          name: category.name,
+          sort_order: category.sort_order,
+          enabled: category.enabled,
+          created_at: category.created_at,
+          drinks: (category.drinks || [])
+            .filter((drink: any) => drink.enabled === true) // 只显示已启用的饮品
+            .sort((a: any, b: any) => a.sort_order - b.sort_order)
+            .map((drink: any) => ({
+              id: drink.id,
+              name: drink.name,
+              price: drink.price,
+              price_unit: drink.price_unit,
+              price_bottle: drink.price_bottle,
+              price_unit_bottle: drink.price_unit_bottle,
+              sort_order: drink.sort_order,
+              enabled: drink.enabled,
+              created_at: drink.created_at,
+              category_id: category.id,
+            })),
+        }))
+        .filter((category: CategoryWithDrinks) => category.drinks.length > 0) // 只显示有饮品的分类
 
       setCategories(sortedData)
     } catch (error) {

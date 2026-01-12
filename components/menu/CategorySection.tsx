@@ -9,7 +9,7 @@ interface CategorySectionProps {
 }
 
 export default function CategorySection({ name, drinks }: CategorySectionProps) {
-  // 显示所有酒品，包括禁用的（会显示"售罄"）
+  // 只显示已启用的酒品（禁用饮品已在数据层过滤）
   if (drinks.length === 0) {
     return null
   }
