@@ -1,15 +1,18 @@
 /* =========================
-   全局基础设置
+   全局基础设置 - Midnight Glass Theme
    ========================= */
 
 :root {
-  --bg-main: #000000;
-  --bg-grad: radial-gradient(circle at top, #0d0d0d 0%, #000000 65%);
-  --text-main: #EDEDED;
-  --text-muted: rgba(255, 255, 255, 0.6);
-  --gold: #C9A24D;
-  --line-soft: rgba(255, 255, 255, 0.08);
+  --bg-main: #060913;
+  --bg-grad: linear-gradient(135deg, #05070d 0%, #0a0f1d 50%, #030509 100%);
+  --text-main: #F4F4F5;
+  --text-muted: rgba(244, 244, 245, 0.55);
+  --gold: #D4AF37;
+  --gold-glow: rgba(212, 175, 55, 0.3);
+  --line-soft: rgba(255, 255, 255, 0.05);
   --title-text: #FFFFFF;
+  --glass-bg: rgba(20, 25, 40, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.08);
 }
 
 * {
@@ -20,11 +23,50 @@
 
 body {
   margin: 0;
-  background: var(--bg-grad);
+  background-color: var(--bg-main);
+  background-image: var(--bg-grad);
+  background-attachment: fixed;
   color: var(--text-main);
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Inter', 'PingFang SC', -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Animated Aurora Background Elements */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: -1;
+  opacity: 0.4;
+  animation: float 20s infinite ease-in-out alternate;
+}
+
+body::before {
+  top: -10%;
+  left: -10%;
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, rgba(13, 30, 80, 0.6) 0%, transparent 70%);
+}
+
+body::after {
+  bottom: -10%;
+  right: -10%;
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(circle, rgba(40, 20, 60, 0.5) 0%, transparent 70%);
+  animation-delay: -10s;
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(5%, 5%) scale(1.1); }
+  100% { transform: translate(-5%, -5%) scale(0.95); }
 }
 
 /* =========================
@@ -33,55 +75,81 @@ body {
 
 .brand-header {
   text-align: center;
-  padding: 48px 0 24px;
+  padding: 80px 0 40px;
+  position: relative;
+  z-index: 10;
+  animation: fadeInDown 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .brand-name {
   font-family: 'Playfair Display', serif;
-  font-size: 56px;
-  letter-spacing: 6px;
+  font-size: 64px;
+  letter-spacing: 12px;
   font-weight: 700;
-  color: var(--gold);
+  background: linear-gradient(180deg, #FFFFFF 0%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 24px var(--gold-glow);
+  margin-bottom: 12px;
 }
 
 .brand-sub {
-  margin-top: 8px;
-  font-size: 18px;
-  letter-spacing: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  letter-spacing: 8px;
   color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 300;
 }
 
 /* =========================
-   酒单主布局（分类单栏，酒品双栏）
+   酒单主布局
    ========================= */
 
 .menu-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 48px;
-  padding: 56px 72px;
-  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 0 24px 80px;
+  max-width: 900px;
   margin: 0 auto;
+  position: relative;
+  z-index: 10;
 }
 
 /* =========================
-   分类区块
+   分类区块 (Glassmorphism Cards)
    ========================= */
 
 .menu-section {
-  min-height: 240px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* 延迟动画赋予交错出现的效果 */
+.menu-section:nth-child(1) { animation-delay: 0.1s; }
+.menu-section:nth-child(2) { animation-delay: 0.2s; }
+.menu-section:nth-child(3) { animation-delay: 0.3s; }
+.menu-section:nth-child(4) { animation-delay: 0.4s; }
+.menu-section:nth-child(5) { animation-delay: 0.5s; }
+
 .section-title {
-  font-size: 42px;
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
   font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 2px;
+  letter-spacing: 4px;
   color: var(--title-text);
   margin-bottom: 32px;
-  padding-bottom: 0;
-  border-bottom: none;
-  opacity: 0.95;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--glass-border);
+  text-align: center;
 }
 
 /* =========================
@@ -93,38 +161,47 @@ body {
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  column-gap: 80px;
-  row-gap: 0;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+/* iPad Mini / Table overrides for drinks */
+@media (min-width: 768px) {
+  .drink-list {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 64px;
+    row-gap: 24px;
+  }
 }
 
 .drink-row {
-  display: grid;
-  grid-template-columns: 1fr minmax(150px, max-content);
-  align-items: baseline;
-  gap: 8px;
-  padding: 0;
-  margin-bottom: 22px;
-  font-size: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
   border-bottom: 1px solid var(--line-soft);
-  min-height: auto;
 }
 
-.drink-row:nth-last-child(-n+2) {
-  border-bottom: none;
-}
-
-.drink-row:nth-child(5n) {
-  margin-bottom: 34px;
+.drink-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateY(-2px);
+  border-bottom-color: transparent;
 }
 
 .drink-name {
-  font-size: 31px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: 22px;
+  font-weight: 400;
   color: var(--text-main);
-  overflow-wrap: normal;
-  word-break: normal;
+  letter-spacing: 0.5px;
+  flex: 1 1 auto;
+  line-height: 1.4;
+  word-break: break-word;
+  z-index: 2;
+  padding-right: 24px;
 }
 
 .drink-prices {
@@ -132,19 +209,17 @@ body {
   gap: 16px;
   align-items: baseline;
   justify-content: flex-end;
+  z-index: 2;
   flex-shrink: 0;
-  min-width: 150px;
 }
 
 .drink-price-cup,
 .drink-price-bottle {
+  font-family: 'Inter', sans-serif;
   font-weight: 500;
   color: var(--gold);
-  white-space: nowrap;
-  font-size: 25px;
-  text-align: right;
-  flex-shrink: 0;
-  opacity: 0.85;
+  font-size: 20px;
+  letter-spacing: 1px;
 }
 
 /* =========================
@@ -152,18 +227,44 @@ body {
    ========================= */
 
 .drink-row.disabled {
-  opacity: 0.35;
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .drink-row.disabled .drink-name {
   text-decoration: line-through;
+  text-decoration-color: var(--text-muted);
 }
 
 .drink-row.disabled::after {
-  content: '售罄';
-  margin-left: 12px;
-  font-size: 20px;
-  color: var(--text-muted);
+  content: 'Sold Out';
+  position: absolute;
+  right: -24px;
+  top: 12px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  background: #ff3b30;
+  color: white;
+  padding: 4px 24px;
+  transform: rotate(45deg);
+  font-weight: bold;
+  opacity: 0.8;
+  z-index: 3;
+}
+
+/* =========================
+   动画定义
+   ========================= */
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* =========================
@@ -613,186 +714,81 @@ input:checked + .toggle-slider:hover {
    响应式（竖屏 / 小屏）
    ========================= */
 
-/* iPad mini (8.3") 在竖屏时保持两栏布局 (744px width)
-   只在更小的设备上切换为单栏 */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .brand-header {
+    padding: 60px 0 30px;
+  }
+
+  .brand-name {
+    font-size: 42px;
+    letter-spacing: 8px;
+  }
+
+  .brand-sub {
+    font-size: 12px;
+    letter-spacing: 4px;
+  }
+
   .menu-grid {
-    grid-template-columns: 1fr;
-    column-gap: 0;
-    row-gap: 40px;
-    padding: 40px 32px;
+    padding: 0 16px 60px;
+    gap: 24px;
+  }
+
+  .menu-section {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
   }
 
   .drink-list {
     grid-template-columns: 1fr;
-    column-gap: 0;
-  }
-
-  .brand-name {
-    font-size: 48px;
-  }
-
-  .section-title {
-    font-size: 36px;
+    gap: 12px;
   }
 
   .drink-row {
-    font-size: 26px;
+    padding: 10px 12px;
   }
 
-  .drink-price-cup,
-  .drink-price-bottle {
-    font-size: 22px;
-  }
-
-  .drink-price-cup {
-    min-width: 80px;
-  }
-
-  .drink-price-bottle {
-    min-width: 100px;
-  }
-}
-
-@media (max-width: 768px) {
-  .brand-name {
-    font-size: 36px;
-    letter-spacing: 4px;
-  }
-
-  .brand-sub {
-    font-size: 14px;
-    letter-spacing: 2px;
-  }
-
-  .theme-dark .menu-grid,
-  .theme-minimal .menu-grid,
-  .theme-luxury .menu-grid {
-    grid-template-columns: 1fr;
-    gap: 48px;
-    padding: 32px 24px;
-  }
-
-  .theme-dark .section-title {
-    font-size: 32px;
-  }
-
-  .theme-minimal .section-title {
-    font-size: 28px;
-  }
-
-  .theme-luxury .section-title {
-    font-size: 30px;
-  }
-
-  .drink-row {
-    grid-template-columns: 1fr minmax(150px, max-content);
-    gap: 8px;
+  .drink-name {
+    font-size: 18px;
+    padding-right: 8px;
   }
 
   .drink-prices {
-    min-width: 150px;
-  }
-
-  .theme-dark .drink-row,
-  .theme-minimal .drink-row,
-  .theme-luxury .drink-row {
-    font-size: 20px;
-    padding: 10px 0;
-    grid-template-columns: 1fr minmax(150px, max-content);
-    gap: 8px;
-  }
-
-  .theme-dark .drink-name,
-  .theme-minimal .drink-name,
-  .theme-luxury .drink-name {
-    font-size: 18px;
-    line-height: 1.5;
-  }
-
-  .theme-dark .drink-price,
-  .theme-minimal .drink-price,
-  .theme-luxury .drink-price {
-    font-size: 18px !important;
+    padding-left: 8px;
   }
 
   .drink-price-cup,
   .drink-price-bottle {
-    font-size: 18px;
-    min-width: 80px;
+    font-size: 16px;
   }
 
-  .admin-container {
-    padding: 1rem;
+  .drink-row::before {
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
   }
 
-  .admin-section {
-    padding: 1.5rem;
+  /* Reduce aurora effects footprint slightly on mobile for performance */
+  body::before {
+    width: 80vw;
+    height: 80vw;
+    top: -20%;
+    left: -20%;
+    filter: blur(80px);
   }
 
-  .admin-form {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .admin-input {
-    width: 100% !important;
-  }
-
-  .admin-nav {
-    padding: 1rem 1.5rem;
-  }
-
-  .admin-nav-container {
-    gap: 1rem;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .admin-nav-title {
-    font-size: 1.25rem;
-  }
-
-  .admin-nav-links {
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .admin-nav-link {
-    padding: 0.5rem 0.75rem;
-    font-size: 14px;
-  }
-
-  .admin-nav-link-external {
-    margin-left: 0;
-    margin-top: 0.5rem;
-  }
-
-  .admin-table-wrapper {
-    margin-left: -1.5rem;
-    margin-right: -1.5rem;
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
-  }
-
-  /* Override negative margins for tables in ordering form */
-  .ordering-layout .admin-table-wrapper {
-    margin-left: 0;
-    margin-right: 0;
-    border-left: 1px solid #e5e7eb;
-    border-right: 1px solid #e5e7eb;
-    border-radius: 8px;
-  }
-
-  .admin-table {
-    font-size: 14px;
-  }
-
-  .admin-table th,
-  .admin-table td {
-    padding: 0.75rem 0.5rem;
+  body::after {
+    width: 100vw;
+    height: 100vw;
+    bottom: -20%;
+    right: -20%;
+    filter: blur(80px);
   }
 }
 
