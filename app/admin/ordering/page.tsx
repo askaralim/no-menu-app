@@ -509,7 +509,7 @@ function OrderingPageContent() {
           {/* Drink Selection */}
           <div>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '1rem' }}>选择商品</h3>
-            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <div>
               {drinks.map((category) => (
                 <div key={category.id} style={{ marginBottom: '1.5rem' }}>
                   <h4

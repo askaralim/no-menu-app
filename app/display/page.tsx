@@ -179,7 +179,7 @@ export default function DisplayPage() {
     let scrollPosition = window.scrollY || window.pageYOffset
     let direction: 'down' | 'up' = 'down'
     let isPaused = false
-    let pauseTimeout: NodeJS.Timeout | null = null
+    let pauseTimeout: ReturnType<typeof setTimeout> | null = null
 
     const scrollStep = 1 // px
     const scrollInterval = 80 // ms
