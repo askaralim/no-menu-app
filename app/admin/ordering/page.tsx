@@ -26,7 +26,19 @@ function OrderingPageContent() {
   const [customerName, setCustomerName] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   const [currentBusinessDayId, setCurrentBusinessDayId] = useState<string | null>(null)
+  const [tenantId, setTenantId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const fetchTenantId = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase
+      .from('user_roles')
+      .select('tenant_id')
+      .eq('user_id', user.id)
+      .single()
+    if (data) setTenantId(data.tenant_id)
+  }
 
   // Get or create current open business day
   const getCurrentBusinessDay = async (): Promise<{ id: string | null; error: string | null }> => {
@@ -272,6 +284,7 @@ function OrderingPageContent() {
           quantity_bottle: item.quantity_bottle,
           unit_price_cup: item.drink.price,
           unit_price_bottle: item.drink.price_bottle,
+          tenant_id: tenantId,
         }))
 
         const { error: insertError } = await supabase.from('order_items').insert(orderItems)
@@ -300,6 +313,7 @@ function OrderingPageContent() {
             order_date: today,
             business_day_id: businessDayId,
             status: 'active',
+            tenant_id: tenantId,
           })
           .select()
           .single()
@@ -314,6 +328,7 @@ function OrderingPageContent() {
           quantity_bottle: item.quantity_bottle,
           unit_price_cup: item.drink.price,
           unit_price_bottle: item.drink.price_bottle,
+          tenant_id: tenantId,
         }))
 
         const { error: insertError } = await supabase.from('order_items').insert(orderItems)
@@ -337,7 +352,7 @@ function OrderingPageContent() {
 
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([fetchActiveOrders(), fetchDrinks()])
+      await Promise.all([fetchActiveOrders(), fetchDrinks(), fetchTenantId()])
       setLoading(false)
     }
     loadData()

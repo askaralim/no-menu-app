@@ -9,6 +9,7 @@ export default function DrinksPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [tenantId, setTenantId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     category_id: '',
     name: '',
@@ -18,6 +19,17 @@ export default function DrinksPage() {
     price_unit_bottle: '瓶',
     sort_order: 0,
   })
+
+  const fetchTenantId = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase
+      .from('user_roles')
+      .select('tenant_id')
+      .eq('user_id', user.id)
+      .single()
+    if (data) setTenantId(data.tenant_id)
+  }
 
   const fetchDrinks = async () => {
     try {
@@ -50,6 +62,7 @@ export default function DrinksPage() {
   }
 
   useEffect(() => {
+    fetchTenantId()
     fetchDrinks()
     fetchCategories()
 
@@ -86,7 +99,7 @@ export default function DrinksPage() {
         if (error) throw error
         setEditingId(null)
       } else {
-        const { error } = await supabase.from('drinks').insert([formData])
+        const { error } = await supabase.from('drinks').insert([{ ...formData, tenant_id: tenantId }])
         if (error) throw error
       }
       setFormData({ category_id: '', name: '', price: 0, price_unit: '杯', price_bottle: null, price_unit_bottle: '瓶', sort_order: 0 })

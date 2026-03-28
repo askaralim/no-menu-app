@@ -7,6 +7,7 @@ import { Settings } from '@/lib/types'
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [loading, setLoading] = useState(true)
+  const [tenantId, setTenantId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     theme: 'dark' as 'dark' | 'minimal' | 'luxury',
     auto_refresh: true,
@@ -14,6 +15,17 @@ export default function SettingsPage() {
   })
 
   useEffect(() => {
+    const fetchTenantId = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('user_roles')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .single()
+      if (data) setTenantId(data.tenant_id)
+    }
+
     const fetchSettings = async () => {
       try {
         const { data, error } = await supabase
@@ -38,6 +50,7 @@ export default function SettingsPage() {
       }
     }
 
+    fetchTenantId()
     fetchSettings()
 
     // 订阅实时更新
@@ -76,7 +89,7 @@ export default function SettingsPage() {
         if (error) throw error
         alert('设置已保存')
       } else {
-        const { error } = await supabase.from('settings').insert([formData])
+        const { error } = await supabase.from('settings').insert([{ ...formData, tenant_id: tenantId }])
         if (error) throw error
         alert('设置已创建')
       }

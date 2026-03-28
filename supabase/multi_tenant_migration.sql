@@ -90,28 +90,30 @@ CREATE POLICY "Tenants are viewable by their users" ON public.tenants
 CREATE POLICY "Users can view their own roles" ON public.user_roles
   FOR SELECT USING (user_id = auth.uid());
 
--- Categories: Visible to everyone (for display page), but editable only by auth users of that tenant
+-- Categories: public SELECT needed for unauthenticated display page (app/display/page.tsx)
 CREATE POLICY "Categories are viewable by everyone" ON public.categories FOR SELECT USING (true);
 CREATE POLICY "Categories editable by tenant staff" ON public.categories FOR ALL USING (tenant_id = public.get_auth_tenant_id());
 
--- Drinks: Visible to everyone, editable by auth users of tenant
+-- Drinks: public SELECT needed for unauthenticated display page (app/display/page.tsx)
 CREATE POLICY "Drinks are viewable by everyone" ON public.drinks FOR SELECT USING (true);
 CREATE POLICY "Drinks editable by tenant staff" ON public.drinks FOR ALL USING (tenant_id = public.get_auth_tenant_id());
 
--- Settings: Visible to everyone, editable by auth users
+-- Settings: public SELECT needed for unauthenticated display page (app/display/page.tsx)
 CREATE POLICY "Settings are viewable by everyone" ON public.settings FOR SELECT USING (true);
 CREATE POLICY "Settings editable by tenant staff" ON public.settings FOR ALL USING (tenant_id = public.get_auth_tenant_id());
 
--- Business Days: Editable by auth users of tenant
-CREATE POLICY "Business days viewable by tenant" ON public.business_days FOR SELECT USING (true);
+-- Business Days: tenant-scoped SELECT, writes by tenant staff
+CREATE POLICY "Business days viewable by tenant" ON public.business_days FOR SELECT USING (tenant_id = public.get_auth_tenant_id());
 CREATE POLICY "Business days editable by tenant staff" ON public.business_days FOR ALL USING (tenant_id = public.get_auth_tenant_id());
 
--- Orders: Open logic, usually viewable by tenant staff
+-- Orders: fully tenant-scoped (SELECT, INSERT, UPDATE, DELETE)
 CREATE POLICY "Orders viewable by tenant staff" ON public.orders FOR SELECT USING (tenant_id = public.get_auth_tenant_id());
-CREATE POLICY "Orders insertable by everyone" ON public.orders FOR INSERT WITH CHECK (true);
+CREATE POLICY "Orders insertable by tenant staff" ON public.orders FOR INSERT WITH CHECK (tenant_id = public.get_auth_tenant_id());
 CREATE POLICY "Orders editable by tenant staff" ON public.orders FOR UPDATE USING (tenant_id = public.get_auth_tenant_id());
+CREATE POLICY "Orders deletable by tenant staff" ON public.orders FOR DELETE USING (tenant_id = public.get_auth_tenant_id());
 
--- Order Items: Open logic
+-- Order Items: fully tenant-scoped (SELECT, INSERT, UPDATE, DELETE)
 CREATE POLICY "Order items viewable by tenant staff" ON public.order_items FOR SELECT USING (tenant_id = public.get_auth_tenant_id());
-CREATE POLICY "Order items insertable by everyone" ON public.order_items FOR INSERT WITH CHECK (true);
+CREATE POLICY "Order items insertable by tenant staff" ON public.order_items FOR INSERT WITH CHECK (tenant_id = public.get_auth_tenant_id());
 CREATE POLICY "Order items editable by tenant staff" ON public.order_items FOR UPDATE USING (tenant_id = public.get_auth_tenant_id());
+CREATE POLICY "Order items deletable by tenant staff" ON public.order_items FOR DELETE USING (tenant_id = public.get_auth_tenant_id());

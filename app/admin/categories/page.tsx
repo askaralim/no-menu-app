@@ -8,10 +8,22 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [tenantId, setTenantId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     sort_order: 0,
   })
+
+  const fetchTenantId = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase
+      .from('user_roles')
+      .select('tenant_id')
+      .eq('user_id', user.id)
+      .single()
+    if (data) setTenantId(data.tenant_id)
+  }
 
   const fetchCategories = async () => {
     try {
@@ -30,6 +42,7 @@ export default function CategoriesPage() {
   }
 
   useEffect(() => {
+    fetchTenantId()
     fetchCategories()
 
     // 订阅实时更新
@@ -65,7 +78,7 @@ export default function CategoriesPage() {
         if (error) throw error
         setEditingId(null)
       } else {
-        const { error } = await supabase.from('categories').insert([formData])
+        const { error } = await supabase.from('categories').insert([{ ...formData, tenant_id: tenantId }])
         if (error) throw error
       }
       setFormData({ name: '', sort_order: 0 })
