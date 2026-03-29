@@ -1,16 +1,39 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { CategoryWithDrinks, Settings } from '@/lib/types'
 import CategorySection from '@/components/menu/CategorySection'
 
-export default function DisplayPage() {
+function DisplayPageContent() {
+  const searchParams = useSearchParams()
+  const slug = searchParams.get('slug')
+
   const [categories, setCategories] = useState<CategoryWithDrinks[]>([])
   const [settings, setSettings] = useState<Settings | null>(null)
+  const [tenantId, setTenantId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    const resolveTenant = async () => {
+      if (!slug) {
+        // Fallback: use the default tenant for backward compatibility
+        setTenantId('00000000-0000-0000-0000-000000000001')
+        return
+      }
+      const { data } = await supabase
+        .from('tenants')
+        .select('id')
+        .eq('slug', slug)
+        .single()
+      if (data) setTenantId(data.id)
+    }
+    resolveTenant()
+  }, [slug])
+
   const fetchMenu = async () => {
+    if (!tenantId) return
     try {
       const { data, error } = await supabase
         .from('categories')
@@ -35,11 +58,11 @@ export default function DisplayPage() {
         `
         )
         .eq('enabled', true)
+        .eq('tenant_id', tenantId)
         .order('sort_order', { ascending: true })
 
       if (error) throw error
 
-      // 对每个分类的酒品进行排序，只显示已启用的酒品
       const sortedData: CategoryWithDrinks[] = (data || [])
         .map((category: any) => ({
           id: category.id,
@@ -48,7 +71,7 @@ export default function DisplayPage() {
           enabled: category.enabled,
           created_at: category.created_at,
           drinks: (category.drinks || [])
-            .filter((drink: any) => drink.enabled === true) // 只显示已启用的饮品
+            .filter((drink: any) => drink.enabled === true)
             .sort((a: any, b: any) => a.sort_order - b.sort_order)
             .map((drink: any) => ({
               id: drink.id,
@@ -63,7 +86,7 @@ export default function DisplayPage() {
               category_id: category.id,
             })),
         }))
-        .filter((category: CategoryWithDrinks) => category.drinks.length > 0) // 只显示有饮品的分类
+        .filter((category: CategoryWithDrinks) => category.drinks.length > 0)
 
       setCategories(sortedData)
     } catch (error) {
@@ -74,10 +97,12 @@ export default function DisplayPage() {
   }
 
   const fetchSettings = async () => {
+    if (!tenantId) return
     try {
       const { data, error } = await supabase
         .from('settings')
         .select('*')
+        .eq('tenant_id', tenantId)
         .limit(1)
         .single()
 
@@ -89,9 +114,10 @@ export default function DisplayPage() {
   }
 
   useEffect(() => {
+    if (!tenantId) return
     fetchMenu()
     fetchSettings()
-  }, [])
+  }, [tenantId])
 
   // 应用主题
   useEffect(() => {
@@ -324,6 +350,20 @@ export default function DisplayPage() {
         )}
       </main>
     </>
+  )
+}
+
+export default function DisplayPage() {
+  return (
+    <Suspense fallback={
+      <>
+        <header className="brand-header">
+          <div className="brand-name">加载中...</div>
+        </header>
+      </>
+    }>
+      <DisplayPageContent />
+    </Suspense>
   )
 }
 

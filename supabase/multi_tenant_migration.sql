@@ -52,6 +52,10 @@ ADD COLUMN tenant_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE DEFAUL
 ALTER TABLE public.order_items 
 ADD COLUMN tenant_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE DEFAULT '00000000-0000-0000-0000-000000000001';
 
+-- Fix business_days unique constraint: allow each tenant to have its own business day per date
+ALTER TABLE public.business_days DROP CONSTRAINT IF EXISTS business_days_business_date_key;
+ALTER TABLE public.business_days ADD CONSTRAINT business_days_business_date_tenant_key UNIQUE (business_date, tenant_id);
+
 -- Remove default constraints so future rows require explicit tenant_id (optional but recommended)
 ALTER TABLE public.categories ALTER COLUMN tenant_id DROP DEFAULT;
 ALTER TABLE public.drinks ALTER COLUMN tenant_id DROP DEFAULT;
@@ -82,9 +86,9 @@ AS $$
 $$;
 
 -- 6. RLS Policies
--- Tenants: Only readable by users belonging to that tenant
+-- Tenants: readable by their own users; slug lookup allowed for display page
 CREATE POLICY "Tenants are viewable by their users" ON public.tenants
-  FOR SELECT USING (id = public.get_auth_tenant_id());
+  FOR SELECT USING (true);
 
 -- User Roles: Users can see their own roles
 CREATE POLICY "Users can view their own roles" ON public.user_roles
@@ -101,6 +105,12 @@ CREATE POLICY "Drinks editable by tenant staff" ON public.drinks FOR ALL USING (
 -- Settings: public SELECT needed for unauthenticated display page (app/display/page.tsx)
 CREATE POLICY "Settings are viewable by everyone" ON public.settings FOR SELECT USING (true);
 CREATE POLICY "Settings editable by tenant staff" ON public.settings FOR ALL USING (tenant_id = public.get_auth_tenant_id());
+
+-- Business Days: drop old non-tenant-scoped policies from business_days_schema.sql
+DROP POLICY IF EXISTS "Allow public read access" ON public.business_days;
+DROP POLICY IF EXISTS "Allow authenticated insert access" ON public.business_days;
+DROP POLICY IF EXISTS "Allow authenticated update access" ON public.business_days;
+DROP POLICY IF EXISTS "Allow authenticated delete access" ON public.business_days;
 
 -- Business Days: tenant-scoped SELECT, writes by tenant staff
 CREATE POLICY "Business days viewable by tenant" ON public.business_days FOR SELECT USING (tenant_id = public.get_auth_tenant_id());

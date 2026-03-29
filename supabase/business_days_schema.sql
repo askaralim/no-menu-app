@@ -17,7 +17,7 @@ create index idx_business_days_date on business_days(business_date desc);
 create index idx_business_days_opened on business_days(opened_at desc);
 create index idx_business_days_closed on business_days(closed_at) where closed_at is not null;
 
--- Function to get or create an open business day
+-- Function to get or create an open business day for the caller's tenant
 -- If there's an open business day (even from yesterday), use it
 -- Otherwise, create a new one for today
 -- This allows business days to span across midnight
@@ -30,25 +30,28 @@ as $$
 declare
   business_day_id uuid;
   today_date date;
+  current_tenant_id uuid;
 begin
-  -- Get today's date in China timezone (UTC+8 / Asia/Shanghai)
-  -- now() returns timestamp with time zone (UTC)
-  -- AT TIME ZONE 'Asia/Shanghai' converts it to timestamp without time zone in Shanghai time
-  -- Then we cast to date to get the date in China timezone
+  -- Resolve the caller's tenant
+  select tenant_id into current_tenant_id
+  from public.user_roles
+  where user_id = auth.uid()
+  limit 1;
+
   today_date := (now() AT TIME ZONE 'Asia/Shanghai')::date;
   
-  -- First, try to find any open business day (regardless of date)
-  -- This allows orders after midnight to belong to the same bar day
+  -- Find any open business day for this tenant
   select id into business_day_id
   from business_days
   where closed_at is null
+    and tenant_id = current_tenant_id
   order by opened_at desc
   limit 1;
 
-  -- If no open business day exists, create one for today (China timezone)
+  -- If no open business day exists, create one for today
   if business_day_id is null then
-    insert into business_days (business_date, opened_at)
-    values (today_date, now())
+    insert into business_days (business_date, opened_at, tenant_id)
+    values (today_date, now(), current_tenant_id)
     returning id into business_day_id;
   end if;
 
@@ -56,7 +59,7 @@ begin
 end;
 $$ language plpgsql;
 
--- Function to get the current open business day (returns null if none)
+-- Function to get the current open business day for the caller's tenant (returns null if none)
 -- SECURITY DEFINER allows the function to bypass RLS when reading
 create or replace function get_current_open_business_day()
 returns uuid
@@ -64,10 +67,17 @@ security definer -- Run with the permissions of the function creator, bypassing 
 as $$
 declare
   business_day_id uuid;
+  current_tenant_id uuid;
 begin
+  select tenant_id into current_tenant_id
+  from public.user_roles
+  where user_id = auth.uid()
+  limit 1;
+
   select id into business_day_id
   from business_days
   where closed_at is null
+    and tenant_id = current_tenant_id
   order by opened_at desc
   limit 1;
 
@@ -75,20 +85,26 @@ begin
 end;
 $$ language plpgsql;
 
--- Function to close a business day
+-- Function to close a business day (only if it belongs to the caller's tenant)
 -- SECURITY DEFINER allows the function to bypass RLS when updating
 create or replace function close_business_day(business_day_id uuid)
 returns boolean
 security definer -- Run with the permissions of the function creator, bypassing RLS
 as $$
+declare
+  current_tenant_id uuid;
 begin
-  -- Update the business day to set closed_at
+  select tenant_id into current_tenant_id
+  from public.user_roles
+  where user_id = auth.uid()
+  limit 1;
+
   update business_days
   set closed_at = now()
   where id = business_day_id
-    and closed_at is null; -- Only close if not already closed
+    and closed_at is null
+    and tenant_id = current_tenant_id;
 
-  -- Return true if a row was updated
   return found;
 end;
 $$ language plpgsql;
