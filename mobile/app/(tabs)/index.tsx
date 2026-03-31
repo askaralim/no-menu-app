@@ -6,10 +6,11 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  SectionList,
   Alert,
   ActivityIndicator,
   ScrollView,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
@@ -30,6 +31,8 @@ export default function OrderingScreen() {
   const [currentBusinessDayId, setCurrentBusinessDayId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [drinkSearch, setDrinkSearch] = useState('')
 
   const getCurrentBusinessDay = useCallback(async () => {
     try {
@@ -92,9 +95,15 @@ export default function OrderingScreen() {
 
       setDrinks(sorted)
     } catch (e) {
-      console.error('Error fetching drinks:', e)
+      Alert.alert('错误', '加载酒品失败')
     }
   }, [])
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await fetchActiveOrders()
+    setRefreshing(false)
+  }, [fetchActiveOrders])
 
   useEffect(() => {
     fetchActiveOrders()
@@ -140,6 +149,7 @@ export default function OrderingScreen() {
       setCart(cartItems)
     } catch (e) {
       console.error('Error loading order items:', e)
+      Alert.alert('错误', '加载订单详情失败')
     }
 
     setViewMode('form')
@@ -307,7 +317,9 @@ export default function OrderingScreen() {
           <FlatList
             data={activeOrders}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
             renderItem={({ item }) => {
               const statusStyle = getStatusStyle(item.status)
               return (
@@ -334,10 +346,7 @@ export default function OrderingScreen() {
                   {item.status === 'active' && (
                     <TouchableOpacity
                       style={styles.checkoutBtn}
-                      onPress={(e) => {
-                        e.stopPropagation?.()
-                        handleCheckout(item.id)
-                      }}
+                      onPress={() => handleCheckout(item.id)}
                     >
                       <Text style={styles.checkoutBtnText}>结账</Text>
                     </TouchableOpacity>
@@ -351,138 +360,178 @@ export default function OrderingScreen() {
     )
   }
 
-  // ORDER FORM VIEW
-  const drinkSections = drinks.map((cat) => ({
-    title: cat.name,
-    data: cat.drinks,
-  }))
+  // ORDER FORM VIEW - filter drinks by search
+  const filteredDrinks = drinkSearch.trim()
+    ? drinks
+        .map((cat) => ({
+          ...cat,
+          drinks: cat.drinks.filter((d) =>
+            d.name.toLowerCase().includes(drinkSearch.trim().toLowerCase())
+          ),
+        }))
+        .filter((cat) => cat.drinks.length > 0)
+    : drinks
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => setViewMode('list')} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
-          <Text style={styles.backBtnText}>返回</Text>
-        </TouchableOpacity>
-        <Text style={styles.sectionTitle}>{editingOrderId ? '编辑订单' : '新建订单'}</Text>
-      </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            onPress={() => {
+              setViewMode('list')
+              setDrinkSearch('')
+            }}
+            style={styles.backBtn}
+          >
+            <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
+            <Text style={styles.backBtnText}>返回</Text>
+          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>{editingOrderId ? '编辑订单' : '新建订单'}</Text>
+        </View>
 
-      {/* Customer Name */}
-      <View style={styles.formSection}>
-        <Text style={styles.label}>客户姓名</Text>
-        <TextInput
-          style={styles.input}
-          value={customerName}
-          onChangeText={setCustomerName}
-          placeholder="输入客户姓名"
-          placeholderTextColor={COLORS.muted}
-        />
-      </View>
-
-      {/* Cart */}
-      {cart.length > 0 && (
+        {/* Customer Name */}
         <View style={styles.formSection}>
-          <Text style={styles.label}>已选商品</Text>
-          {cart.map((item) => {
-            const subtotal =
-              item.quantity_cup * item.drink.price +
-              item.quantity_bottle * (item.drink.price_bottle || 0)
-            return (
-              <View key={item.drink_id} style={styles.cartItem}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cartItemName}>{item.drink.name}</Text>
-                  <Text style={styles.cartItemPrice}>¥{subtotal.toFixed(2)}</Text>
-                </View>
+          <Text style={styles.label}>客户姓名</Text>
+          <TextInput
+            style={styles.input}
+            value={customerName}
+            onChangeText={setCustomerName}
+            placeholder="输入客户姓名"
+            placeholderTextColor={COLORS.muted}
+          />
+        </View>
 
-                <View style={styles.stepperRow}>
-                  <Text style={styles.stepperLabel}>{item.drink.price_unit || '杯'}</Text>
-                  <TouchableOpacity
-                    style={styles.stepperBtn}
-                    onPress={() => updateCartItem(item.drink_id, 'quantity_cup', item.quantity_cup - 1)}
-                  >
-                    <Ionicons name="remove" size={16} color={COLORS.text} />
-                  </TouchableOpacity>
-                  <Text style={styles.stepperValue}>{item.quantity_cup}</Text>
-                  <TouchableOpacity
-                    style={styles.stepperBtn}
-                    onPress={() => updateCartItem(item.drink_id, 'quantity_cup', item.quantity_cup + 1)}
-                  >
-                    <Ionicons name="add" size={16} color={COLORS.text} />
-                  </TouchableOpacity>
-                </View>
+        {/* Cart */}
+        {cart.length > 0 && (
+          <View style={styles.formSection}>
+            <Text style={styles.label}>已选商品</Text>
+            {cart.map((item) => {
+              const subtotal =
+                item.quantity_cup * item.drink.price +
+                item.quantity_bottle * (item.drink.price_bottle || 0)
+              return (
+                <View key={item.drink_id} style={styles.cartItem}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cartItemName}>{item.drink.name}</Text>
+                    <Text style={styles.cartItemPrice}>¥{subtotal.toFixed(2)}</Text>
+                  </View>
 
-                {item.drink.price_bottle != null && item.drink.price_bottle > 0 && (
                   <View style={styles.stepperRow}>
-                    <Text style={styles.stepperLabel}>{item.drink.price_unit_bottle || '瓶'}</Text>
+                    <Text style={styles.stepperLabel}>{item.drink.price_unit || '杯'}</Text>
                     <TouchableOpacity
                       style={styles.stepperBtn}
-                      onPress={() => updateCartItem(item.drink_id, 'quantity_bottle', item.quantity_bottle - 1)}
+                      onPress={() => updateCartItem(item.drink_id, 'quantity_cup', item.quantity_cup - 1)}
                     >
-                      <Ionicons name="remove" size={16} color={COLORS.text} />
+                      <Ionicons name="remove" size={18} color={COLORS.text} />
                     </TouchableOpacity>
-                    <Text style={styles.stepperValue}>{item.quantity_bottle}</Text>
+                    <Text style={styles.stepperValue}>{item.quantity_cup}</Text>
                     <TouchableOpacity
                       style={styles.stepperBtn}
-                      onPress={() => updateCartItem(item.drink_id, 'quantity_bottle', item.quantity_bottle + 1)}
+                      onPress={() => updateCartItem(item.drink_id, 'quantity_cup', item.quantity_cup + 1)}
                     >
-                      <Ionicons name="add" size={16} color={COLORS.text} />
+                      <Ionicons name="add" size={18} color={COLORS.text} />
                     </TouchableOpacity>
                   </View>
-                )}
 
-                <TouchableOpacity onPress={() => removeFromCart(item.drink_id)} style={styles.removeBtn}>
-                  <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
-                </TouchableOpacity>
-              </View>
-            )
-          })}
+                  {item.drink.price_bottle != null && item.drink.price_bottle > 0 && (
+                    <View style={styles.stepperRow}>
+                      <Text style={styles.stepperLabel}>{item.drink.price_unit_bottle || '瓶'}</Text>
+                      <TouchableOpacity
+                        style={styles.stepperBtn}
+                        onPress={() =>
+                          updateCartItem(item.drink_id, 'quantity_bottle', item.quantity_bottle - 1)
+                        }
+                      >
+                        <Ionicons name="remove" size={18} color={COLORS.text} />
+                      </TouchableOpacity>
+                      <Text style={styles.stepperValue}>{item.quantity_bottle}</Text>
+                      <TouchableOpacity
+                        style={styles.stepperBtn}
+                        onPress={() =>
+                          updateCartItem(item.drink_id, 'quantity_bottle', item.quantity_bottle + 1)
+                        }
+                      >
+                        <Ionicons name="add" size={18} color={COLORS.text} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>总计</Text>
-            <Text style={styles.totalValue}>¥{cartTotal.toFixed(2)}</Text>
-          </View>
-        </View>
-      )}
+                  <TouchableOpacity onPress={() => removeFromCart(item.drink_id)} style={styles.removeBtn}>
+                    <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                  </TouchableOpacity>
+                </View>
+              )
+            })}
 
-      {/* Save Button */}
-      <TouchableOpacity
-        style={[
-          styles.saveButton,
-          (!customerName.trim() || cart.filter((i) => i.quantity_cup > 0 || i.quantity_bottle > 0).length === 0) &&
-            styles.saveButtonDisabled,
-        ]}
-        onPress={handleSaveOrder}
-        disabled={saving || !customerName.trim() || cart.filter((i) => i.quantity_cup > 0 || i.quantity_bottle > 0).length === 0}
-      >
-        {saving ? (
-          <ActivityIndicator color="#000" />
-        ) : (
-          <Text style={styles.saveButtonText}>{editingOrderId ? '更新订单' : '创建订单'}</Text>
-        )}
-      </TouchableOpacity>
-
-      {/* Drink Selection */}
-      <View style={styles.formSection}>
-        <Text style={styles.label}>选择商品</Text>
-        {drinks.map((category) => (
-          <View key={category.id} style={styles.drinkCategory}>
-            <Text style={styles.drinkCategoryTitle}>{category.name}</Text>
-            <View style={styles.drinkGrid}>
-              {category.drinks.map((drink) => (
-                <TouchableOpacity
-                  key={drink.id}
-                  style={styles.drinkBtn}
-                  onPress={() => addToCart(drink)}
-                >
-                  <Text style={styles.drinkBtnName}>{drink.name}</Text>
-                  <Text style={styles.drinkBtnPrice}>¥{drink.price}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>总计</Text>
+              <Text style={styles.totalValue}>¥{cartTotal.toFixed(2)}</Text>
             </View>
           </View>
-        ))}
-      </View>
-    </ScrollView>
+        )}
+
+        {/* Save Button */}
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            (!customerName.trim() ||
+              cart.filter((i) => i.quantity_cup > 0 || i.quantity_bottle > 0).length === 0) &&
+              styles.saveButtonDisabled,
+          ]}
+          onPress={handleSaveOrder}
+          disabled={
+            saving ||
+            !customerName.trim() ||
+            cart.filter((i) => i.quantity_cup > 0 || i.quantity_bottle > 0).length === 0
+          }
+        >
+          {saving ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text style={styles.saveButtonText}>{editingOrderId ? '更新订单' : '创建订单'}</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Drink Selection with Search */}
+        <View style={styles.formSection}>
+          <Text style={styles.label}>选择商品</Text>
+          <TextInput
+            style={[styles.input, { marginBottom: 12 }]}
+            value={drinkSearch}
+            onChangeText={setDrinkSearch}
+            placeholder="搜索酒品..."
+            placeholderTextColor={COLORS.muted}
+          />
+          {filteredDrinks.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+              <Ionicons name="search-outline" size={36} color={COLORS.muted} />
+              <Text style={styles.emptyText}>未找到匹配酒品</Text>
+            </View>
+          ) : (
+            filteredDrinks.map((category) => (
+              <View key={category.id} style={styles.drinkCategory}>
+                <Text style={styles.drinkCategoryTitle}>{category.name}</Text>
+                <View style={styles.drinkGrid}>
+                  {category.drinks.map((drink) => (
+                    <TouchableOpacity
+                      key={drink.id}
+                      style={styles.drinkBtn}
+                      onPress={() => addToCart(drink)}
+                    >
+                      <Text style={styles.drinkBtnName}>{drink.name}</Text>
+                      <Text style={styles.drinkBtnPrice}>¥{drink.price}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -514,7 +563,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.gold,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderRadius: 8,
     gap: 4,
   },
@@ -573,7 +622,7 @@ const styles = StyleSheet.create({
   checkoutBtn: {
     marginTop: 12,
     backgroundColor: COLORS.gold,
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
   },
@@ -585,6 +634,7 @@ const styles = StyleSheet.create({
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 10,
     gap: 4,
   },
   backBtnText: {
@@ -635,15 +685,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   stepperLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.muted,
     marginRight: 2,
   },
   stepperBtn: {
     backgroundColor: COLORS.border,
     borderRadius: 6,
-    width: 28,
-    height: 28,
+    width: 36,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -655,7 +705,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   removeBtn: {
-    padding: 6,
+    padding: 12,
   },
   totalRow: {
     flexDirection: 'row',
@@ -710,7 +760,7 @@ const styles = StyleSheet.create({
   drinkBtn: {
     backgroundColor: COLORS.card,
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 14,
     minWidth: 100,
     alignItems: 'center',

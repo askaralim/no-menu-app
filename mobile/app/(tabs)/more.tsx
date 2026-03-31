@@ -10,6 +10,8 @@ import {
   Alert,
   ActivityIndicator,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
@@ -17,12 +19,22 @@ import { useAuth } from '../../lib/authProvider'
 import { COLORS, CUSTOMER_NAME_MAP } from '../../lib/constants'
 import type { Settings } from '../../lib/types'
 
-type Section = 'dashboard' | 'customers' | 'settings'
+type Section = 'dashboard' | 'analytics' | 'customers' | 'settings'
 
 interface CustomerSpending {
   name: string
   total: number
   count: number
+}
+
+interface TopDrink {
+  name: string
+  count: number
+}
+
+interface DailyRevenue {
+  date: string
+  revenue: number
 }
 
 export default function MoreScreen() {
@@ -36,6 +48,12 @@ export default function MoreScreen() {
   // Customer state
   const [customers, setCustomers] = useState<CustomerSpending[]>([])
   const [custLoading, setCustLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Analytics state
+  const [topDrinks, setTopDrinks] = useState<TopDrink[]>([])
+  const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([])
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   // Settings state
   const [settings, setSettings] = useState<Settings | null>(null)
@@ -67,19 +85,22 @@ export default function MoreScreen() {
           todayOrders = orders?.length || 0
           todayRevenue = (orders || []).reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0)
         }
-      } catch {}
+      } catch {
+        Alert.alert('提示', '今日订单统计加载失败')
+      }
 
       setStats({ categories: catCount, drinks: drinkCount, enabledDrinks: enabledCount, todayOrders, todayRevenue })
     } catch (e) {
-      console.error('Dashboard error:', e)
+      Alert.alert('错误', '加载概览失败')
     } finally {
       setDashLoading(false)
     }
   }, [])
 
   // --- Customers ---
-  const fetchCustomers = useCallback(async () => {
-    setCustLoading(true)
+  const fetchCustomers = useCallback(async (fromRefresh = false) => {
+    if (fromRefresh) setRefreshing(true)
+    else setCustLoading(true)
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -108,9 +129,73 @@ export default function MoreScreen() {
 
       setCustomers(list)
     } catch (e) {
-      console.error('Customer error:', e)
+      Alert.alert('错误', '加载客户消费失败')
     } finally {
-      setCustLoading(false)
+      if (fromRefresh) setRefreshing(false)
+      else setCustLoading(false)
+    }
+  }, [])
+
+  // --- Analytics ---
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true)
+    try {
+      // Top selling drinks (last 30 days)
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('order_items')
+        .select('drink_id, quantity_cup, quantity_bottle, drinks(name)')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+
+      if (itemsError) throw itemsError
+
+      const drinkMap = new Map<string, { name: string; count: number }>()
+      for (const item of itemsData || []) {
+        const name = (item as any).drinks?.name || '未知'
+        const count = (item.quantity_cup || 0) + (item.quantity_bottle || 0)
+        const existing = drinkMap.get(item.drink_id)
+        if (existing) {
+          existing.count += count
+        } else {
+          drinkMap.set(item.drink_id, { name, count })
+        }
+      }
+      const topList = Array.from(drinkMap.values()).sort((a, b) => b.count - a.count).slice(0, 10)
+      setTopDrinks(topList)
+
+      // Daily revenue (last 7 days)
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('order_date, total_amount')
+        .in('status', ['checked_out', 'finished'])
+        .gte('created_at', sevenDaysAgo.toISOString())
+
+      if (ordersError) throw ordersError
+
+      const dayMap = new Map<string, number>()
+      for (const o of ordersData || []) {
+        const date = o.order_date || 'unknown'
+        dayMap.set(date, (dayMap.get(date) || 0) + Number(o.total_amount || 0))
+      }
+
+      // Fill in missing days
+      const days: DailyRevenue[] = []
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' })
+        days.push({ date: dateStr, revenue: dayMap.get(dateStr) || 0 })
+      }
+      setDailyRevenue(days)
+    } catch (e) {
+      Alert.alert('错误', '加载分析数据失败')
+    } finally {
+      setAnalyticsLoading(false)
     }
   }, [])
 
@@ -165,9 +250,10 @@ export default function MoreScreen() {
 
   useEffect(() => {
     if (activeSection === 'dashboard') fetchDashboard()
+    else if (activeSection === 'analytics') fetchAnalytics()
     else if (activeSection === 'customers') fetchCustomers()
     else if (activeSection === 'settings') fetchSettings()
-  }, [activeSection, fetchDashboard, fetchCustomers, fetchSettings])
+  }, [activeSection, fetchDashboard, fetchAnalytics, fetchCustomers, fetchSettings])
 
   const themeOptions: { key: Settings['theme']; label: string }[] = [
     { key: 'dark', label: '深色夜店风' },
@@ -181,7 +267,8 @@ export default function MoreScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sectionRow}>
         {([
           { key: 'dashboard' as Section, label: '概览', icon: 'stats-chart-outline' as const },
-          { key: 'customers' as Section, label: '客户消费', icon: 'people-outline' as const },
+          { key: 'analytics' as Section, label: '分析', icon: 'bar-chart-outline' as const },
+          { key: 'customers' as Section, label: '客户', icon: 'people-outline' as const },
           { key: 'settings' as Section, label: '设置', icon: 'settings-outline' as const },
         ]).map((s) => (
           <TouchableOpacity
@@ -199,7 +286,7 @@ export default function MoreScreen() {
 
       {/* DASHBOARD */}
       {activeSection === 'dashboard' && (
-        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           {dashLoading ? (
             <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
           ) : (
@@ -233,6 +320,66 @@ export default function MoreScreen() {
         </ScrollView>
       )}
 
+      {/* ANALYTICS */}
+      {activeSection === 'analytics' && (
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+          {analyticsLoading ? (
+            <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
+          ) : (
+            <>
+              <Text style={styles.analyticsTitle}>近7天营收</Text>
+              <View style={styles.chartContainer}>
+                {dailyRevenue.length > 0 && (() => {
+                  const maxRevenue = Math.max(...dailyRevenue.map((d) => d.revenue), 1)
+                  return dailyRevenue.map((day) => (
+                    <View key={day.date} style={styles.chartRow}>
+                      <Text style={styles.chartLabel}>
+                        {new Date(day.date + 'T00:00:00').toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
+                      </Text>
+                      <View style={styles.chartBarContainer}>
+                        <View
+                          style={[
+                            styles.chartBar,
+                            { width: `${Math.max((day.revenue / maxRevenue) * 100, 2)}%` },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.chartValue}>¥{day.revenue.toFixed(0)}</Text>
+                    </View>
+                  ))
+                })()}
+              </View>
+
+              <Text style={[styles.analyticsTitle, { marginTop: 24 }]}>热销酒品 TOP 10（近30天）</Text>
+              {topDrinks.length === 0 ? (
+                <Text style={styles.emptyText}>暂无销售数据</Text>
+              ) : (
+                <View style={styles.chartContainer}>
+                  {(() => {
+                    const maxCount = Math.max(...topDrinks.map((d) => d.count), 1)
+                    return topDrinks.map((drink, idx) => (
+                      <View key={drink.name} style={styles.chartRow}>
+                        <Text style={styles.chartRank}>{idx + 1}</Text>
+                        <Text style={styles.chartDrinkName} numberOfLines={1}>{drink.name}</Text>
+                        <View style={styles.chartBarContainer}>
+                          <View
+                            style={[
+                              styles.chartBar,
+                              { width: `${Math.max((drink.count / maxCount) * 100, 2)}%` },
+                            ]}
+                          />
+                        </View>
+                        <Text style={styles.chartValue}>{drink.count}</Text>
+                      </View>
+                    ))
+                  })()}
+                </View>
+              )}
+            </>
+          )}
+        </ScrollView>
+      )}
+
       {/* CUSTOMERS */}
       {activeSection === 'customers' && (
         custLoading ? (
@@ -246,7 +393,9 @@ export default function MoreScreen() {
           <FlatList
             data={customers}
             keyExtractor={(item) => item.name}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            refreshing={refreshing}
+            onRefresh={() => fetchCustomers(true)}
             renderItem={({ item, index }) => (
               <View style={styles.custRow}>
                 <Text style={styles.custRank}>{index + 1}</Text>
@@ -263,58 +412,63 @@ export default function MoreScreen() {
 
       {/* SETTINGS */}
       {activeSection === 'settings' && (
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-          {settingsLoading ? (
-            <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
-          ) : (
-            <>
-              <Text style={styles.formLabel}>展示页主题</Text>
-              <View style={styles.themeRow}>
-                {themeOptions.map((t) => (
-                  <TouchableOpacity
-                    key={t.key}
-                    style={[styles.themeBtn, settingsForm.theme === t.key && styles.themeBtnActive]}
-                    onPress={() => setSettingsForm((f) => ({ ...f, theme: t.key }))}
-                  >
-                    <Text style={[styles.themeBtnText, settingsForm.theme === t.key && styles.themeBtnTextActive]}>
-                      {t.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+            {settingsLoading ? (
+              <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
+            ) : (
+              <>
+                <Text style={styles.formLabel}>展示页主题</Text>
+                <View style={styles.themeRow}>
+                  {themeOptions.map((t) => (
+                    <TouchableOpacity
+                      key={t.key}
+                      style={[styles.themeBtn, settingsForm.theme === t.key && styles.themeBtnActive]}
+                      onPress={() => setSettingsForm((f) => ({ ...f, theme: t.key }))}
+                    >
+                      <Text style={[styles.themeBtnText, settingsForm.theme === t.key && styles.themeBtnTextActive]}>
+                        {t.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-              <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>自动刷新</Text>
-                <Switch
-                  value={settingsForm.auto_refresh}
-                  onValueChange={(v) => setSettingsForm((f) => ({ ...f, auto_refresh: v }))}
-                  trackColor={{ false: '#555', true: COLORS.gold }}
-                  thumbColor="#fff"
+                <View style={styles.switchRow}>
+                  <Text style={styles.switchLabel}>自动刷新</Text>
+                  <Switch
+                    value={settingsForm.auto_refresh}
+                    onValueChange={(v) => setSettingsForm((f) => ({ ...f, auto_refresh: v }))}
+                    trackColor={{ false: '#555', true: COLORS.gold }}
+                    thumbColor="#fff"
+                  />
+                </View>
+
+                <Text style={styles.formLabel}>刷新间隔（秒）</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={settingsForm.refresh_interval}
+                  onChangeText={(t) => setSettingsForm((f) => ({ ...f, refresh_interval: t }))}
+                  keyboardType="number-pad"
+                  placeholderTextColor={COLORS.muted}
                 />
-              </View>
 
-              <Text style={styles.formLabel}>刷新间隔（秒）</Text>
-              <TextInput
-                style={styles.formInput}
-                value={settingsForm.refresh_interval}
-                onChangeText={(t) => setSettingsForm((f) => ({ ...f, refresh_interval: t }))}
-                keyboardType="number-pad"
-                placeholderTextColor={COLORS.muted}
-              />
-
-              <TouchableOpacity style={styles.saveBtn} onPress={saveSettings}>
-                <Text style={styles.saveBtnText}>保存设置</Text>
-              </TouchableOpacity>
-
-              <View style={{ marginTop: 40 }}>
-                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                  <Ionicons name="log-out-outline" size={20} color={COLORS.danger} />
-                  <Text style={styles.logoutBtnText}>退出登录</Text>
+                <TouchableOpacity style={styles.saveBtn} onPress={saveSettings}>
+                  <Text style={styles.saveBtnText}>保存设置</Text>
                 </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </ScrollView>
+
+                <View style={{ marginTop: 40 }}>
+                  <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+                    <Ionicons name="log-out-outline" size={20} color={COLORS.danger} />
+                    <Text style={styles.logoutBtnText}>退出登录</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
       )}
     </View>
   )
@@ -325,7 +479,7 @@ const styles = StyleSheet.create({
   sectionRow: { flexGrow: 0, marginBottom: 20 },
   sectionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, marginRight: 8,
+    paddingHorizontal: 16, paddingVertical: 14, borderRadius: 8, marginRight: 8,
     backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
   },
   sectionBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
@@ -354,11 +508,11 @@ const styles = StyleSheet.create({
   },
   themeRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   themeBtn: {
-    flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
+    flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center',
     backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
   },
   themeBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
-  themeBtnText: { color: COLORS.text, fontSize: 13, fontWeight: '600' },
+  themeBtnText: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
   themeBtnTextActive: { color: '#000' },
   switchRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -375,4 +529,31 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.danger,
   },
   logoutBtnText: { color: COLORS.danger, fontSize: 16, fontWeight: '600' },
+  analyticsTitle: {
+    fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 12,
+  },
+  chartContainer: {
+    backgroundColor: COLORS.card, borderRadius: 12, padding: 14,
+  },
+  chartRow: {
+    flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8,
+  },
+  chartLabel: {
+    width: 40, fontSize: 12, color: COLORS.muted, textAlign: 'right',
+  },
+  chartRank: {
+    width: 20, fontSize: 13, fontWeight: '700', color: COLORS.muted, textAlign: 'right',
+  },
+  chartDrinkName: {
+    width: 70, fontSize: 13, color: COLORS.text, fontWeight: '500',
+  },
+  chartBarContainer: {
+    flex: 1, height: 20, backgroundColor: COLORS.background, borderRadius: 4, overflow: 'hidden',
+  },
+  chartBar: {
+    height: '100%', backgroundColor: COLORS.gold, borderRadius: 4, minWidth: 4,
+  },
+  chartValue: {
+    width: 55, fontSize: 12, color: COLORS.text, fontWeight: '600', textAlign: 'right',
+  },
 })

@@ -377,6 +377,14 @@ body::after {
   flex-shrink: 0;
 }
 
+.admin-nav-current {
+  display: none;
+}
+
+.admin-nav-toggle {
+  display: none;
+}
+
 .admin-nav-links {
   display: flex;
   gap: 0.5rem;
@@ -417,6 +425,100 @@ body::after {
 
 .admin-nav-link-external:hover {
   color: #3b82f6;
+}
+
+/* Mobile nav collapse */
+@media (max-width: 768px) {
+  .admin-nav {
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-nav-container {
+    gap: 0;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+
+  .admin-nav-title {
+    font-size: 1.1rem;
+  }
+
+  .admin-nav-current {
+    display: block;
+    font-size: 0.875rem;
+    color: #3b82f6;
+    font-weight: 500;
+    margin-left: auto;
+    margin-right: 0.75rem;
+  }
+
+  .admin-nav-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .admin-nav-toggle span {
+    display: block;
+    height: 2px;
+    background: #374151;
+    border-radius: 1px;
+    transition: all 0.25s ease;
+    transform-origin: center;
+  }
+
+  .admin-nav-toggle.open span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .admin-nav-toggle.open span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .admin-nav-toggle.open span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  .admin-nav-links {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.25rem;
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .admin-nav-links.open {
+    display: flex;
+  }
+
+  .admin-nav-link {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
+  .admin-nav-link-external {
+    margin-left: 0;
+    border-top: 1px solid #f3f4f6;
+    margin-top: 0.25rem;
+    padding-top: 0.75rem;
+  }
+
+  .admin-nav-logout {
+    margin-left: 0 !important;
+  }
 }
 
 .admin-container {

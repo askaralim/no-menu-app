@@ -1,38 +1,55 @@
-import { Tabs } from 'react-native-safe-area-context' // Wait, expo-router has its own Tabs
-// Will correct this
 import { Tabs } from 'expo-router'
-import { StyleSheet, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { COLORS } from '../../lib/constants'
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: '#060913' },
-        headerTintColor: '#D4AF37',
+        headerStyle: { backgroundColor: COLORS.background },
+        headerTintColor: COLORS.gold,
         tabBarStyle: {
-          backgroundColor: '#060913',
-          borderTopColor: '#1E2336',
+          backgroundColor: COLORS.background,
+          borderTopColor: COLORS.border,
         },
-        tabBarActiveTintColor: '#D4AF37',
-        tabBarInactiveTintColor: '#888',
+        tabBarActiveTintColor: COLORS.gold,
+        tabBarInactiveTintColor: COLORS.muted,
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
+          title: '点单',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: '订单',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="receipt-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="menu"
         options={{
-          title: 'Manage Menu',
+          title: '菜单',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="more"
         options={{
-          title: 'Settings',
+          title: '更多',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="ellipsis-horizontal" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>

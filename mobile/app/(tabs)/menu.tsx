@@ -18,7 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/authProvider'
-import { COLORS } from '../../lib/constants'
+import { COLORS, LOW_STOCK_THRESHOLD } from '../../lib/constants'
 import type { Category, Drink } from '../../lib/types'
 
 type ViewMode = 'categories' | 'drinks'
@@ -29,6 +29,8 @@ export default function MenuScreen() {
   const [categories, setCategories] = useState<Category[]>([])
   const [drinks, setDrinks] = useState<Drink[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [drinkSearchQuery, setDrinkSearchQuery] = useState('')
 
   // Category form
   const [showCategoryForm, setShowCategoryForm] = useState(false)
@@ -47,6 +49,7 @@ export default function MenuScreen() {
     price_bottle: '',
     price_unit_bottle: '瓶',
     sort_order: '0',
+    stock: '',
   })
 
   const fetchCategories = useCallback(async () => {
@@ -58,7 +61,7 @@ export default function MenuScreen() {
       if (error) throw error
       setCategories(data || [])
     } catch (e) {
-      console.error('Error fetching categories:', e)
+      Alert.alert('错误', '加载分类失败，请稍后重试')
     }
   }, [])
 
@@ -71,7 +74,7 @@ export default function MenuScreen() {
       if (error) throw error
       setDrinks(data || [])
     } catch (e) {
-      console.error('Error fetching drinks:', e)
+      Alert.alert('错误', '加载酒品失败，请稍后重试')
     }
   }, [])
 
@@ -90,6 +93,15 @@ export default function MenuScreen() {
     return () => {
       supabase.removeChannel(ch1)
       supabase.removeChannel(ch2)
+    }
+  }, [fetchCategories, fetchDrinks])
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await Promise.all([fetchCategories(), fetchDrinks()])
+    } finally {
+      setRefreshing(false)
     }
   }, [fetchCategories, fetchDrinks])
 
@@ -155,6 +167,7 @@ export default function MenuScreen() {
         price_bottle: drink.price_bottle != null ? String(drink.price_bottle) : '',
         price_unit_bottle: drink.price_unit_bottle || '瓶',
         sort_order: String(drink.sort_order),
+        stock: drink.stock != null ? String(drink.stock) : '',
       })
     } else {
       setEditingDrinkId(null)
@@ -166,6 +179,7 @@ export default function MenuScreen() {
         price_bottle: '',
         price_unit_bottle: '瓶',
         sort_order: '0',
+        stock: '',
       })
     }
     setShowDrinkForm(true)
@@ -184,6 +198,7 @@ export default function MenuScreen() {
         price_bottle: drinkForm.price_bottle ? parseFloat(drinkForm.price_bottle) : null,
         price_unit_bottle: drinkForm.price_unit_bottle,
         sort_order: parseInt(drinkForm.sort_order) || 0,
+        stock: drinkForm.stock ? parseInt(drinkForm.stock) : null,
       }
       if (editingDrinkId) {
         const { error } = await supabase.from('drinks').update(payload).eq('id', editingDrinkId)
@@ -219,13 +234,21 @@ export default function MenuScreen() {
 
   const getCategoryName = (catId: string) => categories.find((c) => c.id === catId)?.name || '未知分类'
 
+  const drinkSearchNormalized = drinkSearchQuery.trim().toLowerCase()
+  const drinksForList =
+    drinkSearchNormalized === ''
+      ? drinks
+      : drinks.filter((d) => d.name.toLowerCase().includes(drinkSearchNormalized))
+
   // Group drinks by category
   const drinksByCategory = categories
     .map((cat) => ({
       category: cat,
-      data: drinks.filter((d) => d.category_id === cat.id),
+      data: drinksForList.filter((d) => d.category_id === cat.id),
     }))
     .filter((g) => g.data.length > 0)
+
+  const sectionData = drinksByCategory.map((g) => ({ title: g.category.name, data: g.data }))
 
   if (loading) {
     return (
@@ -263,7 +286,15 @@ export default function MenuScreen() {
           <FlatList
             data={categories}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            contentContainerStyle={[styles.listContent, categories.length === 0 && styles.listContentEmpty]}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>暂无分类</Text>
+                <Text style={styles.emptyStateHint}>点击「新增分类」添加</Text>
+              </View>
+            }
             renderItem={({ item }) => (
               <View style={styles.listItem}>
                 <View style={{ flex: 1 }}>
@@ -291,24 +322,68 @@ export default function MenuScreen() {
       {/* DRINKS VIEW */}
       {viewMode === 'drinks' && (
         <>
+          <View style={styles.drinkSearchRow}>
+            <Ionicons name="search" size={18} color={COLORS.muted} style={styles.drinkSearchIcon} />
+            <TextInput
+              style={styles.drinkSearchInput}
+              value={drinkSearchQuery}
+              onChangeText={setDrinkSearchQuery}
+              placeholder="搜索酒品名称"
+              placeholderTextColor={COLORS.muted}
+              clearButtonMode="while-editing"
+            />
+          </View>
           <TouchableOpacity style={styles.addBtn} onPress={() => openDrinkForm()}>
             <Ionicons name="add" size={20} color="#000" />
             <Text style={styles.addBtnText}>新增酒品</Text>
           </TouchableOpacity>
           <SectionList
-            sections={drinksByCategory.map((g) => ({ title: g.category.name, data: g.data }))}
+            sections={sectionData}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            contentContainerStyle={[
+              styles.listContent,
+              (drinks.length === 0 || sectionData.length === 0) && styles.listContentEmpty,
+            ]}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                {drinks.length === 0 ? (
+                  <>
+                    <Text style={styles.emptyStateText}>暂无酒品</Text>
+                    <Text style={styles.emptyStateHint}>点击「新增酒品」添加</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.emptyStateText}>没有匹配的酒品</Text>
+                    <Text style={styles.emptyStateHint}>试试其他关键词</Text>
+                  </>
+                )}
+              </View>
+            }
             renderSectionHeader={({ section }) => (
               <Text style={styles.drinkSectionHeader}>{section.title}</Text>
             )}
             renderItem={({ item }) => (
               <View style={styles.listItem}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.listItemTitle}>{item.name}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.listItemTitle}>{item.name}</Text>
+                    {item.stock != null && item.stock <= 0 && (
+                      <View style={[styles.stockBadge, { backgroundColor: COLORS.danger }]}>
+                        <Text style={styles.stockBadgeText}>缺货</Text>
+                      </View>
+                    )}
+                    {item.stock != null && item.stock > 0 && item.stock <= LOW_STOCK_THRESHOLD && (
+                      <View style={[styles.stockBadge, { backgroundColor: '#f59e0b' }]}>
+                        <Text style={styles.stockBadgeText}>库存{item.stock}</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={styles.listItemSub}>
                     ¥{item.price}/{item.price_unit || '杯'}
                     {item.price_bottle != null && ` · ¥${item.price_bottle}/${item.price_unit_bottle || '瓶'}`}
+                    {item.stock != null && ` · 库存: ${item.stock}`}
                   </Text>
                 </View>
                 <Switch
@@ -409,10 +484,20 @@ export default function MenuScreen() {
                 </View>
               </View>
 
-              <Text style={styles.formLabel}>排序</Text>
-              <TextInput style={styles.formInput} value={drinkForm.sort_order}
-                onChangeText={(t) => setDrinkForm((f) => ({ ...f, sort_order: t }))}
-                keyboardType="number-pad" placeholder="0" placeholderTextColor={COLORS.muted} />
+              <View style={styles.formRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.formLabel}>排序</Text>
+                  <TextInput style={styles.formInput} value={drinkForm.sort_order}
+                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, sort_order: t }))}
+                    keyboardType="number-pad" placeholder="0" placeholderTextColor={COLORS.muted} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  <Text style={styles.formLabel}>库存 (选填)</Text>
+                  <TextInput style={styles.formInput} value={drinkForm.stock}
+                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, stock: t }))}
+                    keyboardType="number-pad" placeholder="留空=不追踪" placeholderTextColor={COLORS.muted} />
+                </View>
+              </View>
 
               <View style={styles.modalBtnRow}>
                 <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowDrinkForm(false)}>
@@ -435,25 +520,48 @@ const styles = StyleSheet.create({
   centered: { flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
   tabRow: { flexDirection: 'row', marginBottom: 16, gap: 8 },
   tabBtn: {
-    flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
+    flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center',
     backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
   },
   tabBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
   tabBtnText: { color: COLORS.text, fontSize: 15, fontWeight: '600' },
   tabBtnTextActive: { color: '#000' },
+  drinkSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  drinkSearchIcon: { marginRight: 8 },
+  drinkSearchInput: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 15,
+    paddingVertical: 12,
+    minHeight: 44,
+  },
   addBtn: {
     flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end',
-    backgroundColor: COLORS.gold, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, gap: 4,
+    backgroundColor: COLORS.gold, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 8, gap: 4,
     marginBottom: 12,
   },
   addBtnText: { color: '#000', fontWeight: '600', fontSize: 14 },
+  listContent: { paddingBottom: 40 },
+  listContentEmpty: { flexGrow: 1 },
+  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24 },
+  emptyStateText: { fontSize: 16, fontWeight: '600', color: COLORS.text, textAlign: 'center' },
+  emptyStateHint: { fontSize: 14, color: COLORS.muted, marginTop: 8, textAlign: 'center' },
   listItem: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
     borderRadius: 10, padding: 14, marginBottom: 8,
   },
   listItemTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text },
   listItemSub: { fontSize: 13, color: COLORS.muted, marginTop: 2 },
-  iconBtn: { padding: 8 },
+  iconBtn: { padding: 14 },
   drinkSectionHeader: {
     fontSize: 13, fontWeight: '700', color: COLORS.gold, textTransform: 'uppercase',
     letterSpacing: 1.5, marginTop: 12, marginBottom: 8, paddingHorizontal: 4,
@@ -473,19 +581,29 @@ const styles = StyleSheet.create({
   formRow: { flexDirection: 'row', alignItems: 'flex-end' },
   modalBtnRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   modalCancelBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
+    flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center',
     backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border,
   },
   modalCancelText: { color: COLORS.text, fontWeight: '600' },
   modalSaveBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', backgroundColor: COLORS.gold,
+    flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center', backgroundColor: COLORS.gold,
   },
   modalSaveText: { color: '#000', fontWeight: '700' },
   catPickerBtn: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, marginRight: 8,
+    paddingHorizontal: 14, paddingVertical: 12, borderRadius: 8, marginRight: 8,
     backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border,
   },
   catPickerBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
   catPickerText: { color: COLORS.text, fontSize: 14 },
   catPickerTextActive: { color: '#000' },
+  stockBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  stockBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
 })

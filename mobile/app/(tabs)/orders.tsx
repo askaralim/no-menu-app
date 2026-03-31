@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  TextInput,
+  Share,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
@@ -27,6 +29,9 @@ export default function OrdersScreen() {
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const fetchBusinessDays = useCallback(async () => {
     try {
@@ -58,13 +63,23 @@ export default function OrdersScreen() {
 
       setBusinessDays(result)
     } catch (e) {
-      console.error('Error fetching business days:', e)
+      Alert.alert('错误', e instanceof Error ? e.message : '加载营业日数据失败')
     } finally {
       setLoading(false)
     }
   }, [statusFilter])
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await fetchBusinessDays()
+    } finally {
+      setRefreshing(false)
+    }
+  }, [fetchBusinessDays])
+
   const fetchOrderDetails = async (orderId: string) => {
+    setDetailLoading(true)
     try {
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
@@ -88,7 +103,9 @@ export default function OrdersScreen() {
       })
       setViewMode('detail')
     } catch (e) {
-      console.error('Error fetching order details:', e)
+      Alert.alert('错误', e instanceof Error ? e.message : '加载订单详情失败')
+    } finally {
+      setDetailLoading(false)
     }
   }
 
@@ -144,6 +161,66 @@ export default function OrdersScreen() {
     }
   }, [fetchBusinessDays])
 
+  const filteredBusinessDays = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return businessDays
+    return businessDays
+      .map((bd) => {
+        const orders = bd.orders.filter((o) => (o.customer_name || '').toLowerCase().includes(q))
+        return {
+          ...bd,
+          orders,
+          totalAmount: orders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0),
+        }
+      })
+      .filter((bd) => bd.orders.length > 0)
+  }, [businessDays, searchQuery])
+
+  const shareReceipt = async (order: OrderWithItems) => {
+    const lines: string[] = [
+      '══════════════════════════',
+      '         Bar Console',
+      '══════════════════════════',
+      '',
+      `客户: ${order.customer_name}`,
+      `日期: ${new Date(order.created_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`,
+      `状态: ${STATUS_LABELS[order.status] || order.status}`,
+      '',
+      '──────────────────────────',
+      '  商品明细',
+      '──────────────────────────',
+    ]
+
+    for (const item of order.items) {
+      const name = item.drink?.name || '未知商品'
+      const subtotal = item.quantity_cup * item.unit_price_cup + item.quantity_bottle * (item.unit_price_bottle || 0)
+      lines.push(`  ${name}`)
+      if (item.quantity_cup > 0) {
+        lines.push(`    ${item.quantity_cup} ${item.drink?.price_unit || '杯'} × ¥${item.unit_price_cup}`)
+      }
+      if (item.quantity_bottle > 0) {
+        lines.push(`    ${item.quantity_bottle} ${item.drink?.price_unit_bottle || '瓶'} × ¥${item.unit_price_bottle}`)
+      }
+      lines.push(`    小计: ¥${subtotal.toFixed(2)}`)
+      lines.push('')
+    }
+
+    lines.push('══════════════════════════')
+    lines.push(`  总计: ¥${Number(order.total_amount).toFixed(2)}`)
+    lines.push('══════════════════════════')
+    if (order.checked_out_at) {
+      lines.push(`结账时间: ${new Date(order.checked_out_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`)
+    }
+    lines.push('')
+    lines.push('感谢光临！')
+
+    try {
+      await Share.share({ message: lines.join('\n') })
+    } catch (e) {
+      // user cancelled
+    }
+  }
+
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'active': return COLORS.statusActive
@@ -177,102 +254,118 @@ export default function OrdersScreen() {
   if (viewMode === 'detail' && selectedOrder) {
     const statusStyle = getStatusStyle(selectedOrder.status)
     return (
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-        <TouchableOpacity onPress={() => { setViewMode('list'); setSelectedOrder(null) }} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
-          <Text style={styles.backBtnText}>返回订单列表</Text>
-        </TouchableOpacity>
+      <View style={styles.detailRoot}>
+        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+          <TouchableOpacity onPress={() => { setViewMode('list'); setSelectedOrder(null) }} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
+            <Text style={styles.backBtnText}>返回订单列表</Text>
+          </TouchableOpacity>
 
-        <View style={styles.detailCard}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>客户姓名</Text>
-            <Text style={styles.detailValue}>{selectedOrder.customer_name}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>状态</Text>
-            <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-              <Text style={[styles.statusText, { color: statusStyle.text }]}>
-                {STATUS_LABELS[selectedOrder.status]}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>创建时间</Text>
-            <Text style={styles.detailValue}>
-              {new Date(selectedOrder.created_at).toLocaleString('zh-CN')}
-            </Text>
-          </View>
-          {selectedOrder.checked_out_at && (
+          <View style={styles.detailCard}>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>结账时间</Text>
+              <Text style={styles.detailLabel}>客户姓名</Text>
+              <Text style={styles.detailValue}>{selectedOrder.customer_name}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>状态</Text>
+              <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                <Text style={[styles.statusText, { color: statusStyle.text }]}>
+                  {STATUS_LABELS[selectedOrder.status]}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>创建时间</Text>
               <Text style={styles.detailValue}>
-                {new Date(selectedOrder.checked_out_at).toLocaleString('zh-CN')}
+                {new Date(selectedOrder.created_at).toLocaleString('zh-CN')}
               </Text>
             </View>
-          )}
-        </View>
-
-        <Text style={styles.sectionLabel}>订单项目</Text>
-        {selectedOrder.items.map((item) => {
-          const subtotal = item.quantity_cup * item.unit_price_cup +
-            item.quantity_bottle * (item.unit_price_bottle || 0)
-          return (
-            <View key={item.id} style={styles.itemRow}>
-              <Text style={styles.itemName}>{item.drink?.name || '未知商品'}</Text>
-              <View style={styles.itemDetails}>
-                {item.quantity_cup > 0 && (
-                  <Text style={styles.itemQty}>{item.quantity_cup} {item.drink?.price_unit || '杯'}</Text>
-                )}
-                {item.quantity_bottle > 0 && (
-                  <Text style={styles.itemQty}>{item.quantity_bottle} {item.drink?.price_unit_bottle || '瓶'}</Text>
-                )}
+            {selectedOrder.checked_out_at && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>结账时间</Text>
+                <Text style={styles.detailValue}>
+                  {new Date(selectedOrder.checked_out_at).toLocaleString('zh-CN')}
+                </Text>
               </View>
-              <Text style={styles.itemSubtotal}>¥{subtotal.toFixed(2)}</Text>
-            </View>
-          )
-        })}
+            )}
+          </View>
 
-        <View style={styles.grandTotalRow}>
-          <Text style={styles.grandTotalLabel}>总计</Text>
-          <Text style={styles.grandTotalValue}>¥{Number(selectedOrder.total_amount).toFixed(2)}</Text>
-        </View>
+          <Text style={styles.sectionLabel}>订单项目</Text>
+          {selectedOrder.items.map((item) => {
+            const subtotal = item.quantity_cup * item.unit_price_cup +
+              item.quantity_bottle * (item.unit_price_bottle || 0)
+            return (
+              <View key={item.id} style={styles.itemRow}>
+                <Text style={styles.itemName}>{item.drink?.name || '未知商品'}</Text>
+                <View style={styles.itemDetails}>
+                  {item.quantity_cup > 0 && (
+                    <Text style={styles.itemQty}>{item.quantity_cup} {item.drink?.price_unit || '杯'}</Text>
+                  )}
+                  {item.quantity_bottle > 0 && (
+                    <Text style={styles.itemQty}>{item.quantity_bottle} {item.drink?.price_unit_bottle || '瓶'}</Text>
+                  )}
+                </View>
+                <Text style={styles.itemSubtotal}>¥{subtotal.toFixed(2)}</Text>
+              </View>
+            )
+          })}
 
-        {/* Status change buttons */}
-        <View style={styles.actionSection}>
-          {selectedOrder.status === 'active' && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: COLORS.gold }]}
-              onPress={() => handleStatusChange(selectedOrder.id, 'checked_out')}
-            >
-              <Text style={styles.actionBtnTextDark}>标记为已结账</Text>
-            </TouchableOpacity>
-          )}
-          {selectedOrder.status === 'checked_out' && (
-            <>
+          <View style={styles.grandTotalRow}>
+            <Text style={styles.grandTotalLabel}>总计</Text>
+            <Text style={styles.grandTotalValue}>¥{Number(selectedOrder.total_amount).toFixed(2)}</Text>
+          </View>
+
+          {/* Share receipt */}
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.gold, flexDirection: 'row', justifyContent: 'center', gap: 8 }]}
+            onPress={() => shareReceipt(selectedOrder)}
+          >
+            <Ionicons name="share-outline" size={18} color={COLORS.gold} />
+            <Text style={[styles.actionBtnText, { color: COLORS.gold }]}>分享账单</Text>
+          </TouchableOpacity>
+
+          {/* Status change buttons */}
+          <View style={styles.actionSection}>
+            {selectedOrder.status === 'active' && (
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: COLORS.gold }]}
-                onPress={() => handleStatusChange(selectedOrder.id, 'finished')}
+                onPress={() => handleStatusChange(selectedOrder.id, 'checked_out')}
               >
-                <Text style={styles.actionBtnTextDark}>标记为已完成</Text>
+                <Text style={styles.actionBtnTextDark}>标记为已结账</Text>
               </TouchableOpacity>
+            )}
+            {selectedOrder.status === 'checked_out' && (
+              <>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: COLORS.gold }]}
+                  onPress={() => handleStatusChange(selectedOrder.id, 'finished')}
+                >
+                  <Text style={styles.actionBtnTextDark}>标记为已完成</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border }]}
+                  onPress={() => handleStatusChange(selectedOrder.id, 'active')}
+                >
+                  <Text style={styles.actionBtnText}>恢复为进行中</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {selectedOrder.status === 'finished' && (
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border }]}
-                onPress={() => handleStatusChange(selectedOrder.id, 'active')}
+                onPress={() => handleStatusChange(selectedOrder.id, 'checked_out')}
               >
-                <Text style={styles.actionBtnText}>恢复为进行中</Text>
+                <Text style={styles.actionBtnText}>恢复为已结账</Text>
               </TouchableOpacity>
-            </>
-          )}
-          {selectedOrder.status === 'finished' && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border }]}
-              onPress={() => handleStatusChange(selectedOrder.id, 'checked_out')}
-            >
-              <Text style={styles.actionBtnText}>恢复为已结账</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
+            )}
+          </View>
+        </ScrollView>
+        {detailLoading && (
+          <View style={styles.detailLoadingOverlay} pointerEvents="auto">
+            <ActivityIndicator size="large" color={COLORS.gold} />
+          </View>
+        )}
+      </View>
     )
   }
 
@@ -284,10 +377,13 @@ export default function OrdersScreen() {
     { key: 'finished', label: '已完成' },
   ]
 
+  const listEmpty = businessDays.length === 0
+  const searchEmpty = !listEmpty && filteredBusinessDays.length === 0
+
   return (
     <View style={styles.container}>
       {/* Status Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
+      <View style={styles.filterRow}>
         {filterButtons.map((f) => (
           <TouchableOpacity
             key={f.key}
@@ -299,21 +395,40 @@ export default function OrdersScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
-      {businessDays.length === 0 ? (
+      <TextInput
+        style={styles.searchInput}
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="搜索客户姓名"
+        placeholderTextColor={COLORS.muted}
+        autoCapitalize="none"
+        autoCorrect={false}
+        clearButtonMode="while-editing"
+      />
+
+      {listEmpty ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="calendar-outline" size={48} color={COLORS.muted} />
           <Text style={styles.emptyText}>暂无订单</Text>
         </View>
+      ) : searchEmpty ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="search-outline" size={48} color={COLORS.muted} />
+          <Text style={styles.emptyText}>未找到匹配的订单</Text>
+        </View>
       ) : (
         <SectionList
-          sections={businessDays.map((bd) => ({
+          sections={filteredBusinessDays.map((bd) => ({
             title: bd,
             data: bd.orders,
           }))}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          stickySectionHeadersEnabled={false}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
           renderSectionHeader={({ section }) => {
             const bd = section.title as unknown as BusinessDayWithOrders
             return (
@@ -358,36 +473,55 @@ export default function OrdersScreen() {
           }}
         />
       )}
+      {detailLoading && (
+        <View style={styles.detailLoadingOverlay} pointerEvents="auto">
+          <ActivityIndicator size="large" color={COLORS.gold} />
+        </View>
+      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background, padding: 16 },
+  detailRoot: { flex: 1, backgroundColor: COLORS.background },
   centered: { flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
-  filterRow: { flexGrow: 0, marginBottom: 16 },
+  filterRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   filterBtn: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8,
-    backgroundColor: COLORS.card, marginRight: 8, borderWidth: 1, borderColor: COLORS.border,
+    flex: 1, paddingVertical: 10, borderRadius: 8,
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
   },
   filterBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
   filterBtnText: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
   filterBtnTextActive: { color: '#000' },
+  searchInput: {
+    backgroundColor: COLORS.card,
+    color: COLORS.text,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 12,
+  },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
   emptyText: { color: COLORS.muted, fontSize: 16, marginTop: 12 },
   bdHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
     paddingVertical: 14, paddingHorizontal: 4, borderBottomWidth: 2, borderBottomColor: COLORS.border,
     marginBottom: 8, marginTop: 8,
+    backgroundColor: COLORS.background,
   },
   bdDate: { fontSize: 18, fontWeight: '700', color: COLORS.text },
   bdMeta: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
   bdTotal: { fontSize: 20, fontWeight: '800', color: COLORS.gold },
   closeBdBtn: {
-    marginTop: 6, paddingHorizontal: 10, paddingVertical: 4,
+    marginTop: 6, paddingHorizontal: 14, paddingVertical: 10,
     borderRadius: 6, borderWidth: 1, borderColor: COLORS.danger,
   },
-  closeBdBtnText: { color: COLORS.danger, fontSize: 12, fontWeight: '600' },
+  closeBdBtnText: { color: COLORS.danger, fontSize: 13, fontWeight: '600' },
   orderCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 14, marginBottom: 10 },
   orderCardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   orderName: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
@@ -395,7 +529,7 @@ const styles = StyleSheet.create({
   orderAmount: { fontSize: 17, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
   statusText: { fontSize: 12, fontWeight: '600' },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16, paddingVertical: 10 },
   backBtnText: { color: COLORS.gold, fontSize: 16 },
   detailCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 20 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -420,4 +554,10 @@ const styles = StyleSheet.create({
   actionBtn: { borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
   actionBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   actionBtnTextDark: { color: '#000', fontSize: 16, fontWeight: '700' },
+  detailLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 })

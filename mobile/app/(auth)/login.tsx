@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Alert, StyleSheet, View, TextInput, TouchableOpacity, Text, KeyboardAvoidingView, Platform } from 'react-native'
 import { supabase } from '../../lib/supabase'
+import { COLORS } from '../../lib/constants'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -14,7 +15,7 @@ export default function LoginScreen() {
       password: password,
     })
 
-    if (error) Alert.alert('Sign in failed', error.message)
+    if (error) Alert.alert('登录失败', error.message)
     setLoading(false)
   }
 
@@ -28,23 +29,27 @@ export default function LoginScreen() {
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
-          onChangeText={(text) => setEmail(text)}
+          onChangeText={setEmail}
           value={email}
           placeholder="Email"
-          placeholderTextColor="#888"
+          placeholderTextColor={COLORS.muted}
           autoCapitalize="none"
           keyboardType="email-address"
         />
         <TextInput
           style={styles.input}
-          onChangeText={(text) => setPassword(text)}
+          onChangeText={setPassword}
           value={password}
           secureTextEntry
           placeholder="Password"
-          placeholderTextColor="#888"
+          placeholderTextColor={COLORS.muted}
           autoCapitalize="none"
         />
-        <TouchableOpacity style={styles.button} disabled={loading} onPress={signInWithEmail}>
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
+          disabled={loading}
+          onPress={signInWithEmail}
+        >
           <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Sign In'}</Text>
         </TouchableOpacity>
       </View>
@@ -55,7 +60,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#060913',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     padding: 24,
   },
@@ -66,30 +71,33 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#D4AF37',
+    color: COLORS.gold,
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#888',
+    color: COLORS.muted,
   },
   formContainer: {
     width: '100%',
   },
   input: {
-    backgroundColor: '#1E2336',
-    color: '#FFF',
+    backgroundColor: COLORS.card,
+    color: COLORS.text,
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#D4AF37',
+    backgroundColor: COLORS.gold,
     borderRadius: 8,
-    padding: 16,
+    paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   buttonText: {
     color: '#000',
