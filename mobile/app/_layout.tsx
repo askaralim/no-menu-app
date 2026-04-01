@@ -6,7 +6,7 @@ import { View, ActivityIndicator } from 'react-native'
 import { COLORS } from '../lib/constants'
 
 function RootLayoutNav() {
-  const { session, isLoading } = useAuth()
+  const { session, tenantId, role, isLoading } = useAuth()
   const segments = useSegments()
   const router = useRouter()
 
@@ -16,11 +16,15 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === '(auth)'
 
     if (session && inAuthGroup) {
-      router.replace('/(tabs)')
+      if (tenantId && role) {
+        router.replace('/(tabs)')
+      }
+      // If session exists but no tenantId, user is mid-registration (on the bar setup step).
+      // Stay in auth group so register.tsx can call register_bar RPC.
     } else if (!session && !inAuthGroup) {
       router.replace('/(auth)/login')
     }
-  }, [session, isLoading])
+  }, [session, tenantId, role, isLoading])
 
   if (isLoading) {
     return (

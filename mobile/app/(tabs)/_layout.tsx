@@ -1,8 +1,12 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../lib/constants'
+import { useAuth } from '../../lib/authProvider'
 
 export default function TabLayout() {
+  const { role } = useAuth()
+  const isOwnerOrAdmin = role === 'owner' || role === 'super_admin'
+
   return (
     <Tabs
       screenOptions={{
@@ -38,6 +42,7 @@ export default function TabLayout() {
         name="menu"
         options={{
           title: '菜单',
+          href: isOwnerOrAdmin ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="book-outline" size={size} color={color} />
           ),

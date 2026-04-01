@@ -13,21 +13,38 @@ function DisplayPageContent() {
   const [categories, setCategories] = useState<CategoryWithDrinks[]>([])
   const [settings, setSettings] = useState<Settings | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
+  const [tenantName, setTenantName] = useState<string>('Bar Console')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const resolveTenant = async () => {
       if (!slug) {
-        // Fallback: use the default tenant for backward compatibility
         setTenantId('00000000-0000-0000-0000-000000000001')
+        const { data } = await supabase
+          .from('tenants')
+          .select('name')
+          .eq('id', '00000000-0000-0000-0000-000000000001')
+          .single()
+        if (data) setTenantName(data.name)
         return
       }
       const { data } = await supabase
         .from('tenants')
-        .select('id')
+        .select('id, name, status')
         .eq('slug', slug)
         .single()
-      if (data) setTenantId(data.id)
+      if (data) {
+        if (data.status === 'suspended') {
+          setTenantName('此酒吧已暂停服务')
+          setLoading(false)
+          return
+        }
+        setTenantId(data.id)
+        setTenantName(data.name)
+      } else {
+        setTenantName('酒吧未找到')
+        setLoading(false)
+      }
     }
     resolveTenant()
   }, [slug])
@@ -119,7 +136,6 @@ function DisplayPageContent() {
     fetchSettings()
   }, [tenantId])
 
-  // 应用主题
   useEffect(() => {
     if (settings) {
       document.body.className = ''
@@ -127,7 +143,6 @@ function DisplayPageContent() {
     }
   }, [settings])
 
-  // 设置自动刷新
   useEffect(() => {
     if (settings?.auto_refresh) {
       const interval = setInterval(() => {
@@ -138,42 +153,23 @@ function DisplayPageContent() {
     }
   }, [settings])
 
-  // 订阅实时更新
   useEffect(() => {
     const channel = supabase
       .channel('menu-changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'categories',
-        },
-        () => {
-          fetchMenu()
-        }
+        { event: '*', schema: 'public', table: 'categories' },
+        () => { fetchMenu() }
       )
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'drinks',
-        },
-        () => {
-          fetchMenu()
-        }
+        { event: '*', schema: 'public', table: 'drinks' },
+        () => { fetchMenu() }
       )
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'settings',
-        },
-        () => {
-          fetchSettings()
-        }
+        { event: '*', schema: 'public', table: 'settings' },
+        () => { fetchSettings() }
       )
       .subscribe()
 
@@ -182,9 +178,7 @@ function DisplayPageContent() {
     }
   }, [])
 
-  // iPad自动滚动脚本
   useEffect(() => {
-    // 检查内容高度是否超过视口高度
     const checkIfScrollingNeeded = (): boolean => {
       const documentHeight = Math.max(
         document.body.scrollHeight,
@@ -197,7 +191,6 @@ function DisplayPageContent() {
       return documentHeight > viewportHeight
     }
 
-    // 如果不需要滚动，直接返回
     if (!checkIfScrollingNeeded()) {
       return
     }
@@ -207,10 +200,10 @@ function DisplayPageContent() {
     let isPaused = false
     let pauseTimeout: ReturnType<typeof setTimeout> | null = null
 
-    const scrollStep = 1 // px
-    const scrollInterval = 80 // ms
-    const bottomPause = 6000 // ms
-    const topPause = 3000 // ms
+    const scrollStep = 1
+    const scrollInterval = 80
+    const bottomPause = 6000
+    const topPause = 3000
 
     const getScrollTop = (): number => {
       return window.scrollY || window.pageYOffset || 0
@@ -235,19 +228,13 @@ function DisplayPageContent() {
     const isAtBottom = (): boolean => {
       const scrollTop = getScrollTop()
       const scrollBottom = getScrollBottom()
-      // 允许1px的误差
       return scrollTop >= scrollBottom - 1
     }
 
     const scroll = (): void => {
-      if (isPaused) {
-        return
-      }
+      if (isPaused) return
 
-      // 重新检查是否需要滚动（内容可能已改变）
-      if (!checkIfScrollingNeeded()) {
-        return
-      }
+      if (!checkIfScrollingNeeded()) return
 
       if (direction === 'down') {
         window.scrollBy(0, scrollStep)
@@ -255,10 +242,7 @@ function DisplayPageContent() {
 
         if (isAtBottom()) {
           isPaused = true
-          // 清除之前的暂停定时器
-          if (pauseTimeout) {
-            clearTimeout(pauseTimeout)
-          }
+          if (pauseTimeout) clearTimeout(pauseTimeout)
           pauseTimeout = setTimeout(() => {
             isPaused = false
             direction = 'up'
@@ -266,16 +250,12 @@ function DisplayPageContent() {
           }, bottomPause)
         }
       } else {
-        // direction === 'up'
         window.scrollBy(0, -scrollStep)
         scrollPosition = getScrollTop()
 
         if (isAtTop()) {
           isPaused = true
-          // 清除之前的暂停定时器
-          if (pauseTimeout) {
-            clearTimeout(pauseTimeout)
-          }
+          if (pauseTimeout) clearTimeout(pauseTimeout)
           pauseTimeout = setTimeout(() => {
             isPaused = false
             direction = 'down'
@@ -285,31 +265,25 @@ function DisplayPageContent() {
       }
     }
 
-    // 初始滚动到顶部
     window.scrollTo(0, 0)
-
-    // 设置滚动间隔
     const intervalId = setInterval(scroll, scrollInterval)
 
-    // 清理函数
     return () => {
       clearInterval(intervalId)
-      if (pauseTimeout) {
-        clearTimeout(pauseTimeout)
-      }
+      if (pauseTimeout) clearTimeout(pauseTimeout)
     }
-  }, [categories, loading]) // 当内容加载完成后重新初始化滚动
+  }, [categories, loading])
 
   if (loading) {
     return (
       <>
         <header className="brand-header">
-          <div className="brand-name">淡水路226</div>
+          <div className="brand-name">{tenantName}</div>
           <div className="brand-sub">COCKTAIL · WHISKY · BEER</div>
         </header>
         <main className="menu-grid">
-          <div style={{ 
-            textAlign: 'center', 
+          <div style={{
+            textAlign: 'center',
             padding: '8rem 1rem',
             color: 'inherit',
             opacity: 0.6,
@@ -325,13 +299,13 @@ function DisplayPageContent() {
   return (
     <>
       <header className="brand-header">
-        <div className="brand-name">淡水路226</div>
+        <div className="brand-name">{tenantName}</div>
         <div className="brand-sub">COCKTAIL · WHISKY · BEER</div>
       </header>
       <main className="menu-grid">
         {categories.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
+          <div style={{
+            textAlign: 'center',
             padding: '8rem 1rem',
             color: 'inherit',
             opacity: 0.5,
@@ -366,4 +340,3 @@ export default function DisplayPage() {
     </Suspense>
   )
 }
-

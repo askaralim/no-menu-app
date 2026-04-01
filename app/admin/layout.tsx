@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import AuthGuard from '@/components/AuthGuard'
 import { supabase } from '@/lib/supabaseClient'
+import type { UserRole } from '@/lib/types'
 
 export default function AdminLayout({
   children,
@@ -13,6 +14,26 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [userRole, setUserRole] = useState<UserRole | null>(null)
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .single()
+      if (data) setUserRole(data.role as UserRole)
+    }
+    fetchRole()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      fetchRole()
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   const navItems = [
     { href: '/admin', label: '概览' },
@@ -23,6 +44,10 @@ export default function AdminLayout({
     { href: '/admin/drinks', label: '酒品管理' },
     { href: '/admin/settings', label: '设置' },
   ]
+
+  if (userRole === 'super_admin') {
+    navItems.push({ href: '/admin/platform', label: '🔧 平台管理' })
+  }
 
   const currentLabel = navItems.find((item) => item.href === pathname)?.label ?? '管理后台'
 

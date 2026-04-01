@@ -73,3 +73,15 @@ export interface OrderWithItems extends Order {
   })[]
 }
 
+export type UserRole = 'owner' | 'staff' | 'super_admin'
+
+export interface TenantInfo {
+  id: string
+  name: string
+  slug: string
+  status: string
+  created_at: string
+  owner_email: string
+  staff_count: number
+}
+

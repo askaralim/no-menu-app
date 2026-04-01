@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+import type { UserRole } from './types'
 
 type AuthContextType = {
   session: Session | null
   user: User | null
   tenantId: string | null
+  role: UserRole | null
   isLoading: boolean
 }
 
@@ -13,6 +15,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   tenantId: null,
+  role: null,
   isLoading: true,
 })
 
@@ -20,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
+  const [role, setRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const initialized = useRef(false)
 
@@ -44,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(s)
         setUser(s?.user ?? null)
         if (s?.user) {
-          await fetchTenantId(s.user.id)
+          await fetchUserRole(s.user.id)
         } else {
           setIsLoading(false)
         }
@@ -62,9 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchTenantId(session.user.id)
+        fetchUserRole(session.user.id)
       } else {
         setTenantId(null)
+        setRole(null)
         setIsLoading(false)
       }
     })
@@ -75,26 +80,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const fetchTenantId = async (userId: string) => {
+  const fetchUserRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('user_roles')
-        .select('tenant_id')
+        .select('tenant_id, role')
         .eq('user_id', userId)
         .single()
 
       if (!error && data) {
         setTenantId(data.tenant_id)
+        setRole(data.role as UserRole)
+      } else {
+        setTenantId(null)
+        setRole(null)
       }
     } catch (e) {
-      console.error('fetchTenantId error:', e)
+      console.error('fetchUserRole error:', e)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, tenantId, isLoading }}>
+    <AuthContext.Provider value={{ session, user, tenantId, role, isLoading }}>
       {children}
     </AuthContext.Provider>
   )

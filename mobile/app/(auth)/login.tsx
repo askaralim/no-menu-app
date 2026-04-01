@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { Alert, StyleSheet, View, TextInput, TouchableOpacity, Text, KeyboardAvoidingView, Platform } from 'react-native'
+import { useRouter } from 'expo-router'
 import { supabase } from '../../lib/supabase'
 import { COLORS } from '../../lib/constants'
 
 export default function LoginScreen() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -50,9 +52,19 @@ export default function LoginScreen() {
           disabled={loading}
           onPress={signInWithEmail}
         >
-          <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Sign In'}</Text>
+          <Text style={styles.buttonText}>{loading ? '登录中...' : '登录'}</Text>
         </TouchableOpacity>
       </View>
+
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>或</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <TouchableOpacity style={styles.registerBtn} onPress={() => router.push('/(auth)/register')}>
+        <Text style={styles.registerBtnText}>注册新酒吧</Text>
+      </TouchableOpacity>
     </KeyboardAvoidingView>
   )
 }
@@ -103,5 +115,32 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  dividerText: {
+    color: COLORS.muted,
+    marginHorizontal: 16,
+    fontSize: 14,
+  },
+  registerBtn: {
+    borderWidth: 1,
+    borderColor: COLORS.gold,
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  registerBtnText: {
+    color: COLORS.gold,
+    fontSize: 16,
+    fontWeight: '600',
   },
 })
