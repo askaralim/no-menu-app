@@ -346,6 +346,12 @@ body::after {
 .admin-wrapper {
   min-height: 100vh;
   background: #fafafa;
+  /* Override body’s display-page light text (#F4F4F5) so tables/cards on white stay readable */
+  color: #111827;
+}
+
+.admin-wrapper main {
+  color: #111827;
 }
 
 .admin-nav {

@@ -34,10 +34,10 @@ npm install
 ### 2. 配置 Supabase
 
 1. 在 [Supabase](https://supabase.com) 创建新项目
-2. 在 Supabase SQL Editor 中执行 `supabase/schema.sql`
+2. 在 Supabase SQL Editor 中执行 `supabase/install_all_in_one.sql`（**仅新空库**；已部署的生产库不要整文件重跑）
 3. 在 Supabase Dashboard 中启用 Realtime：
    - 进入 Database > Replication
-   - 为 `categories`, `drinks`, `settings` 表启用 Realtime
+   - 按需为 `categories`, `drinks`, `settings`, `orders` 等表启用 Realtime
 
 ### 3. 配置环境变量
 
@@ -88,7 +88,9 @@ bar-menu-system/
 │   └── types.ts                # TypeScript 类型定义
 │
 ├── supabase/
-│   └── schema.sql              # 数据库表结构
+│   ├── install_all_in_one.sql  # 新库一键安装（多租户 + RLS + RPC）
+│   ├── seed.sql                # 可选示例数据
+│   └── seed_platform_super_admin.sql  # 可选平台超管（需先创建 Auth 用户）
 │
 ├── .env.local.example          # 环境变量示例
 ├── package.json

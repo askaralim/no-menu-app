@@ -179,7 +179,7 @@ export default function OrdersScreen() {
   const shareReceipt = async (order: OrderWithItems) => {
     const lines: string[] = [
       '══════════════════════════',
-      '         Bar Console',
+      '         No Menu',
       '══════════════════════════',
       '',
       `客户: ${order.customer_name}`,

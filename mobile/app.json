@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Bar Console",
-    "slug": "bar-console",
+    "name": "No Menu",
+    "slug": "nomenu",
     "scheme": "nomenu",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,9 +13,12 @@
       "backgroundColor": "#060913"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.nomenu.barconsole",
-      "buildNumber": "1"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.taklip.nomenuapp",
+      "buildNumber": "4",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +27,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.nomenu.barconsole"
+      "package": "com.taklip.nomenuapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,6 +35,12 @@
     "plugins": [
       "expo-router",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "25370b31-037e-42a1-b6ce-16bf661e1ccc"
+      }
+    }
   }
 }

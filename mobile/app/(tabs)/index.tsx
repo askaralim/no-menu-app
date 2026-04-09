@@ -11,6 +11,7 @@ import {
   ScrollView,
   Platform,
   KeyboardAvoidingView,
+  RefreshControl,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
@@ -48,16 +49,10 @@ export default function OrderingScreen() {
     }
   }, [])
 
-  const fetchActiveOrders = useCallback(async () => {
+  /** Load orders for a known business day (avoids re-calling RPC right after insert — fixes missing new row until pull-refresh). */
+  const loadOrdersForBusinessDay = useCallback(async (bdId: string) => {
     try {
-      const bdId = await getCurrentBusinessDay()
-      if (!bdId) {
-        Alert.alert('错误', '无法获取营业日')
-        setLoading(false)
-        return
-      }
       setCurrentBusinessDayId(bdId)
-
       const { data, error } = await supabase
         .from('orders')
         .select('*')
@@ -72,7 +67,17 @@ export default function OrderingScreen() {
     } finally {
       setLoading(false)
     }
-  }, [getCurrentBusinessDay])
+  }, [])
+
+  const fetchActiveOrders = useCallback(async () => {
+    const bdId = await getCurrentBusinessDay()
+    if (!bdId) {
+      Alert.alert('错误', '无法获取营业日')
+      setLoading(false)
+      return
+    }
+    await loadOrdersForBusinessDay(bdId)
+  }, [getCurrentBusinessDay, loadOrdersForBusinessDay])
 
   const fetchDrinks = useCallback(async () => {
     try {
@@ -167,6 +172,7 @@ export default function OrderingScreen() {
               .update({ status: 'checked_out', checked_out_at: new Date().toISOString() })
               .eq('id', orderId)
             if (error) throw error
+            await fetchActiveOrders()
           } catch (e) {
             Alert.alert('错误', '结账失败')
           }
@@ -215,6 +221,8 @@ export default function OrderingScreen() {
 
     setSaving(true)
     try {
+      let businessDayToRefresh: string | null = null
+
       if (editingOrderId) {
         await supabase.from('orders').update({ customer_name: customerName.trim() }).eq('id', editingOrderId)
         await supabase.from('order_items').delete().eq('order_id', editingOrderId)
@@ -230,12 +238,14 @@ export default function OrderingScreen() {
         }))
         const { error } = await supabase.from('order_items').insert(orderItems)
         if (error) throw error
+        businessDayToRefresh = currentBusinessDayId
       } else {
         const bdId = await getCurrentBusinessDay()
         if (!bdId) {
           Alert.alert('错误', '无法获取营业日')
           return
         }
+        businessDayToRefresh = bdId
 
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' })
         const { data: newOrder, error: orderError } = await supabase
@@ -269,6 +279,14 @@ export default function OrderingScreen() {
       setCart([])
       setCustomerName('')
       setEditingOrderId(null)
+
+      const bdRefresh =
+        businessDayToRefresh ?? currentBusinessDayId ?? (await getCurrentBusinessDay())
+      if (bdRefresh) {
+        await loadOrdersForBusinessDay(bdRefresh)
+      } else {
+        await fetchActiveOrders()
+      }
     } catch (e) {
       console.error('Save order error:', e)
       Alert.alert('错误', '保存订单失败')
@@ -308,54 +326,64 @@ export default function OrderingScreen() {
           </TouchableOpacity>
         </View>
 
-        {activeOrders.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="receipt-outline" size={48} color={COLORS.muted} />
-            <Text style={styles.emptyText}>暂无活跃订单</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={activeOrders}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 40 }}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            renderItem={({ item }) => {
-              const statusStyle = getStatusStyle(item.status)
-              return (
-                <TouchableOpacity style={styles.orderCard} onPress={() => handleEditOrder(item)}>
-                  <View style={styles.orderCardRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.orderName}>{item.customer_name}</Text>
-                      <Text style={styles.orderTime}>
-                        {new Date(item.created_at).toLocaleTimeString('zh-CN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+        <FlatList
+          data={activeOrders}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={
+            activeOrders.length === 0
+              ? [styles.listContentEmpty, { paddingBottom: 40 }]
+              : { paddingBottom: 40 }
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={COLORS.gold}
+              colors={[COLORS.gold]}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="receipt-outline" size={48} color={COLORS.muted} />
+              <Text style={styles.emptyText}>暂无活跃订单</Text>
+              <Text style={styles.emptyHint}>下拉刷新</Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const statusStyle = getStatusStyle(item.status)
+            return (
+              <TouchableOpacity style={styles.orderCard} onPress={() => handleEditOrder(item)}>
+                <View style={styles.orderCardRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.orderName}>{item.customer_name}</Text>
+                    <Text style={styles.orderTime}>
+                      {new Date(item.created_at).toLocaleTimeString('zh-CN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.orderAmount}>¥{Number(item.total_amount).toFixed(2)}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                      <Text style={[styles.statusText, { color: statusStyle.text }]}>
+                        {STATUS_LABELS[item.status] || item.status}
                       </Text>
                     </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={styles.orderAmount}>¥{Number(item.total_amount).toFixed(2)}</Text>
-                      <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                        <Text style={[styles.statusText, { color: statusStyle.text }]}>
-                          {STATUS_LABELS[item.status] || item.status}
-                        </Text>
-                      </View>
-                    </View>
                   </View>
-                  {item.status === 'active' && (
-                    <TouchableOpacity
-                      style={styles.checkoutBtn}
-                      onPress={() => handleCheckout(item.id)}
-                    >
-                      <Text style={styles.checkoutBtnText}>结账</Text>
-                    </TouchableOpacity>
-                  )}
-                </TouchableOpacity>
-              )
-            }}
-          />
-        )}
+                </View>
+                {item.status === 'active' && (
+                  <TouchableOpacity
+                    style={styles.checkoutBtn}
+                    onPress={() => handleCheckout(item.id)}
+                  >
+                    <Text style={styles.checkoutBtnText}>结账</Text>
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            )
+          }}
+        />
       </View>
     )
   }
@@ -522,7 +550,12 @@ export default function OrderingScreen() {
                       onPress={() => addToCart(drink)}
                     >
                       <Text style={styles.drinkBtnName}>{drink.name}</Text>
-                      <Text style={styles.drinkBtnPrice}>¥{drink.price}</Text>
+                      {drink.price != null && drink.price > 0 && (
+                        <Text style={styles.drinkBtnPrice}>¥{drink.price}/{drink.price_unit}</Text>
+                      )}
+                      {drink.price_bottle != null && drink.price_bottle > 0 && (
+                        <Text style={styles.drinkBtnPrice}>¥{drink.price_bottle}/{drink.price_unit_bottle}</Text>
+                      )}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -582,6 +615,15 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     fontSize: 16,
     marginTop: 12,
+  },
+  emptyHint: {
+    color: COLORS.muted,
+    fontSize: 13,
+    marginTop: 10,
+    opacity: 0.75,
+  },
+  listContentEmpty: {
+    flexGrow: 1,
   },
   orderCard: {
     backgroundColor: COLORS.card,

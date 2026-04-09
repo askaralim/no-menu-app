@@ -1,28 +1,65 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import type { Session } from '@supabase/supabase-js'
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasBarRole, setHasBarRole] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [signingIn, setSigningIn] = useState(false)
+  const mounted = useRef(true)
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+
+  const applySession = async (next: Session | null) => {
+    if (!mounted.current) return
+
+    if (!next) {
+      setSession(null)
+      setHasBarRole(false)
       setLoading(false)
+      return
+    }
+
+    setSession(next)
+    const { data, error: roleError } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', next.user.id)
+      .limit(1)
+
+    if (!mounted.current) return
+
+    if (roleError) {
+      setHasBarRole(false)
+      setLoading(false)
+      return
+    }
+
+    setHasBarRole((data?.length ?? 0) > 0)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    setLoading(true)
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      applySession(s)
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session)
+      (_event, nextSession) => {
+        setLoading(true)
+        applySession(nextSession)
       }
     )
 
@@ -91,6 +128,19 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
               {signingIn ? '登录中...' : '登录'}
             </button>
           </form>
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasBarRole) {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <h1 className="auth-title">管理后台</h1>
+          <p className="auth-subtitle">
+            您的账号尚未绑定酒吧。请使用 No Menu App 完成注册并创建酒吧，或联系管理员将您添加为员工。
+          </p>
         </div>
       </div>
     )

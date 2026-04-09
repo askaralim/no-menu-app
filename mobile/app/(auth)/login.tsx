@@ -24,7 +24,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Bar Console</Text>
+        <Text style={styles.headerTitle}>No Menu</Text>
         <Text style={styles.headerSubtitle}>Staff & Management Login</Text>
       </View>
 

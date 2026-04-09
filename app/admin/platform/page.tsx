@@ -21,14 +21,14 @@ export default function PlatformAdminPage() {
           return
         }
 
-        const { data: roleData } = await supabase
+        const { data: roleRows } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', session.user.id)
-          .single()
 
-        if (!roleData || roleData.role !== 'super_admin') {
-          setRole(roleData?.role as UserRole || null)
+        const isSuper = (roleRows ?? []).some((r) => r.role === 'super_admin')
+        if (!isSuper) {
+          setRole((roleRows?.[0]?.role as UserRole) || null)
           setError('权限不足: 需要超级管理员权限')
           setLoading(false)
           return
@@ -50,6 +50,7 @@ export default function PlatformAdminPage() {
     try {
       const { data, error: rpcError } = await supabase.rpc('admin_list_tenants')
       if (rpcError) throw rpcError
+      setError('')
       setTenants((data || []) as TenantInfo[])
     } catch (e: any) {
       setError(e?.message || '加载租户列表失败')
@@ -90,7 +91,7 @@ export default function PlatformAdminPage() {
     )
   }
 
-  if (error && role !== 'super_admin') {
+  if (error) {
     return (
       <div className="admin-container">
         <div className="admin-header">
@@ -103,6 +104,13 @@ export default function PlatformAdminPage() {
           fontSize: '1.1rem',
         }}>
           {error}
+          {role === 'super_admin' && (
+            <p style={{ color: '#888', marginTop: '1rem', fontSize: '0.95rem', maxWidth: '36rem', marginLeft: 'auto', marginRight: 'auto' }}>
+              若提示 permission denied 或 function 不存在，请在 Supabase SQL Editor 执行{' '}
+              <code style={{ color: '#ccc' }}>supabase/install_all_in_one.sql</code>
+              末尾的 <code style={{ color: '#ccc' }}>GRANT</code> 段（或在新库完整执行该安装脚本）。
+            </p>
+          )}
         </div>
       </div>
     )
@@ -112,7 +120,7 @@ export default function PlatformAdminPage() {
     <div className="admin-container">
       <div className="admin-header">
         <h1>平台管理</h1>
-        <p style={{ color: '#888', marginTop: '0.5rem' }}>
+        <p style={{ color: '#4b5563', marginTop: '0.5rem' }}>
           管理所有注册酒吧 · 共 {tenants.length} 家
         </p>
       </div>
@@ -161,7 +169,8 @@ export default function PlatformAdminPage() {
                   </td>
                   <td style={tdStyle}>
                     <code style={{
-                      background: '#1a1a2e',
+                      background: '#1e293b',
+                      color: '#f1f5f9',
                       padding: '2px 8px',
                       borderRadius: '4px',
                       fontSize: '0.85rem',
@@ -219,7 +228,7 @@ const thStyle: React.CSSProperties = {
   textAlign: 'left',
   padding: '12px 16px',
   fontSize: '0.85rem',
-  color: '#888',
+  color: '#374151',
   fontWeight: 600,
   textTransform: 'uppercase',
   letterSpacing: '0.5px',
@@ -228,4 +237,5 @@ const thStyle: React.CSSProperties = {
 const tdStyle: React.CSSProperties = {
   padding: '14px 16px',
   fontSize: '0.95rem',
+  color: '#111827',
 }

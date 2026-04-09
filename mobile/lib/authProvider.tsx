@@ -19,6 +19,31 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
 })
 
+type RoleRow = { tenant_id: string; role: string; created_at: string }
+
+function deriveTenantAndRole(rows: RoleRow[] | null): { tenantId: string | null; role: UserRole | null } {
+  if (!rows?.length) return { tenantId: null, role: null }
+
+  if (rows.some((r) => r.role === 'super_admin')) {
+    const row = rows.find((r) => r.role === 'super_admin')!
+    return { tenantId: row.tenant_id, role: 'super_admin' }
+  }
+
+  const owners = rows.filter((r) => r.role === 'owner')
+  if (owners.length) {
+    return { tenantId: owners[0].tenant_id, role: 'owner' }
+  }
+
+  const staff = rows
+    .filter((r) => r.role === 'staff')
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+  if (staff.length) {
+    return { tenantId: staff[0].tenant_id, role: 'staff' }
+  }
+
+  return { tenantId: null, role: null }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
@@ -84,13 +109,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('user_roles')
-        .select('tenant_id, role')
+        .select('tenant_id, role, created_at')
         .eq('user_id', userId)
-        .single()
 
-      if (!error && data) {
-        setTenantId(data.tenant_id)
-        setRole(data.role as UserRole)
+      if (!error && data?.length) {
+        const { tenantId: tid, role: r } = deriveTenantAndRole(data as RoleRow[])
+        setTenantId(tid)
+        setRole(r)
       } else {
         setTenantId(null)
         setRole(null)

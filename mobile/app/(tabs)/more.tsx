@@ -40,6 +40,8 @@ interface DailyRevenue {
 export default function MoreScreen() {
   const { tenantId, role } = useAuth()
   const isOwner = role === 'owner' || role === 'super_admin'
+  /** Staff RPCs are owner-only (see install_all_in_one.sql) */
+  const canManageBarStaff = role === 'owner'
   const [activeSection, setActiveSection] = useState<Section>('dashboard')
 
   const [stats, setStats] = useState({ categories: 0, drinks: 0, enabledDrinks: 0, todayOrders: 0, todayRevenue: 0 })
@@ -75,7 +77,10 @@ export default function MoreScreen() {
     { key: 'settings', label: '账户', icon: 'person-outline' },
   ]
 
-  const visibleSections = isOwner ? ownerSections : staffSections
+  const baseSections = isOwner ? ownerSections : staffSections
+  const visibleSections = baseSections.filter(
+    (s) => s.key !== 'staff' || canManageBarStaff
+  )
 
   // --- Dashboard ---
   const fetchDashboard = useCallback(async () => {
@@ -215,9 +220,15 @@ export default function MoreScreen() {
 
   // --- Settings ---
   const fetchSettings = useCallback(async () => {
+    if (!tenantId) return
     setSettingsLoading(true)
     try {
-      const { data, error } = await supabase.from('settings').select('*').limit(1).single()
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .limit(1)
+        .maybeSingle()
       if (!error && data) {
         setSettings(data)
         setSettingsForm({
@@ -231,7 +242,7 @@ export default function MoreScreen() {
     } finally {
       setSettingsLoading(false)
     }
-  }, [])
+  }, [tenantId])
 
   const saveSettings = async () => {
     try {
@@ -493,7 +504,7 @@ export default function MoreScreen() {
       )}
 
       {/* STAFF MANAGEMENT (owner only) */}
-      {activeSection === 'staff' && isOwner && (
+      {activeSection === 'staff' && canManageBarStaff && (
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

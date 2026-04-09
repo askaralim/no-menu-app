@@ -20,12 +20,18 @@ export default function AdminLayout({
     const fetchRole = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
-      const { data } = await supabase
+      const { data: rows } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', session.user.id)
-        .single()
-      if (data) setUserRole(data.role as UserRole)
+      const list = rows ?? []
+      if (list.some((r) => r.role === 'super_admin')) {
+        setUserRole('super_admin')
+      } else if (list[0]) {
+        setUserRole(list[0].role as UserRole)
+      } else {
+        setUserRole(null)
+      }
     }
     fetchRole()
 

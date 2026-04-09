@@ -14,12 +14,12 @@ npm install
 2. 创建新项目
 3. 等待项目初始化完成
 
-### 2.2 执行 SQL 脚本
+### 2.2 执行 SQL 脚本（新空项目）
 
 1. 在 Supabase Dashboard 中，进入 **SQL Editor**
-2. 打开 `supabase/schema.sql` 文件
-3. 复制所有 SQL 代码
-4. 在 SQL Editor 中粘贴并执行
+2. 打开 `supabase/install_all_in_one.sql`
+3. 复制全部内容，粘贴并**一次执行**（仅适用于**未建过表**的新项目；已有数据的库勿重复执行）
+4. 可选：示例数据见 `supabase/seed.sql`；平台超管见 `supabase/seed_platform_super_admin.sql`（需先在 Auth 中建用户）
 
 ### 2.3 启用 Realtime
 

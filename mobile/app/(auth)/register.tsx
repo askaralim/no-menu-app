@@ -97,7 +97,7 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>Bar Console</Text>
+          <Text style={styles.headerTitle}>No Menu</Text>
           <Text style={styles.headerSubtitle}>
             {step === 'account' ? '创建您的账号' : '设置您的酒吧'}
           </Text>
