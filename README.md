@@ -34,7 +34,7 @@ npm install
 ### 2. 配置 Supabase
 
 1. 在 [Supabase](https://supabase.com) 创建新项目
-2. 在 Supabase SQL Editor 中执行 `supabase/install_all_in_one.sql`（**仅新空库**；已部署的生产库不要整文件重跑）
+2. 在 Supabase SQL Editor 中执行 `supabase/install_all_in_one.sql`（**仅新空库**；已部署的生产库不要整文件重跑）。数据库目录说明见 [`supabase/README.md`](supabase/README.md)。
 3. 在 Supabase Dashboard 中启用 Realtime：
    - 进入 Database > Replication
    - 按需为 `categories`, `drinks`, `settings`, `orders` 等表启用 Realtime
@@ -88,6 +88,7 @@ bar-menu-system/
 │   └── types.ts                # TypeScript 类型定义
 │
 ├── supabase/
+│   ├── README.md               # 说明：public 与 install 脚本职责
 │   ├── install_all_in_one.sql  # 新库一键安装（多租户 + RLS + RPC）
 │   ├── seed.sql                # 可选示例数据
 │   └── seed_platform_super_admin.sql  # 可选平台超管（需先创建 Auth 用户）
@@ -110,7 +111,9 @@ bar-menu-system/
 ### drinks（酒品表）
 - `id`: UUID 主键
 - `category_id`: 分类 ID（外键）
+- `brand_name`: 品牌（可空）
 - `name`: 酒品名称
+- `volume_ml`: 标称容量 ml（可空）
 - `price`: 价格
 - `stock`: 库存（ml，`NULL` 表示不追踪）
 - `ml_per_cup`: 每杯扣减 ml（可空）
