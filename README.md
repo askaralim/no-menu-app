@@ -112,6 +112,9 @@ bar-menu-system/
 - `category_id`: 分类 ID（外键）
 - `name`: 酒品名称
 - `price`: 价格
+- `stock`: 库存（ml，`NULL` 表示不追踪）
+- `ml_per_cup`: 每杯扣减 ml（可空）
+- `ml_per_bottle`: 每瓶扣减 ml（可空）
 - `sort_order`: 排序顺序
 - `enabled`: 是否启用（false = 卖完）
 - `created_at`: 创建时间
@@ -168,6 +171,14 @@ npm run build
 - `enabled = false` 表示酒品卖完但不删除数据
 - `sort_order` 用于控制显示顺序（数字越小越靠前）
 - 展示页会自动过滤 `enabled = false` 的分类和酒品
+
+### 库存扣减 v1 手工验证
+
+1. 创建“只按杯销售”酒品：设置 `stock` 和 `ml_per_cup`，下单后确认库存按 `杯数 * ml_per_cup` 扣减。
+2. 创建“只按瓶销售”酒品：设置 `stock` 和 `ml_per_bottle`，下单后确认库存按 `瓶数 * ml_per_bottle` 扣减。
+3. 编辑订单项数量：确认库存按增量差值变化（增加扣减、减少回补）。
+4. 删除订单项或整单重建：确认库存回补。
+5. `stock = NULL` 的酒品：下单不触发库存扣减。
 
 ## 许可证
 

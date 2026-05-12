@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   RefreshControl,
 } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/authProvider'
@@ -106,9 +107,15 @@ export default function OrderingScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await fetchActiveOrders()
+    await Promise.all([fetchActiveOrders(), fetchDrinks()])
     setRefreshing(false)
-  }, [fetchActiveOrders])
+  }, [fetchActiveOrders, fetchDrinks])
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDrinks()
+    }, [fetchDrinks])
+  )
 
   useEffect(() => {
     fetchActiveOrders()
@@ -118,6 +125,12 @@ export default function OrderingScreen() {
       .channel('mobile-ordering')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
         fetchActiveOrders()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        fetchDrinks()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, () => {
+        fetchDrinks()
       })
       .subscribe()
 

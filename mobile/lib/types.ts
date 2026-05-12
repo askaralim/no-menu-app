@@ -9,7 +9,9 @@ export interface Category {
 export interface Drink {
   id: string
   category_id: string
+  brand_name: string | null
   name: string
+  volume_ml: number | null
   price: number
   price_unit: string
   price_bottle: number | null
@@ -17,6 +19,8 @@ export interface Drink {
   sort_order: number
   enabled: boolean
   stock: number | null
+  ml_per_cup: number | null
+  ml_per_bottle: number | null
   created_at: string
 }
 

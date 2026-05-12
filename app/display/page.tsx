@@ -73,7 +73,9 @@ function DisplayPageContent() {
             .sort((a, b) => a.sort_order - b.sort_order)
             .map((drink) => ({
               id: drink.id,
+              brand_name: drink.brand_name ?? null,
               name: drink.name,
+              volume_ml: drink.volume_ml ?? null,
               price: drink.price,
               price_unit: drink.price_unit,
               price_bottle: drink.price_bottle,

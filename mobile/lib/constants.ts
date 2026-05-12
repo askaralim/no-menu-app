@@ -26,4 +26,5 @@ export const STATUS_LABELS: Record<string, string> = {
   finished: '已完成',
 }
 
-export const LOW_STOCK_THRESHOLD = 5
+// In v1 inventory we track stock in ml.
+export const LOW_STOCK_THRESHOLD = 2000

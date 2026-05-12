@@ -30,6 +30,8 @@ export default function MenuScreen() {
   const [drinks, setDrinks] = useState<Drink[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [togglingCategoryId, setTogglingCategoryId] = useState<string | null>(null)
+  const [togglingDrinkId, setTogglingDrinkId] = useState<string | null>(null)
   const [drinkSearchQuery, setDrinkSearchQuery] = useState('')
 
   // Category form
@@ -43,13 +45,17 @@ export default function MenuScreen() {
   const [editingDrinkId, setEditingDrinkId] = useState<string | null>(null)
   const [drinkForm, setDrinkForm] = useState({
     category_id: '',
+    brand_name: '',
     name: '',
+    volume_ml: '',
     price: '',
     price_unit: '杯',
     price_bottle: '',
     price_unit_bottle: '瓶',
     sort_order: '0',
     stock: '',
+    ml_per_cup: '',
+    ml_per_bottle: '',
   })
 
   const fetchCategories = useCallback(async () => {
@@ -151,8 +157,20 @@ export default function MenuScreen() {
   }
 
   const toggleCategoryEnabled = async (cat: Category) => {
-    const { error } = await supabase.from('categories').update({ enabled: !cat.enabled }).eq('id', cat.id)
-    if (error) Alert.alert('错误', '操作失败')
+    if (togglingCategoryId === cat.id) return
+    setTogglingCategoryId(cat.id)
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({ enabled: !cat.enabled })
+        .eq('id', cat.id)
+      if (error) throw error
+      await fetchCategories()
+    } catch (e) {
+      Alert.alert('错误', '操作失败')
+    } finally {
+      setTogglingCategoryId(null)
+    }
   }
 
   // --- Drink CRUD ---
@@ -161,25 +179,33 @@ export default function MenuScreen() {
       setEditingDrinkId(drink.id)
       setDrinkForm({
         category_id: drink.category_id,
+        brand_name: drink.brand_name || '',
         name: drink.name,
+        volume_ml: drink.volume_ml != null ? String(drink.volume_ml) : '',
         price: String(drink.price),
         price_unit: drink.price_unit || '杯',
         price_bottle: drink.price_bottle != null ? String(drink.price_bottle) : '',
         price_unit_bottle: drink.price_unit_bottle || '瓶',
         sort_order: String(drink.sort_order),
         stock: drink.stock != null ? String(drink.stock) : '',
+        ml_per_cup: drink.ml_per_cup != null ? String(drink.ml_per_cup) : '',
+        ml_per_bottle: drink.ml_per_bottle != null ? String(drink.ml_per_bottle) : '',
       })
     } else {
       setEditingDrinkId(null)
       setDrinkForm({
         category_id: categories[0]?.id || '',
+        brand_name: '',
         name: '',
+        volume_ml: '',
         price: '',
         price_unit: '杯',
         price_bottle: '',
         price_unit_bottle: '瓶',
         sort_order: '0',
         stock: '',
+        ml_per_cup: '',
+        ml_per_bottle: '',
       })
     }
     setShowDrinkForm(true)
@@ -189,16 +215,41 @@ export default function MenuScreen() {
     if (!drinkForm.name.trim() || !drinkForm.price || !drinkForm.category_id) {
       return Alert.alert('提示', '请填写必要字段')
     }
+
+    const parsedStock = drinkForm.stock.trim() === '' ? null : parseInt(drinkForm.stock, 10)
+    const parsedVolumeMl = drinkForm.volume_ml.trim() === '' ? null : parseInt(drinkForm.volume_ml, 10)
+    const parsedMlPerCup = drinkForm.ml_per_cup.trim() === '' ? null : parseInt(drinkForm.ml_per_cup, 10)
+    if (parsedVolumeMl != null && (!Number.isFinite(parsedVolumeMl) || parsedVolumeMl <= 0)) {
+      return Alert.alert('提示', '容量ml必须是大于0的整数')
+    }
+
+    const parsedMlPerBottle =
+      drinkForm.ml_per_bottle.trim() === '' ? null : parseInt(drinkForm.ml_per_bottle, 10)
+    if (parsedStock != null && (!Number.isFinite(parsedStock) || parsedStock < 0)) {
+      return Alert.alert('提示', '库存(ml)必须是大于等于0的整数')
+    }
+
+    if (parsedMlPerCup != null && (!Number.isFinite(parsedMlPerCup) || parsedMlPerCup <= 0)) {
+      return Alert.alert('提示', '杯装ml必须是大于0的整数')
+    }
+    if (parsedMlPerBottle != null && (!Number.isFinite(parsedMlPerBottle) || parsedMlPerBottle <= 0)) {
+      return Alert.alert('提示', '瓶装ml必须是大于0的整数')
+    }
+
     try {
       const payload = {
         category_id: drinkForm.category_id,
+        brand_name: drinkForm.brand_name.trim() || null,
         name: drinkForm.name.trim(),
+        volume_ml: parsedVolumeMl,
         price: parseFloat(drinkForm.price) || 0,
         price_unit: drinkForm.price_unit,
         price_bottle: drinkForm.price_bottle ? parseFloat(drinkForm.price_bottle) : null,
         price_unit_bottle: drinkForm.price_unit_bottle,
         sort_order: parseInt(drinkForm.sort_order) || 0,
-        stock: drinkForm.stock ? parseInt(drinkForm.stock) : null,
+        stock: parsedStock,
+        ml_per_cup: parsedMlPerCup,
+        ml_per_bottle: parsedMlPerBottle,
       }
       if (editingDrinkId) {
         const { error } = await supabase.from('drinks').update(payload).eq('id', editingDrinkId)
@@ -207,6 +258,7 @@ export default function MenuScreen() {
         const { error } = await supabase.from('drinks').insert([{ ...payload, tenant_id: tenantId }])
         if (error) throw error
       }
+      await fetchDrinks()
       setShowDrinkForm(false)
     } catch (e) {
       Alert.alert('错误', '保存失败')
@@ -228,23 +280,50 @@ export default function MenuScreen() {
   }
 
   const toggleDrinkEnabled = async (drink: Drink) => {
-    const { error } = await supabase.from('drinks').update({ enabled: !drink.enabled }).eq('id', drink.id)
-    if (error) Alert.alert('错误', '操作失败')
+    if (togglingDrinkId === drink.id) return
+    setTogglingDrinkId(drink.id)
+    try {
+      const { error } = await supabase
+        .from('drinks')
+        .update({ enabled: !drink.enabled })
+        .eq('id', drink.id)
+      if (error) throw error
+      await fetchDrinks()
+    } catch (e) {
+      Alert.alert('错误', '操作失败')
+    } finally {
+      setTogglingDrinkId(null)
+    }
   }
 
   const getCategoryName = (catId: string) => categories.find((c) => c.id === catId)?.name || '未知分类'
+
+  const formatDrinkDisplayName = (drink: Pick<Drink, 'brand_name' | 'name' | 'volume_ml'>) => {
+    const brand = drink.brand_name?.trim()
+    const volume = drink.volume_ml != null ? `${drink.volume_ml}ml` : ''
+    return [brand, drink.name, volume].filter(Boolean).join(' ')
+  }
 
   const drinkSearchNormalized = drinkSearchQuery.trim().toLowerCase()
   const drinksForList =
     drinkSearchNormalized === ''
       ? drinks
-      : drinks.filter((d) => d.name.toLowerCase().includes(drinkSearchNormalized))
+      : drinks.filter((d) => {
+          const searchable = `${d.brand_name || ''} ${d.name} ${d.volume_ml ?? ''}`.toLowerCase()
+          return searchable.includes(drinkSearchNormalized)
+        })
 
   // Group drinks by category
   const drinksByCategory = categories
     .map((cat) => ({
       category: cat,
-      data: drinksForList.filter((d) => d.category_id === cat.id),
+      data: drinksForList
+        .filter((d) => d.category_id === cat.id)
+        .sort((a, b) => {
+          if (a.enabled !== b.enabled) return a.enabled ? -1 : 1
+          if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
+          return a.name.localeCompare(b.name)
+        }),
     }))
     .filter((g) => g.data.length > 0)
 
@@ -301,12 +380,18 @@ export default function MenuScreen() {
                   <Text style={styles.listItemTitle}>{item.name}</Text>
                   <Text style={styles.listItemSub}>排序: {item.sort_order}</Text>
                 </View>
-                <Switch
-                  value={item.enabled}
-                  onValueChange={() => toggleCategoryEnabled(item)}
-                  trackColor={{ false: '#555', true: COLORS.gold }}
-                  thumbColor="#fff"
-                />
+                {togglingCategoryId === item.id ? (
+                  <View style={styles.switchLoadingWrap}>
+                    <ActivityIndicator size="small" color={COLORS.gold} />
+                  </View>
+                ) : (
+                  <Switch
+                    value={item.enabled}
+                    onValueChange={() => toggleCategoryEnabled(item)}
+                    trackColor={{ false: '#555', true: COLORS.gold }}
+                    thumbColor="#fff"
+                  />
+                )}
                 <TouchableOpacity onPress={() => openCategoryForm(item)} style={styles.iconBtn}>
                   <Ionicons name="pencil" size={18} color={COLORS.gold} />
                 </TouchableOpacity>
@@ -368,7 +453,7 @@ export default function MenuScreen() {
               <View style={styles.listItem}>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.listItemTitle}>{item.name}</Text>
+                    <Text style={styles.listItemTitle}>{formatDrinkDisplayName(item)}</Text>
                     {item.stock != null && item.stock <= 0 && (
                       <View style={[styles.stockBadge, { backgroundColor: COLORS.danger }]}>
                         <Text style={styles.stockBadgeText}>缺货</Text>
@@ -376,22 +461,31 @@ export default function MenuScreen() {
                     )}
                     {item.stock != null && item.stock > 0 && item.stock <= LOW_STOCK_THRESHOLD && (
                       <View style={[styles.stockBadge, { backgroundColor: '#f59e0b' }]}>
-                        <Text style={styles.stockBadgeText}>库存{item.stock}</Text>
+                        <Text style={styles.stockBadgeText}>库存{item.stock}ml</Text>
                       </View>
                     )}
                   </View>
                   <Text style={styles.listItemSub}>
                     ¥{item.price}/{item.price_unit || '杯'}
                     {item.price_bottle != null && ` · ¥${item.price_bottle}/${item.price_unit_bottle || '瓶'}`}
-                    {item.stock != null && ` · 库存: ${item.stock}`}
+                    {item.stock != null && ` · 库存: ${item.stock}ml`}
+                    {item.ml_per_cup != null && ` · ${item.price_unit || '杯'}=${item.ml_per_cup}ml`}
+                    {item.ml_per_bottle != null &&
+                      ` · ${item.price_unit_bottle || '瓶'}=${item.ml_per_bottle}ml`}
                   </Text>
                 </View>
-                <Switch
-                  value={item.enabled}
-                  onValueChange={() => toggleDrinkEnabled(item)}
-                  trackColor={{ false: '#555', true: COLORS.gold }}
-                  thumbColor="#fff"
-                />
+                {togglingDrinkId === item.id ? (
+                  <View style={styles.switchLoadingWrap}>
+                    <ActivityIndicator size="small" color={COLORS.gold} />
+                  </View>
+                ) : (
+                  <Switch
+                    value={item.enabled}
+                    onValueChange={() => toggleDrinkEnabled(item)}
+                    trackColor={{ false: '#555', true: COLORS.gold }}
+                    thumbColor="#fff"
+                  />
+                )}
                 <TouchableOpacity onPress={() => openDrinkForm(item)} style={styles.iconBtn}>
                   <Ionicons name="pencil" size={18} color={COLORS.gold} />
                 </TouchableOpacity>
@@ -456,6 +550,21 @@ export default function MenuScreen() {
 
               <View style={styles.formRow}>
                 <View style={{ flex: 1 }}>
+                  <Text style={styles.formLabel}>品牌(选填)</Text>
+                  <TextInput style={styles.formInput} value={drinkForm.brand_name}
+                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, brand_name: t }))}
+                    placeholder="如 朝日 / 百威" placeholderTextColor={COLORS.muted} />
+                </View>
+                <View style={{ width: 120, marginLeft: 8 }}>
+                  <Text style={styles.formLabel}>容量ml(选填)</Text>
+                  <TextInput style={styles.formInput} value={drinkForm.volume_ml}
+                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, volume_ml: t }))}
+                    keyboardType="number-pad" placeholder="如 500" placeholderTextColor={COLORS.muted} />
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.formLabel}>价格</Text>
                   <TextInput style={styles.formInput} value={drinkForm.price}
                     onChangeText={(t) => setDrinkForm((f) => ({ ...f, price: t }))}
@@ -492,10 +601,25 @@ export default function MenuScreen() {
                     keyboardType="number-pad" placeholder="0" placeholderTextColor={COLORS.muted} />
                 </View>
                 <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={styles.formLabel}>库存 (选填)</Text>
+                  <Text style={styles.formLabel}>库存ml (选填)</Text>
                   <TextInput style={styles.formInput} value={drinkForm.stock}
                     onChangeText={(t) => setDrinkForm((f) => ({ ...f, stock: t }))}
                     keyboardType="number-pad" placeholder="留空=不追踪" placeholderTextColor={COLORS.muted} />
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.formLabel}>每杯ml (选填)</Text>
+                  <TextInput style={styles.formInput} value={drinkForm.ml_per_cup}
+                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, ml_per_cup: t }))}
+                    keyboardType="number-pad" placeholder="如 470" placeholderTextColor={COLORS.muted} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  <Text style={styles.formLabel}>每瓶ml (选填)</Text>
+                  <TextInput style={styles.formInput} value={drinkForm.ml_per_bottle}
+                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, ml_per_bottle: t }))}
+                    keyboardType="number-pad" placeholder="如 500" placeholderTextColor={COLORS.muted} />
                 </View>
               </View>
 
@@ -605,5 +729,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     fontWeight: '700',
+  },
+  switchLoadingWrap: {
+    width: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

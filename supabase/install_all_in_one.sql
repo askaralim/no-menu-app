@@ -36,13 +36,20 @@ create index idx_categories_sort on categories(sort_order);
 create table public.drinks (
   id uuid primary key default uuid_generate_v4(),
   category_id uuid references categories(id) on delete cascade,
+  brand_name text,
   name text not null,
+  volume_ml integer,
   price numeric(10,2) not null,
   price_unit text default '杯',
   price_bottle numeric(10,2),
   price_unit_bottle text default '瓶',
   sort_order int default 0,
   enabled boolean default true,
+  -- NULL means this drink does not track inventory.
+  stock integer default null,
+  -- Owner-defined conversion factors for inventory deduction.
+  ml_per_cup integer,
+  ml_per_bottle integer,
   created_at timestamp with time zone default now()
 );
 
@@ -410,9 +417,24 @@ BEGIN
   LIMIT 1;
 
   IF business_day_id IS NULL THEN
-    INSERT INTO business_days (business_date, opened_at, tenant_id)
-    VALUES (today_date, now(), current_tenant_id)
-    RETURNING id INTO business_day_id;
+    -- If today's business day was closed, reopen it instead of inserting
+    -- another row that would violate UNIQUE (business_date, tenant_id).
+    SELECT id INTO business_day_id
+    FROM business_days
+    WHERE business_date = today_date
+      AND tenant_id = current_tenant_id
+    ORDER BY opened_at DESC
+    LIMIT 1;
+
+    IF business_day_id IS NULL THEN
+      INSERT INTO business_days (business_date, opened_at, tenant_id)
+      VALUES (today_date, now(), current_tenant_id)
+      RETURNING id INTO business_day_id;
+    ELSE
+      UPDATE business_days
+      SET closed_at = NULL
+      WHERE id = business_day_id;
+    END IF;
   END IF;
 
   RETURN business_day_id;
@@ -468,8 +490,120 @@ $$ LANGUAGE plpgsql;
 -- --- 06 add_stock_column.sql ---
 -- Add stock tracking column to drinks table
 -- NULL means stock is not tracked for this drink
--- A numeric value tracks remaining quantity
+-- A numeric value tracks remaining quantity in ml
 ALTER TABLE public.drinks ADD COLUMN IF NOT EXISTS stock integer DEFAULT NULL;
+ALTER TABLE public.drinks ADD COLUMN IF NOT EXISTS ml_per_cup integer;
+ALTER TABLE public.drinks ADD COLUMN IF NOT EXISTS ml_per_bottle integer;
+ALTER TABLE public.drinks ADD COLUMN IF NOT EXISTS brand_name text;
+ALTER TABLE public.drinks ADD COLUMN IF NOT EXISTS volume_ml integer;
+
+CREATE INDEX IF NOT EXISTS idx_drinks_tenant_brand ON public.drinks(tenant_id, brand_name);
+CREATE INDEX IF NOT EXISTS idx_drinks_tenant_volume ON public.drinks(tenant_id, volume_ml);
+
+ALTER TABLE public.drinks DROP CONSTRAINT IF EXISTS drinks_stock_non_negative;
+ALTER TABLE public.drinks ADD CONSTRAINT drinks_stock_non_negative
+  CHECK (stock IS NULL OR stock >= 0);
+
+ALTER TABLE public.drinks DROP CONSTRAINT IF EXISTS drinks_volume_ml_positive;
+ALTER TABLE public.drinks ADD CONSTRAINT drinks_volume_ml_positive
+  CHECK (volume_ml IS NULL OR volume_ml > 0);
+
+ALTER TABLE public.drinks DROP CONSTRAINT IF EXISTS drinks_ml_per_cup_positive;
+ALTER TABLE public.drinks ADD CONSTRAINT drinks_ml_per_cup_positive
+  CHECK (ml_per_cup IS NULL OR ml_per_cup > 0);
+
+ALTER TABLE public.drinks DROP CONSTRAINT IF EXISTS drinks_ml_per_bottle_positive;
+ALTER TABLE public.drinks ADD CONSTRAINT drinks_ml_per_bottle_positive
+  CHECK (ml_per_bottle IS NULL OR ml_per_bottle > 0);
+
+CREATE OR REPLACE FUNCTION public.apply_drink_stock_delta(
+  p_drink_id uuid,
+  p_delta_cup integer,
+  p_delta_bottle integer
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  current_stock integer;
+  cup_ml integer;
+  bottle_ml integer;
+  delta_ml integer;
+  next_stock integer;
+BEGIN
+  SELECT d.stock, d.ml_per_cup, d.ml_per_bottle
+  INTO current_stock, cup_ml, bottle_ml
+  FROM public.drinks d
+  WHERE d.id = p_drink_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Drink not found: %', p_drink_id;
+  END IF;
+
+  -- NULL stock means this drink inventory is not tracked.
+  IF current_stock IS NULL THEN
+    RETURN;
+  END IF;
+
+  IF p_delta_cup <> 0 AND cup_ml IS NULL THEN
+    RAISE EXCEPTION 'Drink % is stock-tracked but ml_per_cup is not configured', p_drink_id;
+  END IF;
+
+  IF p_delta_bottle <> 0 AND bottle_ml IS NULL THEN
+    RAISE EXCEPTION 'Drink % is stock-tracked but ml_per_bottle is not configured', p_drink_id;
+  END IF;
+
+  delta_ml := (p_delta_cup * COALESCE(cup_ml, 0)) + (p_delta_bottle * COALESCE(bottle_ml, 0));
+  next_stock := current_stock - delta_ml;
+
+  IF next_stock < 0 THEN
+    RAISE EXCEPTION 'Insufficient stock for drink %, need % ml, have % ml',
+      p_drink_id, delta_ml, current_stock;
+  END IF;
+
+  UPDATE public.drinks
+  SET stock = next_stock
+  WHERE id = p_drink_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.handle_order_item_stock()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    PERFORM public.apply_drink_stock_delta(NEW.drink_id, NEW.quantity_cup, NEW.quantity_bottle);
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    PERFORM public.apply_drink_stock_delta(OLD.drink_id, -OLD.quantity_cup, -OLD.quantity_bottle);
+    RETURN OLD;
+  END IF;
+
+  IF NEW.drink_id = OLD.drink_id THEN
+    PERFORM public.apply_drink_stock_delta(
+      NEW.drink_id,
+      NEW.quantity_cup - OLD.quantity_cup,
+      NEW.quantity_bottle - OLD.quantity_bottle
+    );
+  ELSE
+    -- Drink changed: restore old stock first, then deduct from the new drink.
+    PERFORM public.apply_drink_stock_delta(OLD.drink_id, -OLD.quantity_cup, -OLD.quantity_bottle);
+    PERFORM public.apply_drink_stock_delta(NEW.drink_id, NEW.quantity_cup, NEW.quantity_bottle);
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS order_item_stock_on_change ON public.order_items;
+CREATE TRIGGER order_item_stock_on_change
+  BEFORE INSERT OR UPDATE OR DELETE ON public.order_items
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_order_item_stock();
 
 -- --- 07 saas_migration.sql ---
 -- ========================================================
@@ -888,7 +1022,9 @@ BEGIN
             jsonb_agg(
               jsonb_build_object(
                 'id', d.id,
+                'brand_name', d.brand_name,
                 'name', d.name,
+                'volume_ml', d.volume_ml,
                 'price', d.price,
                 'price_unit', d.price_unit,
                 'price_bottle', d.price_bottle,
@@ -1161,9 +1297,24 @@ BEGIN
   LIMIT 1;
 
   IF business_day_id IS NULL THEN
-    INSERT INTO public.business_days (business_date, opened_at, tenant_id)
-    VALUES (today_date, now(), current_tenant_id)
-    RETURNING id INTO business_day_id;
+    -- If today's business day was closed, reopen it instead of inserting
+    -- another row that would violate UNIQUE (business_date, tenant_id).
+    SELECT id INTO business_day_id
+    FROM public.business_days
+    WHERE business_date = today_date
+      AND tenant_id = current_tenant_id
+    ORDER BY opened_at DESC
+    LIMIT 1;
+
+    IF business_day_id IS NULL THEN
+      INSERT INTO public.business_days (business_date, opened_at, tenant_id)
+      VALUES (today_date, now(), current_tenant_id)
+      RETURNING id INTO business_day_id;
+    ELSE
+      UPDATE public.business_days
+      SET closed_at = NULL
+      WHERE id = business_day_id;
+    END IF;
   END IF;
 
   RETURN business_day_id;
