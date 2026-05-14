@@ -99,6 +99,12 @@ bar-menu-system/
 └── README.md
 ```
 
+
+### 移动端（Expo）
+
+- **`mobile/`** — POS / 店员端 No Menu。
+- **`taplist-mobile/`** — 消费者 Tap List 应用；配置 `EXPO_PUBLIC_SUPABASE_*` 后 `cd taplist-mobile && npm start`。数据库与 RPC 见 [`docs/taplist_mvp_schema_sql.md`](docs/taplist_mvp_schema_sql.md)。
+
 ## 数据库表结构
 
 ### categories（分类表）
