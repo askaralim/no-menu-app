@@ -59,32 +59,49 @@ export default function MenuScreen() {
   })
 
   const fetchCategories = useCallback(async () => {
+    if (!tenantId) {
+      setCategories([])
+      return
+    }
     try {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('sort_order', { ascending: true })
       if (error) throw error
       setCategories(data || [])
     } catch (e) {
       Alert.alert('错误', '加载分类失败，请稍后重试')
     }
-  }, [])
+  }, [tenantId])
 
   const fetchDrinks = useCallback(async () => {
+    if (!tenantId) {
+      setDrinks([])
+      return
+    }
     try {
       const { data, error } = await supabase
         .from('drinks')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('sort_order', { ascending: true })
       if (error) throw error
       setDrinks(data || [])
     } catch (e) {
       Alert.alert('错误', '加载酒品失败，请稍后重试')
     }
-  }, [])
+  }, [tenantId])
 
   useEffect(() => {
+    if (!tenantId) {
+      setCategories([])
+      setDrinks([])
+      setLoading(false)
+      return
+    }
+    setLoading(true)
     Promise.all([fetchCategories(), fetchDrinks()]).finally(() => setLoading(false))
 
     const ch1 = supabase
@@ -100,7 +117,7 @@ export default function MenuScreen() {
       supabase.removeChannel(ch1)
       supabase.removeChannel(ch2)
     }
-  }, [fetchCategories, fetchDrinks])
+  }, [tenantId, fetchCategories, fetchDrinks])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -109,7 +126,7 @@ export default function MenuScreen() {
     } finally {
       setRefreshing(false)
     }
-  }, [fetchCategories, fetchDrinks])
+  }, [tenantId, fetchCategories, fetchDrinks])
 
   // --- Category CRUD ---
   const openCategoryForm = (cat?: Category) => {

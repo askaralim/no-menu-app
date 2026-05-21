@@ -1076,7 +1076,17 @@ DROP POLICY IF EXISTS "Categories are viewable by everyone" ON public.categories
 DROP POLICY IF EXISTS "Drinks are viewable by everyone" ON public.drinks;
 DROP POLICY IF EXISTS "Settings are viewable by everyone" ON public.settings;
 
--- Staff policies using get_auth_tenant_id() must already exist from prior migrations.
+DROP POLICY IF EXISTS "Categories viewable by tenant staff" ON public.categories;
+CREATE POLICY "Categories viewable by tenant staff" ON public.categories
+  FOR SELECT TO authenticated
+  USING (tenant_id = public.get_auth_tenant_id());
+
+DROP POLICY IF EXISTS "Drinks viewable by tenant staff" ON public.drinks;
+CREATE POLICY "Drinks viewable by tenant staff" ON public.drinks
+  FOR SELECT TO authenticated
+  USING (tenant_id = public.get_auth_tenant_id());
+
+-- Staff write policies using get_auth_tenant_id() must already exist from prior migrations.
 
 -- --------------------------------------------------------
 -- 5. SaaS RPCs: search_path + owner-only staff + list_staff uses get_auth_tenant_id

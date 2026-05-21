@@ -84,11 +84,16 @@ export default function MoreScreen() {
 
   // --- Dashboard ---
   const fetchDashboard = useCallback(async () => {
+    if (!tenantId) {
+      setStats({ categories: 0, drinks: 0, enabledDrinks: 0, todayOrders: 0, todayRevenue: 0 })
+      setDashLoading(false)
+      return
+    }
     setDashLoading(true)
     try {
       const [catRes, drinkRes] = await Promise.all([
-        supabase.from('categories').select('id'),
-        supabase.from('drinks').select('id, enabled'),
+        supabase.from('categories').select('id').eq('tenant_id', tenantId),
+        supabase.from('drinks').select('id, enabled').eq('tenant_id', tenantId),
       ])
 
       const catCount = catRes.data?.length || 0
@@ -117,7 +122,7 @@ export default function MoreScreen() {
     } finally {
       setDashLoading(false)
     }
-  }, [])
+  }, [tenantId])
 
   // --- Customers ---
   const fetchCustomers = useCallback(async (fromRefresh = false) => {

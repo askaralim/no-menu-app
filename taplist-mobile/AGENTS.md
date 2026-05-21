@@ -2,7 +2,7 @@
 
 ## Project
 
-This is the Expo / React Native mobile app for No Menu Tap List.
+This is the Expo / React Native consumer app **No Menu** (tap list; display name in `app.json`).
 
 The product is a minimal real-time craft beer bar list for Shanghai craft beer bars.
 

@@ -81,10 +81,15 @@ export default function OrderingScreen() {
   }, [getCurrentBusinessDay, loadOrdersForBusinessDay])
 
   const fetchDrinks = useCallback(async () => {
+    if (!tenantId) {
+      setDrinks([])
+      return
+    }
     try {
       const { data, error } = await supabase
         .from('categories')
         .select('*, drinks(*)')
+        .eq('tenant_id', tenantId)
         .eq('enabled', true)
         .order('sort_order', { ascending: true })
 
@@ -94,7 +99,7 @@ export default function OrderingScreen() {
         .map((cat: any) => ({
           ...cat,
           drinks: (cat.drinks || [])
-            .filter((d: Drink) => d.enabled)
+            .filter((d: Drink) => d.enabled && d.tenant_id === tenantId)
             .sort((a: Drink, b: Drink) => a.sort_order - b.sort_order),
         }))
         .filter((cat: CategoryWithDrinks) => cat.drinks.length > 0)
@@ -103,7 +108,7 @@ export default function OrderingScreen() {
     } catch (e) {
       Alert.alert('错误', '加载酒品失败')
     }
-  }, [])
+  }, [tenantId])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -137,7 +142,7 @@ export default function OrderingScreen() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [fetchActiveOrders, fetchDrinks])
+  }, [tenantId, fetchActiveOrders, fetchDrinks])
 
   const handleNewOrder = () => {
     setEditingOrderId(null)

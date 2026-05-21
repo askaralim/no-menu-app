@@ -1,5 +1,6 @@
 export interface Category {
   id: string
+  tenant_id?: string
   name: string
   sort_order: number
   enabled: boolean
@@ -8,6 +9,7 @@ export interface Category {
 
 export interface Drink {
   id: string
+  tenant_id?: string
   category_id: string
   brand_name: string | null
   name: string

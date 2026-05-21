@@ -60,14 +60,30 @@ CREATE POLICY "Order items deletable by tenant staff" ON public.order_items
   FOR DELETE USING (tenant_id = public.get_auth_tenant_id());
 
 -- --------------------------------------------------------
--- 7. Allow public slug lookup on tenants (for display page)
+-- 7. Tenant-scoped SELECT on categories & drinks (POS mobile / staff)
+-- --------------------------------------------------------
+DROP POLICY IF EXISTS "Categories are viewable by everyone" ON public.categories;
+DROP POLICY IF EXISTS "Drinks are viewable by everyone" ON public.drinks;
+
+DROP POLICY IF EXISTS "Categories viewable by tenant staff" ON public.categories;
+CREATE POLICY "Categories viewable by tenant staff" ON public.categories
+  FOR SELECT TO authenticated
+  USING (tenant_id = public.get_auth_tenant_id());
+
+DROP POLICY IF EXISTS "Drinks viewable by tenant staff" ON public.drinks;
+CREATE POLICY "Drinks viewable by tenant staff" ON public.drinks
+  FOR SELECT TO authenticated
+  USING (tenant_id = public.get_auth_tenant_id());
+
+-- --------------------------------------------------------
+-- 8. Allow public slug lookup on tenants (for display page)
 -- --------------------------------------------------------
 DROP POLICY IF EXISTS "Tenants are viewable by their users" ON public.tenants;
 CREATE POLICY "Tenants are viewable by their users" ON public.tenants
   FOR SELECT USING (true);
 
 -- --------------------------------------------------------
--- 8. Update business day RPCs to be tenant-aware
+-- 9. Update business day RPCs to be tenant-aware
 -- --------------------------------------------------------
 CREATE OR REPLACE FUNCTION get_or_create_open_business_day()
 RETURNS uuid
