@@ -24,7 +24,7 @@ function RootLayoutNav() {
     } else if (!session && !inAuthGroup) {
       router.replace('/(auth)/login')
     }
-  }, [session, tenantId, role, isLoading])
+  }, [session, tenantId, role, isLoading, segments])
 
   if (isLoading) {
     return (

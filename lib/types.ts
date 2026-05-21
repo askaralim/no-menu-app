@@ -4,6 +4,8 @@ export interface Category {
   sort_order: number
   enabled: boolean
   created_at: string
+  /** Tap List: when false, drinks in this category are hidden from public RPCs */
+  is_public_visible?: boolean
 }
 
 export interface Drink {
@@ -22,6 +24,11 @@ export interface Drink {
   ml_per_cup?: number | null
   ml_per_bottle?: number | null
   created_at: string
+  /** Tap List hero image (not the same as POS-only assets) */
+  image_url?: string | null
+  is_public_visible?: boolean
+  public_status?: string | null
+  public_sort_order?: number | null
 }
 
 export interface CategoryWithDrinks extends Category {

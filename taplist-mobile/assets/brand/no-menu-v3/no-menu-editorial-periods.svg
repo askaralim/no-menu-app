@@ -1,0 +1,22 @@
+<svg width="1600" height="1600" viewBox="0 0 1600 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1600" fill="#111111"/>
+  <style>
+    .word {
+      fill: #EDEDED;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 294px;
+      font-weight: 700;
+      letter-spacing: 20px;
+    }
+    .period {
+      fill: #9A7138;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 294px;
+      font-weight: 700;
+    }
+  </style>
+  <text class="word" x="410" y="690">NO</text>
+  <text class="period" x="825" y="690">.</text>
+  <text class="word" x="410" y="1000">MENU</text>
+  <text class="period" x="1165" y="1000">.</text>
+</svg>

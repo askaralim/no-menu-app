@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase'
-import type { PublicBarRow, PublicDrinkRow, PublicTenantDetail } from '@/lib/types'
+import type {
+  PublicBarRow,
+  PublicTaplistDrinksRpc,
+  PublicTaplistSearchRpc,
+  PublicTaplistTenantRpc,
+} from '@/lib/types'
 
 export async function fetchPublicBars(city?: string | null) {
   const { data, error } = await supabase.rpc('get_public_taplist_bars', {
@@ -14,9 +19,7 @@ export async function fetchPublicTenantBySlug(slug: string) {
     p_slug: slug,
   })
   if (error) throw error
-  return data as
-    | { ok: true; tenant: PublicTenantDetail }
-    | { ok: false; code: string; name?: string }
+  return data as PublicTaplistTenantRpc
 }
 
 export async function fetchPublicDrinks(tenantId: string) {
@@ -24,7 +27,16 @@ export async function fetchPublicDrinks(tenantId: string) {
     p_tenant_id: tenantId,
   })
   if (error) throw error
-  return data as
-    | { ok: true; drinks: PublicDrinkRow[] }
-    | { ok: false; code: string }
+  return data as PublicTaplistDrinksRpc
+}
+
+export async function searchPublicTaplist(city: string | null, query: string) {
+  const { data, error } = await supabase.rpc('search_public_taplist', {
+    p_city: city ?? null,
+    p_query: query,
+  })
+  if (error) throw error
+  const payload = data as PublicTaplistSearchRpc
+  if (!payload || payload.ok !== true) return []
+  return payload.results ?? []
 }

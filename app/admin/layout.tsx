@@ -48,6 +48,7 @@ export default function AdminLayout({
     { href: '/admin/ordering', label: '点单' },
     { href: '/admin/categories', label: '分类管理' },
     { href: '/admin/drinks', label: '酒品管理' },
+    { href: '/admin/taplist', label: 'Tap List' },
     { href: '/admin/settings', label: '设置' },
   ]
 

@@ -1,0 +1,13 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#0D0D0D"/>
+  <style>
+    .mark {
+      fill: #F5F5F5;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 330px;
+      font-weight: 750;
+      letter-spacing: -12px;
+    }
+  </style>
+  <text class="mark" x="512" y="620" text-anchor="middle">NM</text>
+</svg>

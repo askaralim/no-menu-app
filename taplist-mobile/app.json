@@ -1,21 +1,22 @@
 {
   "expo": {
-    "name": "No Menu Tap List",
-    "slug": "nomenu-taplist",
+    "name": "No Menu App",
+    "slug": "no-menu-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "nomenu-taplist",
+    "scheme": "nomenuapp",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0D0D0D"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.taklip.nomenutaplist",
+      "bundleIdentifier": "com.nomenuapp.taplist",
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -23,11 +24,11 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0D0D0D"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.taklip.nomenutaplist"
+      "package": "com.nomenuapp.taplist"
     },
     "web": {
       "bundler": "metro",
@@ -40,6 +41,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "470f9d09-531f-4478-a32c-6a2217b79a87"
+      }
+    },
+    "owner": "askar.alim"
   }
 }

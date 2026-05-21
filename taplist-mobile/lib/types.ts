@@ -3,16 +3,35 @@
  * Adjust when RPC payloads evolve (additive fields OK).
  */
 
+/** `tenants.opening_hour` — daily hours as 24h `HH:mm`. */
+export type OpeningHourJson = {
+  open: string
+  close: string
+}
+
+/** Counts from `get_public_taplist_bars.status_counts` (Chinese labels, public drinks only). */
+export type PublicBarStatusCounts = {
+  上新: number
+  在售: number
+  少量: number
+  售罄: number
+  即将上新: number
+}
+
 export type PublicBarRow = {
   id: string
   slug: string
   name: string
   display_name: string
   district: string | null
+  address: string | null
+  opening_hour: OpeningHourJson | null
+  description: string | null
   cover_image_url: string | null
   city: string
   country: string
   last_menu_updated_at: string | null
+  status_counts?: PublicBarStatusCounts
 }
 
 export type PublicTenantDetail = {
@@ -21,6 +40,9 @@ export type PublicTenantDetail = {
   name: string
   display_name: string
   district: string | null
+  address: string | null
+  opening_hour: OpeningHourJson | null
+  description: string | null
   cover_image_url: string | null
   city: string
   country: string
@@ -33,6 +55,7 @@ export type PublicBeerProfile = {
   abv: number | null
   ibu: number | null
   country: string | null
+  description: string | null
 }
 
 export type PublicServingOption = {
@@ -52,8 +75,41 @@ export type PublicDrinkRow = {
   brand_name: string | null
   name: string
   image_url: string | null
+  /** Chinese label from RPC (`上新` / `在售` / `少量` / `售罄` / `即将上新`). */
   public_status: string
   public_sort_order: number
   beer: PublicBeerProfile | null
   serving_options: PublicServingOption[]
 }
+
+/** RPC `get_public_taplist_tenant` JSON union */
+export type PublicTaplistTenantRpc =
+  | { ok: true; tenant: PublicTenantDetail }
+  | { ok: false; code: string; name?: string }
+
+/** RPC `get_public_taplist_drinks` JSON union */
+export type PublicTaplistDrinksRpc =
+  | { ok: true; drinks: PublicDrinkRow[] }
+  | { ok: false; code: string }
+
+/** Row from `search_public_taplist` */
+export type PublicTaplistSearchResult = {
+  drink_id: string
+  name: string
+  brand_name: string | null
+  image_url: string | null
+  public_status: string
+  tenant_id: string
+  tenant_slug: string
+  tenant_display_name: string
+  tenant_district: string | null
+  tenant_address: string | null
+  brewery: string | null
+  beer_style: string | null
+  abv: number | null
+}
+
+/** RPC `search_public_taplist` JSON union */
+export type PublicTaplistSearchRpc =
+  | { ok: true; results: PublicTaplistSearchResult[] }
+  | { ok: false; code?: string }

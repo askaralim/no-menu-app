@@ -13,10 +13,12 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../lib/authProvider'
 import { COLORS } from '../../lib/constants'
 
 export default function RegisterScreen() {
   const router = useRouter()
+  const { refreshMembership } = useAuth()
   const [step, setStep] = useState<'account' | 'bar'>('account')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -85,7 +87,8 @@ export default function RegisterScreen() {
         Alert.alert('创建失败', error.message)
         return
       }
-      Alert.alert('注册成功', '您的酒吧已创建，即将进入管理界面')
+      await refreshMembership()
+      setTimeout(() => router.replace('/(tabs)'), 0)
     } catch (e: any) {
       Alert.alert('错误', e?.message || '创建酒吧失败')
     } finally {

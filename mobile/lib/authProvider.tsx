@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import type { UserRole } from './types'
@@ -9,6 +9,8 @@ type AuthContextType = {
   tenantId: string | null
   role: UserRole | null
   isLoading: boolean
+  /** Re-query `user_roles` after e.g. `register_bar` (session alone does not change). */
+  refreshMembership: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   tenantId: null,
   role: null,
   isLoading: true,
+  refreshMembership: async () => {},
 })
 
 type RoleRow = { tenant_id: string; role: string; created_at: string }
@@ -51,6 +54,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const initialized = useRef(false)
+
+  const fetchUserRole = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('tenant_id, role, created_at')
+        .eq('user_id', userId)
+
+      if (!error && data?.length) {
+        const { tenantId: tid, role: r } = deriveTenantAndRole(data as RoleRow[])
+        setTenantId(tid)
+        setRole(r)
+      } else {
+        setTenantId(null)
+        setRole(null)
+      }
+    } catch (e) {
+      console.error('fetchUserRole error:', e)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const refreshMembership = useCallback(async () => {
+    const { data } = await supabase.auth.getSession()
+    const uid = data.session?.user?.id
+    if (uid) {
+      setIsLoading(true)
+      await fetchUserRole(uid)
+    }
+  }, [fetchUserRole])
 
   useEffect(() => {
     if (initialized.current) return
@@ -103,32 +137,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeout)
       subscription.unsubscribe()
     }
-  }, [])
-
-  const fetchUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('tenant_id, role, created_at')
-        .eq('user_id', userId)
-
-      if (!error && data?.length) {
-        const { tenantId: tid, role: r } = deriveTenantAndRole(data as RoleRow[])
-        setTenantId(tid)
-        setRole(r)
-      } else {
-        setTenantId(null)
-        setRole(null)
-      }
-    } catch (e) {
-      console.error('fetchUserRole error:', e)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  }, [fetchUserRole])
 
   return (
-    <AuthContext.Provider value={{ session, user, tenantId, role, isLoading }}>
+    <AuthContext.Provider value={{ session, user, tenantId, role, isLoading, refreshMembership }}>
       {children}
     </AuthContext.Provider>
   )

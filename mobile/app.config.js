@@ -7,6 +7,7 @@ const { expo } = require('./app.json')
 
 module.exports = ({ config } = {}) => {
   const ios = { ...(expo.ios || {}), ...(config?.ios || {}) }
+  const android = { ...(expo.android || {}), ...(config?.android || {}) }
 
   return {
     ...config,
@@ -18,7 +19,16 @@ module.exports = ({ config } = {}) => {
         ...(config?.ios?.infoPlist || {}),
         ...(expo.ios?.infoPlist || {}),
         ITSAppUsesNonExemptEncryption: false,
+        // Allow HTTP to local Supabase API (127.0.0.1 / LAN) during dev
+        NSAppTransportSecurity: {
+          NSAllowsLocalNetworking: true,
+        },
       },
+    },
+    android: {
+      ...android,
+      // HTTP to local Supabase on Android dev builds
+      usesCleartextTraffic: true,
     },
     extra: {
       ...(config?.extra || {}),

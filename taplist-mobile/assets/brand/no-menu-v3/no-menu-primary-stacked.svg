@@ -1,0 +1,15 @@
+<svg width="1600" height="1600" viewBox="0 0 1600 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1600" fill="#0D0D0D"/>
+  <style>
+    .word {
+      fill: #F5F5F5;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 310px;
+      font-weight: 700;
+      letter-spacing: 26px;
+    }
+  </style>
+  <text class="word" x="800" y="685" text-anchor="middle">NO</text>
+  <text class="word" x="800" y="995" text-anchor="middle">MENU</text>
+  <line x1="520" y1="745" x2="1080" y2="745" stroke="#8A6A3A" stroke-width="5"/>
+</svg>

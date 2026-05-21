@@ -7,27 +7,37 @@ Expo app in this monorepo, **sibling to** `mobile/` (POS / staff). Same Supabase
 ```bash
 cd taplist-mobile
 cp .env.example .env
-# fill EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
+# EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_PRIVACY_POLICY_URL
 npm install
 npm run ios   # or android / start
 ```
 
-Apply database objects from [docs/taplist_mvp_schema_sql.md](../docs/taplist_mvp_schema_sql.md) before expecting RPC calls to succeed.
+Apply database objects from repo `supabase/` migrations before expecting RPC calls to succeed. Demo UI data: `npm run db:seed-taplist-demo` from repo root.
+
+## Release
+
+```bash
+npm run typecheck
+npm run export:web
+```
+
+See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_STORE_SUBMISSION.md](docs/APP_STORE_SUBMISSION.md)** (App Store review).
 
 ## Layout
 
 | Path | Role |
 |------|------|
-| `app/(tabs)/index.tsx` | Discover — sample `useQuery` + `fetchPublicBars` |
-| `app/(tabs)/settings.tsx` | Settings / compliance placeholder |
-| `lib/supabase.ts` | Anon Supabase client |
-| `lib/api/taplist.ts` | Thin RPC wrappers |
-| `lib/types.ts` | DTO types aligned with RPC JSON |
-| `constants/taplist.ts` | e.g. default city for home |
+| `app/(tabs)/index.tsx` | Tonight feed |
+| `app/(tabs)/search.tsx` | Search (drinks + bars) |
+| `app/(tabs)/about.tsx` | About / compliance |
+| `components/taplist/FirstLaunchLegalGate.tsx` | First-launch age notice |
+| `lib/api/taplist.ts` | RPC wrappers |
+| `lib/types.ts` | DTO types |
 
 ## Bundle IDs
 
-- iOS: `com.taklip.nomenutaplist`
-- Android: `com.taklip.nomenutaplist`
+- iOS / Android: `com.nomenuapp.taplist`
+- App Store Connect app ID (`ascAppId`): `6771324382`
+- Privacy policy: `https://nomenuapp.com/privacy`
 
-Change in `app.json` if you use a different signing identity.
+Production env vars: set in **Expo dashboard → Secrets → production** (same names as `.env.example`), not in `eas.json`.
