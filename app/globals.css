@@ -1371,3 +1371,145 @@ input:checked + .toggle-slider:hover {
   color: #dc2626;
   border-color: #fecaca;
 }
+
+/* Tap List drink editor (admin) */
+.taplist-drink-panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-top: 10px;
+  padding: 16px 18px;
+  background: #f9fafb;
+}
+
+.taplist-drink-panel-loading {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.taplist-drink-panel-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.taplist-drink-panel-section:last-child {
+  margin-bottom: 0;
+}
+
+.taplist-drink-panel-section-title {
+  margin: 0 0 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.taplist-drink-panel-section-hint {
+  margin: -6px 0 12px;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.taplist-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px 12px;
+  align-items: end;
+}
+
+.taplist-panel-grid .taplist-field-span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 520px) {
+  .taplist-panel-grid .taplist-field-span-2 {
+    grid-column: span 1;
+  }
+}
+
+.taplist-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.taplist-field label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.taplist-field .admin-input,
+.taplist-field select.admin-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.taplist-field textarea.admin-input {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.taplist-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.taplist-serving-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.taplist-serving-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fafafa;
+}
+
+.taplist-serving-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.taplist-serving-card-top .taplist-field {
+  flex: 1 1 140px;
+}
+
+.taplist-serving-card-delete {
+  margin-left: auto;
+}
+
+.taplist-serving-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px 12px;
+}
+
+.taplist-serving-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.taplist-serving-toggles label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: #374151;
+  cursor: pointer;
+}

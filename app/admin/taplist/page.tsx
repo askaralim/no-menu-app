@@ -582,6 +582,18 @@ function TaplistAdminPageInner() {
   )
 }
 
+function servingRowToPatch(row: DrinkServingRow) {
+  return {
+    serving_type: row.serving_type,
+    label: row.label,
+    volume_ml: row.volume_ml,
+    price: row.price,
+    is_default: row.is_default,
+    is_active: row.is_active,
+    public_sort_order: row.public_sort_order,
+  }
+}
+
 function DrinkTaplistPanel({
   drink,
   tenantId,
@@ -612,9 +624,14 @@ function DrinkTaplistPanel({
     description: '',
   })
   const [servings, setServings] = useState<DrinkServingRow[]>([])
-  const [loadingPanel, setLoadingPanel] = useState(false)
+  const servingsRef = useRef(servings)
+  const [initialLoading, setInitialLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const drinkImageFileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    servingsRef.current = servings
+  }, [servings])
 
   useEffect(() => {
     setForm({
@@ -623,10 +640,23 @@ function DrinkTaplistPanel({
       public_status: (drink.public_status as (typeof PUBLIC_STATUS)[number]) || 'available',
       public_sort_order: drink.public_sort_order ?? 0,
     })
-  }, [drink])
+  }, [drink.id])
+
+  const fetchServings = useCallback(async () => {
+    const { data: so, error } = await supabase
+      .from('drink_serving_options')
+      .select('*')
+      .eq('drink_id', drink.id)
+      .order('public_sort_order')
+    if (error) {
+      console.error(error)
+      return
+    }
+    setServings((so ?? []) as DrinkServingRow[])
+  }, [drink.id])
 
   const loadPanel = useCallback(async () => {
-    setLoadingPanel(true)
+    setInitialLoading(true)
     try {
       const { data: prof } = await supabase
         .from('drink_beer_profiles')
@@ -646,20 +676,61 @@ function DrinkTaplistPanel({
       } else {
         setBeer({ brewery: '', beer_style: '', abv: '', ibu: '', country: '', description: '' })
       }
-      const { data: so } = await supabase
-        .from('drink_serving_options')
-        .select('*')
-        .eq('drink_id', drink.id)
-        .order('public_sort_order')
-      setServings((so ?? []) as DrinkServingRow[])
+      await fetchServings()
     } finally {
-      setLoadingPanel(false)
+      setInitialLoading(false)
     }
-  }, [drink.id])
+  }, [drink.id, fetchServings])
 
   useEffect(() => {
     if (expanded) void loadPanel()
   }, [expanded, loadPanel])
+
+  const persistServing = useCallback(
+    async (id: string) => {
+      const row = servingsRef.current.find((s) => s.id === id)
+      if (!row) return
+      const { error } = await supabase
+        .from('drink_serving_options')
+        .update(servingRowToPatch(row))
+        .eq('id', id)
+      if (error) {
+        console.error(error)
+        alert('更新规格失败')
+        await fetchServings()
+      }
+    },
+    [fetchServings]
+  )
+
+  const changeServing = useCallback(
+    (id: string, patch: Partial<DrinkServingRow>, persist = false) => {
+      let updatedRow: DrinkServingRow | undefined
+      setServings((prev) => {
+        const next = prev.map((s) => {
+          if (s.id !== id) return s
+          updatedRow = { ...s, ...patch }
+          return updatedRow
+        })
+        servingsRef.current = next
+        return next
+      })
+      if (persist && updatedRow) {
+        void (async () => {
+          const { error } = await supabase
+            .from('drink_serving_options')
+            .update(servingRowToPatch(updatedRow!))
+            .eq('id', id)
+          if (error) {
+            console.error(error)
+            alert('更新规格失败')
+            await fetchServings()
+          }
+        })()
+      }
+    },
+    [fetchServings]
+  )
 
   const persistDrinkConsumerFields = async (patch: Partial<typeof form>) => {
     const next = { ...form, ...patch }
@@ -721,40 +792,35 @@ function DrinkTaplistPanel({
       alert('保存啤酒档案失败')
       return
     }
-    await loadPanel()
     alert('啤酒档案已保存')
   }
 
   const addServing = async () => {
-    const { error } = await supabase.from('drink_serving_options').insert([
-      {
-        tenant_id: tenantId,
-        drink_id: drink.id,
-        serving_type: 'draft',
-        label: '品脱',
-        volume_ml: 473,
-        price: 0,
-        is_default: servings.length === 0,
-        is_active: true,
-        public_sort_order: servings.length,
-      },
-    ])
+    const sort = servingsRef.current.length
+    const { data, error } = await supabase
+      .from('drink_serving_options')
+      .insert([
+        {
+          tenant_id: tenantId,
+          drink_id: drink.id,
+          serving_type: 'draft',
+          label: '品脱',
+          volume_ml: 473,
+          price: 0,
+          is_default: sort === 0,
+          is_active: true,
+          public_sort_order: sort,
+        },
+      ])
+      .select('*')
     if (error) {
       console.error(error)
       alert('添加规格失败')
       return
     }
-    await loadPanel()
-  }
-
-  const updateServing = async (row: DrinkServingRow, patch: Partial<DrinkServingRow>) => {
-    const { error } = await supabase.from('drink_serving_options').update(patch).eq('id', row.id)
-    if (error) {
-      console.error(error)
-      alert('更新规格失败')
-      return
-    }
-    await loadPanel()
+    const row = (data?.[0] ?? null) as DrinkServingRow | null
+    if (row) setServings((prev) => [...prev, row])
+    else await fetchServings()
   }
 
   const deleteServing = async (id: string) => {
@@ -765,22 +831,13 @@ function DrinkTaplistPanel({
       alert('删除失败')
       return
     }
-    await loadPanel()
+    setServings((prev) => prev.filter((s) => s.id !== id))
   }
 
   if (!expanded) return null
 
   return (
-    <div
-      style={{
-        border: '1px solid #e5e7eb',
-        borderRadius: 8,
-        marginTop: 8,
-        marginBottom: 4,
-        padding: 12,
-        background: '#fafafa',
-      }}
-    >
+    <div className="taplist-drink-panel">
       {!hideHeader ? (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -800,209 +857,282 @@ function DrinkTaplistPanel({
         </>
       ) : null}
 
-      {expanded ? (
-        <div style={{ marginTop: 16 }}>
-          {loadingPanel ? (
-            <p>加载…</p>
-          ) : (
-            <>
-              <h4 style={{ marginBottom: 8 }}>展示字段</h4>
-              <TaplistImageUploadField
-                label="酒款图片"
-                hint="JPEG / PNG / WebP，最大 2MB"
-                busy={uploadingImage}
-                previewUrl={form.image_url || null}
-                inputRef={drinkImageFileRef}
-                onFileSelected={handleDrinkImageFile}
-              />
-              <input
-                className="admin-input"
-                placeholder="酒款图片 URL（可粘贴外链，或上方上传）"
-                value={form.image_url}
-                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-              />
-              <select
-                className="admin-input"
-                value={form.public_status}
-                onChange={(e) =>
-                  setForm({ ...form, public_status: e.target.value as (typeof PUBLIC_STATUS)[number] })
-                }
-              >
-                {PUBLIC_STATUS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              <input
-                className="admin-input"
-                type="number"
-                placeholder="Tap List 排序"
-                value={form.public_sort_order}
-                onChange={(e) => setForm({ ...form, public_sort_order: parseInt(e.target.value, 10) || 0 })}
-              />
+      {initialLoading ? (
+        <p className="taplist-drink-panel-loading">加载酒款详情…</p>
+      ) : (
+        <>
+          <section className="taplist-drink-panel-section">
+            <h4 className="taplist-drink-panel-section-title">展示字段</h4>
+            <p className="taplist-drink-panel-section-hint">消费者 App 看到的图片、库存状态与排序</p>
+            <TaplistImageUploadField
+              label="酒款图片"
+              hint="JPEG / PNG / WebP，最大 2MB"
+              busy={uploadingImage}
+              previewUrl={form.image_url || null}
+              inputRef={drinkImageFileRef}
+              onFileSelected={handleDrinkImageFile}
+            />
+            <div className="taplist-panel-grid" style={{ marginTop: 12 }}>
+              <div className="taplist-field taplist-field-span-2">
+                <label htmlFor={`${drink.id}-image-url`}>图片 URL</label>
+                <input
+                  id={`${drink.id}-image-url`}
+                  className="admin-input"
+                  placeholder="可粘贴外链，或上方上传"
+                  value={form.image_url}
+                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                />
+              </div>
+              <div className="taplist-field">
+                <label htmlFor={`${drink.id}-public-status`}>库存状态</label>
+                <select
+                  id={`${drink.id}-public-status`}
+                  className="admin-input"
+                  value={form.public_status}
+                  onChange={(e) =>
+                    setForm({ ...form, public_status: e.target.value as (typeof PUBLIC_STATUS)[number] })
+                  }
+                >
+                  {PUBLIC_STATUS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="taplist-field">
+                <label htmlFor={`${drink.id}-public-sort`}>Tap List 排序</label>
+                <input
+                  id={`${drink.id}-public-sort`}
+                  className="admin-input"
+                  type="number"
+                  value={form.public_sort_order}
+                  onChange={(e) =>
+                    setForm({ ...form, public_sort_order: parseInt(e.target.value, 10) || 0 })
+                  }
+                />
+              </div>
+            </div>
+            <div className="taplist-panel-actions">
               <button type="button" className="admin-button admin-button-primary" onClick={saveDrink}>
                 保存酒款
               </button>
+            </div>
+          </section>
 
-              <h4 style={{ margin: '20px 0 8px' }}>啤酒档案</h4>
-              <input
-                className="admin-input"
-                placeholder="酒厂"
-                value={beer.brewery}
-                onChange={(e) => setBeer({ ...beer, brewery: e.target.value })}
-              />
-              <input
-                className="admin-input"
-                placeholder="风格"
-                value={beer.beer_style}
-                onChange={(e) => setBeer({ ...beer, beer_style: e.target.value })}
-              />
-              <input
-                className="admin-input"
-                placeholder="ABV"
-                value={beer.abv}
-                onChange={(e) => setBeer({ ...beer, abv: e.target.value })}
-              />
-              <input
-                className="admin-input"
-                placeholder="IBU"
-                value={beer.ibu}
-                onChange={(e) => setBeer({ ...beer, ibu: e.target.value })}
-              />
-              <input
-                className="admin-input"
-                placeholder="国家"
-                value={beer.country}
-                onChange={(e) => setBeer({ ...beer, country: e.target.value })}
-              />
-              <textarea
-                className="admin-input"
-                placeholder="酒款介绍"
-                rows={4}
-                value={beer.description}
-                onChange={(e) => setBeer({ ...beer, description: e.target.value })}
-              />
+          <section className="taplist-drink-panel-section">
+            <h4 className="taplist-drink-panel-section-title">啤酒档案</h4>
+            <p className="taplist-drink-panel-section-hint">酒厂、风格、酒精度等详情页信息</p>
+            <div className="taplist-panel-grid">
+              <div className="taplist-field">
+                <label htmlFor={`${drink.id}-brewery`}>酒厂</label>
+                <input
+                  id={`${drink.id}-brewery`}
+                  className="admin-input"
+                  value={beer.brewery}
+                  onChange={(e) => setBeer({ ...beer, brewery: e.target.value })}
+                />
+              </div>
+              <div className="taplist-field">
+                <label htmlFor={`${drink.id}-style`}>风格</label>
+                <input
+                  id={`${drink.id}-style`}
+                  className="admin-input"
+                  value={beer.beer_style}
+                  onChange={(e) => setBeer({ ...beer, beer_style: e.target.value })}
+                />
+              </div>
+              <div className="taplist-field">
+                <label htmlFor={`${drink.id}-abv`}>ABV %</label>
+                <input
+                  id={`${drink.id}-abv`}
+                  className="admin-input"
+                  value={beer.abv}
+                  onChange={(e) => setBeer({ ...beer, abv: e.target.value })}
+                />
+              </div>
+              <div className="taplist-field">
+                <label htmlFor={`${drink.id}-ibu`}>IBU</label>
+                <input
+                  id={`${drink.id}-ibu`}
+                  className="admin-input"
+                  value={beer.ibu}
+                  onChange={(e) => setBeer({ ...beer, ibu: e.target.value })}
+                />
+              </div>
+              <div className="taplist-field">
+                <label htmlFor={`${drink.id}-country`}>国家</label>
+                <input
+                  id={`${drink.id}-country`}
+                  className="admin-input"
+                  value={beer.country}
+                  onChange={(e) => setBeer({ ...beer, country: e.target.value })}
+                />
+              </div>
+              <div className="taplist-field taplist-field-span-2">
+                <label htmlFor={`${drink.id}-desc`}>酒款介绍</label>
+                <textarea
+                  id={`${drink.id}-desc`}
+                  className="admin-input"
+                  rows={3}
+                  value={beer.description}
+                  onChange={(e) => setBeer({ ...beer, description: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="taplist-panel-actions">
               <button type="button" className="admin-button admin-button-primary" onClick={saveBeer}>
                 保存啤酒档案
               </button>
+            </div>
+          </section>
 
-              <h4 style={{ margin: '20px 0 8px' }}>供应规格（容量与价格）</h4>
-              <button type="button" className="admin-button admin-button-secondary" onClick={addServing}>
-                新增一行
-              </button>
-              <div className="admin-table-wrapper" style={{ marginTop: 8 }}>
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>类型</th>
-                      <th>标签</th>
-                      <th>ml</th>
-                      <th>价格</th>
-                      <th>默认</th>
-                      <th>启用</th>
-                      <th>排序</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {servings.map((s) => (
-                      <tr key={s.id}>
-                        <td>
-                          <select
-                            className="admin-input"
-                            style={{ minWidth: 90 }}
-                            value={s.serving_type}
-                            onChange={(e) => updateServing(s, { serving_type: e.target.value })}
-                          >
-                            {SERVING_TYPES.map((t) => (
-                              <option key={t} value={t}>
-                                {t}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            className="admin-input"
-                            key={`${s.id}-label`}
-                            defaultValue={s.label}
-                            onBlur={(e) => {
-                              void updateServing(s, { label: e.target.value })
-                            }}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className="admin-input"
-                            type="number"
-                            key={`${s.id}-vol`}
-                            defaultValue={s.volume_ml ?? ''}
-                            onBlur={(e) => {
-                              const v = e.target.value
-                              void updateServing(s, {
-                                volume_ml: v ? parseInt(v, 10) : null,
-                              })
-                            }}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className="admin-input"
-                            type="number"
-                            step="0.01"
-                            key={`${s.id}-price`}
-                            defaultValue={s.price}
-                            onBlur={(e) => {
-                              void updateServing(s, { price: parseFloat(e.target.value) || 0 })
-                            }}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="checkbox"
-                            checked={s.is_default}
-                            onChange={(e) => updateServing(s, { is_default: e.target.checked })}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="checkbox"
-                            checked={s.is_active}
-                            onChange={(e) => updateServing(s, { is_active: e.target.checked })}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className="admin-input"
-                            type="number"
-                            key={`${s.id}-sort`}
-                            defaultValue={s.public_sort_order}
-                            onBlur={(e) => {
-                              void updateServing(s, {
-                                public_sort_order: parseInt(e.target.value, 10) || 0,
-                              })
-                            }}
-                          />
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="admin-button admin-button-danger"
-                            onClick={() => deleteServing(s.id)}
-                          >
-                            删
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <section className="taplist-drink-panel-section">
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+                marginBottom: 4,
+              }}
+            >
+              <div>
+                <h4 className="taplist-drink-panel-section-title" style={{ marginBottom: 4 }}>
+                  供应规格（容量与价格）
+                </h4>
+                <p className="taplist-drink-panel-section-hint" style={{ margin: 0 }}>
+                  编辑时自动保存；失焦或切换选项后写入数据库，不会刷新整页
+                </p>
               </div>
-            </>
-          )}
+              <button type="button" className="admin-button admin-button-secondary" onClick={addServing}>
+                新增规格
+              </button>
+            </div>
+            {servings.length === 0 ? (
+              <p style={{ fontSize: 13, color: '#6b7280', margin: '12px 0 0' }}>暂无规格，点击「新增规格」添加。</p>
+            ) : (
+              <div className="taplist-serving-list">
+                {servings.map((s) => (
+                  <ServingOptionCard
+                    key={s.id}
+                    row={s}
+                    onChange={changeServing}
+                    onBlurPersist={persistServing}
+                    onDelete={deleteServing}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
+    </div>
+  )
+}
+
+function ServingOptionCard({
+  row,
+  onChange,
+  onBlurPersist,
+  onDelete,
+}: {
+  row: DrinkServingRow
+  onChange: (id: string, patch: Partial<DrinkServingRow>, persist?: boolean) => void
+  onBlurPersist: (id: string) => void
+  onDelete: (id: string) => void
+}) {
+  return (
+    <div className="taplist-serving-card">
+      <div className="taplist-serving-card-top">
+        <div className="taplist-field">
+          <label>类型</label>
+          <select
+            className="admin-input"
+            value={row.serving_type}
+            onChange={(e) => onChange(row.id, { serving_type: e.target.value }, true)}
+          >
+            {SERVING_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
         </div>
-      ) : null}
+        <button
+          type="button"
+          className="admin-button admin-button-danger taplist-serving-card-delete"
+          onClick={() => onDelete(row.id)}
+        >
+          删除
+        </button>
+      </div>
+      <div className="taplist-serving-card-grid">
+        <div className="taplist-field">
+          <label>标签</label>
+          <input
+            className="admin-input"
+            value={row.label}
+            onChange={(e) => onChange(row.id, { label: e.target.value })}
+            onBlur={() => onBlurPersist(row.id)}
+          />
+        </div>
+        <div className="taplist-field">
+          <label>容量 (ml)</label>
+          <input
+            className="admin-input"
+            type="number"
+            value={row.volume_ml ?? ''}
+            onChange={(e) => {
+              const v = e.target.value
+              onChange(row.id, { volume_ml: v === '' ? null : parseInt(v, 10) })
+            }}
+            onBlur={() => onBlurPersist(row.id)}
+          />
+        </div>
+        <div className="taplist-field">
+          <label>价格</label>
+          <input
+            className="admin-input"
+            type="number"
+            step="0.01"
+            value={row.price}
+            onChange={(e) => onChange(row.id, { price: parseFloat(e.target.value) || 0 })}
+            onBlur={() => onBlurPersist(row.id)}
+          />
+        </div>
+        <div className="taplist-field">
+          <label>排序</label>
+          <input
+            className="admin-input"
+            type="number"
+            value={row.public_sort_order}
+            onChange={(e) =>
+              onChange(row.id, { public_sort_order: parseInt(e.target.value, 10) || 0 })
+            }
+            onBlur={() => onBlurPersist(row.id)}
+          />
+        </div>
+      </div>
+      <div className="taplist-serving-toggles">
+        <label>
+          <input
+            type="checkbox"
+            checked={row.is_default}
+            onChange={(e) => onChange(row.id, { is_default: e.target.checked }, true)}
+          />
+          默认规格
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={row.is_active}
+            onChange={(e) => onChange(row.id, { is_active: e.target.checked }, true)}
+          />
+          启用
+        </label>
+      </div>
     </div>
   )
 }
