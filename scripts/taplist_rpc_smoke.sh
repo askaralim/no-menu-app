@@ -28,6 +28,22 @@ if isinstance(bars, list) and bars:
     for key in ("上新", "在售", "少量", "售罄", "即将上新"):
         assert key in sc, sc
     print("OK: status_counts present on bars")
+    if len(bars) >= 2:
+        def menu_ts(bar):
+            raw = bar.get("last_menu_updated_at")
+            if not raw:
+                return None
+            from datetime import datetime
+            s = raw.replace("Z", "+00:00")
+            try:
+                return datetime.fromisoformat(s).timestamp()
+            except ValueError:
+                return None
+        for i in range(len(bars) - 1):
+            a, b = menu_ts(bars[i]), menu_ts(bars[i + 1])
+            if a is not None and b is not None:
+                assert a >= b, f"bars not ordered newest-first: {bars[i].get('slug')} before {bars[i+1].get('slug')}"
+        print("OK: bars ordered by last_menu_updated_at (newest first)")
 '
 echo ""
 

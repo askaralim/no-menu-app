@@ -18,7 +18,7 @@ import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import { DEFAULT_TAPLIST_CITY } from '@/constants/taplist'
 import { searchPublicTaplist } from '@/lib/api/taplist'
-import { isTaplistSupabaseConfigured } from '@/lib/supabase'
+import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicTaplistSearchResult } from '@/lib/types'
 
 const styleTiles = [
@@ -44,7 +44,7 @@ const styleTiles = [
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets()
-  const configured = isTaplistSupabaseConfigured()
+  const configured = useTaplistSupabaseReady()
   const [query, setQuery] = useState('')
   const trimmedQuery = query.trim()
   const isSearching = trimmedQuery.length > 0

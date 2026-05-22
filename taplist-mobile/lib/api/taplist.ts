@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { getTaplistSupabase } from '@/lib/supabase'
 import type {
   PublicBarRow,
   PublicTaplistDrinksRpc,
@@ -7,7 +7,7 @@ import type {
 } from '@/lib/types'
 
 export async function fetchPublicBars(city?: string | null) {
-  const { data, error } = await supabase.rpc('get_public_taplist_bars', {
+  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_bars', {
     p_city: city ?? null,
   })
   if (error) throw error
@@ -15,7 +15,7 @@ export async function fetchPublicBars(city?: string | null) {
 }
 
 export async function fetchPublicTenantBySlug(slug: string) {
-  const { data, error } = await supabase.rpc('get_public_taplist_tenant', {
+  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_tenant', {
     p_slug: slug,
   })
   if (error) throw error
@@ -23,7 +23,7 @@ export async function fetchPublicTenantBySlug(slug: string) {
 }
 
 export async function fetchPublicDrinks(tenantId: string) {
-  const { data, error } = await supabase.rpc('get_public_taplist_drinks', {
+  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_drinks', {
     p_tenant_id: tenantId,
   })
   if (error) throw error
@@ -31,7 +31,7 @@ export async function fetchPublicDrinks(tenantId: string) {
 }
 
 export async function searchPublicTaplist(city: string | null, query: string) {
-  const { data, error } = await supabase.rpc('search_public_taplist', {
+  const { data, error } = await getTaplistSupabase().rpc('search_public_taplist', {
     p_city: city ?? null,
     p_query: query,
   })

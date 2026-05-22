@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { Link } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -8,21 +9,28 @@ import { palette, spacing, typography } from '@/constants/design'
 import { DEFAULT_TAPLIST_CITY } from '@/constants/taplist'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicBars } from '@/lib/api/taplist'
-import { isTaplistSupabaseConfigured } from '@/lib/supabase'
+import { sortPublicBarsByMenuUpdated } from '@/lib/formatTaplist'
+import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicBarRow } from '@/lib/types'
 
 export default function TonightScreen() {
   const insets = useSafeAreaInsets()
-  const configured = isTaplistSupabaseConfigured()
+  const queryClient = useQueryClient()
+  const configured = useTaplistSupabaseReady()
+
+  useEffect(() => {
+    if (!configured) return
+    void queryClient.invalidateQueries({ queryKey: ['taplist'] })
+  }, [configured, queryClient])
 
   const barsQuery = useQuery({
     queryKey: ['taplist', 'bars', DEFAULT_TAPLIST_CITY],
     queryFn: () => fetchPublicBars(DEFAULT_TAPLIST_CITY),
     enabled: configured,
+    refetchOnMount: 'always',
   })
 
-  const remoteBars = barsQuery.data ?? []
-  const bars = remoteBars
+  const bars = sortPublicBarsByMenuUpdated(barsQuery.data ?? [])
 
   return (
     <ScrollView
@@ -45,7 +53,13 @@ export default function TonightScreen() {
       {!configured ? (
         <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看实时公开酒单。" />
       ) : barsQuery.isError ? (
-        <EmptyState title="暂时无法加载酒吧" body="请稍后重试，或检查公开酒单 RPC 是否可用。" />
+        <EmptyState
+          title="暂时无法加载酒吧"
+          body="若系统询问是否允许使用网络，请选择「无线局域网与蜂窝网络」，然后点重试。"
+          actionLabel="重试"
+          onAction={() => void barsQuery.refetch()}
+          actionLoading={barsQuery.isFetching}
+        />
       ) : bars.length === 0 && !barsQuery.isLoading ? (
         <EmptyState title="暂无公开酒吧" body="当前城市还没有已发布的公开酒单。" />
       ) : (
@@ -112,11 +126,35 @@ function compactStatusCounts(bar: PublicBarRow) {
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
-function EmptyState({ title, body }: { title: string; body: string }) {
+function EmptyState({
+  title,
+  body,
+  actionLabel,
+  onAction,
+  actionLoading,
+}: {
+  title: string
+  body: string
+  actionLabel?: string
+  onAction?: () => void
+  actionLoading?: boolean
+}) {
   return (
     <View style={styles.emptyState}>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyBody}>{body}</Text>
+      {actionLabel && onAction ? (
+        <Pressable
+          style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
+          onPress={onAction}
+          disabled={actionLoading}>
+          {actionLoading ? (
+            <ActivityIndicator color={palette.background} size="small" />
+          ) : (
+            <Text style={styles.retryButtonText}>{actionLabel}</Text>
+          )}
+        </Pressable>
+      ) : null}
     </View>
   )
 }
@@ -236,6 +274,24 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: palette.muted,
     marginTop: spacing.xs,
+  },
+  retryButton: {
+    marginTop: spacing.lg,
+    alignSelf: 'flex-start',
+    backgroundColor: palette.tungsten,
+    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    minWidth: 88,
+    alignItems: 'center',
+  },
+  retryButtonPressed: {
+    opacity: 0.85,
+  },
+  retryButtonText: {
+    ...typography.title,
+    color: palette.background,
+    fontSize: 14,
   },
   complianceFootnote: {
     marginTop: spacing.lg,

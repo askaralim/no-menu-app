@@ -11,13 +11,13 @@ import { displayServingOptions } from '@/lib/formatTaplist'
 import { formatOpeningHourLabel } from '@/lib/openingHour'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicDrinks, fetchPublicTenantBySlug } from '@/lib/api/taplist'
-import { isTaplistSupabaseConfigured } from '@/lib/supabase'
+import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicDrinkRow } from '@/lib/types'
 
 export default function BarDetailScreen() {
   const insets = useSafeAreaInsets()
   const { slug } = useLocalSearchParams<{ slug: string }>()
-  const configured = isTaplistSupabaseConfigured()
+  const configured = useTaplistSupabaseReady()
 
   const tenantQuery = useQuery({
     queryKey: ['taplist', 'tenant', slug],

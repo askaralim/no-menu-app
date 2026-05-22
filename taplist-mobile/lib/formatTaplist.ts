@@ -109,3 +109,18 @@ function localizeServingLabel(label: string) {
 
   return labels[normalized] ?? label
 }
+
+/** Tonight feed order: matches `get_public_taplist_bars` (`ORDER BY last_menu_updated_at DESC NULLS LAST`). */
+export function sortPublicBarsByMenuUpdated(bars: PublicBarRow[]): PublicBarRow[] {
+  return [...bars].sort((a, b) => {
+    const ta = a.last_menu_updated_at ? new Date(a.last_menu_updated_at).getTime() : null
+    const tb = b.last_menu_updated_at ? new Date(b.last_menu_updated_at).getTime() : null
+    if (ta === null && tb === null) return 0
+    if (ta === null) return 1
+    if (tb === null) return -1
+    if (Number.isNaN(ta) && Number.isNaN(tb)) return 0
+    if (Number.isNaN(ta)) return 1
+    if (Number.isNaN(tb)) return -1
+    return tb - ta
+  })
+}

@@ -9,13 +9,13 @@ import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { defaultServing, displayServingOptions, formatServing } from '@/lib/formatTaplist'
 import { fetchPublicDrinks, fetchPublicTenantBySlug } from '@/lib/api/taplist'
-import { isTaplistSupabaseConfigured } from '@/lib/supabase'
+import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicServingOption } from '@/lib/types'
 
 export default function BeerDetailScreen() {
   const insets = useSafeAreaInsets()
   const { slug, drinkId } = useLocalSearchParams<{ slug: string; drinkId: string }>()
-  const configured = isTaplistSupabaseConfigured()
+  const configured = useTaplistSupabaseReady()
 
   const tenantQuery = useQuery({
     queryKey: ['taplist', 'tenant', slug],

@@ -11,6 +11,7 @@ import 'react-native-reanimated';
 import { FirstLaunchLegalGate } from '@/components/taplist/FirstLaunchLegalGate';
 import { useColorScheme } from '@/components/useColorScheme';
 import { queryClient } from '@/lib/queryClient';
+import { setupTaplistQueryFocusManager } from '@/lib/setupQueryFocusManager';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -42,6 +43,10 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  useEffect(() => {
+    setupTaplistQueryFocusManager();
+  }, []);
 
   if (!loaded) {
     return null;
