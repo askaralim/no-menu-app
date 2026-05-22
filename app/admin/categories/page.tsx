@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { resolvePosAdminTenantId } from '@/lib/adminTenant'
 import { Category } from '@/lib/types'
 
 export default function CategoriesPage() {
@@ -14,75 +15,88 @@ export default function CategoriesPage() {
     sort_order: 0,
   })
 
-  const fetchTenantId = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase
-      .from('user_roles')
-      .select('tenant_id')
-      .eq('user_id', user.id)
-      .single()
-    if (data) setTenantId(data.tenant_id)
-  }
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async (tid: string) => {
     try {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .eq('tenant_id', tid)
         .order('sort_order', { ascending: true })
 
       if (error) throw error
       setCategories(data || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchTenantId()
-    fetchCategories()
-
-    // 订阅实时更新
-    const channel = supabase
-      .channel('categories-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'categories',
-        },
-        () => {
-          fetchCategories()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
     }
   }, [])
 
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const init = async () => {
+      setLoading(true)
+      const tid = await resolvePosAdminTenantId(supabase)
+      setTenantId(tid)
+      if (!tid) {
+        setCategories([])
+        setLoading(false)
+        return
+      }
+      await fetchCategories(tid)
+      setLoading(false)
+
+      channel = supabase
+        .channel(`categories-changes-${tid}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'categories',
+            filter: `tenant_id=eq.${tid}`,
+          },
+          () => {
+            void fetchCategories(tid)
+          }
+        )
+        .subscribe()
+    }
+
+    void init()
+
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
+  }, [fetchCategories])
+
+  const refresh = () => {
+    if (tenantId) void fetchCategories(tenantId)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!tenantId) {
+      alert('未绑定门店，无法保存分类')
+      return
+    }
     try {
       if (editingId) {
         const { error } = await supabase
           .from('categories')
           .update(formData)
           .eq('id', editingId)
+          .eq('tenant_id', tenantId)
 
         if (error) throw error
         setEditingId(null)
       } else {
-        const { error } = await supabase.from('categories').insert([{ ...formData, tenant_id: tenantId }])
+        const { error } = await supabase
+          .from('categories')
+          .insert([{ ...formData, tenant_id: tenantId }])
         if (error) throw error
       }
       setFormData({ name: '', sort_order: 0 })
-      fetchCategories()
+      refresh()
     } catch (error) {
       console.error('Error saving category:', error)
       alert('保存失败，请重试')
@@ -98,12 +112,17 @@ export default function CategoriesPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!tenantId) return
     if (!confirm('确定要删除这个分类吗？')) return
 
     try {
-      const { error } = await supabase.from('categories').delete().eq('id', id)
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
       if (error) throw error
-      fetchCategories()
+      refresh()
     } catch (error) {
       console.error('Error deleting category:', error)
       alert('删除失败，请重试')
@@ -111,14 +130,16 @@ export default function CategoriesPage() {
   }
 
   const handleToggleEnabled = async (category: Category) => {
+    if (!tenantId) return
     try {
       const { error } = await supabase
         .from('categories')
         .update({ enabled: !category.enabled })
         .eq('id', category.id)
+        .eq('tenant_id', tenantId)
 
       if (error) throw error
-      fetchCategories()
+      refresh()
     } catch (error) {
       console.error('Error toggling category:', error)
     }
@@ -128,6 +149,17 @@ export default function CategoriesPage() {
     return (
       <div className="admin-container">
         <p>加载中...</p>
+      </div>
+    )
+  }
+
+  if (!tenantId) {
+    return (
+      <div className="admin-container">
+        <div className="admin-header">
+          <h1>分类管理</h1>
+        </div>
+        <p>当前账号未绑定门店（需要店主或员工角色）。</p>
       </div>
     )
   }
@@ -228,4 +260,3 @@ export default function CategoriesPage() {
     </div>
   )
 }
-

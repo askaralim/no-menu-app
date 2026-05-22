@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { resolvePosAdminTenantId } from '@/lib/adminTenant'
 import { Drink, Category } from '@/lib/types'
 
 export default function DrinksPage() {
@@ -20,38 +21,12 @@ export default function DrinksPage() {
     sort_order: 0,
   })
 
-  const fetchTenantId = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase
-      .from('user_roles')
-      .select('tenant_id')
-      .eq('user_id', user.id)
-      .single()
-    if (data) setTenantId(data.tenant_id)
-  }
-
-  const fetchDrinks = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('drinks')
-        .select('*')
-        .order('sort_order', { ascending: true })
-
-      if (error) throw error
-      setDrinks(data || [])
-    } catch (error) {
-      console.error('Error fetching drinks:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async (tid: string) => {
     try {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .eq('tenant_id', tid)
         .order('sort_order', { ascending: true })
 
       if (error) throw error
@@ -59,51 +34,106 @@ export default function DrinksPage() {
     } catch (error) {
       console.error('Error fetching categories:', error)
     }
-  }
+  }, [])
 
-  useEffect(() => {
-    fetchTenantId()
-    fetchDrinks()
-    fetchCategories()
+  const fetchDrinks = useCallback(async (tid: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('drinks')
+        .select('*')
+        .eq('tenant_id', tid)
+        .order('sort_order', { ascending: true })
 
-    // 订阅实时更新
-    const channel = supabase
-      .channel('drinks-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'drinks',
-        },
-        () => {
-          fetchDrinks()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
+      if (error) throw error
+      setDrinks(data || [])
+    } catch (error) {
+      console.error('Error fetching drinks:', error)
     }
   }, [])
 
+  const loadMenu = useCallback(
+    async (tid: string) => {
+      await Promise.all([fetchDrinks(tid), fetchCategories(tid)])
+    },
+    [fetchDrinks, fetchCategories]
+  )
+
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const init = async () => {
+      setLoading(true)
+      const tid = await resolvePosAdminTenantId(supabase)
+      setTenantId(tid)
+      if (!tid) {
+        setDrinks([])
+        setCategories([])
+        setLoading(false)
+        return
+      }
+      await loadMenu(tid)
+      setLoading(false)
+
+      channel = supabase
+        .channel(`drinks-changes-${tid}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'drinks',
+            filter: `tenant_id=eq.${tid}`,
+          },
+          () => {
+            void loadMenu(tid)
+          }
+        )
+        .subscribe()
+    }
+
+    void init()
+
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
+  }, [loadMenu])
+
+  const refresh = () => {
+    if (tenantId) void loadMenu(tenantId)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!tenantId) {
+      alert('未绑定门店，无法保存酒品')
+      return
+    }
     try {
       if (editingId) {
         const { error } = await supabase
           .from('drinks')
           .update(formData)
           .eq('id', editingId)
+          .eq('tenant_id', tenantId)
 
         if (error) throw error
         setEditingId(null)
       } else {
-        const { error } = await supabase.from('drinks').insert([{ ...formData, tenant_id: tenantId }])
+        const { error } = await supabase
+          .from('drinks')
+          .insert([{ ...formData, tenant_id: tenantId }])
         if (error) throw error
       }
-      setFormData({ category_id: '', name: '', price: 0, price_unit: '杯', price_bottle: null, price_unit_bottle: '瓶', sort_order: 0 })
-      fetchDrinks()
+      setFormData({
+        category_id: '',
+        name: '',
+        price: 0,
+        price_unit: '杯',
+        price_bottle: null,
+        price_unit_bottle: '瓶',
+        sort_order: 0,
+      })
+      refresh()
     } catch (error) {
       console.error('Error saving drink:', error)
       alert('保存失败，请重试')
@@ -124,12 +154,17 @@ export default function DrinksPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!tenantId) return
     if (!confirm('确定要删除这个酒品吗？')) return
 
     try {
-      const { error } = await supabase.from('drinks').delete().eq('id', id)
+      const { error } = await supabase
+        .from('drinks')
+        .delete()
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
       if (error) throw error
-      fetchDrinks()
+      refresh()
     } catch (error) {
       console.error('Error deleting drink:', error)
       alert('删除失败，请重试')
@@ -137,21 +172,19 @@ export default function DrinksPage() {
   }
 
   const handleToggleEnabled = async (drink: Drink) => {
+    if (!tenantId) return
     try {
       const { error } = await supabase
         .from('drinks')
         .update({ enabled: !drink.enabled })
         .eq('id', drink.id)
+        .eq('tenant_id', tenantId)
 
       if (error) throw error
-      fetchDrinks()
+      refresh()
     } catch (error) {
       console.error('Error toggling drink:', error)
     }
-  }
-
-  const getCategoryName = (categoryId: string) => {
-    return categories.find((c) => c.id === categoryId)?.name || '未知分类'
   }
 
   // Group drinks by category
@@ -165,7 +198,6 @@ export default function DrinksPage() {
     }))
     .filter((group) => group.drinks.length > 0)
 
-  // Drinks without a valid category
   const uncategorizedDrinks = drinks
     .filter((drink) => !categories.find((c) => c.id === drink.category_id))
     .sort((a, b) => a.sort_order - b.sort_order)
@@ -174,6 +206,17 @@ export default function DrinksPage() {
     return (
       <div className="admin-container">
         <p>加载中...</p>
+      </div>
+    )
+  }
+
+  if (!tenantId) {
+    return (
+      <div className="admin-container">
+        <div className="admin-header">
+          <h1>酒品管理</h1>
+        </div>
+        <p>当前账号未绑定门店（需要店主或员工角色）。</p>
       </div>
     )
   }
@@ -271,7 +314,15 @@ export default function DrinksPage() {
               type="button"
               onClick={() => {
                 setEditingId(null)
-                setFormData({ category_id: '', name: '', price: 0, price_unit: '杯', price_bottle: null, price_unit_bottle: '瓶', sort_order: 0 })
+                setFormData({
+                  category_id: '',
+                  name: '',
+                  price: 0,
+                  price_unit: '杯',
+                  price_bottle: null,
+                  price_unit_bottle: '瓶',
+                  sort_order: 0,
+                })
               }}
               className="admin-button admin-button-secondary"
             >
@@ -425,4 +476,3 @@ export default function DrinksPage() {
     </div>
   )
 }
-
