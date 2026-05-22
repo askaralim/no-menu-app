@@ -13,3 +13,4 @@ GRANT EXECUTE ON FUNCTION public.list_staff() TO authenticated;
 
 GRANT EXECUTE ON FUNCTION public.admin_list_tenants() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_set_tenant_status(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_create_bar(text, text) TO authenticated;

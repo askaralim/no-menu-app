@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import {
   DEFAULT_OPENING_HOUR_PICKER,
@@ -58,7 +59,11 @@ type DrinkServingRow = {
 const PUBLIC_STATUS = ['new', 'available', 'low', 'sold_out', 'coming_soon'] as const
 const SERVING_TYPES = ['draft', 'can', 'bottle', 'flight', 'other'] as const
 
-export default function TaplistAdminPage() {
+const PLATFORM_SLUG = '__platform__'
+
+type BarOption = { id: string; name: string; slug: string }
+
+function TaplistAdminPageInner() {
   const [role, setRole] = useState<UserRole>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [tenant, setTenant] = useState<TenantTaplistRow | null>(null)
@@ -82,6 +87,9 @@ export default function TaplistAdminPage() {
   const coverFileRef = useRef<HTMLInputElement>(null)
   const [visibilityBusy, setVisibilityBusy] = useState(false)
   const [expandedDrinkId, setExpandedDrinkId] = useState<string | null>(null)
+  const [barOptions, setBarOptions] = useState<BarOption[]>([])
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const isOwner = role === 'owner' || role === 'super_admin'
 
@@ -90,33 +98,37 @@ export default function TaplistAdminPage() {
     if (!user) return
     const { data: roles } = await supabase.from('user_roles').select('role, tenant_id').eq('user_id', user.id)
     const list = roles ?? []
+    const urlTenant = searchParams.get('tenant')
     let tid: string | null = null
-    const urlTenant =
-      typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tenant') : null
 
     if (list.some((r) => r.role === 'super_admin')) {
       setRole('super_admin')
-      type AdminTenantRow = { id: string; slug: string | null }
+      type AdminTenantRow = { id: string; slug: string | null; name: string }
       const { data: tenants, error: tenantsErr } = await supabase.rpc('admin_list_tenants')
-      if (tenantsErr) {
-        console.error(tenantsErr)
-        tid = list.find((r) => r.tenant_id)?.tenant_id ?? null
-      } else {
-        const bars = ((tenants ?? []) as AdminTenantRow[]).filter(
-          (t) => t.slug != null && t.slug !== '__platform__'
-        )
-        if (urlTenant && bars.some((t) => t.id === urlTenant)) tid = urlTenant
-        else {
-          const preferred = bars.find((t) => t.slug === '226')
-          tid = preferred?.id ?? bars[0]?.id ?? null
-        }
+      const bars = tenantsErr
+        ? []
+        : ((tenants ?? []) as AdminTenantRow[]).filter(
+            (t) => t.slug != null && t.slug !== PLATFORM_SLUG
+          )
+      if (tenantsErr) console.error(tenantsErr)
+      setBarOptions(bars.map((t) => ({ id: t.id, name: t.name, slug: t.slug! })))
+      if (urlTenant && bars.some((t) => t.id === urlTenant)) tid = urlTenant
+      else if (bars.length > 0) tid = bars[0].id
+    } else {
+      const ownerRows = list.filter((r) => r.role === 'owner')
+      if (ownerRows.length > 0) {
+        setRole('owner')
+        const allowed = ownerRows.map((r) => r.tenant_id)
+        setBarOptions([])
+        if (urlTenant && allowed.includes(urlTenant)) tid = urlTenant
+        else tid = ownerRows[0].tenant_id
+      } else if (list[0]) {
+        setRole(list[0].role as UserRole)
+        tid = list[0].tenant_id
       }
-    } else if (list[0]) {
-      setRole(list[0].role as UserRole)
-      tid = list[0].tenant_id
     }
     setTenantId(tid)
-  }, [])
+  }, [searchParams])
 
   const loadTenant = useCallback(async (tid: string) => {
     const { data, error } = await supabase
@@ -152,8 +164,12 @@ export default function TaplistAdminPage() {
     return pickerToOpeningHourJson(openingHourPicker)
   }
 
-  const loadCategories = useCallback(async () => {
-    const { data, error } = await supabase.from('categories').select('*').order('sort_order')
+  const loadCategories = useCallback(async (tid: string) => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('tenant_id', tid)
+      .order('sort_order')
     if (error) {
       console.error(error)
       return
@@ -161,12 +177,14 @@ export default function TaplistAdminPage() {
     setCategories((data ?? []) as (Category & { is_public_visible?: boolean })[])
   }, [])
 
-  const loadDrinks = useCallback(async () => {
+  const loadDrinks = useCallback(async (tid: string) => {
     const { data, error } = await supabase
       .from('drinks')
       .select(
         'id,category_id,brand_name,name,volume_ml,price,price_unit,price_bottle,price_unit_bottle,sort_order,enabled,stock,ml_per_cup,ml_per_bottle,created_at,image_url,is_public_visible,public_status,public_sort_order'
       )
+      .eq('tenant_id', tid)
+      .eq('enabled', true)
       .order('sort_order')
     if (error) {
       console.error(error)
@@ -186,7 +204,7 @@ export default function TaplistAdminPage() {
   useEffect(() => {
     if (!tenantId || !isOwner) return
     ;(async () => {
-      await Promise.all([loadTenant(tenantId), loadCategories(), loadDrinks()])
+      await Promise.all([loadTenant(tenantId), loadCategories(tenantId), loadDrinks(tenantId)])
     })()
   }, [tenantId, isOwner, loadTenant, loadCategories, loadDrinks])
 
@@ -264,6 +282,37 @@ export default function TaplistAdminPage() {
     }
   }
 
+
+  const drinksByCategory = useMemo(() => {
+    const map: Record<string, Drink[]> = {}
+    for (const d of drinks) {
+      if (!map[d.category_id]) map[d.category_id] = []
+      map[d.category_id].push(d)
+    }
+    return map
+  }, [drinks])
+
+  const switchTenant = (id: string) => {
+    router.push(`/admin/taplist?tenant=${id}`)
+  }
+
+  const toggleDrinkPublic = async (drink: Drink, nextVisible: boolean) => {
+    try {
+      const { error } = await supabase.rpc('set_drink_taplist_consumer_fields', {
+        p_drink_id: drink.id,
+        p_image_url: drink.image_url ?? '',
+        p_is_public_visible: nextVisible,
+        p_public_status: drink.public_status || 'available',
+        p_public_sort_order: drink.public_sort_order ?? 0,
+      })
+      if (error) throw error
+      if (tenantId) await loadDrinks(tenantId)
+    } catch (err) {
+      console.error(err)
+      alert(err instanceof Error ? err.message : '更新酒款公开状态失败')
+    }
+  }
+
   const toggleCategoryVisible = async (cat: Category & { is_public_visible?: boolean }) => {
     const next = !(cat.is_public_visible !== false)
     const { error } = await supabase.from('categories').update({ is_public_visible: next }).eq('id', cat.id)
@@ -317,6 +366,30 @@ export default function TaplistAdminPage() {
     <div className="admin-container">
       <div className="admin-header">
         <h1>Tap List 发布</h1>
+        <p style={{ color: '#4b5563', marginTop: '0.5rem' }}>
+          当前编辑门店：<strong>{tenant.display_name || tenant.name}</strong>
+          <code style={{ marginLeft: 8, fontSize: '0.9rem' }}>{tenant.slug}</code>
+        </p>
+        {role === 'super_admin' && barOptions.length > 0 ? (
+          <div style={{ marginTop: '0.75rem' }}>
+            <label className="admin-label" htmlFor="tenant-picker">
+              切换门店
+            </label>
+            <select
+              id="tenant-picker"
+              className="admin-input"
+              style={{ maxWidth: 360, marginTop: 4 }}
+              value={tenantId ?? ''}
+              onChange={(e) => switchTenant(e.target.value)}
+            >
+              {barOptions.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name} ({b.slug})
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
       </div>
 
       <div className="admin-section">
@@ -403,51 +476,97 @@ export default function TaplistAdminPage() {
       </div>
 
       <div className="admin-section">
-        <h2>分类在 Tap List 可见</h2>
-        <div className="admin-table-wrapper">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>分类</th>
-                <th>Tap List</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categories.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.name}</td>
-                  <td>
-                    <label className="admin-label-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={c.is_public_visible !== false}
-                        onChange={() => toggleCategoryVisible(c)}
-                      />
-                      <span>公开</span>
-                    </label>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="admin-section">
-        <h2>酒款 Tap List</h2>
+        <h2>分类与酒款（Tap List）</h2>
         <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-          上架 POS（enabled）的酒不能同时对消费者公开（数据库约束）。售价与容量以「供应规格」为准。
+          仅显示 POS 已启用（enabled）的酒款。未启用的酒请在「酒品管理」中上架。售价与容量以「供应规格」为准。
         </p>
-        {drinks.map((d) => (
-          <DrinkTaplistPanel
-            key={d.id}
-            drink={d}
-            tenantId={tenantId}
-            expanded={expandedDrinkId === d.id}
-            onToggle={() => setExpandedDrinkId((id) => (id === d.id ? null : d.id))}
-            onDrinkSaved={loadDrinks}
-          />
-        ))}
+        {categories.length === 0 ? (
+          <p style={{ color: '#6b7280' }}>暂无分类，请先在「分类管理」中添加。</p>
+        ) : (
+          categories.map((c) => {
+            const catDrinks = drinksByCategory[c.id] ?? []
+            return (
+              <div
+                key={c.id}
+                style={{
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 8,
+                  marginBottom: 16,
+                  padding: 12,
+                  background: '#fff',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: catDrinks.length > 0 ? 12 : 0,
+                  }}
+                >
+                  <strong style={{ fontSize: '1.05rem' }}>{c.name}</strong>
+                  <label className="admin-label-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={c.is_public_visible !== false}
+                      onChange={() => toggleCategoryVisible(c)}
+                    />
+                    <span>公开</span>
+                  </label>
+                </div>
+                {catDrinks.length === 0 ? (
+                  <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>
+                    该分类下暂无已上架酒款 — 请先在「酒品管理」中启用。
+                  </p>
+                ) : (
+                  catDrinks.map((d) => (
+                    <div key={d.id} style={{ marginLeft: 8, marginBottom: 8 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '8px 0',
+                          borderBottom: expandedDrinkId === d.id ? 'none' : '1px solid #f3f4f6',
+                        }}
+                      >
+                        <span style={{ flex: '1 1 200px', minWidth: 0 }}>
+                          {[d.brand_name, d.name].filter(Boolean).join(' · ')}
+                        </span>
+                        <label className="admin-label-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={!!d.is_public_visible}
+                            onChange={(e) => void toggleDrinkPublic(d, e.target.checked)}
+                          />
+                          <span>公开</span>
+                        </label>
+                        <button
+                          type="button"
+                          className="admin-button admin-button-secondary"
+                          onClick={() => setExpandedDrinkId((id) => (id === d.id ? null : d.id))}
+                        >
+                          {expandedDrinkId === d.id ? '收起' : '编辑 Tap List'}
+                        </button>
+                      </div>
+                      {expandedDrinkId === d.id ? (
+                        <DrinkTaplistPanel
+                          drink={d}
+                          tenantId={tenantId}
+                          expanded
+                          onToggle={() => setExpandedDrinkId(null)}
+                          onDrinkSaved={() => tenantId && loadDrinks(tenantId)}
+                          hideHeader
+                        />
+                      ) : null}
+                    </div>
+                  ))
+                )}
+              </div>
+            )
+          })
+        )}
       </div>
     </div>
   )
@@ -459,12 +578,14 @@ function DrinkTaplistPanel({
   expanded,
   onToggle,
   onDrinkSaved,
+  hideHeader = false,
 }: {
   drink: Drink
   tenantId: string
   expanded: boolean
   onToggle: () => void
   onDrinkSaved: () => void
+  hideHeader?: boolean
 }) {
   const [form, setForm] = useState({
     image_url: drink.image_url ?? '',
@@ -637,40 +758,36 @@ function DrinkTaplistPanel({
     await loadPanel()
   }
 
+  if (!expanded) return null
+
   return (
     <div
       style={{
         border: '1px solid #e5e7eb',
         borderRadius: 8,
-        marginBottom: 12,
+        marginTop: 8,
+        marginBottom: 4,
         padding: 12,
         background: '#fafafa',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <strong>{drink.name}</strong>
-        <button type="button" className="admin-button admin-button-secondary" onClick={onToggle}>
-          {expanded ? '收起' : '编辑 Tap List'}
-        </button>
-      </div>
-      {!drink.enabled ? (
-        <p style={{ fontSize: 13, color: '#b45309', marginTop: 8 }}>
-          该酒款在 POS 中为「未启用」。数据库规则：只有已启用的酒款才能对消费者公开 Tap List。请先在「酒品管理」中启用后再勾选下方公开选项。
-        </p>
-      ) : null}
-      <label className="admin-label-checkbox" style={{ marginTop: 8 }}>
-        <input
-          type="checkbox"
-          checked={form.is_public_visible}
-          disabled={!drink.enabled}
-          onChange={(e) => setForm({ ...form, is_public_visible: e.target.checked })}
-        />
-        <span>对消费者公开（Tap List）</span>
-      </label>
-      {drink.enabled && !form.is_public_visible ? (
-        <p style={{ fontSize: 12, color: '#6b7280', marginTop: 6 }}>
-          已上架 POS；勾选上方即可同时出现在消费者 Tap List（需门店与分类也已公开）。
-        </p>
+      {!hideHeader ? (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <strong>{drink.name}</strong>
+            <button type="button" className="admin-button admin-button-secondary" onClick={onToggle}>
+              收起
+            </button>
+          </div>
+          <label className="admin-label-checkbox" style={{ marginTop: 8 }}>
+            <input
+              type="checkbox"
+              checked={form.is_public_visible}
+              onChange={(e) => setForm({ ...form, is_public_visible: e.target.checked })}
+            />
+            <span>对消费者公开（Tap List）</span>
+          </label>
+        </>
       ) : null}
 
       {expanded ? (
@@ -1011,5 +1128,19 @@ function OpeningHourPickerFields({
         </select>
       </div>
     </div>
+  )
+}
+
+
+
+export default function TaplistAdminPage() {
+  return (
+    <Suspense fallback={
+      <div className="admin-container">
+        <p>加载中...</p>
+      </div>
+    }>
+      <TaplistAdminPageInner />
+    </Suspense>
   )
 }
