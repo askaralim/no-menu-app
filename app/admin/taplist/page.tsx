@@ -119,7 +119,14 @@ function TaplistAdminPageInner() {
       if (ownerRows.length > 0) {
         setRole('owner')
         const allowed = ownerRows.map((r) => r.tenant_id)
-        setBarOptions([])
+        const { data: ownerBars } = await supabase
+          .from('tenants')
+          .select('id, name, slug')
+          .in('id', allowed)
+        const options = (ownerBars ?? [])
+          .filter((t) => t.slug !== PLATFORM_SLUG)
+          .map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
+        setBarOptions(options)
         if (urlTenant && allowed.includes(urlTenant)) tid = urlTenant
         else tid = ownerRows[0].tenant_id
       } else if (list[0]) {
@@ -349,7 +356,10 @@ function TaplistAdminPageInner() {
         <div className="admin-header">
           <h1>Tap List 发布</h1>
         </div>
-        <p>当前账号未绑定门店（tenant_id）。超级管理员请从平台管理绑定门店后再编辑。</p>
+        <p>
+          当前账号未绑定门店。超级管理员请先在{' '}
+          <a href="/admin/platform">平台管理</a> 创建酒吧，或通过「编辑 Tap List」进入指定门店。
+        </p>
       </div>
     )
   }
@@ -370,7 +380,7 @@ function TaplistAdminPageInner() {
           当前编辑门店：<strong>{tenant.display_name || tenant.name}</strong>
           <code style={{ marginLeft: 8, fontSize: '0.9rem' }}>{tenant.slug}</code>
         </p>
-        {role === 'super_admin' && barOptions.length > 0 ? (
+        {barOptions.length > 1 ? (
           <div style={{ marginTop: '0.75rem' }}>
             <label className="admin-label" htmlFor="tenant-picker">
               切换门店

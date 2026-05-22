@@ -145,7 +145,7 @@ export default function PlatformAdminPage() {
           {role === 'super_admin' && (
             <p style={{ color: '#888', marginTop: '1rem', fontSize: '0.95rem', maxWidth: '36rem', marginLeft: 'auto', marginRight: 'auto' }}>
               若提示 permission denied 或 function 不存在，请在 Supabase SQL Editor 执行{' '}
-              <code style={{ color: '#ccc' }}>supabase/migration 20260524120000_admin_create_bar_concierge.sql</code>
+              <code style={{ color: '#ccc' }}>supabase/migrations/20260524120000_admin_create_bar_concierge.sql</code>
               末尾的 <code style={{ color: '#ccc' }}>GRANT</code> 段（或在新库完整执行该安装脚本）。
             </p>
           )}

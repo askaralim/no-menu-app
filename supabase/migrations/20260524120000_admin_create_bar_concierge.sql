@@ -85,3 +85,35 @@ CREATE POLICY drinks_super_admin ON public.drinks
       WHERE ur.user_id = auth.uid() AND ur.role = 'super_admin'
     )
   );
+
+DROP POLICY IF EXISTS drink_beer_profiles_super_admin ON public.drink_beer_profiles;
+CREATE POLICY drink_beer_profiles_super_admin ON public.drink_beer_profiles
+  FOR ALL TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid() AND ur.role = 'super_admin'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid() AND ur.role = 'super_admin'
+    )
+  );
+
+DROP POLICY IF EXISTS drink_serving_options_super_admin ON public.drink_serving_options;
+CREATE POLICY drink_serving_options_super_admin ON public.drink_serving_options
+  FOR ALL TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid() AND ur.role = 'super_admin'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid() AND ur.role = 'super_admin'
+    )
+  );
