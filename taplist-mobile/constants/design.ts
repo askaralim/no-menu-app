@@ -24,6 +24,7 @@ export const palette = {
   tungsten: '#C6A875',
   olive: '#9CA85A',
   darkOlive: '#343A28',
+  liveGreen: '#A8C23F',
   black: '#000000',
 }
 

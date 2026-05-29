@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { Link } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { BlurView } from 'expo-blur'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
@@ -94,11 +95,18 @@ function BarFeedCard({
             <View style={styles.cardOverlay}>
               <View style={styles.cardRule} />
               <Text style={styles.barName}>{bar.display_name || bar.name}</Text>
-              <Text style={styles.barMeta}>{location}</Text>
-              {updatedLabel ? <Text style={styles.barUpdated}>{updatedLabel}</Text> : null}
+              <Text style={styles.barMeta} numberOfLines={1} ellipsizeMode="tail">
+                {location}
+              </Text>
               {feedStatus ? <Text style={styles.barStatus}>{feedStatus}</Text> : null}
             </View>
           </AtmosphereImage>
+          {updatedLabel ? (
+            <BlurView intensity={24} tint="dark" style={styles.livePill} pointerEvents="none">
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>{updatedLabel}</Text>
+            </BlurView>
+          ) : null}
         </View>
       </Pressable>
     </Link>
@@ -239,6 +247,7 @@ const styles = StyleSheet.create({
     left: spacing.lg,
     right: spacing.lg,
     bottom: spacing.lg,
+    alignItems: 'flex-start',
   },
   cardRule: {
     width: spacing.xl,
@@ -255,10 +264,33 @@ const styles = StyleSheet.create({
     color: palette.muted,
     marginTop: spacing.xs,
   },
-  barUpdated: {
-    ...typography.caption,
-    color: palette.faint,
-    marginTop: spacing.xs,
+  livePill: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(8,8,8,0.82)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxs,
+    borderRadius: 4,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(245,241,230,0.16)',
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: palette.liveGreen,
+  },
+  liveText: {
+    ...typography.label,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 1.5,
+    color: palette.tungsten,
   },
   barStatus: {
     ...typography.label,
