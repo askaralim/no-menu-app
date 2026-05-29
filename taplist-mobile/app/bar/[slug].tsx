@@ -54,7 +54,7 @@ export default function BarDetailScreen() {
             <AtmosphereImage source={tenant.cover_image_url} aspectRatio={4 / 3} overlayOpacity={0.54}>
               <Text style={styles.title}>{tenant.display_name || tenant.name}</Text>
               {tenant.district ? <Text style={styles.heroDistrict}>{tenant.district}</Text> : null}
-              <Text style={styles.heroSub}>精酿酒吧 · 今晚 {drinks.length} 款在售</Text>
+              <Text style={styles.heroSub}>今晚 {drinks.length} 款在售</Text>
             </AtmosphereImage>
             {(tenant.address || openingHoursLabel || tenant.description) ? (
               <View style={styles.barInfoStrip}>

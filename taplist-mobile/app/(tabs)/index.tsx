@@ -9,7 +9,7 @@ import { palette, spacing, typography } from '@/constants/design'
 import { DEFAULT_TAPLIST_CITY } from '@/constants/taplist'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicBars } from '@/lib/api/taplist'
-import { sortPublicBarsByMenuUpdated } from '@/lib/formatTaplist'
+import { formatRelativeUpdatedAt, sortPublicBarsByMenuUpdated } from '@/lib/formatTaplist'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicBarRow } from '@/lib/types'
 
@@ -40,7 +40,7 @@ export default function TonightScreen() {
         <Text style={styles.title}>TONIGHT</Text>
         <Text style={styles.cityPreposition}>in</Text>
         <Text style={styles.city}>上海</Text>
-        {bars.length > 0 ? <Text style={styles.headerMeta}>{bars.length} 家酒吧公开酒单</Text> : null}
+        {bars.length > 0 ? <Text style={styles.headerMeta}>{bars.length} 家精酿酒吧公开酒单</Text> : null}
       </View>
 
       {barsQuery.isLoading ? (
@@ -84,6 +84,7 @@ function BarFeedCard({
 }) {
   const location = shortBarLocation(bar)
   const feedStatus = compactStatusCounts(bar)
+  const updatedLabel = formatRelativeUpdatedAt(bar.last_menu_updated_at)
 
   return (
     <Link href={`/bar/${bar.slug}`} asChild>
@@ -94,6 +95,7 @@ function BarFeedCard({
               <View style={styles.cardRule} />
               <Text style={styles.barName}>{bar.display_name || bar.name}</Text>
               <Text style={styles.barMeta}>{location}</Text>
+              {updatedLabel ? <Text style={styles.barUpdated}>{updatedLabel}</Text> : null}
               {feedStatus ? <Text style={styles.barStatus}>{feedStatus}</Text> : null}
             </View>
           </AtmosphereImage>
@@ -251,6 +253,11 @@ const styles = StyleSheet.create({
   barMeta: {
     ...typography.caption,
     color: palette.muted,
+    marginTop: spacing.xs,
+  },
+  barUpdated: {
+    ...typography.caption,
+    color: palette.faint,
     marginTop: spacing.xs,
   },
   barStatus: {

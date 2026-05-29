@@ -8,6 +8,7 @@ type AtmosphereImageProps = {
   height?: number
   aspectRatio?: number
   overlayOpacity?: number
+  scrimOpacity?: number
   children?: React.ReactNode
 }
 
@@ -16,6 +17,7 @@ export function AtmosphereImage({
   height,
   aspectRatio,
   overlayOpacity = 0.36,
+  scrimOpacity = 1,
   children,
 }: AtmosphereImageProps) {
   const frameStyle = [
@@ -30,8 +32,8 @@ export function AtmosphereImage({
         <LinearGradient
           colors={[
             `rgba(75,54,31,${overlayOpacity})`,
-            'rgba(13,13,13,0.78)',
-            'rgba(13,13,13,0.96)',
+            `rgba(13,13,13,${0.78 * scrimOpacity})`,
+            `rgba(13,13,13,${0.96 * scrimOpacity})`,
           ]}
           style={styles.tint}>
           <View pointerEvents="none" style={styles.grain} />
@@ -46,8 +48,8 @@ export function AtmosphereImage({
       <LinearGradient
         colors={[
           `rgba(75,54,31,${overlayOpacity})`,
-          'rgba(13,13,13,0.52)',
-          'rgba(13,13,13,0.96)',
+          `rgba(13,13,13,${0.52 * scrimOpacity})`,
+          `rgba(13,13,13,${0.96 * scrimOpacity})`,
         ]}
         style={styles.tint}>
         <View pointerEvents="none" style={styles.grain} />

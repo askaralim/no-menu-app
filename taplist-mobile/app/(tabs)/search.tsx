@@ -79,11 +79,21 @@ export default function SearchScreen() {
           autoCapitalize="none"
           clearButtonMode="never"
         />
+        {query.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="清空搜索"
+            hitSlop={10}
+            onPress={() => setQuery('')}
+            style={({ pressed }) => [styles.clearButton, pressed && styles.clearButtonPressed]}>
+            <FontAwesome name="times-circle" size={18} color={palette.faint} />
+          </Pressable>
+        ) : null}
       </View>
 
       {!isSearching ? (
         <>
-          <Text style={styles.sectionTitle}>风格发现</Text>
+          <Text style={styles.sectionTitle}>风格</Text>
           <View style={styles.tileGrid}>
             {styleTiles.map((tile) => (
               <Pressable
@@ -107,7 +117,6 @@ export default function SearchScreen() {
 
       {configured && showDrinkSection ? (
         <>
-          <Text style={styles.sectionTitle}>酒款</Text>
           {drinksQuery.isLoading ? (
             <View style={styles.loading}>
               <ActivityIndicator color={palette.amber} />
@@ -138,26 +147,30 @@ function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
       : drink.beer_style ?? '风格待定'
 
   return (
-    <Link href={`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`} asChild>
-      <Pressable style={({ pressed }) => [styles.drinkRow, pressed && styles.pressed]}>
-        <View style={styles.drinkRowInner}>
-          <BeerArtwork name={drink.name} source={drink.image_url} size={62} />
-          <View style={styles.drinkCopy}>
-            <Text style={styles.resultName}>{drink.name}</Text>
-            <Text style={styles.resultMeta}>{brewery}</Text>
-            <Text style={styles.drinkStyle}>{styleLine}</Text>
-            <Text style={styles.drinkVenue}>
-              {drink.tenant_display_name}
-              {drink.tenant_address
-                ? ` · ${drink.tenant_address}`
-                : drink.tenant_district
-                  ? ` · ${drink.tenant_district}`
-                  : ''}
-            </Text>
+    <View style={styles.resultItem}>
+      <Link href={`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`} asChild>
+        <Pressable style={({ pressed }) => [styles.drinkPressable, pressed && styles.pressed]}>
+          <View style={styles.drinkRowInner}>
+            <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
+            <View style={styles.drinkCopy}>
+              <Text style={styles.resultName} numberOfLines={2}>
+                {drink.name}
+              </Text>
+              <Text style={styles.resultMeta}>{brewery}</Text>
+              <Text style={styles.drinkStyle}>{styleLine}</Text>
+              <Text style={styles.drinkVenue}>
+                {drink.tenant_display_name}
+                {drink.tenant_address
+                  ? ` · ${drink.tenant_address}`
+                  : drink.tenant_district
+                    ? ` · ${drink.tenant_district}`
+                    : ''}
+              </Text>
+            </View>
           </View>
-        </View>
-      </Pressable>
-    </Link>
+        </Pressable>
+      </Link>
+    </View>
   )
 }
 
@@ -210,6 +223,15 @@ const styles = StyleSheet.create({
     color: palette.text,
     paddingHorizontal: 0,
   },
+  clearButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearButtonPressed: {
+    opacity: 0.55,
+  },
   sectionTitle: {
     ...typography.displayL,
     color: palette.text,
@@ -261,15 +283,18 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: palette.muted,
   },
-  drinkRow: {
+  resultItem: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(245,241,230,0.12)',
-    paddingVertical: spacing.md,
-    minHeight: 104,
+    paddingBottom: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  drinkPressable: {
+    paddingTop: spacing.sm,
   },
   drinkRowInner: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.lg,
     alignItems: 'flex-start',
   },
   pressed: {
@@ -283,22 +308,25 @@ const styles = StyleSheet.create({
     ...typography.displayL,
     color: palette.text,
     fontSize: 22,
-    lineHeight: 26,
+    lineHeight: 28,
   },
   resultMeta: {
     ...typography.caption,
     color: palette.muted,
     marginTop: spacing.xxs,
+    lineHeight: 19,
   },
   drinkStyle: {
     ...typography.caption,
     color: palette.faint,
     marginTop: spacing.xxs,
+    lineHeight: 18,
   },
   drinkVenue: {
     ...typography.micro,
     color: palette.tungsten,
-    marginTop: spacing.xs,
+    marginTop: 3,
+    lineHeight: 16,
   },
   emptyState: {
     borderTopWidth: 1,

@@ -66,7 +66,7 @@ export default function BeerDetailScreen() {
           <>
             {artworkUrl ? (
               <View style={styles.coverFrame}>
-                <AtmosphereImage source={artworkUrl} aspectRatio={1} overlayOpacity={0.18} />
+                <AtmosphereImage source={artworkUrl} aspectRatio={1} overlayOpacity={0.18} scrimOpacity={0.4} />
               </View>
             ) : null}
 
@@ -83,7 +83,7 @@ export default function BeerDetailScreen() {
               <Meta label="ABV" value={typeof drink.beer?.abv === 'number' ? `${drink.beer.abv}%` : '/'} />
               <Meta label="IBU" value={typeof drink.beer?.ibu === 'number' ? `${drink.beer.ibu}` : '/'} />
               <Meta label="酒厂" value={drink.beer?.brewery ?? drink.brand_name ?? '/'} />
-              <Meta label="国家" value={drink.beer?.country ?? '/'} />
+              <Meta label="产地" value={drink.beer?.country ?? '/'} />
             </View>
 
             <Text style={styles.sectionTitle}>杯型与价格</Text>
@@ -186,9 +186,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     shadowColor: palette.black,
     shadowOpacity: 0.55,
-    shadowRadius: 28,
+    shadowRadius: 22,
     shadowOffset: { width: 0, height: spacing.lg },
-    elevation: 12,
+    elevation: 8,
   },
   kicker: {
     ...typography.label,
