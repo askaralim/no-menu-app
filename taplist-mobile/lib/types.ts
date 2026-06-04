@@ -69,6 +69,12 @@ export type PublicServingOption = {
   public_sort_order: number
 }
 
+export type PublicSearchServingOption = {
+  label: string | null
+  volume_ml: number | null
+  price: number | null
+}
+
 export type PublicDrinkRow = {
   id: string
   category_id: string
@@ -107,6 +113,7 @@ export type PublicTaplistSearchResult = {
   brewery: string | null
   beer_style: string | null
   abv: number | null
+  default_serving: PublicSearchServingOption | null
 }
 
 /** RPC `search_public_taplist` JSON union */

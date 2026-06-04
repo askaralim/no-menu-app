@@ -69,7 +69,7 @@ export default function SearchScreen() {
       <View style={styles.inputFrame}>
         <FontAwesome name="search" size={17} color={palette.faint} />
         <TextInput
-          placeholder="搜索酒款、酒厂或风格"
+          placeholder="搜索酒款、酒厂、风格或酒吧"
           placeholderTextColor={palette.faint}
           style={styles.input}
           selectionColor={palette.amber}
@@ -128,7 +128,7 @@ export default function SearchScreen() {
               body="请在 Supabase 执行 search_public_taplist 迁移后重试。"
             />
           ) : drinkResults.length === 0 ? (
-            <EmptyState title="没有匹配的酒款" body="试试酒厂名、风格或酒款中文名。" />
+            <EmptyState title="没有匹配的酒款" body="试试酒厂名、风格、酒款中文名或酒吧名称。" />
           ) : (
             drinkResults.map((drink) => <DrinkResult key={drink.drink_id} drink={drink} />)
           )}
@@ -140,14 +140,15 @@ export default function SearchScreen() {
 }
 
 function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
-  const brewery = drink.brewery ?? drink.brand_name ?? '酒厂待定'
-  const styleLine =
-    typeof drink.abv === 'number'
-      ? `${drink.beer_style ?? '风格待定'} · ${drink.abv}%`
-      : drink.beer_style ?? '风格待定'
+  const brewery = drink.brewery ?? drink.brand_name
+  const styleLine = [drink.beer_style, typeof drink.abv === 'number' ? `${drink.abv}%` : null]
+    .filter(Boolean)
+    .join(' · ')
+  const servingLine = searchServingLine(drink.default_serving)
+  const isSoldOut = drink.public_status === '售罄'
 
   return (
-    <View style={styles.resultItem}>
+    <View style={[styles.resultItem, isSoldOut && styles.resultItemMuted]}>
       <Link href={`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`} asChild>
         <Pressable style={({ pressed }) => [styles.drinkPressable, pressed && styles.pressed]}>
           <View style={styles.drinkRowInner}>
@@ -156,8 +157,8 @@ function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
               <Text style={styles.resultName} numberOfLines={2}>
                 {drink.name}
               </Text>
-              <Text style={styles.resultMeta}>{brewery}</Text>
-              <Text style={styles.drinkStyle}>{styleLine}</Text>
+              {brewery ? <Text style={styles.resultMeta}>{brewery}</Text> : null}
+              {styleLine ? <Text style={styles.drinkStyle}>{styleLine}</Text> : null}
               <Text style={styles.drinkVenue}>
                 {drink.tenant_display_name}
                 {drink.tenant_address
@@ -166,12 +167,37 @@ function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
                     ? ` · ${drink.tenant_district}`
                     : ''}
               </Text>
+              <View style={styles.resultDetailBlock}>
+                {drink.public_status ? (
+                  <View style={[styles.statusBadge, isSoldOut && styles.statusBadgeMuted]}>
+                    <Text style={[styles.statusText, isSoldOut && styles.statusTextMuted]}>
+                      {drink.public_status}
+                    </Text>
+                  </View>
+                ) : null}
+                {servingLine ? (
+                  <View style={styles.servingPill}>
+                    <Text style={styles.servingLine}>{servingLine}</Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
           </View>
         </Pressable>
       </Link>
     </View>
   )
+}
+
+function searchServingLine(serving: PublicTaplistSearchResult['default_serving']) {
+  if (!serving) return null
+  const parts = [
+    serving.label,
+    serving.volume_ml ? `${serving.volume_ml}ml` : null,
+    typeof serving.price === 'number' && serving.price > 0 ? `¥${serving.price}` : null,
+  ].filter(Boolean)
+
+  return parts.length > 0 ? parts.join(' · ') : null
 }
 
 function EmptyState({ title, body }: { title: string; body: string }) {
@@ -289,6 +315,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
     marginBottom: spacing.lg,
   },
+  resultItemMuted: {
+    opacity: 0.52,
+  },
   drinkPressable: {
     paddingTop: spacing.sm,
   },
@@ -326,6 +355,47 @@ const styles = StyleSheet.create({
     ...typography.micro,
     color: palette.tungsten,
     marginTop: 3,
+    lineHeight: 16,
+  },
+  resultDetailBlock: {
+    alignItems: 'flex-start',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(159,122,61,0.24)',
+    backgroundColor: 'rgba(159,122,61,0.14)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxs,
+  },
+  statusBadgeMuted: {
+    borderColor: 'rgba(117,111,101,0.18)',
+    backgroundColor: 'rgba(117,111,101,0.14)',
+  },
+  statusText: {
+    ...typography.label,
+    color: palette.tungsten,
+    fontSize: 10,
+    lineHeight: 12,
+  },
+  statusTextMuted: {
+    color: palette.faint,
+  },
+  servingPill: {
+    alignSelf: 'flex-start',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(245,241,232,0.08)',
+    backgroundColor: 'rgba(17,17,17,0.38)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxs,
+  },
+  servingLine: {
+    ...typography.micro,
+    color: palette.muted,
     lineHeight: 16,
   },
   emptyState: {

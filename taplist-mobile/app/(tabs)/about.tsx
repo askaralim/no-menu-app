@@ -7,6 +7,7 @@ import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 
 const privacyPolicyUrl =
   (Constants.expoConfig?.extra as { privacyPolicyUrl?: string } | undefined)?.privacyPolicyUrl?.trim() ?? ''
+const contactNumber = '15998568171'
 
 export default function AboutScreen() {
   const insets = useSafeAreaInsets()
@@ -15,15 +16,30 @@ export default function AboutScreen() {
     <ScrollView
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
-      <Text style={styles.kicker}>无菜单酒单</Text>
-      <Text style={styles.title}>今晚在上海</Text>
+      <Text style={styles.kicker}>No Menu</Text>
+      <Text style={styles.title}>Tonight in Shanghai</Text>
       <Text style={styles.body}>
-        无菜单酒单 Tap List 展示合作酒吧自愿公开的精酿酒单、门店信息与当晚在售规格，帮助你快速判断今晚有哪些好喝的生啤。
+        No Menu 展示合作酒吧自愿公开的精酿酒单、门店信息与当晚在售规格，帮助你快速判断今晚有哪些好喝的生啤。
       </Text>
 
       <View style={styles.disclaimerBlock}>
         <Text style={styles.disclaimerLabel}>免责声明</Text>
         <Text style={styles.disclaimer}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
+      </View>
+
+      <View style={styles.contactBlock}>
+        <Text style={styles.disclaimerLabel}>联系 No Menu</Text>
+        <Text style={styles.contactBody}>
+          酒吧入驻、酒单信息更正或其他联系，请通过微信联系。
+        </Text>
+        <Pressable
+          style={({ pressed }) => [styles.contactRow, pressed && styles.contactRowPressed]}
+          onPress={() => void Linking.openURL(`tel:${contactNumber}`)}
+          accessibilityRole="button"
+          accessibilityLabel="联系 No Menu">
+          <Text style={styles.metaLabel}>微信 / 电话</Text>
+          <Text style={[styles.metaValue, styles.link]}>{contactNumber}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.metaRow}>
@@ -90,6 +106,26 @@ const styles = StyleSheet.create({
   disclaimer: {
     ...typography.caption,
     color: palette.faint,
+  },
+  contactBlock: {
+    paddingBottom: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  contactBody: {
+    ...typography.caption,
+    color: palette.muted,
+    marginBottom: spacing.md,
+  },
+  contactRow: {
+    borderTopWidth: 1,
+    borderTopColor: palette.line,
+    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+  },
+  contactRowPressed: {
+    opacity: 0.72,
   },
   metaRow: {
     borderTopWidth: 1,

@@ -49,11 +49,10 @@ export function formatBarFeedLabels(bar: PublicBarRow): string[] {
 }
 
 export function formatServing(option?: PublicServingOption | null) {
-  if (!option) return '暂无规格'
+  if (!option) return null
 
-  const volume = option.volume_ml ? `${option.volume_ml}ml` : '规格待定'
-  const label = localizeServingLabel(option.label || option.serving_type || '杯型待定')
-  return `${label} · ${volume} · ¥${option.price}`
+  const parts = servingParts(option)
+  return parts.length > 0 ? parts.join(' · ') : null
 }
 
 export function defaultServing(drink: PublicDrinkRow) {
@@ -80,9 +79,9 @@ export function displayServingOptions(options: PublicServingOption[]) {
 }
 
 export function beerStyleLine(drink: PublicDrinkRow) {
-  const style = drink.beer?.beer_style ?? '风格待定'
-  const abv = typeof drink.beer?.abv === 'number' ? `${drink.beer.abv}%` : '酒精度待定'
-  return `${style} · ${abv}`
+  return [drink.beer?.beer_style, typeof drink.beer?.abv === 'number' ? `${drink.beer.abv}%` : null]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 export function menuUpdatedLabel(value?: string | null) {
@@ -108,6 +107,15 @@ function localizeServingLabel(label: string) {
   }
 
   return labels[normalized] ?? label
+}
+
+export function servingParts(option: Pick<PublicServingOption, 'label' | 'serving_type' | 'volume_ml' | 'price'>) {
+  const label = option.label || option.serving_type
+  return [
+    label ? localizeServingLabel(label) : null,
+    option.volume_ml ? `${option.volume_ml}ml` : null,
+    option.price > 0 ? `¥${option.price}` : null,
+  ].filter((part): part is string => Boolean(part))
 }
 
 /** Tonight feed order: matches `get_public_taplist_bars` (`ORDER BY last_menu_updated_at DESC NULLS LAST`). */

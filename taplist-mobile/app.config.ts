@@ -36,6 +36,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       infoPlist: {
         ...base.ios?.infoPlist,
         ITSAppUsesNonExemptEncryption: false,
+        NSPhotoLibraryUsageDescription: 'No Menu 需要访问相册权限以保存酒单图片。',
+        NSPhotoLibraryAddUsageDescription: 'No Menu 需要保存酒单图片到你的相册。',
         NSAppTransportSecurity: {
           NSAllowsLocalNetworking: true,
         },

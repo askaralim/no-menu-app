@@ -1,19 +1,25 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome'
+import * as MediaLibrary from 'expo-media-library'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { BackButton } from '@/components/taplist/BackButton'
+import { ShareableBeerImage, type ShareableBeerImageHandle } from '@/components/taplist/ShareableBeerImage'
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
-import { defaultServing, displayServingOptions, formatServing } from '@/lib/formatTaplist'
+import { defaultServing, displayServingOptions, servingParts } from '@/lib/formatTaplist'
 import { fetchPublicDrinks, fetchPublicTenantBySlug } from '@/lib/api/taplist'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
-import type { PublicServingOption } from '@/lib/types'
+import type { PublicDrinkRow, PublicServingOption } from '@/lib/types'
 
 export default function BeerDetailScreen() {
   const insets = useSafeAreaInsets()
+  const shareableRef = useRef<ShareableBeerImageHandle>(null)
+  const [isSavingBeer, setIsSavingBeer] = useState(false)
   const { slug, drinkId } = useLocalSearchParams<{ slug: string; drinkId: string }>()
   const configured = useTaplistSupabaseReady()
 
@@ -38,11 +44,66 @@ export default function BeerDetailScreen() {
   const serving = drink ? defaultServing(drink) : null
   const artworkUrl = drink?.image_url
   const servingOptions = drink ? displayServingOptions(drink.serving_options) : []
+  const subtitle = drink ? beerSubtitle(drink) : null
+  const metadata = drink ? beerMetadata(drink) : []
   const isResolvingDrink = configured && (tenantQuery.isLoading || (!!tenant && drinksQuery.isLoading))
+  const canSaveBeer = Boolean(tenant && drink && !isSavingBeer)
+
+  const handleSaveBeerImage = async () => {
+    if (!tenant || !drink) {
+      Alert.alert('暂无可保存的酒款')
+      return
+    }
+    if (isSavingBeer) return
+
+    try {
+      setIsSavingBeer(true)
+      const uri = await shareableRef.current?.capture()
+      if (!uri) {
+        Alert.alert('保存失败', '酒款图片生成失败，请稍后再试')
+        return
+      }
+
+      if (Platform.OS !== 'ios') {
+        const { status } = await MediaLibrary.requestPermissionsAsync(true)
+        if (status !== 'granted') {
+          Alert.alert('无法保存', '需要相册权限才能保存酒款')
+          return
+        }
+      }
+
+      await MediaLibrary.saveToLibraryAsync(uri)
+      Alert.alert('保存成功', '酒款已保存到相册')
+    } catch (error) {
+      console.error('Save beer image failed', error)
+      Alert.alert('保存失败', '酒款图片生成失败，请稍后再试')
+    } finally {
+      setIsSavingBeer(false)
+    }
+  }
 
   return (
     <View style={styles.screen}>
       <BackButton />
+      {tenant && drink ? (
+        <Pressable
+          accessibilityLabel="保存酒款图片"
+          hitSlop={10}
+          disabled={!canSaveBeer}
+          onPress={handleSaveBeerImage}
+          style={({ pressed }) => [
+            styles.downloadButton,
+            { top: insets.top + 14 },
+            !canSaveBeer && styles.downloadButtonDisabled,
+            pressed && canSaveBeer && styles.downloadButtonPressed,
+          ]}>
+          {isSavingBeer ? (
+            <ActivityIndicator size="small" color={palette.amber} />
+          ) : (
+            <FontAwesome name="download" size={16} color={canSaveBeer ? palette.text : palette.faint} />
+          )}
+        </Pressable>
+      ) : null}
       <ScrollView
         style={styles.screen}
         contentContainerStyle={[
@@ -72,43 +133,38 @@ export default function BeerDetailScreen() {
 
             <Text style={styles.kicker}>{tenant?.display_name || tenant?.name || '酒吧'}</Text>
             <Text style={styles.title}>{drink.name}</Text>
-            <Text style={styles.subtitle}>{drink.beer?.brewery ?? drink.brand_name ?? '酒厂待定'}</Text>
+            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
             {drink.beer?.description ? (
               <Text style={styles.description}>{drink.beer.description}</Text>
             ) : null}
 
-            <View style={styles.metadataChips}>
-              <Meta label="风格" value={drink.beer?.beer_style ?? '/'} />
-              <Meta label="ABV" value={typeof drink.beer?.abv === 'number' ? `${drink.beer.abv}%` : '/'} />
-              <Meta label="IBU" value={typeof drink.beer?.ibu === 'number' ? `${drink.beer.ibu}` : '/'} />
-              <Meta label="酒厂" value={drink.beer?.brewery ?? drink.brand_name ?? '/'} />
-              <Meta label="产地" value={drink.beer?.country ?? '/'} />
-            </View>
+            {metadata.length > 0 ? (
+              <View style={styles.metadataChips}>
+                {metadata.map((item) => (
+                  <Meta key={item.label} label={item.label} value={item.value} />
+                ))}
+              </View>
+            ) : null}
 
-            <Text style={styles.sectionTitle}>杯型与价格</Text>
-            <View style={styles.servingList}>
-              {servingOptions.length > 0 ? (
-                servingOptions.map((option) => (
-                  <View key={option.id} style={styles.primaryServing}>
-                    <View>
-                      <Text style={styles.primaryServingLabel}>
-                        {option.id === serving?.id ? '默认规格' : '规格'}
-                      </Text>
-                      <Text style={styles.primaryServingMeta}>{servingLabel(option)}</Text>
+            {servingOptions.length > 0 ? (
+              <>
+                <Text style={styles.sectionTitle}>杯型与价格</Text>
+                <View style={styles.servingList}>
+                  {servingOptions.map((option) => (
+                    <View key={option.id} style={styles.primaryServing}>
+                      <View>
+                        <Text style={styles.primaryServingLabel}>
+                          {option.id === serving?.id ? '默认规格' : '规格'}
+                        </Text>
+                        <Text style={styles.primaryServingMeta}>{servingLabel(option)}</Text>
+                      </View>
+                      <Text style={styles.primaryServingPrice}>¥{option.price}</Text>
                     </View>
-                    <Text style={styles.primaryServingPrice}>¥{option.price}</Text>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.primaryServing}>
-                  <View>
-                    <Text style={styles.primaryServingLabel}>规格</Text>
-                    <Text style={styles.primaryServingMeta}>暂无规格信息</Text>
-                  </View>
+                  ))}
                 </View>
-              )}
-            </View>
+              </>
+            ) : null}
 
             {tenant ? (
               <View style={styles.venueSection}>
@@ -130,6 +186,19 @@ export default function BeerDetailScreen() {
           </>
         ) : null}
       </ScrollView>
+      {tenant && drink ? (
+        <View pointerEvents="none" style={styles.shareableCanvas}>
+          <ShareableBeerImage ref={shareableRef} tenant={tenant} drink={drink} />
+        </View>
+      ) : null}
+      {isSavingBeer ? (
+        <View style={styles.saveOverlay} pointerEvents="none">
+          <View style={styles.saveToast}>
+            <ActivityIndicator size="small" color={palette.amber} />
+            <Text style={styles.saveText}>正在保存酒款</Text>
+          </View>
+        </View>
+      ) : null}
     </View>
   )
 }
@@ -153,13 +222,79 @@ function EmptyState({ title, body }: { title: string; body: string }) {
 }
 
 function servingLabel(option: PublicServingOption) {
-  return formatServing(option).split(' · ').slice(0, 2).join(' · ')
+  return servingParts(option).filter((part) => !part.startsWith('¥')).join(' · ')
+}
+
+function beerSubtitle(drink: PublicDrinkRow) {
+  return [
+    drink.beer?.brewery ?? drink.brand_name,
+    drink.beer?.beer_style,
+    typeof drink.beer?.abv === 'number' ? `${drink.beer.abv}%` : null,
+  ].filter(Boolean).join(' · ')
+}
+
+function beerMetadata(drink: PublicDrinkRow) {
+  return [
+    drink.beer?.beer_style ? { label: '风格', value: drink.beer.beer_style } : null,
+    typeof drink.beer?.abv === 'number' ? { label: 'ABV', value: `${drink.beer.abv}%` } : null,
+    typeof drink.beer?.ibu === 'number' ? { label: 'IBU', value: `${drink.beer.ibu}` } : null,
+    (drink.beer?.brewery ?? drink.brand_name) ? { label: '酒厂', value: drink.beer?.brewery ?? drink.brand_name! } : null,
+    drink.beer?.country ? { label: '产地', value: drink.beer.country } : null,
+  ].filter((item): item is { label: string; value: string } => item !== null)
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: palette.background,
+  },
+  downloadButton: {
+    position: 'absolute',
+    right: 16,
+    zIndex: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(17,17,17,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,241,230,0.14)',
+  },
+  downloadButtonPressed: {
+    transform: [{ scale: 0.96 }],
+  },
+  downloadButtonDisabled: {
+    opacity: 0.48,
+  },
+  shareableCanvas: {
+    position: 'absolute',
+    left: -10000,
+    top: 0,
+  },
+  saveOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  saveToast: {
+    minWidth: 148,
+    minHeight: 52,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245,241,230,0.14)',
+    backgroundColor: 'rgba(17,17,17,0.92)',
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  saveText: {
+    ...typography.caption,
+    color: palette.text,
   },
   content: {
     padding: spacing.lg,

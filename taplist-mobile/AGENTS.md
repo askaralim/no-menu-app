@@ -12,22 +12,24 @@ Run from `taplist-mobile/`:
 
 ```bash
 npm install
-npx tsc --noEmit
-npx expo export --platform web
+npm run typecheck
+npm run export:web
+npm run preflight
 npm run ios
 npm run web
 ```
 
-Note: `npm run web` may fail on some local Node / Expo CLI combinations with port detection issues. Use `npx expo export --platform web` for build verification.
+Note: `npm run web` may fail on some local Node / Expo CLI combinations with port detection issues. Use `npm run export:web` or `npm run preflight` for build verification.
 
 ## App Structure
 
 - `app/(tabs)/index.tsx` - Tonight home feed
-- `app/(tabs)/search.tsx` - Search
+- `app/(tabs)/search.tsx` - Search (drinks + bars where supported)
 - `app/(tabs)/about.tsx` - About / compliance
 - `app/bar/[slug].tsx` - Bar detail and live tap list
 - `app/bar/[slug]/beer/[drinkId].tsx` - Beer detail
 - `components/taplist/` - Tap List-specific UI components
+- `components/taplist/FirstLaunchLegalGate.tsx` - First-launch age and compliance gate
 - `constants/design.ts` - Visual system
 - `constants/compliance.ts` - Legal / compliance copy
 - `lib/api/taplist.ts` - Supabase RPC API calls
@@ -92,13 +94,14 @@ Use real Supabase data only. Do not add placeholder bars, placeholder drinks, fa
 
 If Supabase env vars are missing, an RPC fails, or a query returns no rows, show a natural empty/error state instead of fabricated data.
 
+`last_menu_updated_at` is consumer-facing freshness metadata. It must only represent intentional public tap list / menu changes, not POS order activity or stock-only inventory changes. Stock-only updates from order deductions should not refresh bar ordering or home-feed freshness labels.
+
 ## Verification
 
 Before finishing UI/code changes, run:
 
 ```bash
-npx tsc --noEmit
-npx expo export --platform web
+npm run preflight
 ```
 
 ## Supabase
@@ -108,6 +111,7 @@ Required env vars:
 ```bash
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_PRIVACY_POLICY_URL=
 ```
 
 Supabase reads should go through public RPCs in `lib/api/taplist.ts`.

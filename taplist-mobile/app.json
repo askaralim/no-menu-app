@@ -2,7 +2,7 @@
   "expo": {
     "name": "No Menu",
     "slug": "no-menu-app",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "nomenuapp",
@@ -16,9 +16,11 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.nomenuapp.taplist",
-      "buildNumber": "6",
+      "buildNumber": "11",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "No Menu 需要访问相册权限以保存酒单图片。",
+        "NSPhotoLibraryAddUsageDescription": "No Menu 需要保存酒单图片到你的相册。"
       }
     },
     "android": {
@@ -37,7 +39,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "No Menu 需要访问相册权限以保存酒单图片。",
+          "savePhotosPermission": "No Menu 需要保存酒单图片到你的相册。",
+          "preventAutomaticLimitedAccessAlert": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
