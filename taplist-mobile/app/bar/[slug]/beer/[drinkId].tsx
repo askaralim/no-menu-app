@@ -1,9 +1,8 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
-import * as MediaLibrary from 'expo-media-library'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocalSearchParams } from 'expo-router'
 import { useRef, useState } from 'react'
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
@@ -13,6 +12,7 @@ import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { defaultServing, displayServingOptions, servingParts } from '@/lib/formatTaplist'
 import { fetchPublicDrinks, fetchPublicTenantBySlug } from '@/lib/api/taplist'
+import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicDrinkRow, PublicServingOption } from '@/lib/types'
 
@@ -64,17 +64,13 @@ export default function BeerDetailScreen() {
         return
       }
 
-      if (Platform.OS !== 'ios') {
-        const { status } = await MediaLibrary.requestPermissionsAsync(true)
-        if (status !== 'granted') {
-          Alert.alert('无法保存', '需要相册权限才能保存酒款')
-          return
-        }
-      }
-
-      await MediaLibrary.saveToLibraryAsync(uri)
+      await saveImageUriToPhotoLibrary(uri)
       Alert.alert('保存成功', '酒款已保存到相册')
     } catch (error) {
+      if (error instanceof PhotoLibraryPermissionError) {
+        Alert.alert('无法保存', '需要相册权限才能保存酒款')
+        return
+      }
       console.error('Save beer image failed', error)
       Alert.alert('保存失败', '酒款图片生成失败，请稍后再试')
     } finally {

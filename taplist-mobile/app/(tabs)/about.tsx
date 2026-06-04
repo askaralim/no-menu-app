@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
+import { formatAppVersionLabel } from '@/lib/appVersion'
 
 const privacyPolicyUrl =
   (Constants.expoConfig?.extra as { privacyPolicyUrl?: string } | undefined)?.privacyPolicyUrl?.trim() ?? ''
@@ -44,7 +45,7 @@ export default function AboutScreen() {
 
       <View style={styles.metaRow}>
         <Text style={styles.metaLabel}>版本</Text>
-        <Text style={styles.metaValue}>1.0 MVP</Text>
+        <Text style={styles.metaValue}>{formatAppVersionLabel()}</Text>
       </View>
       {privacyPolicyUrl ? (
         <Pressable
