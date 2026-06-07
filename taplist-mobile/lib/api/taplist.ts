@@ -1,6 +1,7 @@
 import { getTaplistSupabase } from '@/lib/supabase'
 import type {
   PublicBarRow,
+  PublicTaplistNewDrinksRpc,
   PublicTaplistDrinksRpc,
   PublicTaplistSearchRpc,
   PublicTaplistTenantRpc,
@@ -28,6 +29,16 @@ export async function fetchPublicDrinks(tenantId: string) {
   })
   if (error) throw error
   return data as PublicTaplistDrinksRpc
+}
+
+export async function fetchPublicNewDrinks(city?: string | null) {
+  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_new_drinks', {
+    p_city: city ?? null,
+  })
+  if (error) throw error
+  const payload = data as PublicTaplistNewDrinksRpc
+  if (!payload || payload.ok !== true) return []
+  return payload.results ?? []
 }
 
 export async function searchPublicTaplist(city: string | null, query: string) {

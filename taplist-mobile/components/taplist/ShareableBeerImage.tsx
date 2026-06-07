@@ -51,7 +51,7 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
 
           <View style={styles.beerPanel}>
             <View style={styles.hero}>
-              <BeerArtwork name={drink.name} source={drink.image_url} size={132} />
+              {drink.image_url ? <BeerArtwork name={drink.name} source={drink.image_url} size={132} /> : null}
               <View style={styles.heroCopy}>
                 <View style={styles.titleRow}>
                   <Text style={styles.beerName}>{drink.name}</Text>

@@ -198,6 +198,7 @@ function BeerRow({ drink, slug, isLast }: { drink: PublicDrinkRow; slug: string;
   const isSoldOut = publicStatus === '售罄'
   const breweryStyle = beerInfoLine(drink)
   const abvIbu = beerStatsLine(drink)
+  const hasArtwork = Boolean(drink.image_url)
 
   return (
     <Link href={`/bar/${slug}/beer/${drink.id}`} asChild>
@@ -207,7 +208,11 @@ function BeerRow({ drink, slug, isLast }: { drink: PublicDrinkRow; slug: string;
         isSoldOut && styles.beerRowSoldOut
       ]}>
         <View style={styles.beerContent}>
-          <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
+          {hasArtwork ? (
+            <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
+          ) : (
+            <View style={styles.beerArtworkSpacer} />
+          )}
           <View style={styles.beerMain}>
             <View style={styles.beerTitleRow}>
               <Text style={styles.beerName}>{drink.name}</Text>
@@ -238,7 +243,7 @@ function BeerRow({ drink, slug, isLast }: { drink: PublicDrinkRow; slug: string;
             ) : null}
           </View>
         </View>
-        {!isLast ? <View style={styles.beerSeparator} /> : null}
+        {!isLast ? <View style={[styles.beerSeparator, !hasArtwork && styles.beerSeparatorNoArtwork]} /> : null}
       </Pressable>
     </Link>
   )
@@ -401,10 +406,16 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.lg,
   },
+  beerArtworkSpacer: {
+    width: 72,
+  },
   beerSeparator: {
     height: 1,
     backgroundColor: palette.hairline,
     marginLeft: 88,
+  },
+  beerSeparatorNoArtwork: {
+    marginLeft: 0,
   },
   beerMain: {
     flex: 1,

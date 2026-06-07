@@ -116,7 +116,14 @@ export type PublicTaplistSearchResult = {
   default_serving: PublicSearchServingOption | null
 }
 
+export type PublicNewTapRow = PublicTaplistSearchResult
+
 /** RPC `search_public_taplist` JSON union */
 export type PublicTaplistSearchRpc =
   | { ok: true; results: PublicTaplistSearchResult[] }
+  | { ok: false; code?: string }
+
+/** RPC `get_public_taplist_new_drinks` JSON union */
+export type PublicTaplistNewDrinksRpc =
+  | { ok: true; results: PublicNewTapRow[] }
   | { ok: false; code?: string }
