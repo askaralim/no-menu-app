@@ -12,6 +12,7 @@ import {
   type OpeningHourJson,
   type OpeningHourPicker,
 } from '@/lib/openingHour'
+import { BeerBulkImportPanel } from '@/components/admin/BeerBulkImportPanel'
 import { uploadTaplistCover, uploadTaplistDrinkImage } from '@/lib/taplistStorage'
 import type { Category, Drink } from '@/lib/types'
 
@@ -92,6 +93,7 @@ function TaplistAdminPageInner() {
   const searchParams = useSearchParams()
 
   const isOwner = role === 'owner' || role === 'super_admin'
+  const isSuperAdmin = role === 'super_admin'
 
   const loadRoleAndTenant = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -484,6 +486,16 @@ function TaplistAdminPageInner() {
           </button>
         </form>
       </div>
+
+      {isSuperAdmin && tenantId ? (
+        <BeerBulkImportPanel
+          tenantId={tenantId}
+          onImported={() => {
+            void loadDrinks(tenantId)
+            void loadCategories(tenantId)
+          }}
+        />
+      ) : null}
 
       <div className="admin-section">
         <h2>分类与酒款（Tap List）</h2>
