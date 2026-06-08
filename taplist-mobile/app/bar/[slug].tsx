@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { BackButton } from '@/components/taplist/BackButton'
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
+import { EventCard } from '@/components/taplist/EventCards'
 import {
   ShareableBarTaplistImage,
   type ShareableBarTaplistImageHandle,
@@ -16,10 +17,10 @@ import { palette, spacing, typography } from '@/constants/design'
 import { displayServingOptions, servingParts } from '@/lib/formatTaplist'
 import { formatOpeningHourLabel } from '@/lib/openingHour'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
-import { fetchPublicDrinks, fetchPublicTenantBySlug } from '@/lib/api/taplist'
+import { fetchPublicDrinks, fetchPublicTenantBySlug, fetchPublicTenantEvents } from '@/lib/api/taplist'
 import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
-import type { PublicDrinkRow } from '@/lib/types'
+import type { PublicDrinkRow, PublicEventRow } from '@/lib/types'
 
 export default function BarDetailScreen() {
   const insets = useSafeAreaInsets()
@@ -43,8 +44,16 @@ export default function BarDetailScreen() {
     enabled: configured && !!tenant?.id,
   })
 
+  const eventsQuery = useQuery({
+    queryKey: ['taplist', 'tenant-events', tenant?.id],
+    queryFn: () => fetchPublicTenantEvents(tenant!.id),
+    enabled: configured && !!tenant?.id,
+    refetchOnMount: 'always',
+  })
+
   const drinkResult = drinksQuery.data
   const remoteDrinks = drinkResult?.ok ? drinkResult.drinks : []
+  const events = eventsQuery.data ?? []
   const drinks = [...remoteDrinks].sort((a, b) => {
     const aSold = a.public_status === '售罄' ? 1 : 0
     const bSold = b.public_status === '售罄' ? 1 : 0
@@ -136,6 +145,9 @@ export default function BarDetailScreen() {
                 <Text style={styles.barDescription}>{tenant.description}</Text>
               </View>
             ) : null}
+            {events.length > 0 && !eventsQuery.isError ? (
+              <BarEventsSection slug={tenant.slug} events={events.slice(0, 3)} />
+            ) : null}
           </>
         ) : null}
 
@@ -188,6 +200,33 @@ export default function BarDetailScreen() {
           </View>
         </View>
       ) : null}
+    </View>
+  )
+}
+
+function BarEventsSection({ slug, events }: { slug: string; events: PublicEventRow[] }) {
+  return (
+    <View style={styles.eventsSection}>
+      <View style={styles.eventsHeader}>
+        <View>
+          <Text style={styles.eventsTitle}>今晚活动</Text>
+          <Text style={styles.eventsKicker}>TONIGHT EVENTS</Text>
+        </View>
+        <Link href={{ pathname: '/bar/[slug]/events', params: { slug } }} asChild>
+          <Pressable style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
+            <Text style={styles.moreText}>更多 ›</Text>
+          </Pressable>
+        </Link>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.eventScrollView}
+        contentContainerStyle={styles.eventScroller}>
+        {events.map((event) => (
+          <EventCard key={event.id} event={event} />
+        ))}
+      </ScrollView>
     </View>
   )
 }
@@ -372,6 +411,48 @@ const styles = StyleSheet.create({
   barDescription: {
     ...typography.caption,
     color: palette.faint,
+  },
+  eventsSection: {
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.hairline,
+  },
+  eventsHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  eventsTitle: {
+    ...typography.title,
+    color: palette.text,
+  },
+  eventsKicker: {
+    ...typography.label,
+    color: palette.tungsten,
+    fontSize: 10,
+    lineHeight: 14,
+    marginTop: spacing.xxs,
+  },
+  moreLink: {
+    paddingVertical: spacing.xxs,
+    paddingLeft: spacing.sm,
+  },
+  moreLinkPressed: {
+    opacity: 0.72,
+  },
+  moreText: {
+    ...typography.micro,
+    color: palette.tungsten,
+    fontWeight: '600',
+  },
+  eventScrollView: {
+    marginHorizontal: -spacing.md,
+  },
+  eventScroller: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
   },
   loading: {
     marginTop: spacing.md,

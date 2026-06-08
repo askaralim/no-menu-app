@@ -118,6 +118,30 @@ export type PublicTaplistSearchResult = {
 
 export type PublicNewTapRow = PublicTaplistSearchResult
 
+export type PublicEventDisplayState = 'TONIGHT' | 'ONGOING' | 'UPCOMING'
+
+export type PublicEventRow = {
+  id: string
+  title: string
+  subtitle: string | null
+  description: string | null
+  event_type: string
+  event_type_label: string
+  image_url: string | null
+  start_at: string | null
+  end_at: string | null
+  date_label: string | null
+  time_label: string | null
+  display_state: PublicEventDisplayState
+  display_time: string | null
+  tenant_id: string
+  tenant_slug: string
+  tenant_display_name: string
+  tenant_district: string | null
+  tenant_address: string | null
+  tenant_cover_image_url: string | null
+}
+
 /** RPC `search_public_taplist` JSON union */
 export type PublicTaplistSearchRpc =
   | { ok: true; results: PublicTaplistSearchResult[] }
@@ -127,3 +151,13 @@ export type PublicTaplistSearchRpc =
 export type PublicTaplistNewDrinksRpc =
   | { ok: true; results: PublicNewTapRow[] }
   | { ok: false; code?: string }
+
+/** RPC `get_public_taplist_events` JSON union */
+export type PublicTaplistEventsRpc =
+  | { ok: true; results: PublicEventRow[] }
+  | { ok: false; code?: string }
+
+/** RPC `get_public_taplist_event` JSON union */
+export type PublicTaplistEventRpc =
+  | { ok: true; event: PublicEventRow }
+  | { ok: false; code: 'expired' | 'cancelled' | 'not_found' | 'not_public' | string }

@@ -67,3 +67,15 @@ export async function uploadTaplistDrinkImage(
   const path = `${tenantId}/drinks/${drinkId}/${base}.${ext}`
   return uploadTaplistObject(supabase, path, file)
 }
+
+export async function uploadTaplistEventImage(
+  supabase: SupabaseClient,
+  tenantId: string,
+  eventId: string,
+  file: File
+): Promise<string> {
+  const ext = extensionForMime(file.type)
+  const base = sanitizeImageFileName(file.name).replace(/\.[^.]+$/, '')
+  const path = `${tenantId}/events/${eventId}/${base}.${ext}`
+  return uploadTaplistObject(supabase, path, file)
+}

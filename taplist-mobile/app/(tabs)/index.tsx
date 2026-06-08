@@ -7,13 +7,14 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
+import { EventCard } from '@/components/taplist/EventCards'
 import { palette, spacing, typography } from '@/constants/design'
 import { DEFAULT_TAPLIST_CITY } from '@/constants/taplist'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
-import { fetchPublicBars, fetchPublicNewDrinks } from '@/lib/api/taplist'
+import { fetchPublicBars, fetchPublicEvents, fetchPublicNewDrinks } from '@/lib/api/taplist'
 import { formatRelativeUpdatedAt, sortPublicBarsByMenuUpdated } from '@/lib/formatTaplist'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
-import type { PublicBarRow, PublicNewTapRow } from '@/lib/types'
+import type { PublicBarRow, PublicEventRow, PublicNewTapRow } from '@/lib/types'
 
 export default function TonightScreen() {
   const insets = useSafeAreaInsets()
@@ -39,8 +40,17 @@ export default function TonightScreen() {
     refetchOnMount: 'always',
   })
 
+  const eventsQuery = useQuery({
+    queryKey: ['taplist', 'events', DEFAULT_TAPLIST_CITY],
+    queryFn: () => fetchPublicEvents(DEFAULT_TAPLIST_CITY),
+    enabled: configured,
+    refetchOnMount: 'always',
+  })
+
   const bars = sortPublicBarsByMenuUpdated(barsQuery.data ?? [])
   const newTaps = newTapsQuery.data ?? []
+  const events = eventsQuery.data ?? []
+  const firstEventsByTenant = firstEventByTenant(eventsQuery.isError ? [] : events)
 
   return (
     <ScrollView
@@ -62,6 +72,10 @@ export default function TonightScreen() {
         </View>
       ) : null}
 
+      {events.length > 0 && !eventsQuery.isError ? (
+        <TonightEventsSection events={events.slice(0, 10)} />
+      ) : null}
+
       {newTaps.length > 0 && !newTapsQuery.isError ? (
         <NewTapTodaySection drinks={newTaps} />
       ) : null}
@@ -81,7 +95,7 @@ export default function TonightScreen() {
       ) : (
         <View style={[styles.feed, newTaps.length > 0 && !newTapsQuery.isError && styles.feedAfterNewTaps]}>
           {bars.map((bar) => (
-            <BarFeedCard key={bar.id} bar={bar} />
+            <BarFeedCard key={bar.id} bar={bar} event={firstEventsByTenant[bar.id] ?? null} />
           ))}
         </View>
       )}
@@ -90,6 +104,33 @@ export default function TonightScreen() {
         <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
       </View>
     </ScrollView>
+  )
+}
+
+function TonightEventsSection({ events }: { events: PublicEventRow[] }) {
+  return (
+    <View style={styles.eventsSection}>
+      <View style={styles.sectionHeaderRow}>
+        <View>
+          <Text style={styles.eventsKicker}>TONIGHT EVENTS</Text>
+          <Text style={styles.eventsSubhead}>今晚活动</Text>
+        </View>
+        <Link href="/events" asChild>
+          <Pressable style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
+            <Text style={styles.moreText}>更多 ›</Text>
+          </Pressable>
+        </Link>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.eventScrollView}
+        contentContainerStyle={styles.eventScroller}>
+        {events.map((event) => (
+          <EventCard key={event.id} event={event} compact />
+        ))}
+      </ScrollView>
+    </View>
   )
 }
 
@@ -192,8 +233,10 @@ function NewTapCard({ drink }: { drink: PublicNewTapRow }) {
 
 function BarFeedCard({
   bar,
+  event,
 }: {
   bar: PublicBarRow
+  event: PublicEventRow | null
 }) {
   const location = shortBarLocation(bar)
   const feedStatus = compactStatusCounts(bar)
@@ -217,6 +260,11 @@ function BarFeedCard({
             <BlurView intensity={24} tint="dark" style={styles.livePill} pointerEvents="none">
               <View style={styles.liveDot} />
               <Text style={styles.liveText}>{updatedLabel}</Text>
+            </BlurView>
+          ) : null}
+          {event ? (
+            <BlurView intensity={24} tint="dark" style={styles.eventPill} pointerEvents="none">
+              <Text style={styles.eventPillText}>{event.event_type_label || '今晚活动'}</Text>
             </BlurView>
           ) : null}
         </View>
@@ -246,6 +294,13 @@ function compactStatusCounts(bar: PublicBarRow) {
   ].filter(Boolean)
 
   return parts.length > 0 ? parts.join(' · ') : null
+}
+
+function firstEventByTenant(events: PublicEventRow[]) {
+  return events.reduce<Record<string, PublicEventRow>>((acc, event) => {
+    if (!acc[event.tenant_id]) acc[event.tenant_id] = event
+    return acc
+  }, {})
 }
 
 function EmptyState({
@@ -335,6 +390,48 @@ const styles = StyleSheet.create({
   muted: {
     ...typography.caption,
     color: palette.muted,
+  },
+  eventsSection: {
+    marginBottom: spacing.xl,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  eventsKicker: {
+    ...typography.display,
+    color: palette.tungsten,
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: 0.8,
+  },
+  eventsSubhead: {
+    ...typography.micro,
+    color: palette.muted,
+    marginTop: spacing.xxs,
+  },
+  moreLink: {
+    paddingVertical: spacing.xxs,
+    paddingLeft: spacing.sm,
+  },
+  moreLinkPressed: {
+    opacity: 0.72,
+  },
+  moreText: {
+    ...typography.micro,
+    color: palette.tungsten,
+    fontWeight: '600',
+  },
+  eventScrollView: {
+    marginHorizontal: -spacing.lg,
+    marginTop: spacing.xs,
+  },
+  eventScroller: {
+    paddingHorizontal: spacing.lg,
+    gap: 12,
   },
   newTapSection: {
     marginBottom: spacing.xl,
@@ -539,6 +636,25 @@ const styles = StyleSheet.create({
     lineHeight: 13,
     letterSpacing: 1.5,
     color: palette.tungsten,
+  },
+  eventPill: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    backgroundColor: 'rgba(8,8,8,0.82)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxs,
+    borderRadius: 4,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(211,154,69,0.28)',
+  },
+  eventPillText: {
+    ...typography.label,
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 1.2,
+    color: palette.amber,
   },
   barStatus: {
     ...typography.label,
