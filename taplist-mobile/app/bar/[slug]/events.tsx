@@ -44,7 +44,7 @@ export default function BarEventsScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xxxl }]}>
         <Text style={styles.kicker}>TONIGHT EVENTS</Text>
         <Text style={styles.title}>{tenant?.display_name || tenant?.name || '酒吧活动'}</Text>
-        <Text style={styles.subtitle}>今晚活动与近期动态</Text>
+        <Text style={styles.subtitle}>看看这家店今晚和近期有什么活动</Text>
 
         {!configured ? (
           <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看公开活动。" />

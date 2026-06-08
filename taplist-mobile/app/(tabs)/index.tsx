@@ -8,6 +8,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { EventCard } from '@/components/taplist/EventCards'
+import { RailVenueBadge } from '@/components/taplist/RailVenueBadge'
+import {
+  EVENT_RAIL_CARD_HEIGHT,
+  RAIL_CARD_GAP,
+  RAIL_CARD_HEIGHT,
+  RAIL_CARD_IMAGE_BORDER,
+  RAIL_CARD_RADIUS,
+  RAIL_CARD_WIDTH,
+  RAIL_IMAGE_SCRIM_COLORS,
+  RAIL_IMAGE_SCRIM_LOCATIONS,
+  RAIL_TEXT_ONLY_SCRIM_COLORS,
+  RAIL_TEXT_ONLY_SCRIM_LOCATIONS,
+  RAIL_TEXT_SHADOW,
+  railCardBodyStyle,
+  railCardScrimStyle,
+  RAIL_VENUE_PILL_BACKGROUND,
+  RAIL_VENUE_PILL_BORDER,
+  railVenueLabelStyle,
+} from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
 import { DEFAULT_TAPLIST_CITY } from '@/constants/taplist'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
@@ -73,7 +92,7 @@ export default function TonightScreen() {
       ) : null}
 
       {events.length > 0 && !eventsQuery.isError ? (
-        <TonightEventsSection events={events.slice(0, 10)} />
+        <TonightEventsSection events={events.slice(0, 5)} />
       ) : null}
 
       {newTaps.length > 0 && !newTapsQuery.isError ? (
@@ -109,11 +128,10 @@ export default function TonightScreen() {
 
 function TonightEventsSection({ events }: { events: PublicEventRow[] }) {
   return (
-    <View style={styles.eventsSection}>
-      <View style={styles.sectionHeaderRow}>
+    <View style={styles.discoverySection}>
+      <View style={styles.discoveryHeaderRow}>
         <View>
-          <Text style={styles.eventsKicker}>TONIGHT EVENTS</Text>
-          <Text style={styles.eventsSubhead}>今晚活动</Text>
+          <Text style={styles.discoveryTitle}>EVENTS</Text>
         </View>
         <Link href="/events" asChild>
           <Pressable style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
@@ -124,8 +142,8 @@ function TonightEventsSection({ events }: { events: PublicEventRow[] }) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.eventScrollView}
-        contentContainerStyle={styles.eventScroller}>
+        style={[styles.discoveryScrollView, styles.eventRailScrollView]}
+        contentContainerStyle={styles.discoveryScroller}>
         {events.map((event) => (
           <EventCard key={event.id} event={event} compact />
         ))}
@@ -136,13 +154,15 @@ function TonightEventsSection({ events }: { events: PublicEventRow[] }) {
 
 function NewTapTodaySection({ drinks }: { drinks: PublicNewTapRow[] }) {
   return (
-    <View style={styles.newTapSection}>
-      <Text style={styles.newTapKicker}>NEW ON TAP</Text>
+    <View style={styles.discoverySection}>
+      <View style={styles.discoveryHeaderRow}>
+        <Text style={styles.discoveryTitle}>NEW ON TAP</Text>
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.newTapScrollView}
-        contentContainerStyle={styles.newTapScroller}>
+        style={[styles.discoveryScrollView, styles.newTapRailScrollView]}
+        contentContainerStyle={styles.discoveryScroller}>
         {drinks.map((drink) => (
           <NewTapCard key={drink.drink_id} drink={drink} />
         ))}
@@ -162,10 +182,7 @@ function NewTapCard({ drink }: { drink: PublicNewTapRow }) {
 
   const textBlock = (
     <View style={styles.newTapCardBody}>
-      <Text
-        style={[styles.newTapDrinkName, hasImage && styles.newTapTextOnImage]}
-        numberOfLines={2}
-        ellipsizeMode="tail">
+      <Text style={styles.newTapDrinkName} numberOfLines={2} ellipsizeMode="tail">
         {drink.name}
       </Text>
       {typeLine ? (
@@ -187,13 +204,7 @@ function NewTapCard({ drink }: { drink: PublicNewTapRow }) {
     </View>
   )
 
-  const venueBadge = (
-    <View style={[styles.newTapBarBadge, hasImage && styles.newTapBarBadgeOnImage]}>
-      <Text style={styles.newTapVenue} numberOfLines={1} ellipsizeMode="tail">
-        @ {drink.tenant_display_name}
-      </Text>
-    </View>
-  )
+  const venueBadge = <RailVenueBadge name={drink.tenant_display_name} />
 
   return (
     <Pressable
@@ -211,8 +222,8 @@ function NewTapCard({ drink }: { drink: PublicNewTapRow }) {
           style={styles.newTapImageFill}
           imageStyle={styles.newTapImageRadius}>
           <LinearGradient
-            colors={['rgba(13,13,13,0.25)', 'rgba(13,13,13,0.70)', 'rgba(13,13,13,0.96)']}
-            locations={[0, 0.5, 1]}
+            colors={RAIL_IMAGE_SCRIM_COLORS}
+            locations={RAIL_IMAGE_SCRIM_LOCATIONS}
             style={styles.newTapImageScrim}>
             {textBlock}
             {venueBadge}
@@ -220,13 +231,14 @@ function NewTapCard({ drink }: { drink: PublicNewTapRow }) {
         </ImageBackground>
       ) : (
         <LinearGradient
-          colors={['rgba(75,54,31,0.32)', 'rgba(13,13,13,0.58)', 'rgba(13,13,13,0.90)']}
-          locations={[0, 0.58, 1]}
+          colors={RAIL_TEXT_ONLY_SCRIM_COLORS}
+          locations={RAIL_TEXT_ONLY_SCRIM_LOCATIONS}
           style={styles.newTapCardContent}>
           {textBlock}
           {venueBadge}
         </LinearGradient>
       )}
+      <View pointerEvents="none" style={styles.railBorderOverlay} />
     </Pressable>
   )
 }
@@ -264,7 +276,9 @@ function BarFeedCard({
           ) : null}
           {event ? (
             <BlurView intensity={24} tint="dark" style={styles.eventPill} pointerEvents="none">
-              <Text style={styles.eventPillText}>{event.event_type_label || '今晚活动'}</Text>
+              <Text style={styles.eventPillText} numberOfLines={1} ellipsizeMode="tail">
+                {event.title}
+              </Text>
             </BlurView>
           ) : null}
         </View>
@@ -391,130 +405,93 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: palette.muted,
   },
-  eventsSection: {
+  discoverySection: {
     marginBottom: spacing.xl,
   },
-  sectionHeaderRow: {
+  discoveryHeaderRow: {
+    minHeight: 44,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
     marginBottom: spacing.xs,
   },
-  eventsKicker: {
+  discoveryTitle: {
     ...typography.display,
     color: palette.tungsten,
     fontSize: 28,
     lineHeight: 32,
     letterSpacing: 0.8,
   },
-  eventsSubhead: {
-    ...typography.micro,
-    color: palette.muted,
-    marginTop: spacing.xxs,
-  },
   moreLink: {
-    paddingVertical: spacing.xxs,
-    paddingLeft: spacing.sm,
+    minHeight: 44,
+    paddingLeft: spacing.md,
+    paddingRight: 2,
+    justifyContent: 'center',
   },
   moreLinkPressed: {
     opacity: 0.72,
   },
   moreText: {
-    ...typography.micro,
+    ...typography.caption,
     color: palette.tungsten,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '600',
   },
-  eventScrollView: {
+  discoveryScrollView: {
     marginHorizontal: -spacing.lg,
     marginTop: spacing.xs,
   },
-  eventScroller: {
+  eventRailScrollView: {
+    height: EVENT_RAIL_CARD_HEIGHT,
+  },
+  newTapRailScrollView: {
+    height: RAIL_CARD_HEIGHT,
+  },
+  discoveryScroller: {
     paddingHorizontal: spacing.lg,
-    gap: 12,
-  },
-  newTapSection: {
-    marginBottom: spacing.xl,
-  },
-  newTapKicker: {
-    ...typography.display,
-    color: palette.tungsten,
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: 0.8,
-    marginBottom: spacing.xs,
-  },
-  newTapScrollView: {
-    marginHorizontal: -spacing.lg,
-    marginTop: spacing.xs,
-  },
-  newTapScroller: {
-    paddingHorizontal: spacing.lg,
-    gap: 12,
+    gap: RAIL_CARD_GAP,
+    alignItems: 'flex-start',
+    flexGrow: 0,
   },
   newTapCard: {
-    width: 160,
-    height: 122,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(198,168,117,0.34)',
+    width: RAIL_CARD_WIDTH,
+    minWidth: RAIL_CARD_WIDTH,
+    height: RAIL_CARD_HEIGHT,
+    borderRadius: RAIL_CARD_RADIUS,
     backgroundColor: palette.bgSoft,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 14,
+    flexShrink: 0,
   },
   newTapCardImage: {
-    borderColor: 'rgba(198,168,117,0.24)',
     backgroundColor: palette.panelElevated,
+  },
+  railBorderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: RAIL_CARD_RADIUS,
+    borderWidth: 1,
+    borderColor: RAIL_CARD_IMAGE_BORDER,
   },
   newTapImageFill: {
     flex: 1,
     width: '100%',
   },
   newTapImageRadius: {
-    borderRadius: 12,
+    borderRadius: RAIL_CARD_RADIUS,
   },
   newTapImageScrim: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 10,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-start',
+    ...railCardScrimStyle,
   },
   newTapCardContent: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 10,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-start',
+    ...railCardScrimStyle,
   },
   newTapCardPressed: {
     opacity: 0.78,
   },
   newTapCardBody: {
-    alignSelf: 'stretch',
-    minWidth: 0,
-    alignItems: 'flex-start',
-  },
-  newTapBarBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(198,168,117,0.08)',
-    borderRadius: 4,
-    borderWidth: 0.5,
-    borderColor: 'rgba(198,168,117,0.2)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    maxWidth: '100%',
-    marginTop: 4,
-  },
-  newTapBarBadgeOnImage: {
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderColor: 'rgba(198,168,117,0.3)',
+    ...railCardBodyStyle,
   },
   newTapDrinkName: {
     ...typography.caption,
@@ -523,13 +500,14 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     fontWeight: '600',
     maxWidth: '100%',
-    marginBottom: 6,
+    ...RAIL_TEXT_SHADOW,
   },
   newTapMeta: {
     ...typography.micro,
     color: palette.muted,
     fontSize: 11,
     lineHeight: 15,
+    marginTop: spacing.xxs,
     marginBottom: 2,
     maxWidth: '100%',
   },
@@ -540,31 +518,13 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     maxWidth: '100%',
   },
-  newTapVenue: {
-    ...typography.micro,
-    color: palette.tungsten,
-    fontSize: 11,
-    lineHeight: 14,
-    fontWeight: '600',
-    maxWidth: '100%',
-  },
-  newTapTextOnImage: {
-    color: '#F5F1E8',
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
   newTapMetaOnImage: {
     color: 'rgba(245,241,232,0.86)',
-    textShadowColor: 'rgba(0,0,0,0.7)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    ...RAIL_TEXT_SHADOW,
   },
   newTapBrandOnImage: {
     color: 'rgba(245,241,232,0.72)',
-    textShadowColor: 'rgba(0,0,0,0.7)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    ...RAIL_TEXT_SHADOW,
   },
   feed: {
     gap: spacing.xl,
@@ -616,13 +576,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: 'rgba(8,8,8,0.82)',
+    backgroundColor: RAIL_VENUE_PILL_BACKGROUND,
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.xxs,
     borderRadius: 4,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(245,241,230,0.16)',
+    borderColor: RAIL_VENUE_PILL_BORDER,
   },
   liveDot: {
     width: 6,
@@ -632,22 +592,20 @@ const styles = StyleSheet.create({
   },
   liveText: {
     ...typography.label,
-    fontSize: 10,
-    lineHeight: 13,
-    letterSpacing: 1.5,
-    color: palette.tungsten,
+    ...railVenueLabelStyle,
   },
   eventPill: {
     position: 'absolute',
     top: spacing.md,
     left: spacing.md,
-    backgroundColor: 'rgba(8,8,8,0.82)',
+    maxWidth: '58%',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.xxs,
     borderRadius: 4,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(211,154,69,0.28)',
+    borderColor: 'rgba(211,154,69,0.42)',
   },
   eventPillText: {
     ...typography.label,

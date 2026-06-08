@@ -6,10 +6,13 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BackButton } from '@/components/taplist/BackButton'
+import { eventMetaLine } from '@/components/taplist/EventCards'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicEvent } from '@/lib/api/taplist'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
+
+const EVENT_INFORMATION_DISCLAIMER = '活动信息由门店提供，时间、内容与供应情况以门店现场为准。'
 
 export default function EventDetailScreen() {
   const insets = useSafeAreaInsets()
@@ -30,7 +33,13 @@ export default function EventDetailScreen() {
       <BackButton />
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + (event?.image_url ? spacing.md : spacing.xxxl) }]}>
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: insets.top + (event?.image_url ? spacing.md : spacing.xxxl),
+            paddingBottom: insets.bottom + 48,
+          },
+        ]}>
         {!configured ? (
           <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看公开活动。" />
         ) : eventQuery.isLoading ? (
@@ -42,23 +51,22 @@ export default function EventDetailScreen() {
         ) : event ? (
           <>
             {event.image_url ? (
-              <ImageBackground source={{ uri: event.image_url }} style={styles.cover} imageStyle={styles.coverRadius}>
-                <LinearGradient
-                  colors={['rgba(13,13,13,0.04)', 'rgba(13,13,13,0.58)', 'rgba(13,13,13,0.96)']}
-                  locations={[0, 0.58, 1]}
-                  style={styles.coverScrim}>
-                  <View style={styles.stateBadge}>
-                    <Text style={styles.stateText}>{event.display_state}</Text>
-                  </View>
-                </LinearGradient>
-              </ImageBackground>
+              <View style={styles.coverFrame}>
+                <ImageBackground source={{ uri: event.image_url }} style={styles.cover} imageStyle={styles.coverRadius}>
+                  <LinearGradient
+                    colors={['rgba(13,13,13,0.04)', 'rgba(13,13,13,0.30)', 'rgba(13,13,13,0.92)']}
+                    locations={[0, 0.52, 1]}
+                    style={styles.coverScrim}
+                  />
+                </ImageBackground>
+              </View>
             ) : (
               <View style={styles.textStateBadge}>
                 <Text style={styles.stateText}>{event.display_state}</Text>
               </View>
             )}
 
-            <Text style={styles.typeLabel}>{event.event_type_label}</Text>
+            <Text style={styles.typeLabel}>{eventMetaLine(event)}</Text>
             <Text style={styles.title}>{event.title}</Text>
             {event.subtitle ? <Text style={styles.subtitle}>{event.subtitle}</Text> : null}
 
@@ -86,12 +94,13 @@ export default function EventDetailScreen() {
                   <Text style={styles.venueMeta} numberOfLines={1} ellipsizeMode="tail">
                     {event.tenant_address || event.tenant_district || '查看实时酒单'}
                   </Text>
-                  <Text style={styles.venueLinkHint}>查看酒单 ›</Text>
+                  <Text style={styles.venueLinkHint}>查看今晚酒单 ›</Text>
                 </Pressable>
               </Link>
             </View>
 
             <View style={styles.complianceFooter}>
+              <Text style={styles.eventDisclaimer}>{EVENT_INFORMATION_DISCLAIMER}</Text>
               <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
             </View>
           </>
@@ -122,39 +131,37 @@ const styles = StyleSheet.create({
     backgroundColor: palette.background,
   },
   content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.md,
   },
-  cover: {
-    aspectRatio: 4 / 5,
+  coverFrame: {
+    width: '100%',
+    alignSelf: 'center',
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: palette.panelElevated,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl + spacing.xs,
+    shadowColor: palette.black,
+    shadowOpacity: 0.55,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: spacing.lg },
+    elevation: 8,
+  },
+  cover: {
+    aspectRatio: 1,
+    width: '100%',
   },
   coverRadius: {
     borderRadius: 8,
   },
   coverScrim: {
     flex: 1,
-    justifyContent: 'flex-end',
-    padding: spacing.md,
-  },
-  stateBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(211,154,69,0.5)',
-    backgroundColor: 'rgba(13,13,13,0.64)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
   },
   textStateBadge: {
     alignSelf: 'flex-start',
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(211,154,69,0.5)',
-    backgroundColor: 'rgba(211,154,69,0.12)',
+    borderColor: 'rgba(211,154,69,0.46)',
+    backgroundColor: 'rgba(8,8,8,0.72)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     marginBottom: spacing.md,
@@ -176,8 +183,8 @@ const styles = StyleSheet.create({
   title: {
     ...typography.headline,
     color: palette.text,
-    fontSize: 34,
-    lineHeight: 42,
+    fontSize: 32,
+    lineHeight: 40,
   },
   subtitle: {
     ...typography.body,
@@ -263,5 +270,10 @@ const styles = StyleSheet.create({
   complianceText: {
     ...typography.micro,
     color: palette.faint,
+  },
+  eventDisclaimer: {
+    ...typography.micro,
+    color: palette.muted,
+    marginBottom: spacing.sm,
   },
 })

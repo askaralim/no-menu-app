@@ -34,6 +34,6 @@ AS $$
     WHEN 'quiz' THEN 'Quiz Night'
     WHEN 'party' THEN '派对'
     WHEN 'happy_hour' THEN 'Happy Hour / 欢乐时段'
-    ELSE '其他活动'
+    ELSE '活动'
   END;
 $$;

@@ -1,47 +1,146 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
-import { Link } from 'expo-router'
+import { Link, useRouter } from 'expo-router'
 import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 
 import { palette, spacing, typography } from '@/constants/design'
+import { RailVenueBadge } from '@/components/taplist/RailVenueBadge'
+import {
+  EVENT_RAIL_CARD_HEIGHT,
+  EVENT_RAIL_CARD_WIDTH,
+  RAIL_CARD_IMAGE_BORDER,
+  RAIL_CARD_RADIUS,
+  RAIL_IMAGE_SCRIM_COLORS,
+  RAIL_IMAGE_SCRIM_LOCATIONS,
+  RAIL_TEXT_ONLY_SCRIM_COLORS,
+  RAIL_TEXT_ONLY_SCRIM_LOCATIONS,
+  RAIL_TEXT_SHADOW,
+  railCardBodyStyle,
+  railCardScrimStyle,
+} from '@/components/taplist/railCardStyle'
 import type { PublicEventRow } from '@/lib/types'
 
 type EventCardProps = {
   event: PublicEventRow
   compact?: boolean
+  showVenue?: boolean
 }
 
-export function EventCard({ event, compact = false }: EventCardProps) {
+export function compactEventTypeLabel(event: PublicEventRow) {
+  switch (event.event_type) {
+    case 'happy_hour':
+      return 'Happy Hour'
+    case 'tap_takeover':
+      return '酒头接管'
+    case 'dj':
+      return 'DJ Night'
+    case 'new_tap':
+      return '新酒发布'
+    case 'party':
+      return '派对'
+    case 'tasting':
+      return '品鉴'
+    case 'guest_shift':
+      return 'Guest Shift'
+    case 'live_music':
+      return 'Live Music'
+    case 'quiz':
+      return 'Quiz Night'
+    case 'other':
+      return '活动'
+    default:
+      return event.event_type_label?.split('/')[0]?.trim() || '活动'
+  }
+}
+
+export function eventMetaLine(event: PublicEventRow) {
+  return `${event.display_state}`
+}
+
+export function EventCard({ event, compact = false, showVenue = true }: EventCardProps) {
+  const router = useRouter()
   const hasImage = Boolean(event.image_url)
-  const titleLines = compact ? 2 : 3
-  const subtitle = event.subtitle || event.description
+  const titleLines = compact ? 2 : 2
 
   const copy = (
     <View style={styles.eventCopy}>
       <View style={styles.badgeRow}>
         <View style={[styles.stateBadge, event.display_state === 'ONGOING' && styles.ongoingBadge]}>
-          <Text style={styles.stateText}>{event.display_state}</Text>
+          <Text style={styles.stateText} numberOfLines={1} ellipsizeMode="tail">
+            {eventMetaLine(event)}
+          </Text>
         </View>
-        <Text style={styles.typeLabel} numberOfLines={1} ellipsizeMode="tail">
-          {event.event_type_label}
-        </Text>
       </View>
       <Text style={[styles.title, compact && styles.compactTitle]} numberOfLines={titleLines} ellipsizeMode="tail">
         {event.title}
       </Text>
+
+      {showVenue ? <RailVenueBadge name={event.tenant_display_name} /> : null}
+    </View>
+  )
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={[event.title, event.event_type_label, event.display_time, event.tenant_display_name]
+        .filter(Boolean)
+        .join('，')}
+      onPress={() =>
+        router.push({
+          pathname: '/bar/[slug]/event/[eventId]',
+          params: { slug: event.tenant_slug, eventId: event.id },
+        })
+      }
+      style={({ pressed }) => [styles.card, hasImage && styles.imageCard, pressed && styles.pressed]}>
+      {hasImage ? (
+        <ImageBackground
+          source={{ uri: event.image_url as string }}
+          style={styles.imageFill}
+          imageStyle={styles.imageRadius}>
+          <LinearGradient
+            colors={RAIL_IMAGE_SCRIM_COLORS}
+            locations={RAIL_IMAGE_SCRIM_LOCATIONS}
+            style={styles.imageScrim}>
+            {copy}
+          </LinearGradient>
+        </ImageBackground>
+      ) : (
+        <LinearGradient
+          colors={RAIL_TEXT_ONLY_SCRIM_COLORS}
+          locations={RAIL_TEXT_ONLY_SCRIM_LOCATIONS}
+          style={styles.textOnlyFill}>
+          {copy}
+        </LinearGradient>
+      )}
+      <View pointerEvents="none" style={styles.railBorderOverlay} />
+    </Pressable>
+  )
+}
+
+export function EventListRow({ event, showVenue = true }: { event: PublicEventRow; showVenue?: boolean }) {
+  const hasImage = Boolean(event.image_url)
+  const copy = (
+    <View style={styles.rowBody}>
+      <View style={styles.rowTop}>
+        <View style={[styles.stateBadge, event.display_state === 'ONGOING' && styles.ongoingBadge]}>
+          <Text style={styles.stateText} numberOfLines={1} ellipsizeMode="tail">
+            {eventMetaLine(event)}
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.rowTitle} numberOfLines={2} ellipsizeMode="tail">
+        {event.title}
+      </Text>
       {event.display_time ? (
-        <Text style={styles.time} numberOfLines={1} ellipsizeMode="tail">
+        <Text style={styles.rowMeta} numberOfLines={1} ellipsizeMode="tail">
           {event.display_time}
         </Text>
       ) : null}
-      {subtitle ? (
-        <Text style={styles.subtitle} numberOfLines={compact ? 2 : 3} ellipsizeMode="tail">
-          {subtitle}
+      {showVenue ? (
+        <Text style={styles.rowVenue} numberOfLines={1} ellipsizeMode="tail">
+          {event.tenant_display_name}
         </Text>
       ) : null}
-      <Text style={styles.venue} numberOfLines={1} ellipsizeMode="tail">
-        @ {event.tenant_display_name}
-      </Text>
     </View>
   )
 
@@ -52,78 +151,27 @@ export function EventCard({ event, compact = false }: EventCardProps) {
         params: { slug: event.tenant_slug, eventId: event.id },
       }}
       asChild>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={[event.title, event.event_type_label, event.display_time, event.tenant_display_name]
-          .filter(Boolean)
-          .join('，')}
-        style={({ pressed }) => [
-          styles.card,
-          compact && styles.compactCard,
-          hasImage && styles.imageCard,
-          pressed && styles.pressed,
-        ]}>
+      <Pressable style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
         {hasImage ? (
-          <ImageBackground
-            source={{ uri: event.image_url as string }}
-            style={styles.imageFill}
-            imageStyle={styles.imageRadius}>
+          <ImageBackground source={{ uri: event.image_url as string }} style={styles.rowImage} imageStyle={styles.rowImageRadius}>
             <LinearGradient
-              colors={['rgba(13,13,13,0.12)', 'rgba(13,13,13,0.68)', 'rgba(13,13,13,0.97)']}
-              locations={[0, 0.5, 1]}
-              style={styles.imageScrim}>
+              colors={['rgba(13,13,13,0.04)', 'rgba(13,13,13,0.32)', 'rgba(13,13,13,0.96)']}
+              locations={[0, 0.46, 1]}
+              style={styles.rowImageTint}>
               {copy}
             </LinearGradient>
           </ImageBackground>
         ) : (
           <LinearGradient
-            colors={['rgba(124,86,56,0.24)', 'rgba(21,21,21,0.84)', 'rgba(13,13,13,0.96)']}
-            locations={[0, 0.56, 1]}
-            style={styles.textOnlyFill}>
+            colors={['rgba(124,86,56,0.18)', 'rgba(21,21,21,0.88)', 'rgba(13,13,13,0.98)']}
+            locations={[0, 0.58, 1]}
+            style={styles.rowTextOnly}>
             {copy}
           </LinearGradient>
         )}
-      </Pressable>
-    </Link>
-  )
-}
-
-export function EventListRow({ event }: { event: PublicEventRow }) {
-  return (
-    <Link
-      href={{
-        pathname: '/bar/[slug]/event/[eventId]',
-        params: { slug: event.tenant_slug, eventId: event.id },
-      }}
-      asChild>
-      <Pressable style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-        {event.image_url ? (
-          <ImageBackground source={{ uri: event.image_url }} style={styles.rowImage} imageStyle={styles.rowImageRadius}>
-            <LinearGradient colors={['rgba(13,13,13,0.05)', 'rgba(13,13,13,0.48)']} style={styles.rowImageTint} />
-          </ImageBackground>
-        ) : (
-          <View style={styles.rowSpacer} />
-        )}
-        <View style={styles.rowBody}>
-          <View style={styles.rowTop}>
-            <Text style={styles.rowState}>{event.display_state}</Text>
-            <Text style={styles.rowType} numberOfLines={1} ellipsizeMode="tail">
-              {event.event_type_label}
-            </Text>
-          </View>
-          <Text style={styles.rowTitle} numberOfLines={2} ellipsizeMode="tail">
-            {event.title}
-          </Text>
-          {event.display_time ? (
-            <Text style={styles.rowMeta} numberOfLines={1} ellipsizeMode="tail">
-              {event.display_time}
-            </Text>
-          ) : null}
-          <Text style={styles.rowVenue} numberOfLines={1} ellipsizeMode="tail">
-            {event.tenant_display_name}
-          </Text>
+        <View style={styles.rowArrow}>
+          <FontAwesome name="angle-right" size={18} color={palette.faint} />
         </View>
-        <FontAwesome name="angle-right" size={18} color={palette.faint} />
       </Pressable>
     </Link>
   )
@@ -131,20 +179,25 @@ export function EventListRow({ event }: { event: PublicEventRow }) {
 
 const styles = StyleSheet.create({
   card: {
-    width: 214,
-    height: 154,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(198,168,117,0.28)',
-    backgroundColor: palette.panelElevated,
+    width: EVENT_RAIL_CARD_WIDTH,
+    minWidth: EVENT_RAIL_CARD_WIDTH,
+    maxWidth: EVENT_RAIL_CARD_WIDTH,
+    height: EVENT_RAIL_CARD_HEIGHT,
+    borderRadius: RAIL_CARD_RADIUS,
+    backgroundColor: palette.bgSoft,
     overflow: 'hidden',
-  },
-  compactCard: {
-    width: 160,
-    height: 122,
+    position: 'relative',
+    flexShrink: 0,
+    flexGrow: 0,
   },
   imageCard: {
     backgroundColor: palette.panelElevated,
+  },
+  railBorderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: RAIL_CARD_RADIUS,
+    borderWidth: 1,
+    borderColor: RAIL_CARD_IMAGE_BORDER,
   },
   pressed: {
     opacity: 0.78,
@@ -154,38 +207,34 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   imageRadius: {
-    borderRadius: 8,
+    borderRadius: RAIL_CARD_RADIUS,
   },
   imageScrim: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: spacing.sm,
+    ...railCardScrimStyle,
   },
   textOnlyFill: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: spacing.sm,
+    ...railCardScrimStyle,
   },
   eventCopy: {
-    minWidth: 0,
+    ...railCardBodyStyle,
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
     marginBottom: spacing.xs,
   },
   stateBadge: {
+    maxWidth: '100%',
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(211,154,69,0.5)',
-    backgroundColor: 'rgba(211,154,69,0.12)',
+    borderColor: 'rgba(211,154,69,0.46)',
+    backgroundColor: 'rgba(8,8,8,0.72)',
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   ongoingBadge: {
-    borderColor: 'rgba(168,194,63,0.42)',
-    backgroundColor: 'rgba(168,194,63,0.12)',
+    borderColor: 'rgba(211,154,69,0.54)',
+    backgroundColor: 'rgba(8,8,8,0.72)',
   },
   stateText: {
     ...typography.label,
@@ -194,63 +243,49 @@ const styles = StyleSheet.create({
     lineHeight: 11,
     letterSpacing: 1,
   },
-  typeLabel: {
-    ...typography.micro,
-    color: palette.tungsten,
-    flex: 1,
-  },
   title: {
-    ...typography.title,
+    ...typography.caption,
     color: palette.text,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '600',
+    maxWidth: '100%',
+    ...RAIL_TEXT_SHADOW,
   },
   compactTitle: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  time: {
-    ...typography.micro,
-    color: palette.tungsten,
-    marginTop: spacing.xxs,
-  },
-  subtitle: {
-    ...typography.micro,
-    color: palette.muted,
-    marginTop: spacing.xxs,
-  },
-  venue: {
-    ...typography.micro,
-    color: palette.faint,
-    marginTop: spacing.xs,
+    fontSize: 14,
+    lineHeight: 19,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.hairline,
+    minHeight: 146,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(198,168,117,0.28)',
+    backgroundColor: palette.panelElevated,
+    overflow: 'hidden',
+    marginTop: spacing.sm,
   },
   rowImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 6,
+    minHeight: 146,
     overflow: 'hidden',
     backgroundColor: palette.panelElevated,
   },
   rowImageRadius: {
-    borderRadius: 6,
+    borderRadius: 12,
   },
   rowImageTint: {
     flex: 1,
+    justifyContent: 'flex-end',
+    padding: spacing.md,
   },
-  rowSpacer: {
-    width: 0,
+  rowTextOnly: {
+    minHeight: 136,
+    justifyContent: 'flex-end',
+    padding: spacing.md,
   },
   rowBody: {
-    flex: 1,
     minWidth: 0,
+    paddingRight: spacing.lg,
   },
   rowTop: {
     flexDirection: 'row',
@@ -258,32 +293,34 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.xxs,
   },
-  rowState: {
-    ...typography.label,
-    color: palette.amber,
-    fontSize: 9,
-    lineHeight: 12,
-    letterSpacing: 1,
-  },
-  rowType: {
-    ...typography.micro,
-    color: palette.faint,
-    flex: 1,
-  },
   rowTitle: {
     ...typography.title,
     color: palette.text,
     fontSize: 16,
     lineHeight: 22,
+    textShadowColor: 'rgba(0,0,0,0.84)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   rowMeta: {
-    ...typography.micro,
+    ...typography.caption,
     color: palette.tungsten,
     marginTop: spacing.xxs,
+    textShadowColor: 'rgba(0,0,0,0.72)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   rowVenue: {
-    ...typography.micro,
+    ...typography.caption,
     color: palette.muted,
     marginTop: spacing.xxs,
+    textShadowColor: 'rgba(0,0,0,0.72)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  rowArrow: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.md,
   },
 })

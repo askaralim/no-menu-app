@@ -9,6 +9,7 @@ import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { BackButton } from '@/components/taplist/BackButton'
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { EventCard } from '@/components/taplist/EventCards'
+import { EVENT_RAIL_CARD_HEIGHT, RAIL_CARD_GAP } from '@/components/taplist/railCardStyle'
 import {
   ShareableBarTaplistImage,
   type ShareableBarTaplistImageHandle,
@@ -146,7 +147,7 @@ export default function BarDetailScreen() {
               </View>
             ) : null}
             {events.length > 0 && !eventsQuery.isError ? (
-              <BarEventsSection slug={tenant.slug} events={events.slice(0, 3)} />
+              <BarEventsSection slug={tenant.slug} events={events} />
             ) : null}
           </>
         ) : null}
@@ -171,11 +172,12 @@ export default function BarDetailScreen() {
             ) : (
               <View style={styles.tapList}>
                 {drinks.map((drink, index) => (
-                  <BeerRow 
-                    key={drink.id} 
-                    drink={drink} 
-                    slug={tenant.slug} 
-                    isLast={index === drinks.length - 1} 
+                  <BeerRow
+                    key={drink.id}
+                    drink={drink}
+                    slug={tenant.slug}
+                    isFirst={index === 0}
+                    isLast={index === drinks.length - 1}
                   />
                 ))}
               </View>
@@ -205,33 +207,47 @@ export default function BarDetailScreen() {
 }
 
 function BarEventsSection({ slug, events }: { slug: string; events: PublicEventRow[] }) {
+  const visibleEvents = events.slice(0, 3)
+  const showMore = events.length > 3
+
   return (
     <View style={styles.eventsSection}>
       <View style={styles.eventsHeader}>
         <View>
-          <Text style={styles.eventsTitle}>今晚活动</Text>
-          <Text style={styles.eventsKicker}>TONIGHT EVENTS</Text>
+          <Text style={styles.eventsTitle}>EVENTS</Text>
         </View>
-        <Link href={{ pathname: '/bar/[slug]/events', params: { slug } }} asChild>
-          <Pressable style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
-            <Text style={styles.moreText}>更多 ›</Text>
-          </Pressable>
-        </Link>
+        {showMore ? (
+          <Link href={{ pathname: '/bar/[slug]/events', params: { slug } }} asChild>
+            <Pressable style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
+              <Text style={styles.moreText}>更多 ›</Text>
+            </Pressable>
+          </Link>
+        ) : null}
       </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.eventScrollView}
+        style={[styles.eventScrollView, styles.eventRailHeight]}
         contentContainerStyle={styles.eventScroller}>
-        {events.map((event) => (
-          <EventCard key={event.id} event={event} />
+        {visibleEvents.map((event) => (
+          <EventCard key={event.id} event={event} showVenue={false} />
         ))}
       </ScrollView>
     </View>
   )
 }
 
-function BeerRow({ drink, slug, isLast }: { drink: PublicDrinkRow; slug: string; isLast: boolean }) {
+function BeerRow({
+  drink,
+  slug,
+  isFirst,
+  isLast,
+}: {
+  drink: PublicDrinkRow
+  slug: string
+  isFirst: boolean
+  isLast: boolean
+}) {
   const servingOptions = displayServingOptions(drink.serving_options)
   const publicStatus = drink.public_status ? drink.public_status : null
   const isSoldOut = publicStatus === '售罄'
@@ -246,7 +262,7 @@ function BeerRow({ drink, slug, isLast }: { drink: PublicDrinkRow; slug: string;
         pressed && styles.beerRowPressed,
         isSoldOut && styles.beerRowSoldOut
       ]}>
-        <View style={styles.beerContent}>
+        <View style={[styles.beerContent, isFirst && styles.beerContentFirst]}>
           {hasArtwork ? (
             <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
           ) : (
@@ -413,46 +429,53 @@ const styles = StyleSheet.create({
     color: palette.faint,
   },
   eventsSection: {
-    paddingVertical: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: palette.hairline,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   eventsHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
     marginBottom: spacing.sm,
   },
   eventsTitle: {
-    ...typography.title,
-    color: palette.text,
-  },
-  eventsKicker: {
-    ...typography.label,
+    ...typography.display,
     color: palette.tungsten,
-    fontSize: 10,
-    lineHeight: 14,
-    marginTop: spacing.xxs,
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: 0.8,
   },
   moreLink: {
-    paddingVertical: spacing.xxs,
-    paddingLeft: spacing.sm,
+    minHeight: 44,
+    paddingLeft: spacing.md,
+    paddingRight: 2,
+    justifyContent: 'center',
   },
   moreLinkPressed: {
     opacity: 0.72,
   },
   moreText: {
-    ...typography.micro,
+    ...typography.caption,
     color: palette.tungsten,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '600',
   },
   eventScrollView: {
     marginHorizontal: -spacing.md,
+    marginTop: spacing.xs,
+  },
+  eventRailHeight: {
+    height: EVENT_RAIL_CARD_HEIGHT,
   },
   eventScroller: {
     paddingHorizontal: spacing.md,
-    gap: spacing.sm,
+    gap: RAIL_CARD_GAP,
+    alignItems: 'flex-start',
+    flexGrow: 0,
   },
   loading: {
     marginTop: spacing.md,
@@ -470,7 +493,7 @@ const styles = StyleSheet.create({
     color: palette.muted,
   },
   tapList: {
-    marginTop: spacing.lg,
+    marginTop: 0,
   },
   beerRow: {
   },
@@ -486,6 +509,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingTop: spacing.lg,
     paddingBottom: spacing.lg,
+  },
+  beerContentFirst: {
+    paddingTop: spacing.lg,
   },
   beerArtworkSpacer: {
     width: 72,

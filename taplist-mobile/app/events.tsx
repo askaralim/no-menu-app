@@ -33,8 +33,8 @@ export default function EventsScreen() {
         style={styles.screen}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xxxl }]}>
         <Text style={styles.kicker}>NO MENU</Text>
-        <Text style={styles.title}>TONIGHT EVENTS</Text>
-        <Text style={styles.subtitle}>上海 · 今晚活动与近期动态</Text>
+        <Text style={styles.title}>EVENTS</Text>
+        <Text style={styles.subtitle}>上海 · 近期活动</Text>
 
         {!configured ? (
           <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看公开活动。" />

@@ -144,7 +144,7 @@ AS $$
     WHEN 'live_music' THEN 'Live Music'
     WHEN 'quiz' THEN 'Quiz Night'
     WHEN 'party' THEN '派对'
-    ELSE '其他活动'
+    ELSE '活动'
   END;
 $$;
 
