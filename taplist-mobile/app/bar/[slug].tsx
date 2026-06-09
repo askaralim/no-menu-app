@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   },
   eventsSection: {
     paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   beerContentFirst: {
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
   },
   beerArtworkSpacer: {
     width: 72,

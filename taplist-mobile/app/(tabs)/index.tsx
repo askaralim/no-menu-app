@@ -128,13 +128,15 @@ export default function TonightScreen() {
 
 function TonightEventsSection({ events }: { events: PublicEventRow[] }) {
   return (
-    <View style={styles.discoverySection}>
+    <View style={[styles.discoverySection, styles.eventsDiscoverySection]}>
       <View style={styles.discoveryHeaderRow}>
         <View>
           <Text style={styles.discoveryTitle}>EVENTS</Text>
         </View>
         <Link href="/events" asChild>
-          <Pressable style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
+          <Pressable
+            hitSlop={{ top: 10, right: 4, bottom: 10, left: 12 }}
+            style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
             <Text style={styles.moreText}>更多 ›</Text>
           </Pressable>
         </Link>
@@ -408,13 +410,15 @@ const styles = StyleSheet.create({
   discoverySection: {
     marginBottom: spacing.xl,
   },
+  eventsDiscoverySection: {
+    marginBottom: spacing.xxl,
+  },
   discoveryHeaderRow: {
-    minHeight: 44,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: spacing.md,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xxs,
   },
   discoveryTitle: {
     ...typography.display,
@@ -424,7 +428,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   moreLink: {
-    minHeight: 44,
     paddingLeft: spacing.md,
     paddingRight: 2,
     justifyContent: 'center',
@@ -441,7 +444,7 @@ const styles = StyleSheet.create({
   },
   discoveryScrollView: {
     marginHorizontal: -spacing.lg,
-    marginTop: spacing.xs,
+    marginTop: 0,
   },
   eventRailScrollView: {
     height: EVENT_RAIL_CARD_HEIGHT,
