@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
+import { BrewingBadgeFromType } from '@/components/taplist/BrewingBadge'
 import { EventCard } from '@/components/taplist/EventCards'
 import { RailVenueBadge } from '@/components/taplist/RailVenueBadge'
 import {
@@ -264,6 +265,11 @@ function BarFeedCard({
             <View style={styles.cardOverlay}>
               <View style={styles.cardRule} />
               <Text style={styles.barName}>{bar.display_name || bar.name}</Text>
+              <BrewingBadgeFromType
+                brewingType={bar.brewing_type}
+                brewingLabel={bar.brewing_label}
+                variant="card"
+              />
               <Text style={styles.barMeta} numberOfLines={1} ellipsizeMode="tail">
                 {location}
               </Text>

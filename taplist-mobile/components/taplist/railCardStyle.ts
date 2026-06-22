@@ -71,3 +71,17 @@ export const railVenueLabelStyle = {
   letterSpacing: 1.5,
   color: RAIL_VENUE_PILL_TEXT,
 }
+
+export const BEER_CARD_RADIUS = 20
+export const BEER_CARD_BORDER = 'transparent'
+export const BEER_CARD_GAP = 12
+export const BEER_CARD_MIN_HEIGHT = 110
+export const BEER_CARD_ARTWORK_WIDTH = 92
+export const EVENT_CARD_ARTWORK_WIDTH = 120
+export const SPARSE_EVENT_LIST_THRESHOLD = 6
+export const BEER_CARD_PANEL_COLORS: [string, string, string] = [
+  'rgba(36,33,30,0.96)',
+  'rgba(24,22,20,0.98)',
+  'rgba(17,16,15,1)',
+]
+export const BEER_CARD_PANEL_LOCATIONS: [number, number, number] = [0, 0.52, 1]

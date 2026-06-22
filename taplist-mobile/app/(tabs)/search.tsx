@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'expo-router'
 import {
   ActivityIndicator,
-  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,38 +20,39 @@ import { searchPublicTaplist } from '@/lib/api/taplist'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicTaplistSearchResult } from '@/lib/types'
 
-const styleTiles = [
-  {
-    label: 'IPA',
-    query: 'IPA',
-    image:
-      'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    label: 'STOUT',
-    query: 'Stout',
-    image:
-      'https://images.unsplash.com/photo-1618885472179-5e474019f2a9?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    label: 'SOUR',
-    query: 'Sour',
-    image:
-      'https://images.unsplash.com/photo-1571613316887-6f8d5cbf7ef7?auto=format&fit=crop&w=600&q=80',
-  },
+const searchPresets = [
+  { label: 'IPA', query: 'IPA' },
+  { label: '酸', query: '酸' },
+  { label: '世涛', query: '世涛' },
+  { label: '拉格', query: '拉格' },
+  { label: '小麦', query: '小麦' },
 ]
+
+const SEARCH_DEBOUNCE_MS = 300
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const trimmedQuery = query.trim()
   const isSearching = trimmedQuery.length > 0
+  const isDebouncing = isSearching && debouncedQuery !== trimmedQuery
+
+  useEffect(() => {
+    if (!trimmedQuery) {
+      setDebouncedQuery('')
+      return
+    }
+
+    const timeout = setTimeout(() => setDebouncedQuery(trimmedQuery), SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(timeout)
+  }, [trimmedQuery])
 
   const drinksQuery = useQuery({
-    queryKey: ['taplist', 'search', DEFAULT_TAPLIST_CITY, trimmedQuery],
-    queryFn: () => searchPublicTaplist(DEFAULT_TAPLIST_CITY, trimmedQuery),
-    enabled: configured && isSearching,
+    queryKey: ['taplist', 'search', DEFAULT_TAPLIST_CITY, debouncedQuery],
+    queryFn: () => searchPublicTaplist(DEFAULT_TAPLIST_CITY, debouncedQuery),
+    enabled: configured && debouncedQuery.length > 0,
   })
 
   const drinkResults = drinksQuery.data ?? []
@@ -62,6 +62,8 @@ export default function SearchScreen() {
   return (
     <ScrollView
       style={styles.screen}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
       <Text style={styles.kicker}>SHANGHAI / TAP LIST</Text>
       <Text style={styles.title}>搜索酒单</Text>
@@ -69,6 +71,8 @@ export default function SearchScreen() {
       <View style={styles.inputFrame}>
         <FontAwesome name="search" size={17} color={palette.faint} />
         <TextInput
+          accessibilityLabel="搜索公开酒单"
+          accessibilityHint="可搜索酒款、酒厂、风格、酒吧或区域"
           placeholder="搜索酒款、酒厂、风格或酒吧"
           placeholderTextColor={palette.faint}
           style={styles.input}
@@ -78,6 +82,7 @@ export default function SearchScreen() {
           autoCorrect={false}
           autoCapitalize="none"
           clearButtonMode="never"
+          returnKeyType="search"
         />
         {query.length > 0 ? (
           <Pressable
@@ -92,23 +97,7 @@ export default function SearchScreen() {
       </View>
 
       {!isSearching ? (
-        <>
-          <Text style={styles.sectionTitle}>风格</Text>
-          <View style={styles.tileGrid}>
-            {styleTiles.map((tile) => (
-              <Pressable
-                key={tile.label}
-                style={({ pressed }) => [styles.styleTile, pressed && styles.tilePressed]}
-                onPress={() => setQuery(tile.query)}>
-                <ImageBackground source={{ uri: tile.image }} style={styles.tileImage} imageStyle={styles.tileImageRadius}>
-                  <View style={styles.tileOverlay}>
-                    <Text style={styles.tileLabel}>{tile.label}</Text>
-                  </View>
-                </ImageBackground>
-              </Pressable>
-            ))}
-          </View>
-        </>
+        <SearchGuide onSelect={setQuery} />
       ) : null}
 
       {!configured ? (
@@ -117,7 +106,7 @@ export default function SearchScreen() {
 
       {configured && showDrinkSection ? (
         <>
-          {drinksQuery.isLoading ? (
+          {isDebouncing || drinksQuery.isLoading ? (
             <View style={styles.loading}>
               <ActivityIndicator color={palette.amber} />
               <Text style={styles.muted}>正在搜索酒款...</Text>
@@ -128,7 +117,12 @@ export default function SearchScreen() {
               body="请在 Supabase 执行 search_public_taplist 迁移后重试。"
             />
           ) : drinkResults.length === 0 ? (
-            <EmptyState title="没有匹配的酒款" body="试试酒厂名、风格、酒款中文名或酒吧名称。" />
+            <EmptyState title="没有匹配的酒款" body="试试酒厂名、风格、酒款中文名或酒吧名称。">
+              <View style={styles.emptyRecovery}>
+                <Text style={styles.emptyRecoveryLabel}>换个风格试试</Text>
+                <PresetSearches onSelect={setQuery} />
+              </View>
+            </EmptyState>
           ) : (
             drinkResults.map((drink) => <DrinkResult key={drink.drink_id} drink={drink} />)
           )}
@@ -136,6 +130,35 @@ export default function SearchScreen() {
       ) : null}
 
     </ScrollView>
+  )
+}
+
+function SearchGuide({ onSelect }: { onSelect: (query: string) => void }) {
+  return (
+    <View style={styles.guide}>
+      <Text style={styles.guideTitle}>不知道从哪里开始？</Text>
+
+      <Text style={styles.presetSectionLabel}>风格</Text>
+      <PresetSearches onSelect={onSelect} />
+    </View>
+  )
+}
+
+function PresetSearches({ onSelect }: { onSelect: (query: string) => void }) {
+  return (
+    <View style={styles.presetGrid}>
+      {searchPresets.map((preset) => (
+        <Pressable
+          key={preset.label}
+          accessibilityRole="button"
+          accessibilityLabel={`搜索${preset.label}`}
+          accessibilityHint="显示当前公开酒单中的匹配酒款"
+          onPress={() => onSelect(preset.query)}
+          style={({ pressed }) => [styles.presetPill, pressed && styles.presetPillPressed]}>
+          <Text style={styles.presetLabel}>{preset.label}</Text>
+        </Pressable>
+      ))}
+    </View>
   )
 }
 
@@ -152,7 +175,11 @@ function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
       <Link href={`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`} asChild>
         <Pressable style={({ pressed }) => [styles.drinkPressable, pressed && styles.pressed]}>
           <View style={styles.drinkRowInner}>
-            <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
+            {drink.image_url ? (
+              <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
+            ) : (
+              <View style={styles.artworkSpacer} />
+            )}
             <View style={styles.drinkCopy}>
               <Text style={styles.resultName} numberOfLines={2}>
                 {drink.name}
@@ -200,11 +227,12 @@ function searchServingLine(serving: PublicTaplistSearchResult['default_serving']
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
-function EmptyState({ title, body }: { title: string; body: string }) {
+function EmptyState({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
     <View style={styles.emptyState}>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyBody}>{body}</Text>
+      {children}
     </View>
   )
 }
@@ -250,52 +278,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   clearButton: {
-    width: 28,
-    height: 28,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: -spacing.sm,
   },
   clearButtonPressed: {
     opacity: 0.55,
   },
-  sectionTitle: {
-    ...typography.displayL,
+  guide: {
+    paddingTop: spacing.xs,
+  },
+  guideTitle: {
+    ...typography.title,
     color: palette.text,
-    fontSize: 23,
-    lineHeight: 29,
-    marginBottom: spacing.sm,
-    marginTop: spacing.lg,
+    fontSize: 20,
+    lineHeight: 28,
   },
-  tileGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  styleTile: {
-    flex: 1,
-    height: 92,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  tilePressed: {
-    opacity: 0.78,
-  },
-  tileImage: {
-    flex: 1,
-  },
-  tileImageRadius: {
-    borderRadius: 8,
-  },
-  tileOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: spacing.sm,
-    backgroundColor: 'rgba(8,8,8,0.65)',
-  },
-  tileLabel: {
+  presetSectionLabel: {
     ...typography.label,
+    color: palette.tungsten,
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  presetGrid: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  presetPill: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(198,168,117,0.24)',
+    backgroundColor: 'rgba(184,138,61,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  presetPillPressed: {
+    borderColor: 'rgba(211,154,69,0.52)',
+    backgroundColor: 'rgba(184,138,61,0.18)',
+    opacity: 0.82,
+  },
+  presetLabel: {
+    ...typography.body,
     color: palette.text,
-    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   loading: {
     borderTopWidth: 1,
@@ -325,6 +359,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.lg,
     alignItems: 'flex-start',
+  },
+  artworkSpacer: {
+    width: 72,
+    height: 72,
   },
   pressed: {
     opacity: 0.78,
@@ -411,5 +449,15 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: palette.muted,
     marginTop: spacing.xs,
+  },
+  emptyRecovery: {
+    marginTop: spacing.lg,
+  },
+  emptyRecoveryLabel: {
+    ...typography.label,
+    color: palette.tungsten,
+    fontSize: 11,
+    lineHeight: 15,
+    marginBottom: spacing.sm,
   },
 })

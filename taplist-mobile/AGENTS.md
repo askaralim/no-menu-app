@@ -101,6 +101,17 @@ The home screen is the primary consumer entry point.
 - New-tap cards should link directly to `/bar/{tenant_slug}/beer/{drink_id}`.
 - If the new-tap query fails while the bar feed succeeds, keep the bar feed visible and omit the section.
 
+## Discovery Rails
+
+Home discovery modules such as `EVENTS` and `NEW ON TAP` should stay secondary to the main bar feed.
+
+- Keep rail-card sizing and shared rail visuals controlled by `components/taplist/railCardStyle.ts`.
+- Do not randomly tune card dimensions per screen; change shared tokens deliberately and verify the home and bar-detail impact.
+- `EVENTS` should feel lightweight: compact cards, minimal text, tight title-to-card spacing, and enough breathing room before the next module.
+- `NEW ON TAP` may be slightly taller than `EVENTS` because it carries beer metadata.
+- Card borders should remain transparent unless explicitly requested; badge borders may stay subtle for legibility.
+- On bar detail, reduce the gap between event rails and the first beer row by adjusting the actual spacing source, not unrelated card styles.
+
 ## Data Rules
 
 Use real Supabase data only. Do not add placeholder bars, placeholder drinks, fake tap counts, fake beer metadata, fake tasting notes, or demo collections.

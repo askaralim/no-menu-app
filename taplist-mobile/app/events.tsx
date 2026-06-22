@@ -3,12 +3,12 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BackButton } from '@/components/taplist/BackButton'
-import { EventListRow } from '@/components/taplist/EventCards'
+import { EventListSection } from '@/components/taplist/EventListSection'
+import { SPARSE_EVENT_LIST_THRESHOLD } from '@/components/taplist/railCardStyle'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { palette, spacing, typography } from '@/constants/design'
 import { DEFAULT_TAPLIST_CITY } from '@/constants/taplist'
 import { fetchPublicEvents } from '@/lib/api/taplist'
-import type { PublicEventRow } from '@/lib/types'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 
 export default function EventsScreen() {
@@ -25,6 +25,7 @@ export default function EventsScreen() {
   const events = eventsQuery.data ?? []
   const tonightEvents = events.filter((event) => event.display_state === 'TONIGHT' || event.display_state === 'ONGOING')
   const upcomingEvents = events.filter((event) => event.display_state === 'UPCOMING')
+  const sparseList = events.length < SPARSE_EVENT_LIST_THRESHOLD
 
   return (
     <View style={styles.screen}>
@@ -49,8 +50,22 @@ export default function EventsScreen() {
           <EmptyState title="暂无公开活动" body="今晚还没有酒吧发布活动。" />
         ) : (
           <>
-            {tonightEvents.length > 0 ? <EventGroup title="TONIGHT" events={tonightEvents} /> : null}
-            {upcomingEvents.length > 0 ? <EventGroup title="UPCOMING" events={upcomingEvents} /> : null}
+            {tonightEvents.length > 0 ? (
+              <EventListSection
+                title="TONIGHT"
+                count={tonightEvents.length}
+                events={tonightEvents}
+                compact={sparseList}
+              />
+            ) : null}
+            {upcomingEvents.length > 0 ? (
+              <EventListSection
+                title="UPCOMING"
+                count={upcomingEvents.length}
+                events={upcomingEvents}
+                compact={sparseList}
+              />
+            ) : null}
           </>
         )}
 
@@ -58,19 +73,6 @@ export default function EventsScreen() {
           <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
         </View>
       </ScrollView>
-    </View>
-  )
-}
-
-function EventGroup({ title, events }: { title: string; events: PublicEventRow[] }) {
-  return (
-    <View style={styles.group}>
-      <Text style={styles.groupTitle}>{title}</Text>
-      <View>
-        {events.map((event) => (
-          <EventListRow key={event.id} event={event} />
-        ))}
-      </View>
     </View>
   )
 }
@@ -106,16 +108,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...typography.caption,
-    color: palette.muted,
-    marginTop: spacing.xs,
+    color: 'rgba(245,238,225,0.52)',
+    fontSize: 17,
+    lineHeight: 24,
+    marginTop: spacing.sm,
   },
   loading: {
     marginTop: spacing.xl,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: palette.line,
-    backgroundColor: palette.panel,
-    padding: spacing.sm,
+    paddingVertical: spacing.md,
     flexDirection: 'row',
     gap: spacing.sm,
     alignItems: 'center',
@@ -123,16 +123,6 @@ const styles = StyleSheet.create({
   loadingText: {
     ...typography.caption,
     color: palette.muted,
-  },
-  group: {
-    marginTop: spacing.xl,
-  },
-  groupTitle: {
-    ...typography.display,
-    color: palette.tungsten,
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: 1,
   },
   emptyState: {
     borderTopWidth: 1,

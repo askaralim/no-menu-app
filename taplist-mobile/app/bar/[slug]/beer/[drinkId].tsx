@@ -102,46 +102,42 @@ export default function BeerDetailScreen() {
       ) : null}
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top + (artworkUrl ? spacing.md : spacing.xxxl) },
-        ]}>
-        {!configured ? (
-          <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看实时公开酒单。" />
-        ) : isResolvingDrink ? (
-          <View style={styles.loading}>
-            <ActivityIndicator color={palette.amber} />
-            <Text style={styles.loadingText}>正在加载酒款...</Text>
-          </View>
-        ) : tenantQuery.isError || tenantResult?.ok === false ? (
-          <EmptyState title="找不到这家酒吧" body="该酒吧可能尚未发布公开酒单，或链接已经失效。" />
-        ) : drinksQuery.isError || drinkResult?.ok === false ? (
-          <EmptyState title="暂时无法加载酒款" body="请稍后重试，或以门店实际供应为准。" />
-        ) : !drink && !drinksQuery.isLoading ? (
-          <EmptyState title="找不到这款酒" body="这款酒可能已经下架，或不再公开展示。" />
-        ) : drink ? (
-          <>
-            {artworkUrl ? (
-              <View style={styles.coverFrame}>
-                <AtmosphereImage source={artworkUrl} aspectRatio={1} overlayOpacity={0.18} scrimOpacity={0.4} />
-              </View>
-            ) : null}
+        contentContainerStyle={artworkUrl ? styles.scrollContent : [styles.paddedContent, { paddingTop: insets.top + spacing.xxxl, paddingBottom: spacing.xxl }]}>
+        {artworkUrl ? (
+          <AtmosphereImage source={artworkUrl} aspectRatio={1} overlayOpacity={0.18} scrimOpacity={1} borderRadius={0} />
+        ) : null}
 
-            <Text style={styles.kicker}>{tenant?.display_name || tenant?.name || '酒吧'}</Text>
-            <Text style={styles.title}>{drink.name}</Text>
-            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <View style={artworkUrl ? styles.paddedContent : undefined}>
+          {!configured ? (
+            <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看实时公开酒单。" />
+          ) : isResolvingDrink ? (
+            <View style={styles.loading}>
+              <ActivityIndicator color={palette.amber} />
+              <Text style={styles.loadingText}>正在加载酒款...</Text>
+            </View>
+          ) : tenantQuery.isError || tenantResult?.ok === false ? (
+            <EmptyState title="找不到这家酒吧" body="该酒吧可能尚未发布公开酒单，或链接已经失效。" />
+          ) : drinksQuery.isError || drinkResult?.ok === false ? (
+            <EmptyState title="暂时无法加载酒款" body="请稍后重试，或以门店实际供应为准。" />
+          ) : !drink && !drinksQuery.isLoading ? (
+            <EmptyState title="找不到这款酒" body="这款酒可能已经下架，或不再公开展示。" />
+          ) : drink ? (
+            <>
+              <Text style={styles.kicker}>{tenant?.display_name || tenant?.name || '酒吧'}</Text>
+              <Text style={styles.title}>{drink.name}</Text>
+              {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
-            {drink.beer?.description ? (
-              <Text style={styles.description}>{drink.beer.description}</Text>
-            ) : null}
+              {drink.beer?.description ? (
+                <Text style={styles.description}>{drink.beer.description}</Text>
+              ) : null}
 
-            {metadata.length > 0 ? (
-              <View style={styles.metadataChips}>
-                {metadata.map((item) => (
-                  <Meta key={item.label} label={item.label} value={item.value} />
-                ))}
-              </View>
-            ) : null}
+              {metadata.length > 0 ? (
+                <View style={styles.metadataChips}>
+                  {metadata.map((item) => (
+                    <Meta key={item.label} label={item.label} value={item.value} />
+                  ))}
+                </View>
+              ) : null}
 
             {servingOptions.length > 0 ? (
               <>
@@ -181,6 +177,7 @@ export default function BeerDetailScreen() {
             </View>
           </>
         ) : null}
+        </View>
       </ScrollView>
       {tenant && drink ? (
         <View pointerEvents="none" style={styles.shareableCanvas}>
@@ -292,9 +289,11 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: palette.text,
   },
-  content: {
-    padding: spacing.lg,
+  scrollContent: {
     paddingBottom: spacing.xxl,
+  },
+  paddedContent: {
+    paddingHorizontal: spacing.lg,
   },
   loading: {
     marginTop: spacing.lg,
@@ -308,18 +307,6 @@ const styles = StyleSheet.create({
   loadingText: {
     ...typography.caption,
     color: palette.muted,
-  },
-  coverFrame: {
-    width: '100%',
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: palette.panelElevated,
-    marginBottom: spacing.xl,
-    shadowColor: palette.black,
-    shadowOpacity: 0.55,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: spacing.lg },
-    elevation: 8,
   },
   kicker: {
     ...typography.label,

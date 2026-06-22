@@ -18,6 +18,13 @@ export type PublicBarStatusCounts = {
   即将上新: number
 }
 
+export type BrewingType = 'house_brand' | 'on_site_brewery'
+
+export type PublicBarTag = {
+  key: string
+  label: string
+}
+
 export type PublicBarRow = {
   id: string
   slug: string
@@ -32,6 +39,8 @@ export type PublicBarRow = {
   country: string
   last_menu_updated_at: string | null
   status_counts?: PublicBarStatusCounts
+  brewing_type?: BrewingType | null
+  brewing_label?: string | null
 }
 
 export type PublicTenantDetail = {
@@ -47,6 +56,9 @@ export type PublicTenantDetail = {
   city: string
   country: string
   last_menu_updated_at: string | null
+  tags?: PublicBarTag[]
+  brewing_type?: BrewingType | null
+  brewing_label?: string | null
 }
 
 export type PublicBeerProfile = {
@@ -84,6 +96,8 @@ export type PublicDrinkRow = {
   /** Chinese label from RPC (`上新` / `在售` / `少量` / `售罄` / `即将上新`). */
   public_status: string
   public_sort_order: number
+  /** Canonical Product Pool link when bar drink is linked (additive). */
+  product_id?: string | null
   beer: PublicBeerProfile | null
   serving_options: PublicServingOption[]
 }
@@ -105,6 +119,8 @@ export type PublicTaplistSearchResult = {
   brand_name: string | null
   image_url: string | null
   public_status: string
+  /** Canonical Product Pool link when bar drink is linked (additive). */
+  product_id?: string | null
   tenant_id: string
   tenant_slug: string
   tenant_display_name: string

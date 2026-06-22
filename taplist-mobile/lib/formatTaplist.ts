@@ -118,6 +118,18 @@ export function servingParts(option: Pick<PublicServingOption, 'label' | 'servin
   ].filter((part): part is string => Boolean(part))
 }
 
+/** Compact price + volume for bar list cards (no cup label). */
+export function formatCardPriceVolume(option?: PublicServingOption | null): string | null {
+  if (!option) return null
+
+  const parts = [
+    option.price > 0 ? `¥${option.price}` : null,
+    option.volume_ml ? `${option.volume_ml}ml` : null,
+  ].filter((part): part is string => Boolean(part))
+
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
 /** Tonight feed order: matches `get_public_taplist_bars` (`ORDER BY last_menu_updated_at DESC NULLS LAST`). */
 export function sortPublicBarsByMenuUpdated(bars: PublicBarRow[]): PublicBarRow[] {
   return [...bars].sort((a, b) => {

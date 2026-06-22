@@ -1,11 +1,21 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { Link, useRouter } from 'expo-router'
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 
 import { palette, spacing, typography } from '@/constants/design'
 import { RailVenueBadge } from '@/components/taplist/RailVenueBadge'
 import {
+  listCapsuleCardStyles,
+  listCapsuleMetaStyle,
+  listCapsuleSecondaryStyle,
+  listCapsuleTitleStyle,
+  listCapsuleVenueStyle,
+} from '@/components/taplist/listCapsuleCardStyle'
+import {
+  BEER_CARD_ARTWORK_WIDTH,
+  BEER_CARD_PANEL_COLORS,
+  BEER_CARD_PANEL_LOCATIONS,
+  EVENT_CARD_ARTWORK_WIDTH,
   EVENT_RAIL_CARD_HEIGHT,
   EVENT_RAIL_CARD_WIDTH,
   RAIL_CARD_IMAGE_BORDER,
@@ -53,8 +63,29 @@ export function compactEventTypeLabel(event: PublicEventRow) {
   }
 }
 
+/** Specific type or subtitle for list cards — skips generic "活动". */
+export function eventListDetailLine(event: PublicEventRow): string | null {
+  const typeLabel = compactEventTypeLabel(event)
+  if (typeLabel && typeLabel !== '活动') return typeLabel
+  const subtitle = event.subtitle?.trim()
+  return subtitle || null
+}
+
+export function shouldGroupEventsByVenue(events: PublicEventRow[]) {
+  const counts = new Map<string, number>()
+  for (const event of events) {
+    counts.set(event.tenant_id, (counts.get(event.tenant_id) ?? 0) + 1)
+  }
+
+  return [...counts.values()].some((count) => count > 1)
+}
+
+export function eventDisplayStateLabel(state: PublicEventRow['display_state']) {
+  return state === 'ONGOING' ? 'TONIGHT' : state
+}
+
 export function eventMetaLine(event: PublicEventRow) {
-  return `${event.display_state}`
+  return eventDisplayStateLabel(event.display_state)
 }
 
 export function EventCard({ event, compact = false, showVenue = true }: EventCardProps) {
@@ -65,7 +96,7 @@ export function EventCard({ event, compact = false, showVenue = true }: EventCar
   const copy = (
     <View style={styles.eventCopy}>
       <View style={styles.badgeRow}>
-        <View style={[styles.stateBadge, event.display_state === 'ONGOING' && styles.ongoingBadge]}>
+        <View style={[styles.stateBadge, (event.display_state === 'ONGOING' || event.display_state === 'TONIGHT') && styles.ongoingBadge]}>
           <Text style={styles.stateText} numberOfLines={1} ellipsizeMode="tail">
             {eventMetaLine(event)}
           </Text>
@@ -117,32 +148,11 @@ export function EventCard({ event, compact = false, showVenue = true }: EventCar
   )
 }
 
-export function EventListRow({ event, showVenue = true }: { event: PublicEventRow; showVenue?: boolean }) {
+export function EventListCard({ event, showVenue = true }: { event: PublicEventRow; showVenue?: boolean }) {
   const hasImage = Boolean(event.image_url)
-  const copy = (
-    <View style={styles.rowBody}>
-      <View style={styles.rowTop}>
-        <View style={[styles.stateBadge, event.display_state === 'ONGOING' && styles.ongoingBadge]}>
-          <Text style={styles.stateText} numberOfLines={1} ellipsizeMode="tail">
-            {eventMetaLine(event)}
-          </Text>
-        </View>
-      </View>
-      <Text style={styles.rowTitle} numberOfLines={2} ellipsizeMode="tail">
-        {event.title}
-      </Text>
-      {event.display_time ? (
-        <Text style={styles.rowMeta} numberOfLines={1} ellipsizeMode="tail">
-          {event.display_time}
-        </Text>
-      ) : null}
-      {showVenue ? (
-        <Text style={styles.rowVenue} numberOfLines={1} ellipsizeMode="tail">
-          {event.tenant_display_name}
-        </Text>
-      ) : null}
-    </View>
-  )
+  const artworkWidth = hasImage ? EVENT_CARD_ARTWORK_WIDTH : BEER_CARD_ARTWORK_WIDTH
+  const detailLine = eventListDetailLine(event)
+  const venueLine = event.tenant_display_name
 
   return (
     <Link
@@ -151,27 +161,58 @@ export function EventListRow({ event, showVenue = true }: { event: PublicEventRo
         params: { slug: event.tenant_slug, eventId: event.id },
       }}
       asChild>
-      <Pressable style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-        {hasImage ? (
-          <ImageBackground source={{ uri: event.image_url as string }} style={styles.rowImage} imageStyle={styles.rowImageRadius}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={[event.tenant_display_name, event.title, event.display_time, event.event_type_label]
+          .filter(Boolean)
+          .join('，')}
+        style={({ pressed }) => [listCapsuleCardStyles.card, pressed && listCapsuleCardStyles.cardPressed]}>
+        <View style={listCapsuleCardStyles.cardInner}>
+          {hasImage ? (
+            <View style={[listCapsuleCardStyles.artworkFrame, { width: artworkWidth }]}>
+              <Image
+                source={{ uri: event.image_url as string }}
+                style={listCapsuleCardStyles.artwork}
+                resizeMode="cover"
+              />
+            </View>
+          ) : (
+            <View style={[listCapsuleCardStyles.artworkSpacer, { width: artworkWidth }]} />
+          )}
+
+          <View style={listCapsuleCardStyles.panel}>
             <LinearGradient
-              colors={['rgba(13,13,13,0.04)', 'rgba(13,13,13,0.32)', 'rgba(13,13,13,0.96)']}
-              locations={[0, 0.46, 1]}
-              style={styles.rowImageTint}>
-              {copy}
-            </LinearGradient>
-          </ImageBackground>
-        ) : (
-          <LinearGradient
-            colors={['rgba(124,86,56,0.18)', 'rgba(21,21,21,0.88)', 'rgba(13,13,13,0.98)']}
-            locations={[0, 0.58, 1]}
-            style={styles.rowTextOnly}>
-            {copy}
-          </LinearGradient>
-        )}
-        <View style={styles.rowArrow}>
-          <FontAwesome name="angle-right" size={18} color={palette.faint} />
+              colors={BEER_CARD_PANEL_COLORS}
+              locations={BEER_CARD_PANEL_LOCATIONS}
+              style={StyleSheet.absoluteFill}
+            />
+
+            <View style={listCapsuleCardStyles.panelContent}>
+              <Text style={listCapsuleTitleStyle} numberOfLines={2} ellipsizeMode="tail">
+                {event.title}
+              </Text>
+
+              {detailLine ? (
+                <Text style={listCapsuleMetaStyle} numberOfLines={1} ellipsizeMode="tail">
+                  {detailLine}
+                </Text>
+              ) : null}
+
+              {event.display_time ? (
+                <Text style={listCapsuleSecondaryStyle} numberOfLines={2}>
+                  {event.display_time}
+                </Text>
+              ) : null}
+
+              {showVenue && venueLine ? (
+                <Text style={listCapsuleVenueStyle} numberOfLines={1} ellipsizeMode="tail">
+                  {venueLine}
+                </Text>
+              ) : null}
+            </View>
+          </View>
         </View>
+        <View pointerEvents="none" style={listCapsuleCardStyles.borderOverlay} />
       </Pressable>
     </Link>
   )
@@ -255,72 +296,5 @@ const styles = StyleSheet.create({
   compactTitle: {
     fontSize: 14,
     lineHeight: 19,
-  },
-  row: {
-    minHeight: 146,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(198,168,117,0.28)',
-    backgroundColor: palette.panelElevated,
-    overflow: 'hidden',
-    marginTop: spacing.sm,
-  },
-  rowImage: {
-    minHeight: 146,
-    overflow: 'hidden',
-    backgroundColor: palette.panelElevated,
-  },
-  rowImageRadius: {
-    borderRadius: 12,
-  },
-  rowImageTint: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: spacing.md,
-  },
-  rowTextOnly: {
-    minHeight: 136,
-    justifyContent: 'flex-end',
-    padding: spacing.md,
-  },
-  rowBody: {
-    minWidth: 0,
-    paddingRight: spacing.lg,
-  },
-  rowTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.xxs,
-  },
-  rowTitle: {
-    ...typography.title,
-    color: palette.text,
-    fontSize: 16,
-    lineHeight: 22,
-    textShadowColor: 'rgba(0,0,0,0.84)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  rowMeta: {
-    ...typography.caption,
-    color: palette.tungsten,
-    marginTop: spacing.xxs,
-    textShadowColor: 'rgba(0,0,0,0.72)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  rowVenue: {
-    ...typography.caption,
-    color: palette.muted,
-    marginTop: spacing.xxs,
-    textShadowColor: 'rgba(0,0,0,0.72)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  rowArrow: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.md,
   },
 })

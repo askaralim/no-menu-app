@@ -29,6 +29,12 @@ export interface Drink {
   is_public_visible?: boolean
   public_status?: string | null
   public_sort_order?: number | null
+  /** Canonical Product Pool link (nullable) */
+  product_id?: string | null
+  /** Bar-level public name override when linked to a product */
+  display_name?: string | null
+  /** Bar-level public description override when linked to a product */
+  display_description?: string | null
 }
 
 export interface CategoryWithDrinks extends Category {

@@ -10,6 +10,7 @@ type AtmosphereImageProps = {
   overlayOpacity?: number
   scrimOpacity?: number
   children?: React.ReactNode
+  borderRadius?: number
 }
 
 export function AtmosphereImage({
@@ -19,11 +20,13 @@ export function AtmosphereImage({
   overlayOpacity = 0.36,
   scrimOpacity = 1,
   children,
+  borderRadius = 8,
 }: AtmosphereImageProps) {
   const frameStyle = [
     styles.frame,
     height ? { height } : null,
     aspectRatio ? { aspectRatio } : null,
+    { borderRadius },
   ]
 
   if (!source) {
@@ -33,7 +36,7 @@ export function AtmosphereImage({
           colors={[
             `rgba(75,54,31,${overlayOpacity})`,
             `rgba(13,13,13,${0.78 * scrimOpacity})`,
-            `rgba(13,13,13,${0.96 * scrimOpacity})`,
+            `rgba(13,13,13,${1 * scrimOpacity})`,
           ]}
           style={styles.tint}>
           <View pointerEvents="none" style={styles.grain} />
@@ -44,12 +47,12 @@ export function AtmosphereImage({
   }
 
   return (
-    <ImageBackground source={{ uri: source }} style={frameStyle} imageStyle={styles.imageRadius}>
+    <ImageBackground source={{ uri: source }} style={frameStyle} imageStyle={{ borderRadius }}>
       <LinearGradient
         colors={[
           `rgba(75,54,31,${overlayOpacity})`,
           `rgba(13,13,13,${0.52 * scrimOpacity})`,
-          `rgba(13,13,13,${0.96 * scrimOpacity})`,
+          `rgba(13,13,13,${1 * scrimOpacity})`,
         ]}
         style={styles.tint}>
         <View pointerEvents="none" style={styles.grain} />

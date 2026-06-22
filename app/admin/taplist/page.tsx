@@ -12,7 +12,15 @@ import {
   type OpeningHourJson,
   type OpeningHourPicker,
 } from '@/lib/openingHour'
+import {
+  BAR_TAG_CATEGORY_ORDER,
+  BREWING_TYPE_OPTIONS,
+  groupBarTagsByCategory,
+  type BarTagDefinition,
+  type BrewingType,
+} from '@/lib/barTags'
 import { BeerBulkImportPanel } from '@/components/admin/BeerBulkImportPanel'
+import { ProductPoolLinkSection } from '@/components/admin/ProductPoolLinkSection'
 import { uploadTaplistCover, uploadTaplistDrinkImage } from '@/lib/taplistStorage'
 import type { Category, Drink } from '@/lib/types'
 
@@ -31,6 +39,7 @@ type TenantTaplistRow = {
   country: string
   opening_hour: OpeningHourJson | null
   description: string | null
+  brewing_type: BrewingType | null
 }
 
 type DrinkBeerProfile = {
@@ -80,6 +89,12 @@ function TaplistAdminPageInner() {
     ...DEFAULT_OPENING_HOUR_PICKER,
   })
   const [openingHourEnabled, setOpeningHourEnabled] = useState(false)
+  const [tagCatalog, setTagCatalog] = useState<BarTagDefinition[]>([])
+  const [selectedTagKeys, setSelectedTagKeys] = useState<string[]>([])
+  const [brewingType, setBrewingType] = useState<BrewingType | ''>('')
+  const [storefrontReady, setStorefrontReady] = useState(false)
+  const [storefrontLoadError, setStorefrontLoadError] = useState<string | null>(null)
+  const storefrontLoadGenRef = useRef(0)
   const [categories, setCategories] = useState<(Category & { is_public_visible?: boolean })[]>([])
   const [drinks, setDrinks] = useState<Drink[]>([])
   const [loading, setLoading] = useState(true)
@@ -139,38 +154,98 @@ function TaplistAdminPageInner() {
     setTenantId(tid)
   }, [searchParams])
 
-  const loadTenant = useCallback(async (tid: string) => {
-    const { data, error } = await supabase
-      .from('tenants')
-      .select('id,name,slug,is_public_visible,display_name,district,address,opening_hour,description,cover_image_url,city,country')
-      .eq('id', tid)
-      .single()
+  const loadTagCatalog = useCallback(async () => {
+    const { data, error } = await supabase.rpc('get_bar_tag_catalog')
     if (error) {
       console.error(error)
       return
     }
-    if (data) {
-      const row = data as TenantTaplistRow
-      setTenant(row)
-      setTenantForm({
-        display_name: row.display_name ?? '',
-        district: row.district ?? '',
-        address: row.address ?? '',
-        cover_image_url: row.cover_image_url ?? '',
-        city: row.city ?? 'Shanghai',
-        description: row.description ?? '',
-      })
-      const hasHours = row.opening_hour != null
-      setOpeningHourEnabled(hasHours)
-      setOpeningHourPicker(
-        hasHours ? openingHourJsonToPicker(row.opening_hour) : { ...DEFAULT_OPENING_HOUR_PICKER }
-      )
-    }
+    setTagCatalog((data ?? []) as BarTagDefinition[])
   }, [])
+
+  const resetStorefrontForm = useCallback(() => {
+    setSelectedTagKeys([])
+    setBrewingType('')
+    setStorefrontReady(false)
+    setStorefrontLoadError(null)
+  }, [])
+
+  const loadTenant = useCallback(async (tid: string, loadGen: number) => {
+    resetStorefrontForm()
+
+    const { data, error } = await supabase
+      .from('tenants')
+      .select('id,name,slug,is_public_visible,display_name,district,address,opening_hour,description,cover_image_url,city,country,brewing_type')
+      .eq('id', tid)
+      .single()
+    if (loadGen !== storefrontLoadGenRef.current) return
+    if (error) {
+      console.error(error)
+      setStorefrontLoadError('门店信息加载失败，请刷新后重试')
+      return
+    }
+    if (!data) return
+
+    const row = data as TenantTaplistRow
+    setTenant(row)
+    setTenantForm({
+      display_name: row.display_name ?? '',
+      district: row.district ?? '',
+      address: row.address ?? '',
+      cover_image_url: row.cover_image_url ?? '',
+      city: row.city ?? 'Shanghai',
+      description: row.description ?? '',
+    })
+    const hasHours = row.opening_hour != null
+    setOpeningHourEnabled(hasHours)
+    setOpeningHourPicker(
+      hasHours ? openingHourJsonToPicker(row.opening_hour) : { ...DEFAULT_OPENING_HOUR_PICKER }
+    )
+    setBrewingType(row.brewing_type ?? '')
+
+    const { data: tagRows, error: tagError } = await supabase
+      .from('tenant_bar_tags')
+      .select('tag_key')
+      .eq('tenant_id', tid)
+    if (loadGen !== storefrontLoadGenRef.current) return
+    if (tagError) {
+      console.error(tagError)
+      setStorefrontLoadError('门店标签加载失败，暂不可保存标签与酿造信息')
+      return
+    }
+
+    setSelectedTagKeys((tagRows ?? []).map((r) => r.tag_key as string))
+    setStorefrontReady(true)
+  }, [resetStorefrontForm])
 
   const buildOpeningHourPayload = (): OpeningHourJson | null => {
     if (!openingHourEnabled) return null
     return pickerToOpeningHourJson(openingHourPicker)
+  }
+
+  const buildStorefrontRpcPayload = () => ({
+    p_display_name: tenantForm.display_name,
+    p_district: tenantForm.district,
+    p_address: tenantForm.address,
+    p_cover_image_url: tenantForm.cover_image_url,
+    p_city: tenantForm.city || 'Shanghai',
+    p_opening_hour: buildOpeningHourPayload(),
+    p_description: tenantForm.description,
+    ...(storefrontReady
+      ? {
+          p_update_storefront_extras: true,
+          p_tag_keys: selectedTagKeys,
+          p_brewing_type: brewingType || null,
+        }
+      : { p_update_storefront_extras: false }),
+  })
+
+  const storefrontSaveBlocked = !storefrontReady || Boolean(storefrontLoadError)
+
+  const groupedTags = useMemo(() => groupBarTagsByCategory(tagCatalog), [tagCatalog])
+
+  const toggleTagKey = (key: string) => {
+    setSelectedTagKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
   }
 
   const loadCategories = useCallback(async (tid: string) => {
@@ -190,7 +265,7 @@ function TaplistAdminPageInner() {
     const { data, error } = await supabase
       .from('drinks')
       .select(
-        'id,category_id,brand_name,name,volume_ml,price,price_unit,price_bottle,price_unit_bottle,sort_order,enabled,stock,ml_per_cup,ml_per_bottle,created_at,image_url,is_public_visible,public_status,public_sort_order'
+        'id,category_id,brand_name,name,volume_ml,price,price_unit,price_bottle,price_unit_bottle,sort_order,enabled,stock,ml_per_cup,ml_per_bottle,created_at,image_url,is_public_visible,public_status,public_sort_order,product_id,display_name,display_description'
       )
       .eq('tenant_id', tid)
       .eq('enabled', true)
@@ -205,20 +280,25 @@ function TaplistAdminPageInner() {
   useEffect(() => {
     ;(async () => {
       setLoading(true)
-      await loadRoleAndTenant()
+      await Promise.all([loadRoleAndTenant(), loadTagCatalog()])
       setLoading(false)
     })()
-  }, [loadRoleAndTenant])
+  }, [loadRoleAndTenant, loadTagCatalog])
 
   useEffect(() => {
     if (!tenantId || !isOwner) return
+    const loadGen = ++storefrontLoadGenRef.current
     ;(async () => {
-      await Promise.all([loadTenant(tenantId), loadCategories(tenantId), loadDrinks(tenantId)])
+      await Promise.all([
+        loadTenant(tenantId, loadGen),
+        loadCategories(tenantId),
+        loadDrinks(tenantId),
+      ])
     })()
   }, [tenantId, isOwner, loadTenant, loadCategories, loadDrinks])
 
   const handleCoverFile = async (file: File) => {
-    if (!tenantId) return
+    if (!tenantId || storefrontSaveBlocked) return
     setUploadingCover(true)
     try {
       const publicUrl = await uploadTaplistCover(supabase, tenantId, file)
@@ -226,17 +306,13 @@ function TaplistAdminPageInner() {
       setTenantForm(nextForm)
       const { error } = await supabase.rpc('set_tenant_taplist_storefront', {
         p_tenant_id: tenantId,
-        p_display_name: nextForm.display_name,
-        p_district: nextForm.district,
-        p_address: nextForm.address,
+        ...buildStorefrontRpcPayload(),
         p_cover_image_url: publicUrl,
-        p_city: nextForm.city || 'Shanghai',
-        p_opening_hour: buildOpeningHourPayload(),
-        p_description: tenantForm.description,
       })
       if (error) throw error
       alert('封面已上传并保存')
-      await loadTenant(tenantId)
+      const loadGen = ++storefrontLoadGenRef.current
+      await loadTenant(tenantId, loadGen)
     } catch (err) {
       console.error(err)
       alert(err instanceof Error ? err.message : '封面上传失败')
@@ -248,22 +324,17 @@ function TaplistAdminPageInner() {
 
   const handleSaveStorefront = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!tenantId) return
+    if (!tenantId || storefrontSaveBlocked) return
     setSavingTenant(true)
     try {
       const { error } = await supabase.rpc('set_tenant_taplist_storefront', {
         p_tenant_id: tenantId,
-        p_display_name: tenantForm.display_name,
-        p_district: tenantForm.district,
-        p_address: tenantForm.address,
-        p_cover_image_url: tenantForm.cover_image_url,
-        p_city: tenantForm.city || 'Shanghai',
-        p_opening_hour: buildOpeningHourPayload(),
-        p_description: tenantForm.description,
+        ...buildStorefrontRpcPayload(),
       })
       if (error) throw error
       alert('门店 Tap List 信息已保存')
-      await loadTenant(tenantId)
+      const loadGen = ++storefrontLoadGenRef.current
+      await loadTenant(tenantId, loadGen)
     } catch (err) {
       console.error(err)
       alert('保存失败（请在 Supabase 执行最新 install_all_in_one / taplist_mvp_patch，含 set_tenant_taplist_storefront）')
@@ -448,6 +519,55 @@ function TaplistAdminPageInner() {
             value={tenantForm.description}
             onChange={(e) => setTenantForm({ ...tenantForm, description: e.target.value })}
           />
+          <div className="admin-form-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem' }}>
+            <span className="admin-label">酿造信息</span>
+            {BREWING_TYPE_OPTIONS.map((option) => (
+              <label key={option.value || 'none'} className="admin-label admin-label-checkbox">
+                <input
+                  type="radio"
+                  name="brewing_type"
+                  checked={brewingType === option.value}
+                  disabled={storefrontSaveBlocked}
+                  onChange={() => setBrewingType(option.value)}
+                />
+                <span>
+                  {option.label}
+                  {option.hint ? ` — ${option.hint}` : ''}
+                </span>
+              </label>
+            ))}
+          </div>
+          {storefrontLoadError ? (
+            <p style={{ color: '#b45309', margin: 0 }}>{storefrontLoadError}</p>
+          ) : null}
+          {tagCatalog.length > 0 ? (
+            <div className="admin-form-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem' }}>
+              <span className="admin-label">门店标签</span>
+              <p style={{ color: '#6b7280', margin: 0 }}>选择 3–6 个最能代表门店的标签</p>
+              {BAR_TAG_CATEGORY_ORDER.map((category) => {
+                const tags = groupedTags[category]
+                if (!tags?.length) return null
+                return (
+                  <div key={category}>
+                    <div style={{ color: '#374151', fontWeight: 600, marginBottom: '0.35rem' }}>{category}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1rem' }}>
+                      {tags.map((tag) => (
+                        <label key={tag.key} className="admin-label admin-label-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedTagKeys.includes(tag.key)}
+                            disabled={storefrontSaveBlocked}
+                            onChange={() => toggleTagKey(tag.key)}
+                          />
+                          <span>{tag.label_zh}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : null}
           <div className="admin-form-row">
             <label className="admin-label admin-label-checkbox">
               <input
@@ -465,6 +585,7 @@ function TaplistAdminPageInner() {
             label="封面图"
             hint="JPEG / PNG / WebP，最大 2MB"
             busy={uploadingCover}
+            disabled={storefrontSaveBlocked}
             previewUrl={tenantForm.cover_image_url || null}
             inputRef={coverFileRef}
             onFileSelected={handleCoverFile}
@@ -481,8 +602,11 @@ function TaplistAdminPageInner() {
             value={tenantForm.city}
             onChange={(e) => setTenantForm({ ...tenantForm, city: e.target.value })}
           />
-          <button type="submit" className="admin-button admin-button-primary" disabled={savingTenant}>
-            {savingTenant ? '保存中…' : '保存门店信息'}
+          <button
+            type="submit"
+            className="admin-button admin-button-primary"
+            disabled={savingTenant || storefrontSaveBlocked}>
+            {savingTenant ? '保存中…' : storefrontSaveBlocked ? '门店信息加载中…' : '保存门店信息'}
           </button>
         </form>
       </div>
@@ -576,6 +700,7 @@ function TaplistAdminPageInner() {
                         <DrinkTaplistPanel
                           drink={d}
                           tenantId={tenantId}
+                          isSuperAdmin={isSuperAdmin}
                           expanded
                           onToggle={() => setExpandedDrinkId(null)}
                           onDrinkSaved={() => tenantId && loadDrinks(tenantId)}
@@ -609,6 +734,7 @@ function servingRowToPatch(row: DrinkServingRow) {
 function DrinkTaplistPanel({
   drink,
   tenantId,
+  isSuperAdmin,
   expanded,
   onToggle,
   onDrinkSaved,
@@ -616,6 +742,7 @@ function DrinkTaplistPanel({
 }: {
   drink: Drink
   tenantId: string
+  isSuperAdmin: boolean
   expanded: boolean
   onToggle: () => void
   onDrinkSaved: () => void
@@ -639,6 +766,7 @@ function DrinkTaplistPanel({
   const servingsRef = useRef(servings)
   const [initialLoading, setInitialLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [beerProfileCollapsed, setBeerProfileCollapsed] = useState(false)
   const drinkImageFileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -697,6 +825,10 @@ function DrinkTaplistPanel({
   useEffect(() => {
     if (expanded) void loadPanel()
   }, [expanded, loadPanel])
+
+  useEffect(() => {
+    setBeerProfileCollapsed(!!drink.product_id)
+  }, [drink.id, drink.product_id])
 
   const persistServing = useCallback(
     async (id: string) => {
@@ -873,6 +1005,14 @@ function DrinkTaplistPanel({
         <p className="taplist-drink-panel-loading">加载酒款详情…</p>
       ) : (
         <>
+          <ProductPoolLinkSection
+            drink={drink}
+            isSuperAdmin={isSuperAdmin}
+            beerProfile={beer}
+            onLinked={onDrinkSaved}
+            onBeerProfileCollapseChange={setBeerProfileCollapsed}
+          />
+
           <section className="taplist-drink-panel-section">
             <h4 className="taplist-drink-panel-section-title">展示字段</h4>
             <p className="taplist-drink-panel-section-hint">消费者 App 看到的图片、库存状态与排序</p>
@@ -933,70 +1073,111 @@ function DrinkTaplistPanel({
           </section>
 
           <section className="taplist-drink-panel-section">
-            <h4 className="taplist-drink-panel-section-title">啤酒档案</h4>
-            <p className="taplist-drink-panel-section-hint">酒厂、风格、酒精度等详情页信息</p>
-            <div className="taplist-panel-grid">
-              <div className="taplist-field">
-                <label htmlFor={`${drink.id}-brewery`}>酒厂</label>
-                <input
-                  id={`${drink.id}-brewery`}
-                  className="admin-input"
-                  value={beer.brewery}
-                  onChange={(e) => setBeer({ ...beer, brewery: e.target.value })}
-                />
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+                marginBottom: beerProfileCollapsed ? 0 : 4,
+              }}
+            >
+              <div>
+                <h4 className="taplist-drink-panel-section-title" style={{ marginBottom: 4 }}>
+                  啤酒档案
+                </h4>
+                <p className="taplist-drink-panel-section-hint" style={{ margin: 0 }}>
+                  {beerProfileCollapsed
+                    ? '本地备用档案（仅当商品池对应字段为空时生效）'
+                    : '酒厂、风格、酒精度等详情页信息'}
+                </p>
               </div>
-              <div className="taplist-field">
-                <label htmlFor={`${drink.id}-style`}>风格</label>
-                <input
-                  id={`${drink.id}-style`}
-                  className="admin-input"
-                  value={beer.beer_style}
-                  onChange={(e) => setBeer({ ...beer, beer_style: e.target.value })}
-                />
-              </div>
-              <div className="taplist-field">
-                <label htmlFor={`${drink.id}-abv`}>ABV %</label>
-                <input
-                  id={`${drink.id}-abv`}
-                  className="admin-input"
-                  value={beer.abv}
-                  onChange={(e) => setBeer({ ...beer, abv: e.target.value })}
-                />
-              </div>
-              <div className="taplist-field">
-                <label htmlFor={`${drink.id}-ibu`}>IBU</label>
-                <input
-                  id={`${drink.id}-ibu`}
-                  className="admin-input"
-                  value={beer.ibu}
-                  onChange={(e) => setBeer({ ...beer, ibu: e.target.value })}
-                />
-              </div>
-              <div className="taplist-field">
-                <label htmlFor={`${drink.id}-country`}>国家</label>
-                <input
-                  id={`${drink.id}-country`}
-                  className="admin-input"
-                  value={beer.country}
-                  onChange={(e) => setBeer({ ...beer, country: e.target.value })}
-                />
-              </div>
-              <div className="taplist-field taplist-field-span-2">
-                <label htmlFor={`${drink.id}-desc`}>酒款介绍</label>
-                <textarea
-                  id={`${drink.id}-desc`}
-                  className="admin-input"
-                  rows={3}
-                  value={beer.description}
-                  onChange={(e) => setBeer({ ...beer, description: e.target.value })}
-                />
-              </div>
+              {beerProfileCollapsed ? (
+                <button
+                  type="button"
+                  className="admin-button admin-button-secondary"
+                  onClick={() => setBeerProfileCollapsed(false)}
+                >
+                  展开备用档案
+                </button>
+              ) : null}
             </div>
-            <div className="taplist-panel-actions">
-              <button type="button" className="admin-button admin-button-primary" onClick={saveBeer}>
-                保存啤酒档案
-              </button>
-            </div>
+            {!beerProfileCollapsed ? (
+              <>
+                <div className="taplist-panel-grid">
+                  <div className="taplist-field">
+                    <label htmlFor={`${drink.id}-brewery`}>酒厂</label>
+                    <input
+                      id={`${drink.id}-brewery`}
+                      className="admin-input"
+                      value={beer.brewery}
+                      onChange={(e) => setBeer({ ...beer, brewery: e.target.value })}
+                    />
+                  </div>
+                  <div className="taplist-field">
+                    <label htmlFor={`${drink.id}-style`}>风格</label>
+                    <input
+                      id={`${drink.id}-style`}
+                      className="admin-input"
+                      value={beer.beer_style}
+                      onChange={(e) => setBeer({ ...beer, beer_style: e.target.value })}
+                    />
+                  </div>
+                  <div className="taplist-field">
+                    <label htmlFor={`${drink.id}-abv`}>ABV %</label>
+                    <input
+                      id={`${drink.id}-abv`}
+                      className="admin-input"
+                      value={beer.abv}
+                      onChange={(e) => setBeer({ ...beer, abv: e.target.value })}
+                    />
+                  </div>
+                  <div className="taplist-field">
+                    <label htmlFor={`${drink.id}-ibu`}>IBU</label>
+                    <input
+                      id={`${drink.id}-ibu`}
+                      className="admin-input"
+                      value={beer.ibu}
+                      onChange={(e) => setBeer({ ...beer, ibu: e.target.value })}
+                    />
+                  </div>
+                  <div className="taplist-field">
+                    <label htmlFor={`${drink.id}-country`}>国家</label>
+                    <input
+                      id={`${drink.id}-country`}
+                      className="admin-input"
+                      value={beer.country}
+                      onChange={(e) => setBeer({ ...beer, country: e.target.value })}
+                    />
+                  </div>
+                  <div className="taplist-field taplist-field-span-2">
+                    <label htmlFor={`${drink.id}-desc`}>酒款介绍</label>
+                    <textarea
+                      id={`${drink.id}-desc`}
+                      className="admin-input"
+                      rows={3}
+                      value={beer.description}
+                      onChange={(e) => setBeer({ ...beer, description: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="taplist-panel-actions">
+                  <button type="button" className="admin-button admin-button-primary" onClick={saveBeer}>
+                    保存啤酒档案
+                  </button>
+                  {drink.product_id ? (
+                    <button
+                      type="button"
+                      className="admin-button admin-button-secondary"
+                      onClick={() => setBeerProfileCollapsed(true)}
+                    >
+                      收起
+                    </button>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
           </section>
 
           <section className="taplist-drink-panel-section">
@@ -1153,6 +1334,7 @@ function TaplistImageUploadField({
   label,
   hint,
   busy,
+  disabled = false,
   previewUrl,
   inputRef,
   onFileSelected,
@@ -1160,10 +1342,12 @@ function TaplistImageUploadField({
   label: string
   hint: string
   busy: boolean
+  disabled?: boolean
   previewUrl: string | null
   inputRef: React.RefObject<HTMLInputElement>
   onFileSelected: (file: File) => void | Promise<void>
 }) {
+  const inputDisabled = busy || disabled
   return (
     <div style={{ marginBottom: 8 }}>
       <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{hint}</p>
@@ -1176,19 +1360,21 @@ function TaplistImageUploadField({
             style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }}
           />
         ) : null}
-        <label className="admin-button admin-button-secondary" style={{ cursor: busy ? 'wait' : 'pointer' }}>
+        <label
+          className="admin-button admin-button-secondary"
+          style={{ cursor: inputDisabled ? 'not-allowed' : 'pointer', opacity: inputDisabled ? 0.6 : 1 }}>
           <input
             ref={inputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            disabled={busy}
+            disabled={inputDisabled}
             style={{ display: 'none' }}
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) void onFileSelected(file)
             }}
           />
-          {busy ? '上传中…' : `上传${label}`}
+          {busy ? '上传中…' : inputDisabled && disabled ? '加载中…' : `上传${label}`}
         </label>
       </div>
     </div>
