@@ -4,11 +4,26 @@ export const BREWING_TYPE_OPTIONS: {
   value: BrewingType | ''
   label: string
   hint: string
+  consumerLabel: string
 }[] = [
-  { value: '', label: '无（仅售他人酒款）', hint: '' },
-  { value: 'house_brand', label: '自有品牌', hint: '门店拥有自有啤酒品牌' },
-  { value: 'on_site_brewery', label: '店内自酿', hint: '在门店内酿造啤酒' },
+  { value: '', label: '无（仅售他人酒款）', hint: '', consumerLabel: '' },
+  {
+    value: 'house_brand',
+    label: '自有品牌',
+    hint: '门店拥有自有啤酒品牌',
+    consumerLabel: '自有品牌',
+  },
+  {
+    value: 'on_site_brewery',
+    label: '店内自酿',
+    hint: '在门店内酿造啤酒',
+    consumerLabel: '店内自酿',
+  },
 ]
+
+export function brewingTypeConsumerLabel(type: BrewingType): string {
+  return BREWING_TYPE_OPTIONS.find((o) => o.value === type)?.consumerLabel ?? type
+}
 
 export type BarTagDefinition = {
   key: string

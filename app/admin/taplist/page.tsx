@@ -530,12 +530,22 @@ function TaplistAdminPageInner() {
                   disabled={storefrontSaveBlocked}
                   onChange={() => setBrewingType(option.value)}
                 />
-                <span>
-                  {option.label}
-                  {option.hint ? ` — ${option.hint}` : ''}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span>
+                    {option.label}
+                    {option.hint ? ` — ${option.hint}` : ''}
+                  </span>
+                  {option.value ? (
+                    <AdminBrewingBadgePreview type={option.value} active={brewingType === option.value} />
+                  ) : null}
                 </span>
               </label>
             ))}
+            {brewingType ? (
+              <p style={{ color: '#6b7280', margin: 0, fontSize: 13 }}>
+                App 展示样式见上方选中项右侧预览；「店内自酿」为高亮琥珀色，「自有品牌」为次级铜色。
+              </p>
+            ) : null}
           </div>
           {storefrontLoadError ? (
             <p style={{ color: '#b45309', margin: 0 }}>{storefrontLoadError}</p>
@@ -1327,6 +1337,47 @@ function ServingOptionCard({
         </label>
       </div>
     </div>
+  )
+}
+
+function AdminBrewingBadgePreview({
+  type,
+  active,
+}: {
+  type: BrewingType
+  active: boolean
+}) {
+  const isOnSite = type === 'on_site_brewery'
+  const label = BREWING_TYPE_OPTIONS.find((o) => o.value === type)?.consumerLabel ?? type
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        borderRadius: 4,
+        border: `1px solid ${isOnSite ? 'rgba(211,154,69,0.62)' : 'rgba(198,168,117,0.28)'}`,
+        background: isOnSite ? 'rgba(211,154,69,0.16)' : 'rgba(17,17,17,0.36)',
+        color: isOnSite ? '#D39A45' : '#C6A875',
+        fontSize: 10,
+        letterSpacing: isOnSite ? '0.12em' : '0.08em',
+        padding: '2px 8px',
+        opacity: active ? 1 : 0.55,
+        textTransform: 'none',
+      }}>
+      {isOnSite ? (
+        <span
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: '50%',
+            background: '#D39A45',
+            display: 'inline-block',
+          }}
+        />
+      ) : null}
+      {label}
+    </span>
   )
 }
 
