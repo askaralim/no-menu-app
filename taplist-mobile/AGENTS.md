@@ -63,6 +63,18 @@ Do not add:
 - Reservations
 - Multi-bar beer identity
 
+### Post-MVP exception: Tonight's Beer Route
+
+Beer Route is allowed when all of the following are true:
+
+- Anchored to the **viewed bar** coordinates only — no device GPS, no live location permission, no nearby sorting from phone position
+- No embedded map panel in the app UI
+- Walking distance/time from server-side AMap Web Service; per-leg navigation via AMap HTTPS URI handoff only
+- Optional module on bar detail and beer detail; silent omit while loading or on any failure
+- Kill switch defaults off until AMap authorization, privacy, telemetry, and pilot coverage gates pass
+
+Do not add a general map feature, user-location-based discovery, or route personalization in Beer Route v1.
+
 ## Visual Direction
 
 The app should feel like:
