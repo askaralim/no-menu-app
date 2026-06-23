@@ -186,8 +186,6 @@ export type BeerRoadmapStop = {
   address: string | null
   latitude: number
   longitude: number
-  /** Short server-derived label such as `营业至 02:00`. */
-  openUntilLabel: string | null
   qualifyingNewTapCount: number
   newTapNames: string[]
 }
@@ -195,8 +193,6 @@ export type BeerRoadmapStop = {
 export type BeerRoadmapLeg = {
   fromStopIndex: 0 | 1
   toStopIndex: 1 | 2
-  walkingDistanceM: number
-  walkingDurationS: number
 }
 
 export type BeerRoadmapRoute = {
@@ -205,7 +201,6 @@ export type BeerRoadmapRoute = {
   stops: [BeerRoadmapStop, BeerRoadmapStop, BeerRoadmapStop]
   legs: [BeerRoadmapLeg, BeerRoadmapLeg]
   generatedAt: string
-  routeToken: string
 }
 
 export type BeerRoadmapFailureCode =
@@ -214,9 +209,6 @@ export type BeerRoadmapFailureCode =
   | 'START_NOT_ELIGIBLE'
   | 'INSUFFICIENT_CANDIDATES'
   | 'NO_VALID_ROUTE'
-  | 'PROVIDER_TIMEOUT'
-  | 'PROVIDER_QUOTA'
-  | 'PROVIDER_ERROR'
   | string
 
 export type BeerRoadmapResponse =

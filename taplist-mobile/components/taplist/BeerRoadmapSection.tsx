@@ -1,12 +1,11 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'expo-router'
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 
-import { AMAP_ROUTE_ATTRIBUTION } from '@/constants/compliance'
 import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicBeerRoadmap } from '@/lib/api/taplist'
-import { navigationUrlForLeg } from '@/lib/amapUri'
+import { navigationUrlForLeg } from '@/lib/navigationLinks'
 import type { BeerRoadmapLeg, BeerRoadmapRoute, BeerRoadmapStop } from '@/lib/types'
 
 type BeerRoadmapSectionProps = {
@@ -34,7 +33,7 @@ function BeerRoadmapRouteCard({ route }: { route: BeerRoadmapRoute }) {
     <View style={styles.section}>
       <View style={styles.header}>
         <Text style={styles.title}>TONIGHT'S BEER ROUTE</Text>
-        <Text style={styles.subtitle}>今晚三站</Text>
+        <Text style={styles.subtitle}>从这家开始，看看附近两家</Text>
       </View>
 
       <View style={styles.stopStack}>
@@ -47,13 +46,10 @@ function BeerRoadmapRouteCard({ route }: { route: BeerRoadmapRoute }) {
               stopNumber={index + 1}
               leg={leg}
               stops={route.stops}
-              isStart={index === 0}
             />
           )
         })}
       </View>
-
-      <Text style={styles.attribution}>{AMAP_ROUTE_ATTRIBUTION}</Text>
     </View>
   )
 }
@@ -63,24 +59,20 @@ function RoadmapStopRow({
   stopNumber,
   leg,
   stops,
-  isStart,
 }: {
   stop: BeerRoadmapStop
   stopNumber: number
   leg: BeerRoadmapLeg | null
   stops: BeerRoadmapStop[]
-  isStart: boolean
 }) {
-  const navigationUrl = leg ? navigationUrlForLeg(stops, leg) : null
-  const minutes = leg ? Math.max(1, Math.round(leg.walkingDurationS / 60)) : null
-  const distance = leg ? formatDistance(leg.walkingDistanceM) : null
-  const meta = [minutes ? `${minutes} 分钟步行` : null, distance, stop.openUntilLabel].filter(Boolean).join(' · ')
+  const navigationUrl =
+    Platform.OS === 'ios' && leg ? navigationUrlForLeg(stops, leg) : null
   const newTapNames = stop.newTapNames.slice(0, 2)
 
   const handleOpenNavigation = () => {
     if (!navigationUrl) return
     void Linking.openURL(navigationUrl).catch((error) => {
-      console.warn('Open AMap navigation failed', error)
+      console.warn('Open Apple Maps navigation failed', error)
     })
   }
 
@@ -92,9 +84,7 @@ function RoadmapStopRow({
       </View>
 
       <View style={styles.stopContent}>
-        {isStart ? <Text style={styles.startLabel}>从这里开始</Text> : null}
         <Text style={styles.stopName}>{stop.displayName}</Text>
-        {meta ? <Text style={styles.stopMeta}>{meta}</Text> : null}
 
         {newTapNames.length > 0 ? (
           <View style={styles.newTapBlock}>
@@ -116,22 +106,17 @@ function RoadmapStopRow({
 
           {navigationUrl ? (
             <Pressable
-              accessibilityLabel={`打开到 ${stop.displayName} 的高德步行导航`}
+              accessibilityLabel={`打开 Apple Maps 导航到 ${stop.displayName}`}
               onPress={handleOpenNavigation}
               style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}>
               <FontAwesome name="location-arrow" size={12} color={palette.background} />
-              <Text style={styles.navButtonLabel}>高德步行导航</Text>
+              <Text style={styles.navButtonLabel}>打开 Apple Maps</Text>
             </Pressable>
           ) : null}
         </View>
       </View>
     </View>
   )
-}
-
-function formatDistance(meters: number) {
-  if (meters >= 1000) return `${(meters / 1000).toFixed(1)}km`
-  return `${Math.round(meters)}m`
 }
 
 const styles = StyleSheet.create({
@@ -189,21 +174,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(21,21,21,0.48)',
     padding: spacing.md,
   },
-  startLabel: {
-    ...typography.micro,
-    color: palette.faint,
-    marginBottom: spacing.xxs,
-  },
   stopName: {
     ...typography.title,
     color: palette.text,
     fontSize: 19,
     lineHeight: 25,
-  },
-  stopMeta: {
-    ...typography.caption,
-    color: palette.muted,
-    marginTop: spacing.xxs,
   },
   newTapBlock: {
     marginTop: spacing.md,
@@ -257,10 +232,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '600',
-  },
-  attribution: {
-    ...typography.micro,
-    color: palette.faint,
-    marginTop: spacing.lg,
   },
 })

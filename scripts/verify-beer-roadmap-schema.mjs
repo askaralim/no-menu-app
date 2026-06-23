@@ -87,11 +87,33 @@ async function main() {
       throw new Error(`expected feature_enabled false, got ${enabled.data}`)
     }
     console.log('service_role get_beer_roadmap_feature_enabled -> false: OK')
+
+    const tenantsCols = await restGet('tenants?select=roadmap_longitude,roadmap_latitude&limit=1', serviceKey)
+    if (tenantsCols.status !== 200) {
+      throw new Error(`tenants roadmap columns HTTP ${tenantsCols.status}`)
+    }
+    console.log('tenants roadmap_longitude/roadmap_latitude columns: OK')
+
+    const poiProbe = await restGet('tenants?select=amap_poi_id&limit=1', serviceKey)
+    if (poiProbe.status === 200 && !poiProbe.body.includes('does not exist')) {
+      throw new Error('amap_poi_id column should not exist')
+    }
+    console.log('amap_poi_id column absent: OK')
+
+    const eligible = await rpc('get_beer_roadmap_eligible_tenants', {}, serviceKey)
+    if (eligible.status !== 200) {
+      throw new Error(`get_beer_roadmap_eligible_tenants HTTP ${eligible.status}`)
+    }
+    if (!Array.isArray(eligible.data)) {
+      throw new Error('get_beer_roadmap_eligible_tenants must return json array')
+    }
+    console.log('service_role get_beer_roadmap_eligible_tenants -> array: OK')
   } else {
     console.log('skip service_role checks (SUPABASE_SERVICE_ROLE_KEY not set)')
   }
 
   console.log('verify-beer-roadmap-schema: OK')
+  console.log('RPC set_tenant_beer_roadmap_config: 4 params (no POI) — verify after db reset via migration file')
   console.log('For full SQL matrix run: supabase db reset && psql ... -f supabase/tests/beer_roadmap_foundation.sql')
 }
 

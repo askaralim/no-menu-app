@@ -68,12 +68,22 @@ function assertFailure(payload, expectedCode, label) {
   }
 }
 
+function assertNoProviderMetrics(payload) {
+  const text = JSON.stringify(payload)
+  for (const key of ['walkingDistanceM', 'walkingDurationS', 'routeToken', 'openUntilLabel']) {
+    if (text.includes(key)) {
+      throw new Error(`response must not expose ${key}`)
+    }
+  }
+}
+
 async function main() {
   const disabled = await invokeBeerRoadmap({ startTenantId: VALID_TENANT_ID })
   if (disabled.status !== 200) {
     throw new Error(`valid UUID invoke HTTP ${disabled.status} (is public-beer-roadmap deployed?)`)
   }
   assertFailure(disabled.data, 'FEATURE_DISABLED', 'valid UUID with kill switch off')
+  assertNoProviderMetrics(disabled.data)
 
   const invalid = await invokeBeerRoadmap({ startTenantId: 'not-a-uuid' })
   if (invalid.status !== 200) {
@@ -87,6 +97,8 @@ async function main() {
   console.log('verify-beer-roadmap-edge: OK')
   console.log('  valid UUID -> FEATURE_DISABLED')
   console.log('  invalid UUID -> INVALID_START_TENANT')
+  console.log('  response shape excludes distance/time/token fields')
+  console.log('Optional pilot block: enable kill switch + seed verified cluster, then expect ok=true route')
 }
 
 main().catch((err) => {

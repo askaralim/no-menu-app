@@ -67,11 +67,12 @@ Do not add:
 
 Beer Route is allowed when all of the following are true:
 
-- Anchored to the **viewed bar** coordinates only — no device GPS, no live location permission, no nearby sorting from phone position
-- No embedded map panel in the app UI
-- Walking distance/time from server-side AMap Web Service; per-leg navigation via AMap HTTPS URI handoff only
+- Anchored to the **viewed bar** only — no device GPS, no live location permission, no nearby sorting from phone position
+- No embedded map panel and no map-first UI
+- Editorial three-stop ordering from No Menu database data only (straight-line distance ranking; no AMap/Baidu server routing or route caching)
+- Per-leg navigation via **iOS Apple Maps deep links** only (`打开 Apple Maps`); no Android/web navigation handoff in v1
 - Optional module on bar detail and beer detail; silent omit while loading or on any failure
-- Kill switch defaults off until AMap authorization, privacy, telemetry, and pilot coverage gates pass
+- Global kill switch defaults off until pilot sign-off, coordinate verification, privacy/legal review, and explicit enablement
 
 Do not add a general map feature, user-location-based discovery, or route personalization in Beer Route v1.
 

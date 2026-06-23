@@ -22,7 +22,7 @@ BEGIN
   -- Paired coordinate constraint
   BEGIN
     UPDATE public.tenants
-    SET amap_longitude = 121.473701, amap_latitude = NULL
+    SET roadmap_longitude = 121.473701, roadmap_latitude = NULL
     WHERE id = v_tenant_id;
     RAISE EXCEPTION 'expected paired coordinate constraint failure';
   EXCEPTION
@@ -33,15 +33,15 @@ BEGIN
   -- Coordinate invalidation trigger
   UPDATE public.tenants
   SET
-    amap_longitude = 121.473701,
-    amap_latitude = 31.230416,
+    roadmap_longitude = 121.473701,
+    roadmap_latitude = 31.230416,
     roadmap_enabled = true,
     roadmap_coordinates_verified_at = now(),
     roadmap_coordinate_version = 0
   WHERE id = v_tenant_id;
 
   UPDATE public.tenants
-  SET amap_longitude = 121.473800
+  SET roadmap_longitude = 121.473800
   WHERE id = v_tenant_id;
 
   SELECT t.roadmap_enabled, t.roadmap_coordinates_verified_at, t.roadmap_coordinate_version
