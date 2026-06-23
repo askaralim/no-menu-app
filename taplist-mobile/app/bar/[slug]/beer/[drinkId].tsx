@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { BackButton } from '@/components/taplist/BackButton'
+import { BeerRoadmapSection } from '@/components/taplist/BeerRoadmapSection'
 import { ShareableBeerImage, type ShareableBeerImageHandle } from '@/components/taplist/ShareableBeerImage'
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
@@ -171,6 +172,8 @@ export default function BeerDetailScreen() {
                 </Link>
               </View>
             ) : null}
+
+            <BeerRoadmapSection startTenantId={tenant?.id} enabled={configured} />
 
             <View style={styles.complianceFooter}>
               <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>

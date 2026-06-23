@@ -1,5 +1,6 @@
 import { getTaplistSupabase } from '@/lib/supabase'
 import type {
+  BeerRoadmapResponse,
   PublicBarRow,
   PublicTaplistEventRpc,
   PublicTaplistEventsRpc,
@@ -84,4 +85,12 @@ export async function searchPublicTaplist(city: string | null, query: string) {
   const payload = data as PublicTaplistSearchRpc
   if (!payload || payload.ok !== true) return []
   return payload.results ?? []
+}
+
+export async function fetchPublicBeerRoadmap(startTenantId: string) {
+  const { data, error } = await getTaplistSupabase().functions.invoke('public-beer-roadmap', {
+    body: { startTenantId },
+  })
+  if (error) throw error
+  return data as BeerRoadmapResponse
 }

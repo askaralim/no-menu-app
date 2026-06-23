@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { BackButton } from '@/components/taplist/BackButton'
 import { BarTagRow } from '@/components/taplist/BarTagRow'
+import { BeerRoadmapSection } from '@/components/taplist/BeerRoadmapSection'
 import { BeerListCard } from '@/components/taplist/BeerListCard'
 import { BrewingBadgeFromType } from '@/components/taplist/BrewingBadge'
 import { EventCard } from '@/components/taplist/EventCards'
@@ -187,6 +188,7 @@ export default function BarDetailScreen() {
                   ))}
                 </TapListSection>
               )}
+              <BeerRoadmapSection startTenantId={tenant.id} enabled={configured} />
             </>
           ) : null}
 
