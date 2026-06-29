@@ -73,6 +73,8 @@ Beer Route is allowed when all of the following are true:
 - Per-leg navigation via **iOS Apple Maps deep links** only (`打开 Apple Maps`); no Android/web navigation handoff in v1
 - Optional module on bar detail and beer detail; silent omit while loading or on any failure
 - Global kill switch defaults off until pilot sign-off, coordinate verification, privacy/legal review, and explicit enablement
+- Consumer-facing copy may call the feature `精酿地图`, but implementation must remain a bar-anchored editorial route module, not a general map feature
+- Public/marketing copy may describe the ranking at a high level: eligible public bars are filtered by route participation, verified coordinates, opening/menu availability, then ordered using No Menu's own position data. Do not claim fastest, nearest, optimal, GPS-based, or provider-calculated routes
 
 Do not add a general map feature, user-location-based discovery, or route personalization in Beer Route v1.
 

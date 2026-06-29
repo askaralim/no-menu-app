@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { palette, spacing, typography } from '@/constants/design'
@@ -29,11 +29,15 @@ export function BeerRoadmapSection({ startTenantId, enabled }: BeerRoadmapSectio
 }
 
 function BeerRoadmapRouteCard({ route }: { route: BeerRoadmapRoute }) {
+  const startBarName = route.stops[0].displayName
+
   return (
     <View style={styles.section}>
       <View style={styles.header}>
         <Text style={styles.title}>TONIGHT'S BEER ROUTE</Text>
-        <Text style={styles.subtitle}>从这家开始，看看附近两家</Text>
+        <Text style={styles.subtitle} numberOfLines={2}>
+          从「{startBarName}」开始，看看附近两家
+        </Text>
       </View>
 
       <View style={styles.stopStack}>
@@ -46,6 +50,7 @@ function BeerRoadmapRouteCard({ route }: { route: BeerRoadmapRoute }) {
               stopNumber={index + 1}
               leg={leg}
               stops={route.stops}
+              isStart={index === 0}
             />
           )
         })}
@@ -59,15 +64,22 @@ function RoadmapStopRow({
   stopNumber,
   leg,
   stops,
+  isStart,
 }: {
   stop: BeerRoadmapStop
   stopNumber: number
   leg: BeerRoadmapLeg | null
   stops: BeerRoadmapStop[]
+  isStart: boolean
 }) {
+  const router = useRouter()
   const navigationUrl =
     Platform.OS === 'ios' && leg ? navigationUrlForLeg(stops, leg) : null
-  const newTapNames = stop.newTapNames.slice(0, 2)
+  const showActions = !isStart
+
+  const handleOpenMenu = () => {
+    router.push(`/bar/${stop.tenantSlug}`)
+  }
 
   const handleOpenNavigation = () => {
     if (!navigationUrl) return
@@ -83,37 +95,33 @@ function RoadmapStopRow({
         {stopNumber < 3 ? <View style={styles.stopLine} /> : null}
       </View>
 
-      <View style={styles.stopContent}>
+      <View style={[styles.stopContent, isStart && styles.startStopContent]}>
         <Text style={styles.stopName}>{stop.displayName}</Text>
 
-        {newTapNames.length > 0 ? (
-          <View style={styles.newTapBlock}>
-            <Text style={styles.newTapLabel}>NEW ON TAP</Text>
-            {newTapNames.map((name) => (
-              <Text key={name} style={styles.newTapName} numberOfLines={1} ellipsizeMode="tail">
-                {name}
-              </Text>
-            ))}
+        {showActions ? (
+          <View style={styles.actionRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`查看 ${stop.displayName} 酒单`}
+              onPress={handleOpenMenu}
+              style={({ pressed }) => [styles.menuButton, pressed && styles.menuButtonPressed]}>
+              <Text style={styles.menuButtonLabel}>查看酒单</Text>
+            </Pressable>
+
+            {navigationUrl ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`打开 Apple Maps 导航到 ${stop.displayName}`}
+                onPress={handleOpenNavigation}
+                style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}>
+                <FontAwesome name="location-arrow" size={12} color="#E1A94F" />
+                <Text style={styles.navButtonLabel}>打开 Apple Maps</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.navButtonSpacer} />
+            )}
           </View>
         ) : null}
-
-        <View style={styles.actionRow}>
-          <Link href={`/bar/${stop.tenantSlug}`} asChild>
-            <Pressable style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
-              <Text style={styles.textButtonLabel}>查看酒单</Text>
-            </Pressable>
-          </Link>
-
-          {navigationUrl ? (
-            <Pressable
-              accessibilityLabel={`打开 Apple Maps 导航到 ${stop.displayName}`}
-              onPress={handleOpenNavigation}
-              style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}>
-              <FontAwesome name="location-arrow" size={12} color={palette.background} />
-              <Text style={styles.navButtonLabel}>打开 Apple Maps</Text>
-            </Pressable>
-          ) : null}
-        </View>
       </View>
     </View>
   )
@@ -174,63 +182,61 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(21,21,21,0.48)',
     padding: spacing.md,
   },
+  startStopContent: {
+    paddingVertical: spacing.sm,
+  },
   stopName: {
     ...typography.title,
     color: palette.text,
     fontSize: 19,
     lineHeight: 25,
   },
-  newTapBlock: {
-    marginTop: spacing.md,
-    gap: 2,
-  },
-  newTapLabel: {
-    ...typography.label,
-    color: palette.amber,
-    fontSize: 10,
-    lineHeight: 13,
-    letterSpacing: 1.4,
-  },
-  newTapName: {
-    ...typography.caption,
-    color: palette.text,
-  },
   actionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
     marginTop: spacing.md,
   },
-  textButton: {
-    minHeight: 34,
+  menuButton: {
+    flexShrink: 0,
+    minHeight: 36,
+    borderRadius: 18,
+    backgroundColor: '#E1A94F',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  textButtonPressed: {
-    opacity: 0.72,
+  menuButtonPressed: {
+    opacity: 0.86,
   },
-  textButtonLabel: {
-    ...typography.label,
-    color: palette.amber,
-    fontSize: 11,
+  menuButtonLabel: {
+    ...typography.caption,
+    color: '#0D0D0D',
+    fontSize: 13,
+    lineHeight: 17,
+    fontWeight: '700',
   },
   navButton: {
+    flexShrink: 1,
     minHeight: 34,
-    borderRadius: 17,
-    backgroundColor: palette.amber,
-    paddingHorizontal: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    justifyContent: 'flex-end',
+    gap: spacing.xxs,
+    paddingLeft: spacing.sm,
+  },
+  navButtonSpacer: {
+    width: 1,
   },
   navButtonPressed: {
-    opacity: 0.82,
+    opacity: 0.65,
   },
   navButtonLabel: {
     ...typography.caption,
-    color: palette.background,
+    color: '#E1A94F',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '600',
   },
 })

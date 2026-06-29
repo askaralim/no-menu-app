@@ -1,4 +1,4 @@
-export const LEG_MAX_DISTANCE_M = 1200
+export const LEG_MAX_DISTANCE_M = 1500
 
 export type EligibleTenant = {
   tenantId: string
@@ -10,7 +10,6 @@ export type EligibleTenant = {
   longitude: number
   taplistVerifiedAt: string
   qualifyingNewTapCount: number
-  newTapNames: string[]
 }
 
 export type RankedRoute = {

@@ -70,7 +70,7 @@ function assertFailure(payload, expectedCode, label) {
 
 function assertNoProviderMetrics(payload) {
   const text = JSON.stringify(payload)
-  for (const key of ['walkingDistanceM', 'walkingDurationS', 'routeToken', 'openUntilLabel']) {
+  for (const key of ['walkingDistanceM', 'walkingDurationS', 'routeToken', 'openUntilLabel', 'newTapNames']) {
     if (text.includes(key)) {
       throw new Error(`response must not expose ${key}`)
     }

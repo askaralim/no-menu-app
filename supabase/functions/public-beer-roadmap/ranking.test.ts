@@ -25,7 +25,6 @@ function tenant(
     longitude: lng,
     taplistVerifiedAt: '2026-06-20T12:00:00.000Z',
     qualifyingNewTapCount: 0,
-    newTapNames: [],
     ...overrides,
   }
 }
@@ -35,7 +34,7 @@ Deno.test('haversineDistanceM returns positive distance for nearby points', () =
   assertEquals(d > 0 && d < 500, true)
 })
 
-Deno.test('rankRoutes rejects legs over 1.2km cap', () => {
+Deno.test('rankRoutes rejects legs over 1.5km cap', () => {
   const start = tenant('a', 31.2304, 121.4737)
   const near = tenant('b', 31.2310, 121.4740)
   const far = tenant('c', 31.2500, 121.5000)
@@ -60,14 +59,12 @@ Deno.test('rankRoutes picks shortest total distance', () => {
 Deno.test('rankRoutes prefers more destination bars with qualifying new taps', () => {
   const start = tenant('start', 31.2304, 121.4737)
   const bPlain = tenant('b-plain', 31.2310, 121.4740)
-  const bNew = tenant('b-new', 31.2311, 121.4741, {
+  const bNew = tenant('b-new', 31.2310, 121.4740, {
     qualifyingNewTapCount: 1,
-    newTapNames: ['IPA'],
   })
   const cPlain = tenant('c-plain', 31.2312, 121.4742)
-  const cNew = tenant('c-new', 31.2313, 121.4743, {
+  const cNew = tenant('c-new', 31.2312, 121.4742, {
     qualifyingNewTapCount: 1,
-    newTapNames: ['Lager'],
   })
 
   const result = rankRoutes(start, [bPlain, bNew, cPlain, cNew])
@@ -81,13 +78,13 @@ Deno.test('rankRoutes prefers fresher destination taplist verification', () => {
   const b1 = tenant('b1', 31.2310, 121.4740, {
     taplistVerifiedAt: '2026-06-19T12:00:00.000Z',
   })
-  const b2 = tenant('b2', 31.2311, 121.4741, {
+  const b2 = tenant('b2', 31.2310, 121.4740, {
     taplistVerifiedAt: '2026-06-21T12:00:00.000Z',
   })
   const c1 = tenant('c1', 31.2312, 121.4742, {
     taplistVerifiedAt: '2026-06-19T12:00:00.000Z',
   })
-  const c2 = tenant('c2', 31.2313, 121.4743, {
+  const c2 = tenant('c2', 31.2312, 121.4742, {
     taplistVerifiedAt: '2026-06-21T12:00:00.000Z',
   })
 
@@ -110,6 +107,6 @@ Deno.test('rankRoutes tie-breaks on stable tenant IDs', () => {
   assertEquals(result!.stops[2].tenantId, cLow.tenantId)
 })
 
-Deno.test('LEG_MAX_DISTANCE_M is 1200', () => {
-  assertEquals(LEG_MAX_DISTANCE_M, 1200)
+Deno.test('LEG_MAX_DISTANCE_M is 1500', () => {
+  assertEquals(LEG_MAX_DISTANCE_M, 1500)
 })

@@ -187,7 +187,6 @@ export type BeerRoadmapStop = {
   latitude: number
   longitude: number
   qualifyingNewTapCount: number
-  newTapNames: string[]
 }
 
 export type BeerRoadmapLeg = {

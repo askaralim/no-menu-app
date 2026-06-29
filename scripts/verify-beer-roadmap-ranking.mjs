@@ -4,7 +4,7 @@
  * Usage: node scripts/verify-beer-roadmap-ranking.mjs
  */
 
-const LEG_MAX_DISTANCE_M = 1200
+const LEG_MAX_DISTANCE_M = 1500
 const EARTH_RADIUS_M = 6_371_000
 
 function haversineDistanceM(fromLat, fromLng, toLat, toLng) {

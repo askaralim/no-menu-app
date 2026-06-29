@@ -27,7 +27,6 @@ type BeerRoadmapStop = {
   latitude: number
   longitude: number
   qualifyingNewTapCount: number
-  newTapNames: string[]
 }
 
 type BeerRoadmapLeg = {
@@ -77,11 +76,6 @@ function toEligibleTenant(raw: unknown): EligibleTenant | null {
   if (typeof latitude !== 'number' || typeof longitude !== 'number') return null
   if (typeof taplistVerifiedAt !== 'string') return null
 
-  const newTapNamesRaw = row.newTapNames
-  const newTapNames = Array.isArray(newTapNamesRaw)
-    ? newTapNamesRaw.filter((name): name is string => typeof name === 'string')
-    : []
-
   return {
     tenantId,
     tenantSlug,
@@ -93,7 +87,6 @@ function toEligibleTenant(raw: unknown): EligibleTenant | null {
     taplistVerifiedAt,
     qualifyingNewTapCount:
       typeof row.qualifyingNewTapCount === 'number' ? row.qualifyingNewTapCount : 0,
-    newTapNames,
   }
 }
 
@@ -107,7 +100,6 @@ function toStop(tenant: EligibleTenant): BeerRoadmapStop {
     latitude: tenant.latitude,
     longitude: tenant.longitude,
     qualifyingNewTapCount: tenant.qualifyingNewTapCount,
-    newTapNames: tenant.newTapNames.slice(0, 2),
   }
 }
 
