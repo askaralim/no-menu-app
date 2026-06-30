@@ -115,3 +115,65 @@ export interface AdminTaplistCityRow {
   public_bar_count: number
 }
 
+export type DrinkCompanyEntityType =
+  | 'brewery'
+  | 'brand'
+  | 'brewery_brand'
+  | 'cidery'
+  | 'meadery'
+  | 'distillery'
+  | 'importer'
+  | 'other'
+
+export type DrinkCompanyReviewStatus = 'pending' | 'reviewed' | 'rejected'
+
+export type DrinkCompanyConfidence = 'high' | 'medium' | 'low'
+
+export type DrinkCompanyStatus = 'active' | 'archived'
+
+export type DrinkCompanyAliasLanguage = 'zh' | 'en' | 'mixed' | 'unknown'
+
+export type DrinkCompanyAliasType =
+  | 'name'
+  | 'legal_name'
+  | 'old_name'
+  | 'spelling'
+  | 'translation'
+  | 'collaboration_text'
+  | 'source_value'
+
+/** Row from `admin_list_drink_companies` */
+export interface AdminDrinkCompanyRow {
+  id: string
+  normalized_key: string
+  canonical_name: string
+  canonical_name_en: string | null
+  display_name: string
+  entity_type: DrinkCompanyEntityType
+  country: string | null
+  country_code: string | null
+  origin_region: string | null
+  raw_country_values: string[]
+  confidence: DrinkCompanyConfidence
+  review_status: DrinkCompanyReviewStatus
+  source: string | null
+  source_note: string | null
+  status: DrinkCompanyStatus
+  created_at: string
+  updated_at: string
+  alias_count: number
+  global_alias_collision_count: number
+}
+
+/** Row from `admin_list_drink_company_aliases` */
+export interface AdminDrinkCompanyAliasRow {
+  id: string
+  company_id: string
+  alias: string
+  alias_language: DrinkCompanyAliasLanguage | null
+  alias_type: DrinkCompanyAliasType
+  source: string | null
+  created_at: string
+  collision_company_count: number
+}
+
