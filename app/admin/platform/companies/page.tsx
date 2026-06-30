@@ -204,6 +204,20 @@ export default function PlatformCompaniesPage() {
     setAliases(payload.aliases)
   }, [])
 
+  const resetForm = useCallback(() => {
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    setAliases([])
+    setAliasForm(EMPTY_ALIAS_FORM)
+    setEditingAliasId(null)
+    setNormalizedKeyTouched(false)
+  }, [])
+
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false)
+    resetForm()
+  }, [resetForm])
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -278,20 +292,6 @@ export default function PlatformCompaniesPage() {
     const withCollisions = companies.filter((c) => c.global_alias_collision_count > 0).length
     return { total: companies.length, pendingReview, withCollisions, visible: visibleCompanies.length }
   }, [companies, visibleCompanies.length])
-
-  const resetForm = useCallback(() => {
-    setEditingId(null)
-    setForm(EMPTY_FORM)
-    setAliases([])
-    setAliasForm(EMPTY_ALIAS_FORM)
-    setEditingAliasId(null)
-    setNormalizedKeyTouched(false)
-  }, [])
-
-  const closeDrawer = useCallback(() => {
-    setDrawerOpen(false)
-    resetForm()
-  }, [resetForm])
 
   const openCreate = () => {
     resetForm()
