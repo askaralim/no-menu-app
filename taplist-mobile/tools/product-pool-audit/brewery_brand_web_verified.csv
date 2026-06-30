@@ -1,0 +1,291 @@
+source_name,canonical_group,verified_name_zh,verified_name_en,verified_city,verified_country,country_code,city_country,verified_entity_type,verification_status,confidence,uncertainty_flag,operational_status,verification_note,source_urls,verified_at,original_candidate_zh,original_candidate_en,original_suggested_country,raw_country_values,drink_count,public_visible_count,sample_drink_names,original_review_note
+,,,,,,,,,,,,,,,,,,,,,,,
+Fever,FEVER,FEVER,Fever Ales,西安,中国,CN,西安（中国）,brewery_brand,corrected,high,,,“想象中的雨”是其酒款，不是酒厂名。,https://untappd.com/FeverAles | https://www.tengnian.com/brewery/50,2026-07-01,,Fever,China,西安:3,20,5,谷仓铜|全明|另一个吻·香草|Fever|搜魂者|折射|谷仓金|想象中的雨|金星的日落|星空领航员,
+Alus,Alus,Alus,Alus Brew Co.,深圳,中国,CN,深圳（中国）,brewery_brand,partially_verified,medium,partially_verified | city_unverified,,英文名与国家已确认；未找到足够可靠的城市来源，城市留空。,https://untappd.com/w/alus-brew-co/581964,2026-07-01,,Alus,China,深圳:6,17,6,喵醺|南方|泡泡浴|饼干|沙滩|喵熏|醉狗Vol.03,
+艾尔复兴,艾尔复兴,艾尔复兴,Re Ale Revival Brewing,美国,美国,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,艾尔复兴,Ale Renaissance,United States,美国:8,14,8,一起漂浮|无序：汪汪惊喜|无序冰壶|单板滑雪|双板滑雪|瑞瓦卡酒花|米兰日落|干就完了|哈瓦那辣椒|机器罢工嘴巴别停,
+邪恶双子,邪恶双子,邪恶双子,Evil Twin Brewing NYC,New York City,美国,US,New York City（美国）,brewery_brand,verified,high,,,城市按其纽约酒厂/品牌运营地填写。,https://eviltwin.nyc/,2026-07-01,邪恶双子,Evil Twin Brewing,United States,美国:11,13,11,此店需要更多更大的啤酒|秋日酸艾|蜜桃奶油|酸IPA万岁|更多老熊先生|更多更朦胧的窗户|更多愚蠢果汁梦|白葡桑格利亚|芒果拉达城市酸饮|地狱烟火,
+明日酿造,明日酿造,明日酿造,Mingri Brewing,上海,中国,CN,上海（中国）,brewery_brand,verified,high,,,,https://untappd.com/v/mingri-brewing/9992037,2026-07-01,明日酿造,Mingri Brewing,China,上海:5,12,5,长相思|全村的希望 大米拉格|老板的最爱 双倍IPA|超级西楚 双倍浑浊IPA|明日繁华Lite DDH浑浊IPA|恐怖如斯 帝国IPA|风景这边独好|Come Back to 2016|多莉塔 冽光|太平洋四重奏,
+退界,退界,退界,,成都,中国,CN,成都（中国）,brewery_brand,partially_verified,medium,partially_verified | english_unverified,,中文品牌与城市可确认；未找到足够可靠的官方英文名，因此英文留空。,https://www.460.net.cn/news/show-119016.html,2026-07-01,退界,Tuijie,China,成都:4,11,4,下快攻|小夫|晓夫|爸爸 papa|狄俄尼索斯的眼泪|爸爸papà,
+赤屿谷盗,赤屿谷盗,赤屿谷盗,Grain Thief,海南,中国,CN,海南（中国）,brewery_brand,partially_verified,low,partially_verified | english_unverified,,“依帕”是酒款；公开来源不足以确认官方英文名和具体城市，英文留空。,,2026-07-01,赤屿谷盗,Chiyu Gudao,China,海南:3,10,6,一丛殊花|依帕|米贼|凌晨四点|盐而盗柠|长夏有风,
+彼岸酿造,彼岸酿造,彼岸酿造,The Other Shore,乐山,中国,CN,乐山（中国）,brewery_brand,verified,medium,,,英文名由酒款/酒厂页面交叉确认。,https://untappd.com/b/the-other-shore/6689038,2026-07-01,彼岸酿造,Bian Brewing,,乐山:1,9,1,望梅止渴|月光宝盒|寒鸦与钟声|南部之星|黑尔戈蓝岛日落|春日来信|夜曲,
+勿幕,勿幕精酿,勿幕精酿,WUMU Brewery,西安,中国,CN,西安（中国）,brewery_brand,verified,high,,,,https://untappd.com/w/wumu-craft-beer/383025/beer,2026-07-01,勿幕,WUMUE Brewery,China,西安:3,9,5,暗椰|烟熏乌梅|冰川|战斧之力|盐洞·柑橘风暴眼|解构|山核桃覆盆子|丛林浓汁|小青瓜有机农甜米泥,
+玄水屋,玄水屋,玄水屋,SENSEVOL,西安,中国,CN,西安（中国）,brewery_brand,verified,medium,,,Untappd 页面显示 SENSEVOL 玄水屋及西安所在地。,https://untappd.com/w/sensevol/568713,2026-07-01,玄水屋,Xuan Shui Wu,China,西安:4,9,4,白天使|星际物质|黑武士|奖励关卡|卡里斯马,
+哈德逊河谷,哈德逊河谷,哈德逊河谷,Hudson Valley Brewery,,美国,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,哈德逊河谷,Hudson Valley Brewery,United States,美国:2,8,2,游隼|河谷2024|杂散光|河谷|动物气球|剪影桃|巴比伦|潜行故障,
+TAPSTAR,TAPSTAR,TAPSTAR,TAPSTAR,贵阳,中国,CN,贵阳（中国）,brewery_brand,verified,medium,,,公开资料确认贵阳自酿品牌/酒吧；未发现稳定的正式中文名。,https://m.36kr.com/p/3739743839879433 | https://www.xiaoyuzhoufm.com/episode/6684d2a953526fced0316cc3,2026-07-01,,TAPSTAR,,贵阳:1,8,3,有限社交|北极星|有限社交 美式淡色艾尔|北极星 浑浊IPA|老伙计 西海岸IPA|凉拖拖 青柠皮尔斯|鸵鸟的牙,
+凯西,凯西,凯西,Casey Brewing & Blending,"Glenwood Springs, Colorado",美国,US,"Glenwood Springs, Colorado（美国）",brewery_brand,verified,high,,,,https://caseybrewing.com/,2026-07-01,凯西,Casey Brewing & Blending,United States,美国:4,7,5,精明强干|幸运|焦点二号|原始灵魂示意|范尼拉瑰红1号,
+洛莱,洛莱,洛莱,Lolev Beer,"Pittsburgh, Pennsylvania",美国,US,"Pittsburgh, Pennsylvania（美国）",brewery_brand,corrected,high,,,样例 Hyena、Jaguar、Arcole、Rubicon 等均与 Lolev Beer 对应。,https://lolev.beer/beer/hyena | https://www.beermenus.com/breweries/34105-lolev-beer,2026-07-01,洛莱,,United States,美国:2,7,2,鬣狗|美洲豹|阿尔克斯|解药|阿尔科莱|卢比孔3|雄鹰,English name not found safely; fill from checked mapping or official source
+山雀,山雀,山雀,,上海,中国,CN,上海（中国）,brewery_brand,partially_verified,low,partially_verified | english_unverified,,仅能由原始酒款与本地信息确认中文品牌和城市；未找到足够可靠的公开英文名，Mountain Finch 不写入验证值。,,2026-07-01,山雀,Mountain Finch,China,上海:4|上海嘉定:3,7,7,旋转木马|攀石|不误正夜|重逢|老炮|复仇之怒|祁门晨雾,
+虽吾,虽吾酿造,虽吾酿造,SUIWU BREWING,扬州,中国,CN,扬州（中国）,brewery_brand,corrected,high,,,公开官方页面明确写明来自江苏扬州；“虽吴”为错别字。,https://untappd.com/Suiwu_jennifer,2026-07-01,虽吾,Suiwu,China,苏州:2|扬州:2,7,4,小花冠|飞越云海|金狼之舞|日出茶山|果浪澳游,
+疯熊,疯熊工业,疯熊工业,Crazy Bear Industries,东莞,中国,CN,东莞（中国）,brewery_brand,verified,high,,,品牌起源于广州海珠，2023 年自有酒厂建于东莞；城市按当前酒厂所在地填写。,https://crazybearindustry.com/,2026-07-01,疯熊,Crazy Bear,China,广州:1,6,1,啤酒实习生2603|实习生2603|流动|梦|轻硫醇皮尔森,
+狐朋酿造,狐朋酿造,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,狐朋酿造,Hupeng Brewing,,,6,0,鸡有鸡味|莓好前程|海边驿站|马上有桔|酒花英雄|后花园的混合黄皮,
+辉光,辉光,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,辉光,Glow Brewing,United States,美国:2,6,2,醉佳|白日梦|全场最佳|古龙水|白板,
+回头客,回头客,回头客,Frequentem Brewing,"Canandaigua, New York",美国,US,"Canandaigua, New York（美国）",brewery_brand,corrected,high,,,样例 Canandaigua Premium Lager 与 Frequentem 官方酒单对应。,https://frequentembrewing.com/taplist/ | https://www.beeradvocate.com/beer/profile/60004/,2026-07-01,回头客,Returning Guest,United States,美国:2,6,2,果味满满19号|果味满满|卡南代瓜优质拉格|新英格兰99号|德式皮尔森,
+撬啤酿造,撬啤酿造,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,撬啤酿造,Qiao Beer Brewing,,,6,6,内个周五十一点半有个哥们进来就吐两个小时，吐了四次吐得很准非常感谢|水库浪子 桔柚π|卡拉斯科|Naive|水库浪子|风戏水,
+僧侣,僧侣,僧侣,Monkish Brewing,Torrance,美国,US,Torrance（美国）,brewery_brand,verified,high,,,按主酒厂所在地填写。,https://www.monkishbrewing.com/,2026-07-01,僧侣,Monk Brewing,United States,美国:2,6,3,Kid Casino|笔触|洛城之花|依旧交通粘性|背包|雾窗,
+野鹅微醺,野鹅微醺,野鹅微醺,YE BREWING,石家庄,中国,CN,石家庄（中国）,brewery_brand,verified,high,,,,https://www.yebrewing.com/,2026-07-01,野鹅微醺,Wild Goose Tipsy,,,6,0,富贵榴|朝花三倍干头浑浊IPA|陈皮的旅行|南境之花NZ-105|无限螺旋|南境之花,
+,,,,,,,,,,,,,,,,,,,,,,,
+赤耳酿造,赤耳酿造,赤耳酿造,REDEARS BREWING,北京,中国,CN,北京（中国）,brewery_brand,verified,high,,,,https://www.bjbrew.com/exDetail.aspx?exid=98,2026-07-01,赤耳,,China,北京:1,5,2,黄米拉格|西瓜商店|阳光洒肩头|普通的一天|青芒果芭乐,English name not found safely; fill from checked mapping or official source
+另一半,另一半,另一半,Other Half Brewing,"Brooklyn, New York City",美国,US,"Brooklyn, New York City（美国）",brewery_brand,verified,high,,,城市按品牌创立地及主要纽约酒厂填写。,https://otherhalfbrewing.com/,2026-07-01,另一半,,United States,美国:3,5,3,番茄工厂|另一半12周年|速溶绿色|旋涡3号|小小4周年,English name not found safely; fill from checked mapping or official source
+矛盾体,矛盾体,矛盾体,Equilibrium Brewery,"Middletown, New York",美国,US,"Middletown, New York（美国）",brewery_brand,verified,medium,,,由样例 Radian、Fractal/命令行等产品系列交叉确认。,https://www.eqbrew.com/,2026-07-01,矛盾体,,United States,美国:1,5,1,亚特兰大出口|基数|法里纳|命令行编译|弧度,English name not found safely; fill from checked mapping or official source
+欧米尼珀罗,欧米尼珀罗,欧米尼珀罗,Omnipollo,Stockholm,瑞典,SE,Stockholm（瑞典）,brewery_brand,verified,high,,,,https://omnipollo.com/,2026-07-01,欧米尼珀罗,Omnipollo,Sweden,瑞典:2,5,2,史蒂夫之斧|3乘3七号|笑脸|不二之选,
+虽吴,虽吾酿造,虽吾酿造,SUIWU BREWING,扬州,中国,CN,扬州（中国）,brewery_brand,corrected,high,,,公开官方页面明确写明来自江苏扬州；“虽吴”为错别字。,https://untappd.com/Suiwu_jennifer,2026-07-01,虽吴,,China,苏州:1,5,1,小花冠|凤尾果香|金狼之舞,English name not found safely; fill from checked mapping or official source
+野鹅,野鹅微醺,野鹅微醺,YE BREWING,石家庄,中国,CN,石家庄（中国）,brewery_brand,verified,high,,,,https://www.yebrewing.com/,2026-07-01,野鹅,,,石家庄:1,5,2,夜莺|无限螺旋|南境之花|桃林漫步,English name not found safely; fill from checked mapping or official source
+远山,远山啤酒,远山啤酒,Far Mont Beer,,中国,CN,（中国）,brewery_brand,partially_verified,medium,partially_verified | city_unverified,,中文、英文及国家可确认；城市没有可靠公开来源，留空。,https://untappd.com/w/far-mont-beer-e-a-a-e/599657,2026-07-01,远山,,,,5,1,瓦哈卡日出|阿尔派恩淡影|阿尔卑斯|布里斯班淡影,English name not found safely; fill from checked mapping or official source
+半颠,半颠,半颠精酿,So Mad,桂林,中国,CN,桂林（中国）,brewery_brand,verified,medium,,,,https://untappd.com/w/so-mad/392781,2026-07-01,半颠,,,,4,2,余光未尽 皮尔森|暮光犹存|生龙活虎|伦敦啸叫,English name not found safely; fill from checked mapping or official source
+彼岸,彼岸酿造,彼岸酿造,The Other Shore,乐山,中国,CN,乐山（中国）,brewery_brand,verified,medium,,,英文名由酒款/酒厂页面交叉确认。,https://untappd.com/b/the-other-shore/6689038,2026-07-01,彼岸,,,,4,1,老城琥珀|望梅止渴|夜曲|爱因斯坦的数数学成绩单,English name not found safely; fill from checked mapping or official source
+费登斯,费登斯,费登斯,Fidens Brewing,"Albany, New York",美国,US,"Albany, New York（美国）",brewery_brand,verified,high,,,,https://fidensbrewing.com/,2026-07-01,费登斯,,United States,美国:2,4,2,精益求精|元素的艺术|海冬|桃桃农夫,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+裂变酿造,裂变酿造,裂变酿造,Fission Brewing,佛山,中国,CN,佛山（中国）,brewery_brand,verified,medium,,,,https://untappd.com/Fission_Brewing_Company,2026-07-01,裂变酿造,,China,佛山:1,4,1,星云甘露|Nebula Nectar|春季拉格|眩目,English name not found safely; fill from checked mapping or official source
+蔓延酿造,蔓延酿造,蔓延酿造,Derive Brewery,武汉,中国,CN,武汉（中国）,brewery_brand,corrected,high,,,原表 MANYAN Brewing 未获支持；公开资料使用 Derive Brewery。与美国 Derive Brewing Company 不是同一实体。,https://www.bjbrew.com/exDetail.aspx?exid=369 | https://untappd.com/DeriveBrewery,2026-07-01,蔓延酿造,,China,武汉:2,4,2,辛香农舍|辛青农舍|北地显影|立方,English name not found safely; fill from checked mapping or official source
+闪电萨拉玛,闪电萨拉玛,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,闪电萨拉玛,,,,4,0,低档狂飙|头脑风暴|幻境拉拉|芭比之殇,English name not found safely; fill from checked mapping or official source
+生命长河,生命长河,生命长河,Long Live Beerworks,"Providence, Rhode Island",美国,US,"Providence, Rhode Island（美国）",brewery_brand,verified,medium,,,由 All Seeing Eye 等样例酒款确认。,https://longlivebeerworks.com/,2026-07-01,生命长河,,United States,美国:2,4,2,全视之眼|纪念日10|双重黑喵,English name not found safely; fill from checked mapping or official source
+无毛用,无毛用,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,无毛用,,China,广州:2,4,3,岁寒 柏木酒酸|岁寒|阿佳|空行母,English name not found safely; fill from checked mapping or official source
+云朴精酿,云朴精酿,云朴精酿,YunPure Brewing,昆明,中国,CN,昆明（中国）,brewery_brand,corrected,high,,,“云朵”为疑似录入/OCR 错误。,https://www.gokunming.com/cn/listings/item/34312/yunpure-brewery,2026-07-01,云朴精酿,Yunpu Craft,China,昆明:1,4,1,风暴中心 金桔芒果酸|今日与春风相会,
+百威,百威,百威,Budweiser,,,,,test_data,data_issue,high,data_issue | city_unverified | country_unverified,,样例均为“测试/测试2/测试99”，建议作为测试数据处理，不据此填写城市国家。,,2026-07-01,百威,,,,3,0,测试|测试2|测试99,English name not found safely; fill from checked mapping or official source
+凡人,凡人,凡人,Mortalis Brewing,"Avon, New York",美国,US,"Avon, New York（美国）",brewery_brand,verified,medium,,,由 Persephone 等神话系列酒款确认。,https://www.mortalisbrewing.com/,2026-07-01,凡人,,United States,美国:1,3,1,飞履|配瑟芬|苍穹之神,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+酒花民族,酒花民族,酒花民族,Hop Nation Brewing,"Footscray, Melbourne",澳大利亚,AU,"Footscray, Melbourne（澳大利亚）",brewery_brand,verified,medium,,,中文市场名由同款酒对应关系确认；“酒花名族”为错别字。,https://untappd.com/b/hop-nation-brewing-co-2026-fresh-hop-chop-ipa/6640918 | https://hopnation.com.au/,2026-07-01,酒花民族,,Australia,澳大利亚:2,3,2,灰猎犬|大红蜂|Fresh Hop,English name not found safely; fill from checked mapping or official source
+郡区,郡区,郡区,Parish Brewing,"Broussard, Louisiana",美国,US,"Broussard, Louisiana（美国）",brewery_brand,corrected,high,,,样例 Rêve Coffee Stout 明确属于 Parish Brewing；原中文“郡区”疑似把 Parish 直译为行政区。,https://parishbeer.com/beer/reve/,2026-07-01,郡区,,United States,美国:1,3,1,酒花倾慕 美式淡色艾尔|梦想Rêve Coffee Stout|梦想,English name not found safely; fill from checked mapping or official source
+狸造,狸造,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,狸造,,China,北京:3,3,3,玄骥|加州海风,English name not found safely; fill from checked mapping or official source
+美西,美西,美西啤酒,Wild West Brewing,成都,中国,CN,成都（中国）,brewery_brand,verified,medium,,,,https://www.wildwestbrewing.cn/,2026-07-01,美西,,China,成都:3,3,3,金雀花|玉米诱惑,English name not found safely; fill from checked mapping or official source
+葡月圣树,葡月圣树,葡月圣树,Lua Brewing,"Des Moines, Iowa",美国,US,"Des Moines, Iowa（美国）",brewery_brand,corrected,high,,,Tulpa、Zen Scientist 等样例与 Lua Brewing 官方酒单一致。,https://luabeer.com/des-moines-sherman-hill-lua-brewing-drink-menu | https://untappd.com/LuaBrewing/beer,2026-07-01,葡月圣树,,United States,美国:2,3,2,图尔帕|朝曦|禅宗科学家,English name not found safely; fill from checked mapping or official source
+浦江半岛,浦江半岛,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,浦江半岛,,,,3,1,副本|月光,English name not found safely; fill from checked mapping or official source
+三子,三子酿造,三子酿造,3 Sons Brewing,"Dania Beach, Florida",美国,US,"Dania Beach, Florida（美国）",brewery_brand,verified,high,,,,https://www.3sonsbrewingco.com/,2026-07-01,三子,,United States,美国:2,3,2,维京征服|松脆博伊斯|海洋公园,English name not found safely; fill from checked mapping or official source
+善良胡夫,善良胡夫,善良胡夫,Humble Forager Brewery,"Waunakee, Wisconsin",美国,US,"Waunakee, Wisconsin（美国）",brewery_brand,verified,medium,,,中文名为中国市场常用译名。,https://www.humbleforagerbrewery.com/,2026-07-01,善良胡夫,,United States,美国:1,3,1,120美元2号|流连忘返3号|呆瓜再见,English name not found safely; fill from checked mapping or official source
+索拉里斯,索拉里斯,索拉里斯,Solaris Beer & Blending,"Murrieta, California",美国,US,"Murrieta, California（美国）",brewery_brand,verified,high,,,,https://solarisbeer.com/,2026-07-01,索拉里斯,,United States,美国:1,3,1,永恒之注|永恒之涯|异岛,English name not found safely; fill from checked mapping or official source
+田园酿造,田园酿造,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,田园酿造,,China,云南:1,3,1,火把梨|水蜜桃|哈巴苹果,English name not found safely; fill from checked mapping or official source
+西澳山脊,西澳山脊,西澳山脊,Rocky Ridge Brewing,"Jindong, Western Australia",澳大利亚,AU,"Jindong, Western Australia（澳大利亚）",brewery_brand,verified,medium,,,由样例酒款与官方产品对应确认。,https://rockyridgebrewing.com.au/,2026-07-01,西澳山脊,,Australia,澳大利亚:3,3,3,混世魔王|松果天梯|鬼源物语,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+鸭池,鸭池,鸭池,Duckpond Brewing,Gothenburg,瑞典,SE,Gothenburg（瑞典）,brewery_brand,corrected,high,,,原数据同时出现美国/瑞典；公开资料支持瑞典哥德堡。,https://www.instagram.com/duckpondbrewing/ | https://untappd.com/DuckpondBrewing,2026-07-01,鸭池,Duckpond,,美国:1|瑞典:1,3,2,孤注一掷|黑暗之翼|奢华冰冻池塘,
+,,,,,,,,,,,,,,,,,,,,,,,
+云朴,云朴精酿,云朴精酿,YunPure Brewing,昆明,中国,CN,昆明（中国）,brewery_brand,corrected,high,,,“云朵”为疑似录入/OCR 错误。,https://www.gokunming.com/cn/listings/item/34312/yunpure-brewery,2026-07-01,云朴,Yunpu,China,昆明:1|云南:1,3,2,南半球漂流|融雪之前|风暴中心,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+Deadman,Deadman,,Deadman Brewery,Hong Kong,中国香港,HK,Hong Kong（中国香港）,brewery_brand,verified,medium,,,,https://untappd.com/DeadManBrewery,2026-07-01,,Deadman,Hong Kong,香港:2,3,2,酒花大盗,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+百得福,百得福,百得福,Budweiser Budvar Brewery,České Budějovice,捷克,CZ,České Budějovice（捷克）,brewery_brand,verified,high,,,,https://budweiserbudvar.com/brewery/ | https://www.budejovickybudvar.cz/en/home,2026-07-01,百得福,,Czech Republic,捷克:1,2,1,皮尔森生啤|窑臧皮尔森,English name not found safely; fill from checked mapping or official source
+班克斯,班克斯,班克斯,Banks Brewing,"Seaford, Victoria",澳大利亚,AU,"Seaford, Victoria（澳大利亚）",brewery_brand,verified,medium,,,,https://www.banksbrewing.com.au/,2026-07-01,班克斯,,Australia,澳大利亚:2,2,2,班克斯先生|西岸浮光,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+鼻行兽,鼻行兽,鼻行兽,Oozlefinch Beers & Blending,"Hampton, Virginia",美国,US,"Hampton, Virginia（美国）",brewery_brand,verified,medium,,,由样例酒款及品牌匹配确认。,https://oozlefinchbeers.com/,2026-07-01,鼻行兽,,China,西安:1,2,2,凯库拉的鲸|燧石与板岩,English name not found safely; fill from checked mapping or official source
+比尔斯兄弟,比尔斯兄弟,比尔斯兄弟,Bissell Brothers Brewing,"Portland, Maine",美国,US,"Portland, Maine（美国）",brewery_brand,verified,high,,,,https://bissellbrothers.com/,2026-07-01,比尔斯兄弟,,United States,美国:2,2,2,勒克斯|为生活干杯,English name not found safely; fill from checked mapping or official source
+朝日,朝日,朝日,Asahi,东京,日本,JP,东京（日本）,brewery_brand,verified,high,,,城市按公司总部填写。,https://www.asahibeer.co.jp/aboutus/summary/,2026-07-01,朝日,,Japan,日本:2,2,2,黑生|复活生啤,English name not found safely; fill from checked mapping or official source
+齿轮精酿,齿轮酿造,齿轮精酿,Gear Craft Brewing,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,齿轮精酿,,,,2,1,幸运鹅|怒饮酒花儿,English name not found safely; fill from checked mapping or official source
+分野酿造,分野酿造,分野酿造,Quadrant Brewing,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,分野酿造,,China,山东:1,2,1,绕了地球|沧龙,English name not found safely; fill from checked mapping or official source
+风险酿造,风险酿造,风险酿造,Venture Brewing,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,风险酿造,,,,2,2,奇卡诺|蜜瓜梦,English name not found safely; fill from checked mapping or official source
+疯熊工业,疯熊工业,疯熊工业,Crazy Bear Industries,东莞,中国,CN,东莞（中国）,brewery_brand,verified,high,,,品牌起源于广州海珠，2023 年自有酒厂建于东莞；城市按当前酒厂所在地填写。,https://crazybearindustry.com/,2026-07-01,疯熊工业 / Crazy Bear Industry,Crazy Bear Industry,,,2,0,啤酒实习生2603|东分影,
+佛里蒙,佛里蒙,佛里蒙,Fremont Brewing,"Seattle, Washington",美国,US,"Seattle, Washington（美国）",brewery_brand,verified,high,,,,https://www.fremontbrewing.com/contact-us,2026-07-01,佛里蒙,,United States,美国:1,2,1,锈钉 2024|黑星波本,English name not found safely; fill from checked mapping or official source
+谷语者,谷语者,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,谷语者,,,,2,0,突袭面包店,English name not found safely; fill from checked mapping or official source
+航标酿造,航标酿造,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,航标酿造,,,,2,0,山野拾荒者|极光觅月,English name not found safely; fill from checked mapping or official source
+和弦,和弦,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,和弦,,,,2,1,蓝莓快车 世涛|冰镇大西瓜绿茶,English name not found safely; fill from checked mapping or official source
+红男爵,红男爵,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,红男爵,,,,2,0,杏杏点灯,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+洄游造物,,洄游造物,WayfarerLab,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,洄游造物,,,,2,0,紫露,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+会饮酿造,会饮酿造,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,会饮酿造,,China,北京:1,2,1,食野之苹|涌现,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+佳卡哈,佳卡哈,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,佳卡哈,,,,2,0,阿罗哈POG西打,English name not found safely; fill from checked mapping or official source
+酒花农场,酒花农场,酒花农场,Hops Farm,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,酒花农场,,,,2,1,山间酸,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+农舍山,农舍山,农舍山,Hill Farmstead Brewery,"Greensboro Bend, Vermont",美国,US,"Greensboro Bend, Vermont（美国）",brewery_brand,verified,high,,,,https://hillfarmstead.com/visit-us/,2026-07-01,农舍山,,United States,美国:2,2,2,弗洛伦萨|安娜,English name not found safely; fill from checked mapping or official source
+澎湃家族,澎湃家族,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,澎湃家族,,Belgium,比利时:1,2,1,树莓兰比克|樱桃兰比克,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+斯莫及,斯莫吉,斯莫吉,Smooj,"Ann Arbor, Michigan",美国,US,"Ann Arbor, Michigan（美国）",brewery_brand,verified,medium,,,“斯莫及/斯莫吉”均为音译；英文 Smooj 最可靠。,https://www.drinksmooj.com/ | https://untappd.com/troobado/beer,2026-07-01,斯莫及,,,,2,0,皮纳科达拉|芒果,English name not found safely; fill from checked mapping or official source
+虽吴酿造,虽吾酿造,虽吾酿造,SUIWU BREWING,扬州,中国,CN,扬州（中国）,brewery_brand,corrected,high,,,公开官方页面明确写明来自江苏扬州；“虽吴”为错别字。,https://untappd.com/Suiwu_jennifer,2026-07-01,虽吴酿造,,,,2,0,小花冠 墨西哥拉格|小花冠,English name not found safely; fill from checked mapping or official source
+天使之翼,天使之翼,天使之翼,Wax Wings Brewing Co.,"Kalamazoo, Michigan",美国,US,"Kalamazoo, Michigan（美国）",brewery_brand,corrected,high,,,Double Nazareth 等样例与 Wax Wings 对应。,https://waxwingsbrewingco.square.site/ | https://www.beermenus.com/breweries/26904-wax-wings-brewing-company,2026-07-01,天使之翼,,United States,美国:2,2,2,双倍拿撒勒|摩卡,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+犀首田园,犀首田园,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,犀首田园,,,,2,1,送你一朵小红花|云边有座小卖部,English name not found safely; fill from checked mapping or official source
+香港啤酒公司,香港啤酒公司,香港啤酒公司,Hong Kong Beer Co.,Hong Kong,中国香港,HK,Hong Kong（中国香港）,brewery_brand,verified,high,,,,https://hkbeerco.com/,2026-07-01,香港啤酒公司,Hong Kong Beer Co.,Hong Kong,香港:1|中国香港:1,2,2,大浪湾|冷萃马赛克,
+想象中的雨,FEVER,,Fever Ales,西安,中国,CN,西安（中国）,brewery_brand,corrected,high,,,“想象中的雨”是其酒款，不是酒厂名。,https://untappd.com/FeverAles | https://www.tengnian.com/brewery/50,2026-07-01,想象中的雨,,,,2,1,Fever,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+修订,修订,修订,Revision Brewing Company,"Sparks, Nevada",美国,US,"Sparks, Nevada（美国）",brewery_brand,verified,high,,,,https://revisionbrewing.com/locations/,2026-07-01,修订,,,,2,0,三重未知|翡翠湾,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+远山啤酒,远山啤酒,远山啤酒,Far Mont Beer,,中国,CN,（中国）,brewery_brand,partially_verified,medium,partially_verified | city_unverified,,中文、英文及国家可确认；城市没有可靠公开来源，留空。,https://untappd.com/w/far-mont-beer-e-a-a-e/599657,2026-07-01,远山啤酒,,,,2,1,云雾之峰|莱茵淡影,English name not found safely; fill from checked mapping or official source
+纸飞机,纸飞机,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,纸飞机,,,,2,1,洋流上下 TDH帝国浑浊IPA|临界,English name not found safely; fill from checked mapping or official source
+左手巨人,左手巨人,左手巨人,Left Handed Giant,Bristol,英国,GB,Bristol（英国）,brewery_brand,verified,high,,,不得与美国 Left Hand Brewing 混为一体。,https://lefthandedgiant.com/,2026-07-01,左手巨人,,United Kingdom,英国:2,2,2,双城记|自在跑,English name not found safely; fill from checked mapping or official source
+Guinness,健力士,健力士,Guinness,Dublin,爱尔兰,IE,Dublin（爱尔兰）,brewery_brand,verified,high,,,,https://www.guinness.com/en | https://www.guinness-storehouse.com/en,2026-07-01,,Guinness,,,2,2,世涛|健力士 Guinness,
+,,,,,,,,,,,,,,,,,,,,,,,
+HESPER,HESPER,HESPER,HESPER,,中国,,东莞（中国）,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,,HESPER,China,东莞:1,2,1,夏沁,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+SMOOJ,斯莫吉 / Smooj,斯莫吉,Smooj,"Ann Arbor, Michigan",美国,US,"Ann Arbor, Michigan（美国）",brewery_brand,verified,medium,,,“斯莫及/斯莫吉”均为音译；英文 Smooj 最可靠。,https://www.drinksmooj.com/ | https://untappd.com/troobado/beer,2026-07-01,,SMOOJ,,,2,1,粉红色的夏天|椰林飘香,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+艾根伯格,艾根伯格,艾根伯格,Brauerei Schloss Eggenberg,Vorchdorf,奥地利,AT,Vorchdorf（奥地利）,brewery_brand,verified,high,,,,https://www.schloss-eggenberg.at/en/,2026-07-01,艾根伯格,,,奥地利:1,1,1,窑藏博克,English name not found safely; fill from checked mapping or official source
+艾英格,艾英格,艾英格,Ayinger Privatbrauerei,Aying,德国,DE,Aying（德国）,brewery_brand,verified,high,,,,https://www.ayinger.de/index-en.html,2026-07-01,艾英格,,Germany,德国:1,1,1,春季博克,English name not found safely; fill from checked mapping or official source
+巴伐利亚武僧,巴伐利亚武僧,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,巴伐利亚武僧,,,,1,1,双料小麦博克,English name not found safely; fill from checked mapping or official source
+半吨,半吨,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,半吨,,,,1,1,潮汕黄金,English name not found safely; fill from checked mapping or official source
+碧特博格,碧特博格,碧特博格,Bitburger Brewery,Bitburg,德国,DE,Bitburg（德国）,brewery_brand,verified,high,,,,https://www.bitburger-international.com/en/our-brands/bitburger/bitburger-brewery,2026-07-01,碧特博格,,,,1,0,碧堡,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+布鲁瑞,布鲁瑞 / The Bruery,布鲁瑞,The Bruery,"Placentia, California",美国,US,"Placentia, California（美国）",brewery_brand,verified,high,,,,https://www.thebruery.com/pages/location-placentia,2026-07-01,布鲁瑞,,United States,美国:1,1,1,安布拉纳闪耀,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+打嗝海狸,打嗝海狸,打嗝海狸,Belching Beaver Brewery,"Oceanside, California",美国,US,"Oceanside, California（美国）",brewery_brand,verified,high,,,,https://belchingbeaver.com/,2026-07-01,打嗝海狸,,United States,美国:1,1,1,海狸万岁,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+分野,分野酿造 / Quadrant Brewing,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,分野,,,,1,0,柚子大米拉格,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+黑森林,黑森林 / Waldhaus,黑森林,Privatbrauerei Waldhaus,"Weilheim, Baden-Württemberg",德国,DE,"Weilheim, Baden-Württemberg（德国）",brewery_brand,verified,high,,,Waldhaus 为正式品牌；“黑森林”为中文市场称呼。,https://www.waldhaus-bier.de/en/private-brewery/,2026-07-01,黑森林,,Germany,德国:1,1,1,古法窖藏,English name not found safely; fill from checked mapping or official source
+黑烟囱,黑烟囱,黑烟囱,BlackStack Brewing,"Saint Paul, Minnesota",美国,US,"Saint Paul, Minnesota（美国）",brewery_brand,corrected,high,,,样例 ART HISTORY 与 BlackStack 官方/平台记录一致。,https://www.blackstackbrewing.com/ | https://untappd.com/b/blackstack-brewing-art-history/6614897,2026-07-01,黑烟囱,,United States,美国:1,1,1,文艺历史,English name not found safely; fill from checked mapping or official source
+蝴蝶结,蝴蝶结,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,蝴蝶结,,,,1,0,米芯,English name not found safely; fill from checked mapping or official source
+花雅酿造,花雅酿造,花雅酿造,HARMO BREW,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,花雅酿造,,,,1,0,志气,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+坏骨头,坏骨头,坏骨头,Bad Bones Beer,"Dunham, Quebec",加拿大,CA,"Dunham, Quebec（加拿大）",brewery_brand,verified,high,,,样例 Accident Report 与 Bad Bones 对应。,https://www.badbonesbeer.com/home-en | https://brewver.com/beers/1151069/Accident-Report,2026-07-01,坏骨头,,Canada,加拿大:1,1,1,事故报告,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+健力士,健力士 / Guinness,健力士,Guinness,Dublin,爱尔兰,IE,Dublin（爱尔兰）,brewery_brand,verified,high,,,,https://www.guinness.com/en | https://www.guinness-storehouse.com/en,2026-07-01,健力士,,,爱尔兰:1,1,1,氮气世涛,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+酒花民族,酒花民族,酒花民族,Hop Nation Brewing Co.,"Footscray, Melbourne",澳大利亚,AU,"Footscray, Melbourne（澳大利亚）",brewery_brand,verified,medium,,,中文市场名由同款酒对应关系确认；“酒花名族”为错别字。,https://untappd.com/b/hop-nation-brewing-co-2026-fresh-hop-chop-ipa/6640918 | https://hopnation.com.au/,2026-07-01,酒花名族,,Australia,澳大利亚:1,1,1,Fresh Hop,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+牛皮堂,牛啤堂 / NBeer Craft Brewing,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,牛皮堂,,China,北京:1,1,1,菠萝包,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+倾斜谷仓,倾斜谷仓,倾斜谷仓,Tilted Barn Brewery,"Exeter, Rhode Island",美国,US,"Exeter, Rhode Island（美国）",brewery_brand,verified,high,,,,https://www.tiltedbarnbrewery.com/,2026-07-01,倾斜谷仓,,,,1,0,天选之子,English name not found safely; fill from checked mapping or official source
+撒切尔,撒切尔,撒切尔,Thatchers Cider,"Sandford, Somerset",英国,GB,"Sandford, Somerset（英国）",cider_producer,verified,high,,,属于苹果酒生产商，而非啤酒厂。,https://www.thatcherscider.co.uk/,2026-07-01,撒切尔,,United Kingdom,英国:1,1,1,金苹果,English name not found safely; fill from checked mapping or official source
+塞拉多艾尔,塞拉多艾尔,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,塞拉多艾尔,,,,1,0,豪华赛松,English name not found safely; fill from checked mapping or official source
+三宝乐,三宝乐 / Sapporo,三宝乐,Sapporo Breweries,札幌,日本,JP,札幌（日本）,brewery_brand,verified,medium,,,城市按品牌起源地填写；公司总部位于东京。,https://www.sapporobeer.jp/,2026-07-01,三宝乐,,,,1,0,惠比寿全麦,English name not found safely; fill from checked mapping or official source
+三得利,三得利 / Suntory,三得利,Suntory,东京,日本,JP,东京（日本）,brewery_brand,verified,high,,,城市按公司总部填写。,https://www.suntory.com/,2026-07-01,三得利,,,,1,0,万志,English name not found safely; fill from checked mapping or official source
+三子酿造,三子酿造,三子酿造,3 Sons Brewing Co.,"Dania Beach, Florida",美国,US,"Dania Beach, Florida（美国）",brewery_brand,verified,high,,,,https://www.3sonsbrewingco.com/,2026-07-01,三子酿造,,United States,美国:1,1,1,维京征服,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+山乘酿造,山乘酿造 / Sheng Craft Beer,山乘酿造,Sheng Craft Beer,嵊州，绍兴,中国,CN,嵊州，绍兴（中国）,brewery_brand,verified,medium,,,公开资料确认创立并设厂于浙江绍兴嵊州；城市以县级市及地级市并列记录。,https://www.beertasting.com/en/brewery/sheng-craft-beer | https://www.instagram.com/p/CYQwj4PlvwN/,2026-07-01,山乘酿造,,,,1,0,辅助奶两口,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+双尾酿造 / Twin Tails,双尾酿造,双尾酿造,Twin Tails Brewing,苏州,中国,CN,苏州（中国）,brewery_brand,verified,high,,,官网及 Untappd 官方页面均确认英文名与苏州所在地。,https://twintailsbrewing.com/ | https://untappd.com/Twin_Tails_,2026-07-01,双尾酿造 / Twin Tails,Twin Tails,,,1,0,朦胧之吻,
+,,,,,,,,,,,,,,,,,,,,,,,
+水猴子,水猴子,,Myth Monkey Beer,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,水猴子,,,,1,1,胡椒蛮缠,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+特纳亚溪,特纳亚溪,特纳亚溪,Tenaya Creek Brewery,"Las Vegas, Nevada",美国,US,"Las Vegas, Nevada（美国）",brewery_brand,verified,high,,,,https://tenayacreek.com/,2026-07-01,特纳亚溪,,,,1,0,胡夫水坝,English name not found safely; fill from checked mapping or official source
+头脑冷静,头脑冷静,头脑冷静,CoolHead Brew,Helsinki,芬兰,FI,Helsinki（芬兰）,brewery_brand,verified,high,,,,https://coolhead.fi/,2026-07-01,头脑冷静,,,,1,0,和平奏鸣曲,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+五岔街,五岔街,五岔街,The Five Points Brewing Company,London,英国,GB,London（英国）,brewery_brand,verified,medium,,,中文为市场译名。,https://fivepointsbrewing.co.uk/,2026-07-01,五岔街,,United Kingdom,英国:1,1,1,皮尔森,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+小回酿造,小回酿造,小回酿造,Turn Right Brewing,长春,中国,CN,长春（中国）,brewery_brand,verified,medium,,,公开酒款页面确认 Turn Right（小回酿造）；所在地结合公开页面与原始所在地信息填写长春。,https://untappd.com/b/turn-right/6249390,2026-07-01,小回酿造,,,长春:1,1,1,施坦格,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+行匠,行匠 / Trip Smith,行匠,TripSmith,贵阳,中国,CN,贵阳（中国）,brewery_brand,corrected,high,,,官方账号及贵阳官方媒体使用品牌拼写 TripSmith；原候选 Trip Smith 已纠正。,https://news.qq.com/rain/a/20250714A08L2E00 | https://www.douyin.com/user/MS4wLjABAAAASfrREJGZlgn0f01pYrNcT-yEBP3RbfA4Le7DxbVSq9b62WaumCz-71Ac2kzMljYE,2026-07-01,行匠,,,,1,0,月球旅行箱 皮尔森,English name not found safely; fill from checked mapping or official source
+行空,行空,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,行空,,,青岛:1,1,1,早春,English name not found safely; fill from checked mapping or official source
+兴业,兴业,兴业,Industrial Arts Brewing Company,"Garnerville, New York",美国,US,"Garnerville, New York（美国）",brewery_brand,verified,medium,,,由品牌中文译名及样例酒款匹配。,https://industrialartsbrewing.com/,2026-07-01,兴业,,United States,美国:1,1,1,拳击手,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+一滴,一滴,一滴,One Drop Brewing Co.,"Botany, New South Wales",澳大利亚,AU,"Botany, New South Wales（澳大利亚）",brewery_brand,corrected,high,,,原表新西兰不正确；One Drop Brewing Co. 位于澳大利亚新南威尔士州。,https://www.onedropbrewingco.com.au/,2026-07-01,一滴,,New Zealand,新西兰:1,1,1,浆化星球,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+远山啤酒,远山啤酒,远山啤酒,Far Mont Beer,,中国,CN,（中国）,brewery_brand,partially_verified,medium,partially_verified | city_unverified,,中文、英文及国家可确认；城市没有可靠公开来源，留空。,https://untappd.com/w/far-mont-beer-e-a-a-e/599657,2026-07-01,远山啤酒 / Far Mont Beer,Far Mont Beer,,,1,0,布里斯班淡影,
+云酊,云酊,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,云酊,,China,云南:1,1,1,阿诗玛的莓果园,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+长青工匠,长青工匠,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,长青工匠,,,,1,1,范尼拉符文,English name not found safely; fill from checked mapping or official source
+智美,智美 / Chimay,智美,Chimay,Baileux (Chimay),比利时,BE,Baileux (Chimay)（比利时）,brewery_brand,verified,high,,,,https://chimay.com/,2026-07-01,智美,,,,1,0,智美银帽,English name not found safely; fill from checked mapping or official source
+种子,种子,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,种子,,,,1,0,起始之日,English name not found safely; fill from checked mapping or official source
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+Allagash,Allagash Brewing Company,,Allagash Brewing Company,"Portland, Maine",美国,US,"Portland, Maine（美国）",brewery_brand,verified,high,,,,https://www.allagash.com/,2026-07-01,,Allagash,,,1,1,Saison,
+,,,,,,,,,,,,,,,,,,,,,,,
+Bell's,Bell's Brewery,,Bell's Brewery,"Comstock, Michigan",美国,US,"Comstock, Michigan（美国）",brewery_brand,verified,high,,,,https://bellsbeer.com/,2026-07-01,,Bell's,,,1,1,Two Hearted IPA,
+Bissell Brothers Brewing,比尔斯兄弟,比尔斯兄弟,Bissell Brothers Brewing,"Portland, Maine",美国,US,"Portland, Maine（美国）",brewery_brand,verified,high,,,,https://bissellbrothers.com/,2026-07-01,,Bissell Brothers Brewing,,,1,0,Lux,
+Cantillon,Brasserie Cantillon,,Brasserie Cantillon,Brussels,比利时,BE,Brussels（比利时）,brewery_brand,verified,high,,,,https://www.cantillon.be/,2026-07-01,,Cantillon,,,1,1,兰比克,
+Cascade,Cascade Brewing,,Cascade Brewing,"Portland, Oregon",美国,US,"Portland, Oregon（美国）",brewery_brand,verified_historical,high,,closed,已于 2024 年停止运营；名称与原所在地仍可确认。,https://pdx.eater.com/2024/6/24/24185063/cascade-brewing-closes-portland-oregon-brewery,2026-07-01,,Cascade,,,1,1,古斯酸啤,
+Chimay,智美 / Chimay,智美,Chimay,Baileux (Chimay),比利时,BE,Baileux (Chimay)（比利时）,brewery_brand,verified,high,,,,https://chimay.com/,2026-07-01,,Chimay,,,1,1,修道院三料,
+CLAG,CLAG,,CLAG Brewing Company,"Sandusky, Ohio",美国,US,"Sandusky, Ohio（美国）",brewery_brand,verified,high,,,,https://www.clagbrewingco.com/,2026-07-01,,CLAG,United States,美国:1,1,1,轲斯拉大战金刚,
+,,,,,,,,,,,,,,,,,,,,,,,
+Derive Brewery,Derive Brewery,,Derive Brewing Company,"Columbus, Ohio",美国,US,"Columbus, Ohio（美国）",brewery_brand,corrected,high,,,该英文行按样例 LIMA 归入美国 Derive Brewing Company；不要与武汉蔓延酿造混并。,https://www.derivebeer.com/,2026-07-01,,Derive Brewery,,,1,0,LIMA,
+E.T.,E.T. Brewery,,E.T. Brewery,深圳,中国,CN,深圳（中国）,brewery_brand,partially_verified,medium,partially_verified,,可确认中国深圳活动/品牌关联；未找到稳定官方主页。,,2026-07-01,,E.T.,,,1,1,迷离万象,
+,,,,,,,,,,,,,,,,,,,,,,,
+Everywhere,Everywhere,艾薇儿,everywhere beer company,"Orange, California",美国,US,"Orange, California（美国）",brewery_brand,verified,high,,,,https://www.everywherebeer.com/ | https://untappd.com/b/everywhere-little-egg/5738227,2026-07-01,,Everywhere,United States,美国:1,1,1,Little Egg,
+Firestone Walker,Firestone Walker Brewing Company,,Firestone Walker Brewing Company,"Paso Robles, California",美国,US,"Paso Robles, California（美国）",brewery_brand,verified,high,,,,https://www.firestonewalker.com/,2026-07-01,,Firestone Walker,,,1,1,805 Blonde,
+Founders,Founders Brewing Co.,,Founders Brewing Co.,"Grand Rapids, Michigan",美国,US,"Grand Rapids, Michigan（美国）",brewery_brand,verified,high,,,,https://foundersbrewing.com/,2026-07-01,,Founders,,,1,1,波特,
+Hoegaarden,Hoegaarden,福佳,Hoegaarden,Hoegaarden,比利时,BE,Hoegaarden（比利时）,brewery_brand,verified,high,,,中文市场常用名为“福佳”。,https://hoegaarden.com/,2026-07-01,,Hoegaarden,,,1,1,比利时小麦,
+ISM Brewing,ISM Brewing,,ISM Brewing,"Long Beach, California",美国,US,"Long Beach, California（美国）",brewery_brand,verified,high,,,,https://ism.beer/ | https://www.thewinecountry.com/ism-brewing-chepedelic-west-coast-ipa-16oz-can-lon.html,2026-07-01,,ISM Brewing,,,1,0,Chepedelic,
+Jester King,Jester King Brewery,,Jester King Brewery,"Austin, Texas",美国,US,"Austin, Texas（美国）",brewery_brand,verified,high,,,,https://jesterkingbrewery.com/,2026-07-01,,Jester King,,,1,1,农舍艾尔,
+Left Hand,左手酿造 / Left Hand Brewing,左手酿造,Left Hand Brewing Company,"Longmont, Colorado",美国,US,"Longmont, Colorado（美国）",brewery_brand,verified,high,,,与英国 Left Handed Giant 不同。,https://lefthandbrewing.com/,2026-07-01,,Left Hand,,,1,1,牛奶世涛,
+MOJO,MOJO,,,,,,,brewery_brand,unverified,low,unverified | english_unverified | city_unverified | country_unverified,,已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。,,2026-07-01,,MOJO,,,1,0,沙滩小麦,
+Monkish,僧侣 / Monkish Brewing,僧侣,Monkish Brewing Co.,Torrance,美国,US,Torrance（美国）,brewery_brand,verified,high,,,按主酒厂所在地填写。,https://www.monkishbrewing.com/,2026-07-01,,Monkish,,,1,1,DIPA,
+,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+Oskar Blues,Oskar Blues Brewery,,Oskar Blues Brewery,"Longmont, Colorado",美国,US,"Longmont, Colorado（美国）",brewery_brand,verified,high,,,品牌起源于 Lyons，主要酒厂/总部按 Longmont 填写。,https://www.oskarblues.com/,2026-07-01,,Oskar Blues,,,1,1,Dale's Pale Ale,
+Other Half,另一半 / Other Half Brewing,另一半,Other Half Brewing,"Brooklyn, New York City",美国,US,"Brooklyn, New York City（美国）",brewery_brand,verified,high,,,城市按品牌创立地及主要纽约酒厂填写。,https://otherhalfbrewing.com/,2026-07-01,,Other Half,,,1,1,浑浊 IPA,
+SHRED,SHRED,,Shred Beer Company,"Rocklin, California",美国,US,"Rocklin, California（美国）",brewery_brand,verified,high,,,,https://shredbeercompany.com/ | https://www.beeradvocate.com/beer/profile/65793/,2026-07-01,,SHRED,United States,美国:1,1,1,CINCO,
+Sierra Nevada,Sierra Nevada Brewing Co.,,Sierra Nevada Brewing Co.,"Chico, California",美国,US,"Chico, California（美国）",brewery_brand,verified,high,,,,https://sierranevada.com/,2026-07-01,,Sierra Nevada,,,1,1,Pale Ale,
+Stone Brewing,Stone Brewing,,Stone Brewing,"Escondido, California",美国,US,"Escondido, California（美国）",brewery_brand,verified,high,,,,https://www.stonebrewing.com/,2026-07-01,,Stone Brewing,,,1,1,西海岸 IPA,
+The Bruery,布鲁瑞 / The Bruery,布鲁瑞,The Bruery,"Placentia, California",美国,US,"Placentia, California（美国）",brewery_brand,verified,high,,,,https://www.thebruery.com/pages/location-placentia,2026-07-01,,The Bruery,,,1,1,水果酸啤,
+Tree House,Tree House Brewing Company,,Tree House Brewing Company,"Charlton, Massachusetts",美国,US,"Charlton, Massachusetts（美国）",brewery_brand,verified,high,,,按主要酒厂/总部填写。,https://treehousebrew.com/,2026-07-01,,Tree House,,,1,1,双倍浑浊,
+Trillium,Trillium Brewing Company,,Trillium Brewing Company,"Canton, Massachusetts",美国,US,"Canton, Massachusetts（美国）",brewery_brand,verified,high,,,按主要生产酒厂填写。,https://trilliumbrewing.com/,2026-07-01,,Trillium,,,1,1,新英格兰 IPA,
+Weihenstephan,Weihenstephan,唯森,Bayerische Staatsbrauerei Weihenstephan,Freising,德国,DE,Freising（德国）,brewery_brand,verified,high,,,中文市场也常见“维森/唯森”，英文官方名称最可靠。,https://www.weihenstephaner.de/en/,2026-07-01,,Weihenstephan,,,1,1,德式小麦,

@@ -1,6 +1,6 @@
 {
   "name": "bar-menu-system",
-  "version": "1.1.1",
+  "version": "1.2.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,10 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:status": "supabase status",
-    "db:seed-taplist-demo": "bash scripts/seed_taplist_demo.sh"
+    "db:seed-taplist-demo": "bash scripts/seed_taplist_demo.sh",
+    "db:seed-drink-companies": "node scripts/seed_drink_companies.mjs",
+    "db:seed-drink-companies:dry-run": "node scripts/seed_drink_companies.mjs --dry-run",
+    "db:seed-drink-companies:sql": "node scripts/seed_drink_companies.mjs --write-sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
