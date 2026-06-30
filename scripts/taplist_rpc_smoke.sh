@@ -10,6 +10,25 @@ set -euo pipefail
 
 RPC_BASE="${SUPABASE_URL%/}/rest/v1/rpc"
 
+echo "=== App Store 1.2.x legacy paths (must pass) ==="
+
+echo "POST get_public_taplist_bars (p_city null → Shanghai default)..."
+legacy_bars_json="$(curl -sS -X POST "$RPC_BASE/get_public_taplist_bars" \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"p_city": null}')"
+echo "${legacy_bars_json:0:200}"
+echo ""
+
+LEGACY_BARS_JSON="$legacy_bars_json" python3 -c '
+import json, os
+bars = json.loads(os.environ["LEGACY_BARS_JSON"])
+assert isinstance(bars, list), bars
+print("OK: get_public_taplist_bars(null city) returns array")
+'
+echo ""
+
 echo "POST get_public_taplist_bars (Shanghai)..."
 bars_json="$(curl -sS -X POST "$RPC_BASE/get_public_taplist_bars" \
   -H "apikey: $SUPABASE_ANON_KEY" \
@@ -109,5 +128,32 @@ for row in j.get("results") or []:
     assert "drink_id" in row and "tenant_slug" in row, row
 print("OK: search_public_taplist shape checks passed")
 '
+
+echo ""
+echo "=== Multi-city catalog (optional until migration 20260630120000) ==="
+cities_http="$(curl -sS -o /tmp/taplist_cities.json -w '%{http_code}' -X POST "$RPC_BASE/get_public_taplist_cities" \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}')"
+if [[ "$cities_http" == "404" ]]; then
+  echo "SKIP: get_public_taplist_cities not deployed yet"
+else
+  cities_json="$(cat /tmp/taplist_cities.json)"
+  echo "${cities_json:0:400}"
+  echo ""
+  CITIES_JSON="$cities_json" python3 -c '
+import json, os
+j = json.loads(os.environ["CITIES_JSON"])
+assert j.get("ok") is True, j
+cities = j.get("cities")
+assert isinstance(cities, list), j
+for city in cities:
+    for key in ("city", "label", "country", "sort_order", "bar_count"):
+        assert key in city, city
+    assert city["bar_count"] > 0, city
+print("OK: get_public_taplist_cities shape checks passed")
+'
+fi
 
 echo "taplist_rpc_smoke: OK"

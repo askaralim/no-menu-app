@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { Link, useRouter } from 'expo-router'
-import { ActivityIndicator, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -29,17 +30,20 @@ import {
   railVenueLabelStyle,
 } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
-import { DEFAULT_TAPLIST_CITY } from '@/constants/taplist'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicBars, fetchPublicEvents, fetchPublicNewDrinks } from '@/lib/api/taplist'
 import { formatRelativeUpdatedAt, sortPublicBarsByMenuUpdated } from '@/lib/formatTaplist'
+import { taplistCityMatches, useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
-import type { PublicBarRow, PublicEventRow, PublicNewTapRow } from '@/lib/types'
+import type { PublicBarRow, PublicEventRow, PublicNewTapRow, PublicTaplistCity } from '@/lib/types'
 
 export default function TonightScreen() {
   const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
   const configured = useTaplistSupabaseReady()
+  const { selectedCity, cities, canSelectCity, selectCity } = useTaplistCity()
+  const [cityPickerVisible, setCityPickerVisible] = useState(false)
+  const selectedCityName = selectedCity.city
 
   useEffect(() => {
     if (!configured) return
@@ -47,22 +51,22 @@ export default function TonightScreen() {
   }, [configured, queryClient])
 
   const barsQuery = useQuery({
-    queryKey: ['taplist', 'bars', DEFAULT_TAPLIST_CITY],
-    queryFn: () => fetchPublicBars(DEFAULT_TAPLIST_CITY),
+    queryKey: ['taplist', 'bars', selectedCityName],
+    queryFn: () => fetchPublicBars(selectedCityName),
     enabled: configured,
     refetchOnMount: 'always',
   })
 
   const newTapsQuery = useQuery({
-    queryKey: ['taplist', 'new-drinks', DEFAULT_TAPLIST_CITY],
-    queryFn: () => fetchPublicNewDrinks(DEFAULT_TAPLIST_CITY),
+    queryKey: ['taplist', 'new-drinks', selectedCityName],
+    queryFn: () => fetchPublicNewDrinks(selectedCityName),
     enabled: configured,
     refetchOnMount: 'always',
   })
 
   const eventsQuery = useQuery({
-    queryKey: ['taplist', 'events', DEFAULT_TAPLIST_CITY],
-    queryFn: () => fetchPublicEvents(DEFAULT_TAPLIST_CITY),
+    queryKey: ['taplist', 'events', selectedCityName],
+    queryFn: () => fetchPublicEvents(selectedCityName),
     enabled: configured,
     refetchOnMount: 'always',
   })
@@ -79,11 +83,32 @@ export default function TonightScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>TONIGHT</Text>
         <Text style={styles.cityPreposition}>in</Text>
-        <Text style={styles.city}>上海</Text>
+        {canSelectCity ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="选择城市"
+            onPress={() => setCityPickerVisible(true)}
+            style={({ pressed }) => [styles.cityButton, pressed && styles.cityButtonPressed]}>
+            <Text style={styles.city}>{selectedCity.label}</Text>
+            <FontAwesome name="angle-down" size={18} color={palette.tungsten} />
+          </Pressable>
+        ) : (
+          <Text style={styles.city}>{selectedCity.label}</Text>
+        )}
         {bars.length > 0 ? (
           <Text style={styles.headerMeta}>{bars.length} 家精酿酒吧公开酒单</Text>
         ) : null}
       </View>
+      <CityPickerModal
+        visible={cityPickerVisible}
+        cities={cities}
+        selectedCity={selectedCity}
+        onClose={() => setCityPickerVisible(false)}
+        onSelect={(city) => {
+          setCityPickerVisible(false)
+          void selectCity(city)
+        }}
+      />
 
       {barsQuery.isLoading ? (
         <View style={styles.loading}>
@@ -124,6 +149,63 @@ export default function TonightScreen() {
         <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
       </View>
     </ScrollView>
+  )
+}
+
+function CityPickerModal({
+  visible,
+  cities,
+  selectedCity,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean
+  cities: PublicTaplistCity[]
+  selectedCity: PublicTaplistCity
+  onClose: () => void
+  onSelect: (city: PublicTaplistCity) => void
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.cityModalBackdrop} onPress={onClose}>
+        <View style={styles.cityModalPanel} onStartShouldSetResponder={() => true}>
+          <View style={styles.cityModalHeader}>
+            <Text style={styles.cityModalTitle}>选择城市</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="关闭城市选择"
+              hitSlop={10}
+              onPress={onClose}
+              style={({ pressed }) => [styles.cityCloseButton, pressed && styles.cityButtonPressed]}>
+              <FontAwesome name="times" size={16} color={palette.faint} />
+            </Pressable>
+          </View>
+          {cities.map((city) => {
+            const selected = taplistCityMatches(city.city, selectedCity.city)
+            return (
+              <Pressable
+                key={city.city}
+                accessibilityRole="button"
+                accessibilityLabel={`切换到${city.label}`}
+                onPress={() => onSelect(city)}
+                style={({ pressed }) => [
+                  styles.cityOption,
+                  selected && styles.cityOptionSelected,
+                  pressed && styles.cityOptionPressed,
+                ]}>
+                <View style={styles.cityOptionCopy}>
+                  <Text style={[styles.cityOptionLabel, selected && styles.cityOptionLabelSelected]}>
+                    {city.label}
+                  </Text>
+                  <Text style={styles.cityOptionMeta}>{city.bar_count} 家公开酒吧</Text>
+                </View>
+                {selected ? <FontAwesome name="check" size={15} color={palette.amber} /> : null}
+              </Pressable>
+            )
+          })}
+        </View>
+      </Pressable>
+    </Modal>
   )
 }
 
@@ -378,6 +460,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxs,
     textAlign: 'center',
   },
+  cityButton: {
+    marginTop: spacing.xxs,
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 8,
+  },
+  cityButtonPressed: {
+    opacity: 0.72,
+  },
   cityPreposition: {
     ...typography.caption,
     color: palette.faint,
@@ -397,6 +492,75 @@ const styles = StyleSheet.create({
     color: palette.muted,
     marginTop: spacing.sm,
     textAlign: 'center',
+  },
+  cityModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  cityModalPanel: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: palette.hairline,
+    backgroundColor: palette.panelElevated,
+    padding: spacing.md,
+  },
+  cityModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  cityModalTitle: {
+    ...typography.label,
+    color: palette.tungsten,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  cityCloseButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -spacing.xs,
+  },
+  cityOption: {
+    minHeight: 58,
+    borderTopWidth: 1,
+    borderTopColor: palette.line,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  cityOptionSelected: {
+    borderTopColor: 'rgba(211,154,69,0.38)',
+  },
+  cityOptionPressed: {
+    opacity: 0.78,
+  },
+  cityOptionCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  cityOptionLabel: {
+    ...typography.title,
+    color: palette.text,
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  cityOptionLabelSelected: {
+    color: palette.amber,
+  },
+  cityOptionMeta: {
+    ...typography.micro,
+    color: palette.faint,
+    marginTop: 2,
   },
   loading: {
     borderWidth: 1,

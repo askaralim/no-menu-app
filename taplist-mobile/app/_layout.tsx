@@ -12,6 +12,7 @@ import { FirstLaunchLegalGate } from '@/components/taplist/FirstLaunchLegalGate'
 import { useColorScheme } from '@/components/useColorScheme';
 import { queryClient } from '@/lib/queryClient';
 import { setupTaplistQueryFocusManager } from '@/lib/setupQueryFocusManager';
+import { TaplistCityProvider } from '@/lib/taplistCity';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -54,9 +55,11 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <FirstLaunchLegalGate>
-        <RootLayoutNav />
-      </FirstLaunchLegalGate>
+      <TaplistCityProvider>
+        <FirstLaunchLegalGate>
+          <RootLayoutNav />
+        </FirstLaunchLegalGate>
+      </TaplistCityProvider>
     </QueryClientProvider>
   );
 }

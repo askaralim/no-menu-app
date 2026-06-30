@@ -55,9 +55,12 @@ export default function AdminLayout({
 
   if (userRole === 'super_admin') {
     navItems.push({ href: '/admin/platform', label: '🔧 平台管理' })
+    navItems.push({ href: '/admin/platform/cities', label: '城市管理' })
   }
 
-  const currentLabel = navItems.find((item) => item.href === pathname)?.label ?? '管理后台'
+  const currentLabel =
+    navItems.find((item) => item.href === pathname)?.label ??
+    (pathname.startsWith('/admin/platform/cities') ? '城市管理' : '管理后台')
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

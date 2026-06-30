@@ -4,7 +4,7 @@
 
 This is the Expo / React Native consumer app **No Menu** (tap list; display name in `app.json`).
 
-The product is a minimal real-time craft beer bar list for Shanghai craft beer bars.
+The product is a minimal real-time craft beer bar list for supported city craft beer bars.
 
 ## Commands
 

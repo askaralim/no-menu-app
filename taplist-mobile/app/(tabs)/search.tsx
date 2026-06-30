@@ -15,8 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
-import { DEFAULT_TAPLIST_CITY } from '@/constants/taplist'
 import { searchPublicTaplist } from '@/lib/api/taplist'
+import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicTaplistSearchResult } from '@/lib/types'
 
@@ -33,9 +33,11 @@ const SEARCH_DEBOUNCE_MS = 300
 export default function SearchScreen() {
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
+  const { selectedCity } = useTaplistCity()
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const trimmedQuery = query.trim()
+  const selectedCityName = selectedCity.city
   const isSearching = trimmedQuery.length > 0
   const isDebouncing = isSearching && debouncedQuery !== trimmedQuery
 
@@ -50,8 +52,8 @@ export default function SearchScreen() {
   }, [trimmedQuery])
 
   const drinksQuery = useQuery({
-    queryKey: ['taplist', 'search', DEFAULT_TAPLIST_CITY, debouncedQuery],
-    queryFn: () => searchPublicTaplist(DEFAULT_TAPLIST_CITY, debouncedQuery),
+    queryKey: ['taplist', 'search', selectedCityName, debouncedQuery],
+    queryFn: () => searchPublicTaplist(selectedCityName, debouncedQuery),
     enabled: configured && debouncedQuery.length > 0,
   })
 
@@ -65,7 +67,7 @@ export default function SearchScreen() {
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
-      <Text style={styles.kicker}>SHANGHAI / TAP LIST</Text>
+      <Text style={styles.kicker}>{selectedCity.label} / TAP LIST</Text>
       <Text style={styles.title}>搜索酒单</Text>
 
       <View style={styles.inputFrame}>

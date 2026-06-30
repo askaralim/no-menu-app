@@ -7,17 +7,19 @@ import { EventListSection } from '@/components/taplist/EventListSection'
 import { SPARSE_EVENT_LIST_THRESHOLD } from '@/components/taplist/railCardStyle'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { palette, spacing, typography } from '@/constants/design'
-import { DEFAULT_TAPLIST_CITY } from '@/constants/taplist'
 import { fetchPublicEvents } from '@/lib/api/taplist'
+import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 
 export default function EventsScreen() {
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
+  const { selectedCity } = useTaplistCity()
+  const selectedCityName = selectedCity.city
 
   const eventsQuery = useQuery({
-    queryKey: ['taplist', 'events', DEFAULT_TAPLIST_CITY],
-    queryFn: () => fetchPublicEvents(DEFAULT_TAPLIST_CITY),
+    queryKey: ['taplist', 'events', selectedCityName],
+    queryFn: () => fetchPublicEvents(selectedCityName),
     enabled: configured,
     refetchOnMount: 'always',
   })
@@ -35,7 +37,7 @@ export default function EventsScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xxxl }]}>
         <Text style={styles.kicker}>NO MENU</Text>
         <Text style={styles.title}>EVENTS</Text>
-        <Text style={styles.subtitle}>上海 · 近期活动</Text>
+        <Text style={styles.subtitle}>{selectedCity.label} · 近期活动</Text>
 
         {!configured ? (
           <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看公开活动。" />

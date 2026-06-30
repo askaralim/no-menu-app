@@ -1,6 +1,6 @@
 # No Menu (consumer tap list)
 
-Home-screen / App Store display name: **No Menu** (`expo.name` in `app.json`). Subtitle in App Store Connect: e.g. **上海精酿酒吧公开酒单**.
+Home-screen / App Store display name: **No Menu** (`expo.name` in `app.json`). Subtitle in App Store Connect: e.g. **城市精酿酒吧公开酒单**.
 
 Expo app in this monorepo, **sibling to** `mobile/` (**No Menu POS** / staff). Same Supabase project; reads public data via **`get_public_taplist_*`** RPCs using the **anon** key.
 
@@ -24,7 +24,7 @@ npm run export:web
 eas build --platform ios --profile production
 ```
 
-**App Store Connect** (app id `6771324382`): **Name** = `No Menu`, **Subtitle** = `上海精酿酒吧公开酒单` (or your locale copy). Icon label updates only after a new build is installed.
+**App Store Connect** (app id `6771324382`): **Name** = `No Menu`, **Subtitle** = `城市精酿酒吧公开酒单` (or your locale copy). Icon label updates only after a new build is installed.
 
 See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_STORE_SUBMISSION.md](docs/APP_STORE_SUBMISSION.md)** (App Store review).
 

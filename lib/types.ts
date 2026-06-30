@@ -103,3 +103,15 @@ export interface TenantInfo {
   staff_count: number
 }
 
+/** Row from `admin_list_taplist_cities` */
+export interface AdminTaplistCityRow {
+  city: string
+  label: string
+  country: string
+  sort_order: number
+  is_enabled: boolean
+  updated_at: string
+  active_bar_count: number
+  public_bar_count: number
+}
+

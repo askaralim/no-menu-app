@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { formatAppVersionLabel } from '@/lib/appVersion'
+import { useTaplistCity } from '@/lib/taplistCity'
 
 const privacyPolicyUrl =
   (Constants.expoConfig?.extra as { privacyPolicyUrl?: string } | undefined)?.privacyPolicyUrl?.trim() ?? ''
@@ -12,13 +13,14 @@ const contactNumber = '15998568171'
 
 export default function AboutScreen() {
   const insets = useSafeAreaInsets()
+  const { selectedCity } = useTaplistCity()
 
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
       <Text style={styles.kicker}>No Menu</Text>
-      <Text style={styles.title}>Tonight in Shanghai</Text>
+      <Text style={styles.title}>今晚 · {selectedCity.label}</Text>
       <Text style={styles.body}>
         No Menu 展示合作酒吧自愿公开的精酿酒单、门店信息与当晚在售规格，帮助你快速判断今晚有哪些好喝的生啤。
       </Text>
@@ -58,7 +60,7 @@ export default function AboutScreen() {
       ) : null}
       <View style={styles.metaRow}>
         <Text style={styles.metaLabel}>城市</Text>
-        <Text style={styles.metaValue}>上海</Text>
+        <Text style={styles.metaValue}>{selectedCity.label}</Text>
       </View>
     </ScrollView>
   )

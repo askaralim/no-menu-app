@@ -25,6 +25,14 @@ export type PublicBarTag = {
   label: string
 }
 
+export type PublicTaplistCity = {
+  city: string
+  label: string
+  country: string
+  sort_order: number
+  bar_count: number
+}
+
 export type PublicBarRow = {
   id: string
   slug: string
@@ -106,6 +114,11 @@ export type PublicDrinkRow = {
 export type PublicTaplistTenantRpc =
   | { ok: true; tenant: PublicTenantDetail }
   | { ok: false; code: string; name?: string }
+
+/** RPC `get_public_taplist_cities` JSON union */
+export type PublicTaplistCitiesRpc =
+  | { ok: true; cities: PublicTaplistCity[] }
+  | { ok: false; code?: string }
 
 /** RPC `get_public_taplist_drinks` JSON union */
 export type PublicTaplistDrinksRpc =

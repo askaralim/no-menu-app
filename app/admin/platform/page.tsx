@@ -161,6 +161,14 @@ export default function PlatformAdminPage() {
         <p style={{ color: '#4b5563', marginTop: '0.5rem' }}>
           管理所有注册酒吧 · 共 {tenants.length} 家
         </p>
+        <p style={{ marginTop: '0.75rem' }}>
+          <Link
+            href="/admin/platform/cities"
+            className="admin-button admin-button-secondary"
+            style={{ textDecoration: 'none', display: 'inline-block', fontSize: '0.9rem' }}>
+            城市管理 →
+          </Link>
+        </p>
       </div>
 
       <div className="admin-section" style={{ marginBottom: '2rem' }}>

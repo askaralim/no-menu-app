@@ -7,6 +7,16 @@ Ops checklist (permissions, bar list, hiding demos) is owned by the team separat
 - Log in as **`super_admin`** (see `supabase/seed_platform_super_admin.sql`).
 - Production DB has migration **`20260524120000_admin_create_bar_concierge.sql`** applied (or greenfield `install_all_in_one.sql` including that section).
 
+## New city (before onboarding bars there)
+
+1. **平台管理** → **城市管理** (`/admin/platform/cities`): add city key + 中文展示名 (e.g. `Beijing` / `北京`), set sort order, keep **启用**.
+2. Or click **从活跃门店同步缺失城市** after bars already have `city` set on Tap List storefront.
+3. Consumer App shows the city only when it is **enabled** and at least one bar is **active + 门店公开可见** with matching `tenants.city`.
+
+Requires migration **`20260630120000_taplist_public_cities.sql`** and **`20260630130000_admin_taplist_cities.sql`**.
+
+These migrations are **safe on production while App Store 1.2.x is live** (see `supabase/DEPLOY_MULTI_CITY_BACKEND.md`). Bump `taplist-mobile/app.json` to 1.3.0 only when submitting the multi-city app build.
+
 ## Per bar (repeat)
 
 1. **平台管理** → **创建酒吧** (name + slug). New bars default to **not** consumer-visible.

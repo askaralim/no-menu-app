@@ -2,6 +2,7 @@ import { getTaplistSupabase } from '@/lib/supabase'
 import type {
   BeerRoadmapResponse,
   PublicBarRow,
+  PublicTaplistCitiesRpc,
   PublicTaplistEventRpc,
   PublicTaplistEventsRpc,
   PublicTaplistNewDrinksRpc,
@@ -9,6 +10,14 @@ import type {
   PublicTaplistSearchRpc,
   PublicTaplistTenantRpc,
 } from '@/lib/types'
+
+export async function fetchPublicCities() {
+  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_cities')
+  if (error) throw error
+  const payload = data as PublicTaplistCitiesRpc
+  if (!payload || payload.ok !== true) return []
+  return payload.cities ?? []
+}
 
 export async function fetchPublicBars(city?: string | null) {
   const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_bars', {

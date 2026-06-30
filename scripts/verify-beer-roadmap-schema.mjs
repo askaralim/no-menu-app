@@ -69,6 +69,17 @@ async function rpc(name, body, key) {
 }
 
 async function main() {
+  const cities = await rpc('get_public_taplist_cities', {}, anonKey)
+  if (cities.status === 404) {
+    console.log('skip get_public_taplist_cities (migration 20260630120000 not applied yet)')
+  } else if (cities.status !== 200) {
+    throw new Error(`get_public_taplist_cities HTTP ${cities.status}`)
+  } else if (!cities.data || cities.data.ok !== true || !Array.isArray(cities.data.cities)) {
+    throw new Error('get_public_taplist_cities must return { ok: true, cities: [] }')
+  } else {
+    console.log('anon get_public_taplist_cities -> city catalog: OK')
+  }
+
   const anonSettings = await restGet('beer_roadmap_settings?select=feature_enabled', anonKey)
   if (anonSettings.status === 200 && !anonSettings.body.includes('permission denied')) {
     const parsed = JSON.parse(anonSettings.body)
@@ -100,14 +111,28 @@ async function main() {
     }
     console.log('amap_poi_id column absent: OK')
 
-    const eligible = await rpc('get_beer_roadmap_eligible_tenants', {}, serviceKey)
-    if (eligible.status !== 200) {
-      throw new Error(`get_beer_roadmap_eligible_tenants HTTP ${eligible.status}`)
+    const eligibleLegacy = await rpc('get_beer_roadmap_eligible_tenants', {}, serviceKey)
+    if (eligibleLegacy.status !== 200) {
+      throw new Error(`get_beer_roadmap_eligible_tenants (no-arg) HTTP ${eligibleLegacy.status}`)
     }
-    if (!Array.isArray(eligible.data)) {
-      throw new Error('get_beer_roadmap_eligible_tenants must return json array')
+    if (!Array.isArray(eligibleLegacy.data)) {
+      throw new Error('get_beer_roadmap_eligible_tenants (no-arg) must return json array')
     }
-    console.log('service_role get_beer_roadmap_eligible_tenants -> array: OK')
+    console.log('service_role get_beer_roadmap_eligible_tenants (no-arg, App Store 1.2.x): OK')
+
+    const eligibleCity = await rpc('get_beer_roadmap_eligible_tenants', { p_city: 'Shanghai' }, serviceKey)
+    if (eligibleCity.status === 200 && Array.isArray(eligibleCity.data)) {
+      console.log('service_role get_beer_roadmap_eligible_tenants (p_city=Shanghai): OK')
+      if (eligibleCity.data.length !== eligibleLegacy.data.length) {
+        console.warn(
+          `WARN: eligible count mismatch no-arg=${eligibleLegacy.data.length} shanghai=${eligibleCity.data.length}`,
+        )
+      }
+    } else if (eligibleCity.status === 404 || String(eligibleCity.data).includes('Could not find')) {
+      console.log('skip get_beer_roadmap_eligible_tenants(p_city) (pre-20260630120000 migration)')
+    } else {
+      throw new Error(`get_beer_roadmap_eligible_tenants (p_city) HTTP ${eligibleCity.status}`)
+    }
   } else {
     console.log('skip service_role checks (SUPABASE_SERVICE_ROLE_KEY not set)')
   }

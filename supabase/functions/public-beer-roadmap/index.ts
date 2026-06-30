@@ -45,6 +45,11 @@ type BeerRoadmapSuccess = {
   }
 }
 
+type StartTenantRow = {
+  id: string
+  city: string | null
+}
+
 function jsonResponse(body: BeerRoadmapFailure | BeerRoadmapSuccess, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -144,13 +149,42 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, code: 'FEATURE_DISABLED' })
   }
 
-  const { data: eligibleRaw, error: eligibleError } = await supabase.rpc(
-    'get_beer_roadmap_eligible_tenants',
-  )
+  const { data: startTenantRow, error: startTenantError } = await supabase
+    .from('tenants')
+    .select('id, city')
+    .eq('id', startTenantId)
+    .maybeSingle()
 
-  if (eligibleError) {
-    console.error('get_beer_roadmap_eligible_tenants failed', eligibleError)
+  if (startTenantError) {
+    console.error('start tenant lookup failed', startTenantError)
     return jsonResponse({ ok: false, code: 'FEATURE_DISABLED' })
+  }
+
+  const startTenant = startTenantRow as StartTenantRow | null
+  const startCity = startTenant?.city?.trim()
+  if (!startTenant || !startCity) {
+    return jsonResponse({ ok: false, code: 'INVALID_START_TENANT' })
+  }
+
+  // Prefer city-scoped RPC (post 20260630120000). Fall back to legacy no-arg RPC so a
+  // function deploy before that migration does not break App Store 1.2.x Beer Route.
+  let eligibleRaw: unknown
+  const eligibleWithCity = await supabase.rpc('get_beer_roadmap_eligible_tenants', {
+    p_city: startCity,
+  })
+  if (eligibleWithCity.error) {
+    console.warn(
+      'get_beer_roadmap_eligible_tenants(p_city) unavailable, using legacy no-arg RPC',
+      eligibleWithCity.error,
+    )
+    const eligibleLegacy = await supabase.rpc('get_beer_roadmap_eligible_tenants')
+    if (eligibleLegacy.error) {
+      console.error('get_beer_roadmap_eligible_tenants failed', eligibleLegacy.error)
+      return jsonResponse({ ok: false, code: 'FEATURE_DISABLED' })
+    }
+    eligibleRaw = eligibleLegacy.data
+  } else {
+    eligibleRaw = eligibleWithCity.data
   }
 
   const eligible = (Array.isArray(eligibleRaw) ? eligibleRaw : [])
@@ -159,15 +193,6 @@ Deno.serve(async (req) => {
 
   const start = eligible.find((t) => t.tenantId === startTenantId)
   if (!start) {
-    const { data: tenantRow } = await supabase
-      .from('tenants')
-      .select('id')
-      .eq('id', startTenantId)
-      .maybeSingle()
-
-    if (!tenantRow) {
-      return jsonResponse({ ok: false, code: 'INVALID_START_TENANT' })
-    }
     return jsonResponse({ ok: false, code: 'START_NOT_ELIGIBLE' })
   }
 
