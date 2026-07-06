@@ -177,3 +177,38 @@ export interface AdminDrinkCompanyAliasRow {
   collision_company_count: number
 }
 
+export type DrinkProductReviewStatus = 'pending' | 'reviewed' | 'rejected'
+
+export type DrinkProductStatus = 'active' | 'archived'
+
+/** Row from `admin_list_drink_products` */
+export interface AdminDrinkProductRow {
+  id: string
+  name: string
+  name_en: string | null
+  aliases: string[]
+  brand_name: string | null
+  brewery: string | null
+  beer_style: string | null
+  abv: number | null
+  ibu: number | null
+  country: string | null
+  origin_region: string | null
+  image_url: string | null
+  description: string | null
+  tasting_note: string | null
+  status: DrinkProductStatus
+  source: string | null
+  company_id: string | null
+  normalized_key: string | null
+  review_status: DrinkProductReviewStatus
+  review_note: string | null
+  beer_verification_status: string | null
+  brewery_verification_status: string | null
+  created_at: string
+  updated_at: string
+  company_display_name: string | null
+  company_normalized_key: string | null
+  linked_drink_count: number
+}
+

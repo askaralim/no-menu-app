@@ -13,7 +13,10 @@
     "db:seed-taplist-demo": "bash scripts/seed_taplist_demo.sh",
     "db:seed-drink-companies": "node scripts/seed_drink_companies.mjs",
     "db:seed-drink-companies:dry-run": "node scripts/seed_drink_companies.mjs --dry-run",
-    "db:seed-drink-companies:sql": "node scripts/seed_drink_companies.mjs --write-sql"
+    "db:seed-drink-companies:sql": "node scripts/seed_drink_companies.mjs --write-sql",
+    "db:seed-drink-products": "node scripts/seed_drink_products.mjs",
+    "db:seed-drink-products:dry-run": "node scripts/seed_drink_products.mjs --dry-run",
+    "db:seed-drink-products:sql": "node scripts/seed_drink_products.mjs --write-sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

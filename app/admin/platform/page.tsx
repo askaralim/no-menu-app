@@ -174,6 +174,12 @@ export default function PlatformAdminPage() {
             style={{ textDecoration: 'none', display: 'inline-block', fontSize: '0.9rem' }}>
             品牌/酒厂管理 →
           </Link>
+          <Link
+            href="/admin/platform/products"
+            className="admin-button admin-button-secondary"
+            style={{ textDecoration: 'none', display: 'inline-block', fontSize: '0.9rem' }}>
+            产品池管理 →
+          </Link>
         </p>
       </div>
 
