@@ -1,9 +1,10 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'expo-router'
+import { Link, useRouter } from 'expo-router'
 import {
   ActivityIndicator,
+  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,14 +12,15 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
-import { searchPublicTaplist } from '@/lib/api/taplist'
+import { fetchPublicNewDrinks, fetchPublicTaplistBreweries, searchPublicTaplist } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
-import type { PublicTaplistSearchResult } from '@/lib/types'
+import type { PublicNewTapRow, PublicTaplistBreweryDiscoveryRow, PublicTaplistSearchResult } from '@/lib/types'
 
 const searchPresets = [
   { label: 'IPA', query: 'IPA' },
@@ -29,6 +31,10 @@ const searchPresets = [
 ]
 
 const SEARCH_DEBOUNCE_MS = 300
+const PAGE_GUTTER = spacing.md
+const GRID_GAP = spacing.md
+const GRID_COLS = 3
+const DISCOVERY_RADIUS = 10
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets()
@@ -57,7 +63,21 @@ export default function SearchScreen() {
     enabled: configured && debouncedQuery.length > 0,
   })
 
+  const newTapsQuery = useQuery({
+    queryKey: ['taplist', 'new-drinks', selectedCityName],
+    queryFn: () => fetchPublicNewDrinks(selectedCityName),
+    enabled: configured,
+  })
+
+  const breweriesQuery = useQuery({
+    queryKey: ['taplist', 'breweries', selectedCityName],
+    queryFn: () => fetchPublicTaplistBreweries(selectedCityName),
+    enabled: configured,
+  })
+
   const drinkResults = drinksQuery.data ?? []
+  const newTaps = newTapsQuery.data ?? []
+  const breweries = breweriesQuery.data ?? []
 
   const showDrinkSection = isSearching
 
@@ -67,8 +87,7 @@ export default function SearchScreen() {
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
-      <Text style={styles.kicker}>{selectedCity.label} / TAP LIST</Text>
-      <Text style={styles.title}>搜索酒单</Text>
+      <Text style={styles.pageTitle}>搜索</Text>
 
       <View style={styles.inputFrame}>
         <FontAwesome name="search" size={17} color={palette.faint} />
@@ -99,7 +118,11 @@ export default function SearchScreen() {
       </View>
 
       {!isSearching ? (
-        <SearchGuide onSelect={setQuery} />
+        <SearchGuide
+          breweries={breweriesQuery.isError ? [] : breweries}
+          newTaps={newTapsQuery.isError ? [] : newTaps}
+          onSelect={setQuery}
+        />
       ) : null}
 
       {!configured ? (
@@ -135,20 +158,51 @@ export default function SearchScreen() {
   )
 }
 
-function SearchGuide({ onSelect }: { onSelect: (query: string) => void }) {
-  return (
-    <View style={styles.guide}>
-      <Text style={styles.guideTitle}>不知道从哪里开始？</Text>
+function SearchGuide({
+  breweries,
+  newTaps,
+  onSelect,
+}: {
+  breweries: PublicTaplistBreweryDiscoveryRow[]
+  newTaps: PublicNewTapRow[]
+  onSelect: (query: string) => void
+}) {
+  const [gridWidth, setGridWidth] = useState(0)
+  const gap = GRID_GAP
+  const tileWidth =
+    gridWidth > 0 ? (gridWidth - gap * (GRID_COLS - 1)) / GRID_COLS : 0
 
-      <Text style={styles.presetSectionLabel}>风格</Text>
-      <PresetSearches onSelect={onSelect} />
+  return (
+    <View
+      style={styles.guide}
+      onLayout={(event) => {
+        const nextWidth = event.nativeEvent.layout.width
+        setGridWidth((current) => (Math.abs(current - nextWidth) > 0.5 ? nextWidth : current))
+      }}>
+      <View style={styles.guideSection}>
+        <Text style={styles.sectionTitle}>风格</Text>
+        <PresetSearches onSelect={onSelect} />
+      </View>
+
+      {newTaps.length > 0 && tileWidth > 0 ? (
+        <SearchNewTaps drinks={newTaps.slice(0, 9)} tileWidth={tileWidth} gap={gap} />
+      ) : null}
+
+      {breweries.length > 0 && tileWidth > 0 ? (
+        <BreweryDiscovery
+          breweries={breweries.slice(0, 9)}
+          onSelect={onSelect}
+          tileWidth={tileWidth}
+          gap={gap}
+        />
+      ) : null}
     </View>
   )
 }
 
 function PresetSearches({ onSelect }: { onSelect: (query: string) => void }) {
   return (
-    <View style={styles.presetGrid}>
+    <View style={styles.presetRow}>
       {searchPresets.map((preset) => (
         <Pressable
           key={preset.label}
@@ -160,6 +214,165 @@ function PresetSearches({ onSelect }: { onSelect: (query: string) => void }) {
           <Text style={styles.presetLabel}>{preset.label}</Text>
         </Pressable>
       ))}
+    </View>
+  )
+}
+
+function SearchNewTaps({
+  drinks,
+  tileWidth,
+  gap,
+}: {
+  drinks: PublicNewTapRow[]
+  tileWidth: number
+  gap: number
+}) {
+  const rows = chunkRows(drinks, GRID_COLS)
+  const tileHeight = tileWidth
+
+  return (
+    <View style={styles.guideSection}>
+      <Text style={styles.sectionTitle}>上新</Text>
+      <View style={[styles.newTapGrid, { gap }]}>
+        {rows.map((row, rowIndex) => (
+          <View key={row.map((drink) => drink.drink_id).join('-')} style={[styles.newTapRow, { gap }]}>
+            {row.map((drink) => (
+              <SearchNewTapTile
+                key={drink.drink_id}
+                drink={drink}
+                width={tileWidth}
+                height={tileHeight}
+              />
+            ))}
+            {row.length < GRID_COLS
+              ? Array.from({ length: GRID_COLS - row.length }).map((_, index) => (
+                  <View
+                    key={`spacer-${rowIndex}-${index}`}
+                    style={{ width: tileWidth, height: tileHeight }}
+                  />
+                ))
+              : null}
+          </View>
+        ))}
+      </View>
+    </View>
+  )
+}
+
+function SearchNewTapTile({
+  drink,
+  width,
+  height,
+}: {
+  drink: PublicNewTapRow
+  width: number
+  height: number
+}) {
+  const router = useRouter()
+  const breweryLine = drink.brewery ?? drink.brand_name ?? null
+  const hasImage = Boolean(drink.image_url)
+  const copy = (
+    <View style={styles.newTapTileCopy}>
+      <Text style={styles.newTapTileName} numberOfLines={2} ellipsizeMode="tail">
+        {drink.name}
+      </Text>
+      {breweryLine ? (
+        <Text style={styles.newTapTileBrewery} numberOfLines={1} ellipsizeMode="tail">
+          {breweryLine}
+        </Text>
+      ) : null}
+    </View>
+  )
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={[breweryLine, drink.name, `@ ${drink.tenant_display_name}`]
+        .filter(Boolean)
+        .join('，')}
+      onPress={() => router.push(`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`)}
+      style={({ pressed }) => [
+        styles.newTapTile,
+        { width, height },
+        pressed && styles.newTapTilePressed,
+      ]}>
+      {hasImage ? (
+        <ImageBackground
+          source={{ uri: drink.image_url as string }}
+          style={styles.newTapTileImage}
+          imageStyle={styles.newTapTileImageRadius}>
+          <LinearGradient
+            colors={['rgba(13,13,13,0.05)', 'rgba(13,13,13,0.42)', 'rgba(13,13,13,0.94)']}
+            locations={[0, 0.42, 1]}
+            style={styles.newTapTileScrim}>
+            {copy}
+          </LinearGradient>
+        </ImageBackground>
+      ) : (
+        <LinearGradient
+          colors={['rgba(75,54,31,0.28)', 'rgba(17,16,15,0.94)']}
+          locations={[0, 1]}
+          style={styles.newTapTileScrim}>
+          {copy}
+        </LinearGradient>
+      )}
+    </Pressable>
+  )
+}
+
+function chunkRows<T>(items: T[], size: number) {
+  const rows: T[][] = []
+  for (let index = 0; index < items.length; index += size) {
+    rows.push(items.slice(index, index + size))
+  }
+  return rows
+}
+
+function BreweryDiscovery({
+  breweries,
+  onSelect,
+  tileWidth,
+  gap,
+}: {
+  breweries: PublicTaplistBreweryDiscoveryRow[]
+  onSelect: (query: string) => void
+  tileWidth: number
+  gap: number
+}) {
+  const rows = chunkRows(breweries, GRID_COLS)
+
+  return (
+    <View style={styles.guideSection}>
+      <Text style={styles.sectionTitle}>酒厂</Text>
+      <View style={[styles.breweryGrid, { gap }]}>
+        {rows.map((row, rowIndex) => (
+          <View key={row.map((brewery) => brewery.brewery_name).join('-')} style={[styles.breweryRow, { gap }]}>
+            {row.map((brewery) => (
+              <Pressable
+                key={brewery.brewery_name}
+                accessibilityRole="button"
+                accessibilityLabel={`搜索${brewery.brewery_name}`}
+                accessibilityHint="显示当前公开酒单中的匹配酒款"
+                onPress={() => onSelect(brewery.brewery_name)}
+                style={({ pressed }) => [
+                  styles.breweryCard,
+                  { width: tileWidth },
+                  pressed && styles.breweryCardPressed,
+                ]}>
+                <Text style={styles.breweryName} numberOfLines={1} ellipsizeMode="tail">
+                  {brewery.brewery_name}
+                </Text>
+                <Text style={styles.breweryCount}>{brewery.tap_count} 款</Text>
+              </Pressable>
+            ))}
+            {row.length < GRID_COLS
+              ? Array.from({ length: GRID_COLS - row.length }).map((_, index) => (
+                  <View key={`spacer-${rowIndex}-${index}`} style={{ width: tileWidth }} />
+                ))
+              : null}
+          </View>
+        ))}
+      </View>
     </View>
   )
 }
@@ -245,32 +458,28 @@ const styles = StyleSheet.create({
     backgroundColor: palette.background,
   },
   content: {
-    padding: spacing.md,
+    paddingHorizontal: PAGE_GUTTER,
     paddingBottom: 96,
   },
-  kicker: {
-    ...typography.label,
-    color: palette.tungsten,
-    fontSize: 11,
-    lineHeight: 15,
-    marginBottom: spacing.xs,
-  },
-  title: {
-    ...typography.displayL,
+  pageTitle: {
+    ...typography.title,
     color: palette.text,
-    marginBottom: spacing.lg,
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: '500',
+    marginBottom: spacing.md,
   },
   inputFrame: {
-    height: 54,
-    borderRadius: 8,
+    height: 52,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: palette.hairline,
-    backgroundColor: 'rgba(17,17,17,0.58)',
+    borderColor: 'rgba(245,241,230,0.10)',
+    backgroundColor: 'rgba(17,17,17,0.72)',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   input: {
     ...typography.body,
@@ -290,48 +499,132 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   guide: {
-    paddingTop: spacing.xs,
+    gap: spacing.xl,
   },
-  guideTitle: {
+  sectionTitle: {
     ...typography.title,
     color: palette.text,
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: '500',
   },
-  presetSectionLabel: {
-    ...typography.label,
-    color: palette.tungsten,
-    fontSize: 11,
-    lineHeight: 15,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  presetGrid: {
+  presetRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.xs,
   },
   presetPill: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 44,
-    borderRadius: 22,
+    minHeight: 40,
+    borderRadius: DISCOVERY_RADIUS,
     borderWidth: 1,
-    borderColor: 'rgba(198,168,117,0.24)',
-    backgroundColor: 'rgba(184,138,61,0.08)',
+    borderColor: 'rgba(198,168,117,0.22)',
+    backgroundColor: 'rgba(184,138,61,0.07)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   presetPillPressed: {
-    borderColor: 'rgba(211,154,69,0.52)',
-    backgroundColor: 'rgba(184,138,61,0.18)',
-    opacity: 0.82,
+    borderColor: 'rgba(211,154,69,0.48)',
+    backgroundColor: 'rgba(184,138,61,0.16)',
+    opacity: 0.86,
   },
   presetLabel: {
-    ...typography.body,
+    ...typography.caption,
     color: palette.text,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+  guideSection: {
+    gap: spacing.sm,
+  },
+  newTapGrid: {
+    width: '100%',
+  },
+  newTapRow: {
+    flexDirection: 'row',
+    width: '100%',
+  },
+  newTapTile: {
+    borderRadius: DISCOVERY_RADIUS,
+    backgroundColor: palette.bgSoft,
+    overflow: 'hidden',
+    flexShrink: 0,
+  },
+  newTapTilePressed: {
+    opacity: 0.78,
+  },
+  newTapTileImage: {
+    flex: 1,
+    width: '100%',
+  },
+  newTapTileImageRadius: {
+    borderRadius: DISCOVERY_RADIUS,
+  },
+  newTapTileScrim: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.md,
+  },
+  newTapTileCopy: {
+    minWidth: 0,
+    gap: 2,
+  },
+  newTapTileName: {
+    ...typography.caption,
+    color: palette.text,
+    fontSize: 13,
+    lineHeight: 17,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.84)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  newTapTileBrewery: {
+    ...typography.micro,
+    color: 'rgba(245,241,232,0.68)',
+    fontSize: 10,
+    lineHeight: 13,
+    textShadowColor: 'rgba(0,0,0,0.84)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  breweryGrid: {
+    width: '100%',
+  },
+  breweryRow: {
+    flexDirection: 'row',
+    width: '100%',
+  },
+  breweryCard: {
+    minHeight: 68,
+    borderRadius: DISCOVERY_RADIUS,
+    borderWidth: 1,
+    borderColor: 'rgba(198,168,117,0.16)',
+    backgroundColor: 'rgba(20,18,16,0.55)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    gap: 2,
+  },
+  breweryCardPressed: {
+    borderColor: 'rgba(211,154,69,0.40)',
+    backgroundColor: 'rgba(184,138,61,0.12)',
+    opacity: 0.88,
+  },
+  breweryName: {
+    ...typography.caption,
+    color: palette.text,
+    fontWeight: '500',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  breweryCount: {
+    ...typography.micro,
+    color: palette.faint,
+    lineHeight: 15,
   },
   loading: {
     borderTopWidth: 1,
@@ -457,7 +750,7 @@ const styles = StyleSheet.create({
   },
   emptyRecoveryLabel: {
     ...typography.label,
-    color: palette.tungsten,
+    color: palette.faint,
     fontSize: 11,
     lineHeight: 15,
     marginBottom: spacing.sm,

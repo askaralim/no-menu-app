@@ -147,6 +147,11 @@ export type PublicTaplistSearchResult = {
 
 export type PublicNewTapRow = PublicTaplistSearchResult
 
+export type PublicTaplistBreweryDiscoveryRow = {
+  brewery_name: string
+  tap_count: number
+}
+
 export type PublicEventDisplayState = 'TONIGHT' | 'ONGOING' | 'UPCOMING'
 
 export type PublicEventRow = {
@@ -179,6 +184,11 @@ export type PublicTaplistSearchRpc =
 /** RPC `get_public_taplist_new_drinks` JSON union */
 export type PublicTaplistNewDrinksRpc =
   | { ok: true; results: PublicNewTapRow[] }
+  | { ok: false; code?: string }
+
+/** RPC `get_public_taplist_breweries` JSON union */
+export type PublicTaplistBreweriesRpc =
+  | { ok: true; results: PublicTaplistBreweryDiscoveryRow[] }
   | { ok: false; code?: string }
 
 /** RPC `get_public_taplist_events` JSON union */

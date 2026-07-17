@@ -3,6 +3,7 @@ import type {
   BeerRoadmapResponse,
   PublicBarRow,
   PublicTaplistCitiesRpc,
+  PublicTaplistBreweriesRpc,
   PublicTaplistEventRpc,
   PublicTaplistEventsRpc,
   PublicTaplistNewDrinksRpc,
@@ -49,6 +50,16 @@ export async function fetchPublicNewDrinks(city?: string | null) {
   })
   if (error) throw error
   const payload = data as PublicTaplistNewDrinksRpc
+  if (!payload || payload.ok !== true) return []
+  return payload.results ?? []
+}
+
+export async function fetchPublicTaplistBreweries(city?: string | null) {
+  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_breweries', {
+    p_city: city ?? null,
+  })
+  if (error) throw error
+  const payload = data as PublicTaplistBreweriesRpc
   if (!payload || payload.ok !== true) return []
   return payload.results ?? []
 }
