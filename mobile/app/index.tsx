@@ -4,7 +4,7 @@ import { View, ActivityIndicator } from 'react-native'
 import { COLORS } from '../lib/constants'
 
 export default function IndexRedirect() {
-  const { session, tenantId, role, isLoading } = useAuth()
+  const { session, tenantId, role, memberships, needsTenantSelection, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -14,12 +14,21 @@ export default function IndexRedirect() {
     )
   }
 
-  if (session && tenantId && role) {
-    return <Redirect href="/(tabs)" />
+  if (!session) {
+    return <Redirect href="/(auth)/login" />
   }
 
-  if (session && !tenantId) {
-    return <Redirect href="/(auth)/register" />
+  if (needsTenantSelection) {
+    return <Redirect href="/(auth)/select-tenant" />
+  }
+
+  if (session && tenantId && role) {
+    const isOwnerOrAdmin = role === 'owner' || role === 'super_admin'
+    return <Redirect href={isOwnerOrAdmin ? '/(tabs)/taplist' : '/(tabs)'} />
+  }
+
+  if (session && memberships.length === 0) {
+    return <Redirect href="/(auth)/no-access" />
   }
 
   return <Redirect href="/(auth)/login" />

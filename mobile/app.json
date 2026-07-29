@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "No Menu POS",
+    "name": "No Menu Tonight",
     "slug": "nomenu",
     "scheme": "nomenu",
     "version": "1.0.0",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#060913"
+      "backgroundColor": "#080808"
     },
     "ios": {
       "supportsTablet": false,
@@ -22,7 +22,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#060913",
+        "backgroundColor": "#080808",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

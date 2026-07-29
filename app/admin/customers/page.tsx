@@ -83,7 +83,7 @@ export default function CustomersPage() {
       <div className="admin-header">
         <h1>客户消费排行</h1>
         <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '0.5rem' }}>
-          按已结账 / 已完成订单的消费总额排序
+          按已结账订单的消费总额排序
         </p>
       </div>
 

@@ -1,66 +1,119 @@
 import Constants from 'expo-constants'
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { formatAppVersionLabel } from '@/lib/appVersion'
+import { isAnalyticsEnabled, setAnalyticsEnabled } from '@/lib/analytics'
 import { useTaplistCity } from '@/lib/taplistCity'
 
 const privacyPolicyUrl =
-  (Constants.expoConfig?.extra as { privacyPolicyUrl?: string } | undefined)?.privacyPolicyUrl?.trim() ?? ''
+  (Constants.expoConfig?.extra as { privacyPolicyUrl?: string } | undefined)?.privacyPolicyUrl?.trim() ||
+  'https://nomenuapp.com/privacy'
+const termsUrl = privacyPolicyUrl.replace(/\/privacy\/?$/, '/terms')
 const contactNumber = '15998568171'
 
 export default function AboutScreen() {
   const insets = useSafeAreaInsets()
   const { selectedCity } = useTaplistCity()
+  const [analyticsEnabled, setAnalyticsEnabledState] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void isAnalyticsEnabled().then((enabled) => {
+      if (!cancelled) setAnalyticsEnabledState(enabled)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const onAnalyticsEnabledChange = (enabled: boolean) => {
+    setAnalyticsEnabledState(enabled)
+    void setAnalyticsEnabled(enabled)
+  }
 
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
-      <Text style={styles.kicker}>No Menu</Text>
-      <Text style={styles.title}>今晚 · {selectedCity.label}</Text>
+      <Text style={styles.title}>No Menu</Text>
       <Text style={styles.body}>
-        No Menu 展示合作酒吧自愿公开的精酿酒单、门店信息与当晚在售规格，帮助你快速判断今晚有哪些好喝的生啤。
+        查看合作酒吧公开的精酿酒单、门店信息与当晚在售规格，快速找到今晚想喝的生啤。
       </Text>
 
-      <View style={styles.disclaimerBlock}>
-        <Text style={styles.disclaimerLabel}>免责声明</Text>
-        <Text style={styles.disclaimer}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
-      </View>
-
-      <View style={styles.contactBlock}>
-        <Text style={styles.disclaimerLabel}>联系 No Menu</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>联系 No Menu</Text>
         <Text style={styles.contactBody}>
-          酒吧入驻、酒单信息更正或其他联系，请通过微信联系。
+          酒吧入驻、酒单信息更正或其他联系，可添加微信或直接致电。
         </Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaLabel}>微信号</Text>
+          <Text selectable style={[styles.metaValue, styles.link]}>{contactNumber}</Text>
+        </View>
         <Pressable
           style={({ pressed }) => [styles.contactRow, pressed && styles.contactRowPressed]}
           onPress={() => void Linking.openURL(`tel:${contactNumber}`)}
           accessibilityRole="button"
-          accessibilityLabel="联系 No Menu">
-          <Text style={styles.metaLabel}>微信 / 电话</Text>
-          <Text style={[styles.metaValue, styles.link]}>{contactNumber}</Text>
+          accessibilityLabel={`拨打 No Menu 电话 ${contactNumber}`}>
+          <Text style={styles.metaLabel}>电话</Text>
+          <Text style={[styles.metaValue, styles.link]}>拨打</Text>
         </Pressable>
       </View>
 
-      <View style={styles.metaRow}>
-        <Text style={styles.metaLabel}>版本</Text>
-        <Text style={styles.metaValue}>{formatAppVersionLabel()}</Text>
-      </View>
-      {privacyPolicyUrl ? (
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>法律与隐私</Text>
         <Pressable
-          style={styles.metaRow}
+          style={({ pressed }) => [styles.metaRow, pressed && styles.contactRowPressed]}
+          onPress={() => void Linking.openURL(termsUrl)}
+          accessibilityRole="link">
+          <Text style={styles.metaLabel}>服务条款</Text>
+          <Text style={[styles.metaValue, styles.link]}>查看</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.metaRow, pressed && styles.contactRowPressed]}
           onPress={() => void Linking.openURL(privacyPolicyUrl)}
           accessibilityRole="link">
           <Text style={styles.metaLabel}>隐私政策</Text>
           <Text style={[styles.metaValue, styles.link]}>查看</Text>
         </Pressable>
-      ) : null}
-      <View style={styles.metaRow}>
-        <Text style={styles.metaLabel}>城市</Text>
-        <Text style={styles.metaValue}>{selectedCity.label}</Text>
+        <View style={styles.disclaimerBlock}>
+          <Text style={styles.disclaimerLabel}>免责声明</Text>
+          <Text style={styles.disclaimer}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>偏好设置</Text>
+        <View style={styles.analyticsRow}>
+          <View style={styles.analyticsCopy}>
+            <Text style={styles.settingTitle}>匿名使用分析</Text>
+            <Text style={styles.analyticsDescription}>
+              帮助 No Menu 了解页面与功能使用情况，不记录搜索词或个人资料。关闭后不会发送使用分析数据。
+            </Text>
+          </View>
+          <Switch
+            accessibilityLabel="匿名使用分析"
+            value={analyticsEnabled}
+            onValueChange={onAnalyticsEnabledChange}
+            trackColor={{ false: palette.line, true: palette.olive }}
+            thumbColor={palette.text}
+          />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>App 信息</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaLabel}>城市</Text>
+          <Text style={styles.metaValue}>{selectedCity.label}</Text>
+        </View>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaLabel}>版本</Text>
+          <Text style={styles.metaValue}>{formatAppVersionLabel()}</Text>
+        </View>
       </View>
     </ScrollView>
   )
@@ -76,29 +129,29 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
   },
-  kicker: {
-    ...typography.label,
-    color: palette.olive,
-    fontSize: 11,
-    lineHeight: 15,
-    marginBottom: spacing.xs,
-  },
   title: {
     ...typography.displayL,
     color: palette.text,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   body: {
     ...typography.body,
     color: palette.muted,
     marginBottom: spacing.xl,
   },
+  section: {
+    marginBottom: spacing.xl,
+  },
+  sectionLabel: {
+    ...typography.label,
+    color: palette.tungsten,
+    fontSize: 11,
+    marginBottom: spacing.sm,
+  },
   disclaimerBlock: {
     borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: palette.hairline,
-    paddingVertical: spacing.lg,
-    marginBottom: spacing.lg,
+    borderTopColor: palette.line,
+    paddingTop: spacing.md,
   },
   disclaimerLabel: {
     ...typography.label,
@@ -110,20 +163,17 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: palette.faint,
   },
-  contactBlock: {
-    paddingBottom: spacing.lg,
-    marginBottom: spacing.lg,
-  },
   contactBody: {
     ...typography.caption,
     color: palette.muted,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   contactRow: {
     borderTopWidth: 1,
     borderTopColor: palette.line,
-    paddingVertical: spacing.md,
+    minHeight: 48,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.lg,
   },
@@ -133,8 +183,9 @@ const styles = StyleSheet.create({
   metaRow: {
     borderTopWidth: 1,
     borderTopColor: palette.line,
-    paddingVertical: spacing.md,
+    minHeight: 48,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.lg,
   },
@@ -149,5 +200,27 @@ const styles = StyleSheet.create({
   },
   link: {
     color: palette.tungsten,
+  },
+  analyticsRow: {
+    borderTopWidth: 1,
+    borderTopColor: palette.line,
+    paddingVertical: spacing.md,
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+  },
+  analyticsCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  analyticsDescription: {
+    ...typography.caption,
+    color: palette.faint,
+  },
+  settingTitle: {
+    ...typography.caption,
+    color: palette.text,
   },
 })

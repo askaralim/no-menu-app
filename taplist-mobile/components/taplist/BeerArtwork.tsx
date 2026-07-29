@@ -1,5 +1,6 @@
-import { Image, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 
+import { CachedImage } from '@/components/taplist/CachedImage'
 import { palette, typography } from '@/constants/design'
 
 type BeerArtworkProps = {
@@ -10,7 +11,7 @@ type BeerArtworkProps = {
 
 export function BeerArtwork({ name, source, size = 64 }: BeerArtworkProps) {
   if (source) {
-    return <Image source={{ uri: source }} style={[styles.image, { width: size, height: size }]} />
+    return <CachedImage source={source} style={[styles.image, { width: size, height: size }]} />
   }
 
   return (

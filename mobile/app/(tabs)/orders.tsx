@@ -11,9 +11,11 @@ import {
   TextInput,
   Share,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
-import { COLORS, STATUS_LABELS } from '../../lib/constants'
+import { orderStatusLabel, isOrderSettled } from '../../lib/constants'
+import { THEME as T, orderStatusVisual, LAYOUT } from '../../lib/theme'
 import type { Order, OrderWithItems, OrderStatus, BusinessDay, Drink } from '../../lib/types'
 
 interface BusinessDayWithOrders extends BusinessDay {
@@ -27,7 +29,7 @@ export default function OrdersScreen() {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [businessDays, setBusinessDays] = useState<BusinessDayWithOrders[]>([])
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'checked_out'>('all')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -43,8 +45,11 @@ export default function OrdersScreen() {
       if (bdError) throw bdError
 
       let ordersQuery = supabase.from('orders').select('*').order('created_at', { ascending: false })
-      if (statusFilter !== 'all') {
-        ordersQuery = ordersQuery.eq('status', statusFilter)
+      if (statusFilter === 'active') {
+        ordersQuery = ordersQuery.eq('status', 'active')
+      } else if (statusFilter === 'checked_out') {
+        // Include legacy `finished` as settled.
+        ordersQuery = ordersQuery.in('status', ['checked_out', 'finished'])
       }
 
       const { data: ordersData, error: ordersError } = await ordersQuery
@@ -184,7 +189,7 @@ export default function OrdersScreen() {
       '',
       `客户: ${order.customer_name}`,
       `日期: ${new Date(order.created_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`,
-      `状态: ${STATUS_LABELS[order.status] || order.status}`,
+      `状态: ${orderStatusLabel(order.status)}`,
       '',
       '──────────────────────────',
       '  商品明细',
@@ -193,14 +198,9 @@ export default function OrdersScreen() {
 
     for (const item of order.items) {
       const name = item.drink?.name || '未知商品'
-      const subtotal = item.quantity_cup * item.unit_price_cup + item.quantity_bottle * (item.unit_price_bottle || 0)
+      const subtotal = item.quantity * item.unit_price
       lines.push(`  ${name}`)
-      if (item.quantity_cup > 0) {
-        lines.push(`    ${item.quantity_cup} ${item.drink?.price_unit || '杯'} × ¥${item.unit_price_cup}`)
-      }
-      if (item.quantity_bottle > 0) {
-        lines.push(`    ${item.quantity_bottle} ${item.drink?.price_unit_bottle || '瓶'} × ¥${item.unit_price_bottle}`)
-      }
+      lines.push(`    ${item.quantity} × ${item.label_snapshot || '规格'} ¥${item.unit_price}`)
       lines.push(`    小计: ¥${subtotal.toFixed(2)}`)
       lines.push('')
     }
@@ -221,14 +221,6 @@ export default function OrdersScreen() {
     }
   }
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case 'active': return COLORS.statusActive
-      case 'checked_out': return COLORS.statusCheckedOut
-      default: return COLORS.statusFinished
-    }
-  }
-
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr)
     const today = new Date()
@@ -244,36 +236,35 @@ export default function OrdersScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
-      </View>
+      <SafeAreaView style={styles.centered} edges={['top']}>
+        <ActivityIndicator size="large" color={T.gold} />
+      </SafeAreaView>
     )
   }
 
   // ORDER DETAIL VIEW
   if (viewMode === 'detail' && selectedOrder) {
-    const statusStyle = getStatusStyle(selectedOrder.status)
+    const vis = orderStatusVisual(selectedOrder.status)
     return (
-      <View style={styles.detailRoot}>
+      <SafeAreaView style={styles.detailRoot} edges={['top']}>
         <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
           <TouchableOpacity onPress={() => { setViewMode('list'); setSelectedOrder(null) }} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color={COLORS.gold} />
+            <Ionicons name="chevron-back" size={20} color={T.gold} />
             <Text style={styles.backBtnText}>返回订单列表</Text>
           </TouchableOpacity>
 
+          <Text style={styles.title}>{selectedOrder.customer_name}</Text>
+
           <View style={styles.detailCard}>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>客户姓名</Text>
-              <Text style={styles.detailValue}>{selectedOrder.customer_name}</Text>
-            </View>
-            <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>状态</Text>
-              <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                <Text style={[styles.statusText, { color: statusStyle.text }]}>
-                  {STATUS_LABELS[selectedOrder.status]}
+              <View style={[styles.statusBadge, { backgroundColor: vis.bg, borderColor: vis.border }]}>
+                <Text style={[styles.statusText, { color: vis.fg }]}>
+                  {orderStatusLabel(selectedOrder.status)}
                 </Text>
               </View>
             </View>
+            <View style={styles.detailDivider} />
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>创建时间</Text>
               <Text style={styles.detailValue}>
@@ -281,29 +272,28 @@ export default function OrdersScreen() {
               </Text>
             </View>
             {selectedOrder.checked_out_at && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>结账时间</Text>
-                <Text style={styles.detailValue}>
-                  {new Date(selectedOrder.checked_out_at).toLocaleString('zh-CN')}
-                </Text>
-              </View>
+              <>
+                <View style={styles.detailDivider} />
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>结账时间</Text>
+                  <Text style={styles.detailValue}>
+                    {new Date(selectedOrder.checked_out_at).toLocaleString('zh-CN')}
+                  </Text>
+                </View>
+              </>
             )}
           </View>
 
           <Text style={styles.sectionLabel}>订单项目</Text>
           {selectedOrder.items.map((item) => {
-            const subtotal = item.quantity_cup * item.unit_price_cup +
-              item.quantity_bottle * (item.unit_price_bottle || 0)
+            const subtotal = item.quantity * item.unit_price
             return (
               <View key={item.id} style={styles.itemRow}>
-                <Text style={styles.itemName}>{item.drink?.name || '未知商品'}</Text>
-                <View style={styles.itemDetails}>
-                  {item.quantity_cup > 0 && (
-                    <Text style={styles.itemQty}>{item.quantity_cup} {item.drink?.price_unit || '杯'}</Text>
-                  )}
-                  {item.quantity_bottle > 0 && (
-                    <Text style={styles.itemQty}>{item.quantity_bottle} {item.drink?.price_unit_bottle || '瓶'}</Text>
-                  )}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.itemName}>{item.drink?.name || '未知商品'}</Text>
+                  <Text style={styles.itemQty}>
+                    {item.quantity} × {item.label_snapshot || '规格'} · ¥{Number(item.unit_price).toFixed(2)}
+                  </Text>
                 </View>
                 <Text style={styles.itemSubtotal}>¥{subtotal.toFixed(2)}</Text>
               </View>
@@ -316,106 +306,93 @@ export default function OrdersScreen() {
           </View>
 
           {/* Share receipt */}
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.gold, flexDirection: 'row', justifyContent: 'center', gap: 8 }]}
-            onPress={() => shareReceipt(selectedOrder)}
-          >
-            <Ionicons name="share-outline" size={18} color={COLORS.gold} />
-            <Text style={[styles.actionBtnText, { color: COLORS.gold }]}>分享账单</Text>
+          <TouchableOpacity style={styles.shareBtn} onPress={() => shareReceipt(selectedOrder)}>
+            <Ionicons name="share-outline" size={18} color={T.gold} />
+            <Text style={styles.shareBtnText}>分享账单</Text>
           </TouchableOpacity>
 
-          {/* Status change buttons */}
+          {/* Status change buttons — two states only: active ↔ checked_out */}
           <View style={styles.actionSection}>
             {selectedOrder.status === 'active' && (
               <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: COLORS.gold }]}
+                style={styles.primaryBtn}
                 onPress={() => handleStatusChange(selectedOrder.id, 'checked_out')}
               >
-                <Text style={styles.actionBtnTextDark}>标记为已结账</Text>
+                <Text style={styles.primaryBtnText}>标记为已结账</Text>
               </TouchableOpacity>
             )}
-            {selectedOrder.status === 'checked_out' && (
-              <>
-                <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: COLORS.gold }]}
-                  onPress={() => handleStatusChange(selectedOrder.id, 'finished')}
-                >
-                  <Text style={styles.actionBtnTextDark}>标记为已完成</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border }]}
-                  onPress={() => handleStatusChange(selectedOrder.id, 'active')}
-                >
-                  <Text style={styles.actionBtnText}>恢复为进行中</Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {selectedOrder.status === 'finished' && (
+            {isOrderSettled(selectedOrder.status) && (
               <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border }]}
-                onPress={() => handleStatusChange(selectedOrder.id, 'checked_out')}
+                style={styles.secondaryBtn}
+                onPress={() => handleStatusChange(selectedOrder.id, 'active')}
               >
-                <Text style={styles.actionBtnText}>恢复为已结账</Text>
+                <Text style={styles.secondaryBtnText}>恢复为进行中</Text>
               </TouchableOpacity>
             )}
           </View>
         </ScrollView>
         {detailLoading && (
           <View style={styles.detailLoadingOverlay} pointerEvents="auto">
-            <ActivityIndicator size="large" color={COLORS.gold} />
+            <ActivityIndicator size="large" color={T.gold} />
           </View>
         )}
-      </View>
+      </SafeAreaView>
     )
   }
 
   // BUSINESS DAY LIST VIEW
-  const filterButtons: { key: OrderStatus | 'all'; label: string }[] = [
+  const filterButtons: { key: 'all' | 'active' | 'checked_out'; label: string }[] = [
     { key: 'all', label: '全部' },
     { key: 'active', label: '进行中' },
     { key: 'checked_out', label: '已结账' },
-    { key: 'finished', label: '已完成' },
   ]
 
   const listEmpty = businessDays.length === 0
   const searchEmpty = !listEmpty && filteredBusinessDays.length === 0
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.hero}>
+        <Text style={styles.title}>订单记录</Text>
+      </View>
+
       {/* Status Filters */}
-      <View style={styles.filterRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: LAYOUT.pagePad, gap: 8 }}>
         {filterButtons.map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterBtn, statusFilter === f.key && styles.filterBtnActive]}
+            style={[styles.filterChip, statusFilter === f.key && styles.filterChipActive]}
             onPress={() => setStatusFilter(f.key)}
           >
-            <Text style={[styles.filterBtnText, statusFilter === f.key && styles.filterBtnTextActive]}>
+            <Text style={[styles.filterText, statusFilter === f.key && styles.filterTextActive]}>
               {f.label}
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
-      <TextInput
-        style={styles.searchInput}
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder="搜索客户姓名"
-        placeholderTextColor={COLORS.muted}
-        autoCapitalize="none"
-        autoCorrect={false}
-        clearButtonMode="while-editing"
-      />
+      <View style={styles.searchWrap}>
+        <Ionicons name="search" size={18} color={T.muted} />
+        <TextInput
+          style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="搜索客户姓名"
+          placeholderTextColor={T.faint}
+          autoCapitalize="none"
+          autoCorrect={false}
+          clearButtonMode="while-editing"
+        />
+      </View>
 
       {listEmpty ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="calendar-outline" size={48} color={COLORS.muted} />
+          <Ionicons name="calendar-outline" size={44} color={T.faint} />
           <Text style={styles.emptyText}>暂无订单</Text>
         </View>
       ) : searchEmpty ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="search-outline" size={48} color={COLORS.muted} />
+          <Ionicons name="search-outline" size={44} color={T.faint} />
           <Text style={styles.emptyText}>未找到匹配的订单</Text>
         </View>
       ) : (
@@ -451,9 +428,9 @@ export default function OrdersScreen() {
             )
           }}
           renderItem={({ item }) => {
-            const ss = getStatusStyle(item.status)
+            const vis = orderStatusVisual(item.status)
             return (
-              <TouchableOpacity style={styles.orderCard} onPress={() => fetchOrderDetails(item.id)}>
+              <TouchableOpacity style={styles.orderCard} activeOpacity={0.85} onPress={() => fetchOrderDetails(item.id)}>
                 <View style={styles.orderCardRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.orderName}>{item.customer_name}</Text>
@@ -463,8 +440,8 @@ export default function OrdersScreen() {
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.orderAmount}>¥{Number(item.total_amount).toFixed(2)}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: ss.bg }]}>
-                      <Text style={[styles.statusText, { color: ss.text }]}>{STATUS_LABELS[item.status]}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: vis.bg, borderColor: vis.border }]}>
+                      <Text style={[styles.statusText, { color: vis.fg }]}>{orderStatusLabel(item.status)}</Text>
                     </View>
                   </View>
                 </View>
@@ -475,85 +452,165 @@ export default function OrdersScreen() {
       )}
       {detailLoading && (
         <View style={styles.detailLoadingOverlay} pointerEvents="auto">
-          <ActivityIndicator size="large" color={COLORS.gold} />
+          <ActivityIndicator size="large" color={T.gold} />
         </View>
       )}
-    </View>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background, padding: 16 },
-  detailRoot: { flex: 1, backgroundColor: COLORS.background },
-  centered: { flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
-  filterRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  filterBtn: {
-    flex: 1, paddingVertical: 10, borderRadius: 8,
-    justifyContent: 'center', alignItems: 'center',
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
+  container: { flex: 1, backgroundColor: T.background },
+  detailRoot: { flex: 1, backgroundColor: T.background },
+  centered: { flex: 1, backgroundColor: T.background, justifyContent: 'center', alignItems: 'center' },
+  hero: {
+    paddingHorizontal: LAYOUT.pagePad,
+    paddingTop: LAYOUT.heroPadTop,
+    paddingBottom: LAYOUT.heroPadBottom,
   },
-  filterBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
-  filterBtnText: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
-  filterBtnTextActive: { color: '#000' },
-  searchInput: {
-    backgroundColor: COLORS.card,
-    color: COLORS.text,
-    borderRadius: 8,
-    paddingVertical: 12,
+  title: { color: T.text, fontSize: 26, fontWeight: '800' },
+  filterRow: { flexGrow: 0, marginBottom: 12 },
+  filterChip: {
     paddingHorizontal: 14,
-    fontSize: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.border,
+  },
+  filterChipActive: { backgroundColor: T.goldFill, borderColor: T.goldBorder },
+  filterText: { color: T.muted, fontSize: 14 },
+  filterTextActive: { color: T.text, fontWeight: '600' },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: T.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
+    paddingHorizontal: 14,
+    marginHorizontal: LAYOUT.pagePad,
     marginBottom: 12,
   },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
-  emptyText: { color: COLORS.muted, fontSize: 16, marginTop: 12 },
+  searchInput: { flex: 1, color: T.text, fontSize: 16, paddingVertical: 12 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80, gap: 12 },
+  emptyText: { color: T.muted, fontSize: 16 },
   bdHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    paddingVertical: 14, paddingHorizontal: 4, borderBottomWidth: 2, borderBottomColor: COLORS.border,
-    marginBottom: 8, marginTop: 8,
-    backgroundColor: COLORS.background,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 14,
+    paddingHorizontal: LAYOUT.pagePad,
+    marginBottom: 8,
+    marginTop: 8,
+    backgroundColor: T.background,
   },
-  bdDate: { fontSize: 18, fontWeight: '700', color: COLORS.text },
-  bdMeta: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
-  bdTotal: { fontSize: 20, fontWeight: '800', color: COLORS.gold },
+  bdDate: { fontSize: 18, fontWeight: '800', color: T.text },
+  bdMeta: { fontSize: 12, color: T.muted, marginTop: 2 },
+  bdTotal: { fontSize: 20, fontWeight: '800', color: T.gold },
   closeBdBtn: {
-    marginTop: 6, paddingHorizontal: 14, paddingVertical: 10,
-    borderRadius: 6, borderWidth: 1, borderColor: COLORS.danger,
+    marginTop: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,94,0.4)',
   },
-  closeBdBtnText: { color: COLORS.danger, fontSize: 13, fontWeight: '600' },
-  orderCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 14, marginBottom: 10 },
+  closeBdBtnText: { color: T.danger, fontSize: 13, fontWeight: '600' },
+  orderCard: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: LAYOUT.pagePad,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
+  },
   orderCardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  orderName: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
-  orderTime: { fontSize: 13, color: COLORS.muted },
-  orderAmount: { fontSize: 17, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
+  orderName: { fontSize: 16, fontWeight: '700', color: T.text, marginBottom: 4 },
+  orderTime: { fontSize: 13, color: T.muted },
+  orderAmount: { fontSize: 17, fontWeight: '800', color: T.text, marginBottom: 6 },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 16, borderWidth: 1 },
   statusText: { fontSize: 12, fontWeight: '600' },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16, paddingVertical: 10 },
-  backBtnText: { color: COLORS.gold, fontSize: 16 },
-  detailCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 20 },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  detailLabel: { fontSize: 14, color: COLORS.muted },
-  detailValue: { fontSize: 15, color: COLORS.text, fontWeight: '500' },
-  sectionLabel: { fontSize: 14, fontWeight: '600', color: COLORS.gold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: LAYOUT.pagePad, paddingTop: 12, paddingBottom: 4 },
+  backBtnText: { color: T.gold, fontSize: 16, fontWeight: '600' },
+  detailCard: {
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 16,
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
+  },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
+  detailDivider: { height: 1, backgroundColor: T.borderFaint },
+  detailLabel: { fontSize: 14, color: T.muted },
+  detailValue: { fontSize: 15, color: T.text, fontWeight: '500' },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 10,
+    marginHorizontal: 20,
+  },
   itemRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
-    borderRadius: 8, padding: 12, marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: T.surface,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 6,
+    marginHorizontal: 20,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
   },
-  itemName: { flex: 1, fontSize: 15, color: COLORS.text, fontWeight: '500' },
+  itemName: { flex: 1, fontSize: 15, color: T.text, fontWeight: '500' },
   itemDetails: { marginHorizontal: 8 },
-  itemQty: { fontSize: 13, color: COLORS.muted },
-  itemSubtotal: { fontSize: 15, fontWeight: '600', color: COLORS.text },
+  itemQty: { fontSize: 13, color: T.muted },
+  itemSubtotal: { fontSize: 15, fontWeight: '700', color: T.text },
   grandTotalRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 8, paddingTop: 14, borderTopWidth: 1, borderTopColor: COLORS.border, marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: T.borderFaint,
+    marginBottom: 20,
+    marginHorizontal: 20,
   },
-  grandTotalLabel: { fontSize: 16, fontWeight: '600', color: COLORS.text },
-  grandTotalValue: { fontSize: 24, fontWeight: '800', color: COLORS.gold },
-  actionSection: { gap: 10 },
-  actionBtn: { borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  actionBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  actionBtnTextDark: { color: '#000', fontSize: 16, fontWeight: '700' },
+  grandTotalLabel: { fontSize: 16, fontWeight: '600', color: T.text },
+  grandTotalValue: { fontSize: 24, fontWeight: '800', color: T.gold },
+  actionSection: { gap: 10, marginHorizontal: 20 },
+  shareBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldFill,
+  },
+  shareBtnText: { color: T.gold, fontSize: 16, fontWeight: '700' },
+  primaryBtn: { backgroundColor: T.gold, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  primaryBtnText: { color: T.background, fontSize: 16, fontWeight: '800' },
+  secondaryBtn: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  secondaryBtnText: { color: T.text, fontSize: 16, fontWeight: '600' },
   detailLoadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.35)',

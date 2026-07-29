@@ -2267,4 +2267,2056 @@ GRANT EXECUTE ON FUNCTION public.admin_create_bar(text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_public_display_payload(text) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_public_display_payload(text) TO authenticated;
 
+-- ========================================================
+-- Tonight Control (POS 酒单): full taplist parity (owner + staff), immediate saves
+-- Mirror of migrations/20260714120000_owner_taplist_publish.sql
+-- ========================================================
+
+CREATE OR REPLACE FUNCTION public.taplist_can_view_tenant(p_tenant_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid()
+      AND (
+        ur.role = 'super_admin'
+        OR (ur.tenant_id = p_tenant_id AND ur.role IN ('owner', 'staff'))
+      )
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.taplist_can_view_tenant(uuid) TO authenticated;
+
+-- Remove the earlier owner-only hardening (staff now have full parity).
+DROP TRIGGER IF EXISTS trg_drinks_block_staff_taplist_fields ON public.drinks;
+DROP FUNCTION IF EXISTS public.trg_drinks_block_staff_taplist_fields();
+DROP TRIGGER IF EXISTS trg_categories_block_staff_public_visible ON public.categories;
+DROP FUNCTION IF EXISTS public.trg_categories_block_staff_public_visible();
+DROP FUNCTION IF EXISTS public.publish_owner_taplist_snapshot(uuid, jsonb);
+
+DROP POLICY IF EXISTS drink_beer_profiles_owner_write ON public.drink_beer_profiles;
+DROP POLICY IF EXISTS drink_beer_profiles_tenant_select ON public.drink_beer_profiles;
+DROP POLICY IF EXISTS drink_beer_profiles_tenant_rw ON public.drink_beer_profiles;
+CREATE POLICY drink_beer_profiles_tenant_rw
+  ON public.drink_beer_profiles FOR ALL TO authenticated
+  USING (tenant_id = public.get_auth_tenant_id())
+  WITH CHECK (tenant_id = public.get_auth_tenant_id());
+
+DROP POLICY IF EXISTS drink_serving_options_owner_write ON public.drink_serving_options;
+DROP POLICY IF EXISTS drink_serving_options_tenant_select ON public.drink_serving_options;
+DROP POLICY IF EXISTS drink_serving_options_tenant_rw ON public.drink_serving_options;
+CREATE POLICY drink_serving_options_tenant_rw
+  ON public.drink_serving_options FOR ALL TO authenticated
+  USING (tenant_id = public.get_auth_tenant_id())
+  WITH CHECK (tenant_id = public.get_auth_tenant_id());
+
+DROP FUNCTION IF EXISTS public.taplist_is_tenant_owner(uuid);
+
+CREATE OR REPLACE FUNCTION public.set_drink_taplist_consumer_fields(
+  p_drink_id uuid,
+  p_image_url text,
+  p_is_public_visible boolean,
+  p_public_status text,
+  p_public_sort_order integer
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_tenant_id uuid;
+  v_enabled boolean;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT d.tenant_id, d.enabled INTO v_tenant_id, v_enabled
+  FROM public.drinks d
+  WHERE d.id = p_drink_id;
+
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Drink not found';
+  END IF;
+
+  IF NOT public.taplist_can_view_tenant(v_tenant_id) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  IF p_is_public_visible AND NOT v_enabled THEN
+    RAISE EXCEPTION 'Cannot make disabled drink public on Tap List';
+  END IF;
+
+  UPDATE public.drinks
+  SET
+    image_url = nullif(trim(p_image_url), ''),
+    is_public_visible = p_is_public_visible,
+    public_status = coalesce(nullif(trim(p_public_status), ''), 'available'),
+    public_sort_order = coalesce(p_public_sort_order, 0)
+  WHERE id = p_drink_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.set_drink_taplist_consumer_fields(uuid, text, boolean, text, integer) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.set_drink_taplist_status(
+  p_drink_id uuid,
+  p_is_public_visible boolean,
+  p_public_status text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_tenant_id uuid;
+  v_enabled boolean;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT d.tenant_id, d.enabled INTO v_tenant_id, v_enabled
+  FROM public.drinks d
+  WHERE d.id = p_drink_id;
+
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Drink not found';
+  END IF;
+
+  IF NOT public.taplist_can_view_tenant(v_tenant_id) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  IF p_is_public_visible AND NOT v_enabled THEN
+    RAISE EXCEPTION 'Cannot make disabled drink public on Tap List';
+  END IF;
+
+  IF coalesce(nullif(trim(p_public_status), ''), 'available')
+     NOT IN ('new', 'available', 'low', 'sold_out', 'coming_soon') THEN
+    RAISE EXCEPTION 'Invalid public_status';
+  END IF;
+
+  UPDATE public.drinks
+  SET
+    is_public_visible = p_is_public_visible,
+    public_status = coalesce(nullif(trim(p_public_status), ''), 'available')
+  WHERE id = p_drink_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.set_drink_taplist_status(uuid, boolean, text) TO authenticated;
+
+-- Whole-taplist go-live: any tenant member (override earlier owner-only def).
+CREATE OR REPLACE FUNCTION public.set_tenant_public_visibility(
+  p_tenant_id uuid,
+  p_visible boolean
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.taplist_can_view_tenant(p_tenant_id) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  UPDATE public.tenants
+  SET is_public_visible = p_visible, last_menu_updated_at = now()
+  WHERE id = p_tenant_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.set_tenant_public_visibility(uuid, boolean) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_owner_taplist_payload(p_tenant_id uuid DEFAULT NULL)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_tenant_id uuid;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  v_tenant_id := p_tenant_id;
+  IF v_tenant_id IS NULL THEN
+    SELECT ur.tenant_id INTO v_tenant_id
+    FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid()
+      AND ur.role IN ('owner', 'staff')
+    ORDER BY ur.created_at
+    LIMIT 1;
+  END IF;
+
+  IF v_tenant_id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'no_tenant');
+  END IF;
+
+  IF NOT public.taplist_can_view_tenant(v_tenant_id) THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'forbidden');
+  END IF;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'is_owner', EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid()
+        AND (
+          ur.role = 'super_admin'
+          OR (ur.tenant_id = v_tenant_id AND ur.role = 'owner')
+        )
+    ),
+    'tenant', (
+      SELECT jsonb_build_object(
+        'id', t.id,
+        'slug', t.slug,
+        'name', t.name,
+        'display_name', t.display_name,
+        'is_public_visible', t.is_public_visible,
+        'last_menu_updated_at', t.last_menu_updated_at,
+        'status', t.status
+      )
+      FROM public.tenants t
+      WHERE t.id = v_tenant_id
+    ),
+    'categories', coalesce((
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', c.id,
+          'name', c.name,
+          'sort_order', c.sort_order,
+          'enabled', c.enabled,
+          'is_public_visible', c.is_public_visible
+        ) ORDER BY c.sort_order, c.name
+      )
+      FROM public.categories c
+      WHERE c.tenant_id = v_tenant_id
+    ), '[]'::jsonb),
+    'drinks', coalesce((
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', d.id,
+          'category_id', d.category_id,
+          'brand_name', d.brand_name,
+          'name', d.name,
+          'enabled', d.enabled,
+          'image_url', d.image_url,
+          'is_public_visible', d.is_public_visible,
+          'public_status', d.public_status,
+          'public_sort_order', d.public_sort_order,
+          'product_id', d.product_id,
+          'display_name', d.display_name,
+          'display_description', d.display_description
+        ) ORDER BY d.public_sort_order, lower(d.name)
+      )
+      FROM public.drinks d
+      WHERE d.tenant_id = v_tenant_id
+        AND d.enabled = true
+    ), '[]'::jsonb),
+    'beer_profiles', coalesce((
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'drink_id', p.drink_id,
+          'brewery', p.brewery,
+          'beer_style', p.beer_style,
+          'abv', p.abv,
+          'ibu', p.ibu,
+          'country', p.country,
+          'description', p.description
+        )
+      )
+      FROM public.drink_beer_profiles p
+      JOIN public.drinks d ON d.id = p.drink_id
+      WHERE p.tenant_id = v_tenant_id
+        AND d.enabled = true
+    ), '[]'::jsonb),
+    'serving_options', coalesce((
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', so.id,
+          'drink_id', so.drink_id,
+          'serving_type', so.serving_type,
+          'label', so.label,
+          'volume_ml', so.volume_ml,
+          'price', so.price,
+          'is_default', so.is_default,
+          'is_active', so.is_active,
+          'public_sort_order', so.public_sort_order
+        ) ORDER BY so.public_sort_order
+      )
+      FROM public.drink_serving_options so
+      JOIN public.drinks d ON d.id = so.drink_id
+      WHERE so.tenant_id = v_tenant_id
+        AND d.enabled = true
+    ), '[]'::jsonb)
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_owner_taplist_payload(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.upsert_taplist_drink(
+  p_tenant_id uuid,
+  p_drink jsonb
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_errors jsonb := '[]'::jsonb;
+  v_drink_id uuid;
+  v_category_id uuid;
+  v_is_new boolean := false;
+  v_name text;
+  v_status text;
+  v_is_public boolean;
+  v_profile jsonb;
+  v_servings jsonb;
+  v_elem jsonb;
+  v_type text;
+  v_default_count integer;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Tenant id is required';
+  END IF;
+
+  IF NOT public.taplist_can_view_tenant(p_tenant_id) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  IF p_drink IS NULL OR jsonb_typeof(p_drink) <> 'object' THEN
+    RAISE EXCEPTION 'p_drink must be a JSON object';
+  END IF;
+
+  v_drink_id := nullif(p_drink->>'id', '')::uuid;
+  v_name := trim(coalesce(p_drink->>'name', ''));
+  v_status := coalesce(nullif(trim(p_drink->>'public_status'), ''), 'available');
+  v_is_public := coalesce((p_drink->>'is_public_visible')::boolean, false);
+  v_profile := p_drink->'profile';
+  v_servings := p_drink->'servings';
+
+  IF v_name = '' THEN
+    v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+      'field', 'name', 'message', '请填写酒款名称'));
+  END IF;
+
+  IF v_status NOT IN ('new', 'available', 'low', 'sold_out', 'coming_soon') THEN
+    v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+      'field', 'public_status', 'message', '无效的状态值'));
+  END IF;
+
+  IF jsonb_typeof(v_servings) = 'array' THEN
+    FOR v_elem IN SELECT value FROM jsonb_array_elements(v_servings) LOOP
+      v_type := coalesce(nullif(trim(v_elem->>'serving_type'), ''), 'draft');
+      IF v_type NOT IN ('draft', 'can', 'bottle', 'flight', 'other') THEN
+        v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+          'field', 'serving_type', 'message', '无效的规格类型'));
+      END IF;
+    END LOOP;
+  END IF;
+
+  IF v_drink_id IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.drinks d WHERE d.id = v_drink_id AND d.tenant_id = p_tenant_id
+    ) THEN
+      v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+        'field', 'id', 'message', '酒款不属于该门店'));
+    ELSIF v_is_public AND NOT EXISTS (
+      SELECT 1 FROM public.drinks d WHERE d.id = v_drink_id AND d.enabled = true
+    ) THEN
+      v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+        'field', 'is_public_visible', 'message', '未上架（enabled=false）的酒款不能公开'));
+    END IF;
+  END IF;
+
+  IF jsonb_array_length(v_errors) > 0 THEN
+    RETURN jsonb_build_object('ok', false, 'errors', v_errors);
+  END IF;
+
+  v_category_id := nullif(p_drink->>'category_id', '')::uuid;
+  IF v_category_id IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM public.categories c WHERE c.id = v_category_id AND c.tenant_id = p_tenant_id
+     ) THEN
+    v_category_id := NULL;
+  END IF;
+
+  IF v_drink_id IS NULL THEN
+    v_is_new := true;
+
+    IF v_category_id IS NULL THEN
+      SELECT c.id INTO v_category_id
+      FROM public.categories c
+      WHERE c.tenant_id = p_tenant_id
+      ORDER BY c.sort_order, c.created_at, c.id
+      LIMIT 1;
+
+      IF v_category_id IS NULL THEN
+        INSERT INTO public.categories (tenant_id, name, sort_order, enabled, is_public_visible)
+        VALUES (p_tenant_id, '生啤', 1, true, true)
+        RETURNING id INTO v_category_id;
+      END IF;
+    END IF;
+
+    INSERT INTO public.drinks (
+      tenant_id, category_id, brand_name, name, price, price_unit,
+      sort_order, enabled, image_url, is_public_visible, public_status, public_sort_order
+    )
+    VALUES (
+      p_tenant_id, v_category_id,
+      nullif(trim(p_drink->>'brand_name'), ''),
+      v_name,
+      0, '杯',
+      coalesce((SELECT max(sort_order) FROM public.drinks WHERE tenant_id = p_tenant_id), 0) + 1,
+      true,
+      nullif(trim(p_drink->>'image_url'), ''),
+      v_is_public, v_status,
+      coalesce((SELECT max(public_sort_order) FROM public.drinks WHERE tenant_id = p_tenant_id), 0) + 1
+    )
+    RETURNING id INTO v_drink_id;
+  ELSE
+    UPDATE public.drinks
+    SET
+      brand_name = nullif(trim(p_drink->>'brand_name'), ''),
+      name = v_name,
+      image_url = nullif(trim(p_drink->>'image_url'), ''),
+      is_public_visible = v_is_public,
+      public_status = v_status,
+      category_id = coalesce(v_category_id, category_id)
+    WHERE id = v_drink_id AND tenant_id = p_tenant_id;
+  END IF;
+
+  IF v_profile IS NOT NULL AND jsonb_typeof(v_profile) = 'object' THEN
+    INSERT INTO public.drink_beer_profiles (
+      tenant_id, drink_id, brewery, beer_style, abv, ibu, country, description
+    )
+    VALUES (
+      p_tenant_id, v_drink_id,
+      nullif(trim(v_profile->>'brewery'), ''),
+      nullif(trim(v_profile->>'beer_style'), ''),
+      nullif(trim(v_profile->>'abv'), '')::numeric,
+      nullif(trim(v_profile->>'ibu'), '')::integer,
+      nullif(trim(v_profile->>'country'), ''),
+      nullif(trim(v_profile->>'description'), '')
+    )
+    ON CONFLICT (drink_id) DO UPDATE SET
+      brewery = excluded.brewery,
+      beer_style = excluded.beer_style,
+      abv = excluded.abv,
+      ibu = excluded.ibu,
+      country = excluded.country,
+      description = excluded.description,
+      updated_at = now();
+  END IF;
+
+  IF jsonb_typeof(v_servings) = 'array' THEN
+    FOR v_elem IN SELECT value FROM jsonb_array_elements(v_servings) LOOP
+      IF coalesce((v_elem->>'delete')::boolean, false) THEN
+        IF nullif(v_elem->>'id', '') IS NOT NULL THEN
+          DELETE FROM public.drink_serving_options
+          WHERE id = (v_elem->>'id')::uuid AND tenant_id = p_tenant_id;
+        END IF;
+        CONTINUE;
+      END IF;
+
+      IF nullif(v_elem->>'id', '') IS NOT NULL THEN
+        UPDATE public.drink_serving_options
+        SET
+          serving_type = coalesce(nullif(trim(v_elem->>'serving_type'), ''), 'draft'),
+          label = coalesce(nullif(trim(v_elem->>'label'), ''), '杯'),
+          volume_ml = nullif(trim(v_elem->>'volume_ml'), '')::integer,
+          price = coalesce((v_elem->>'price')::numeric, 0),
+          is_default = coalesce((v_elem->>'is_default')::boolean, false),
+          is_active = coalesce((v_elem->>'is_active')::boolean, true),
+          public_sort_order = coalesce((v_elem->>'public_sort_order')::integer, 0),
+          updated_at = now()
+        WHERE id = (v_elem->>'id')::uuid AND tenant_id = p_tenant_id;
+      ELSE
+        INSERT INTO public.drink_serving_options (
+          tenant_id, drink_id, serving_type, label, volume_ml, price,
+          is_default, is_active, public_sort_order
+        )
+        VALUES (
+          p_tenant_id, v_drink_id,
+          coalesce(nullif(trim(v_elem->>'serving_type'), ''), 'draft'),
+          coalesce(nullif(trim(v_elem->>'label'), ''), '杯'),
+          nullif(trim(v_elem->>'volume_ml'), '')::integer,
+          coalesce((v_elem->>'price')::numeric, 0),
+          coalesce((v_elem->>'is_default')::boolean, false),
+          coalesce((v_elem->>'is_active')::boolean, true),
+          coalesce((v_elem->>'public_sort_order')::integer, 0)
+        );
+      END IF;
+    END LOOP;
+
+    SELECT count(*) INTO v_default_count
+    FROM public.drink_serving_options
+    WHERE drink_id = v_drink_id AND is_default = true;
+
+    IF v_default_count > 1 THEN
+      UPDATE public.drink_serving_options so
+      SET is_default = false
+      WHERE so.drink_id = v_drink_id
+        AND so.is_default = true
+        AND so.id <> (
+          SELECT id FROM public.drink_serving_options
+          WHERE drink_id = v_drink_id AND is_default = true
+          ORDER BY public_sort_order, created_at
+          LIMIT 1
+        );
+    END IF;
+  END IF;
+
+  UPDATE public.tenants SET last_menu_updated_at = now() WHERE id = p_tenant_id;
+
+  RETURN jsonb_build_object('ok', true, 'drink_id', v_drink_id, 'created', v_is_new);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.upsert_taplist_drink(uuid, jsonb) TO authenticated;
+
+
+-- ========================================================
+-- Phase 0 safety: owner-only publish + price sync
+-- Mirror of migrations/20260719120000_taplist_publish_safety.sql
+-- ========================================================
+
+-- Phase 0 safety: owner-only tenant publish, minimum publish guard,
+-- and taplist price sync so POS never shows orderable unset ¥0 beers.
+-- Forward-only: does not edit 20260714120000_owner_taplist_publish.sql.
+
+-- ---------------------------------------------------------------------------
+-- Owner helper (tenant owner or platform super_admin)
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.taplist_is_tenant_owner(p_tenant_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid()
+      AND (
+        ur.role = 'super_admin'
+        OR (ur.tenant_id = p_tenant_id AND ur.role = 'owner')
+      )
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.taplist_is_tenant_owner(uuid) TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Minimum readiness for making a tenant public
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.get_tenant_publish_readiness(p_tenant_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_tenant public.tenants%ROWTYPE;
+  v_errors jsonb := '[]'::jsonb;
+  v_public_count integer := 0;
+  v_unpriced integer := 0;
+  v_has_owner boolean := false;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.taplist_can_view_tenant(p_tenant_id) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  SELECT * INTO v_tenant FROM public.tenants WHERE id = p_tenant_id;
+  IF v_tenant.id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'errors', jsonb_build_array('门店不存在'));
+  END IF;
+
+  IF coalesce(v_tenant.status, 'active') <> 'active' THEN
+    v_errors := v_errors || jsonb_build_array('门店未处于活跃状态');
+  END IF;
+
+  IF nullif(trim(coalesce(v_tenant.display_name, v_tenant.name, '')), '') IS NULL THEN
+    v_errors := v_errors || jsonb_build_array('请填写门店名称');
+  END IF;
+
+  IF nullif(trim(coalesce(v_tenant.city, '')), '') IS NULL THEN
+    v_errors := v_errors || jsonb_build_array('请填写城市');
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.tenant_id = p_tenant_id AND ur.role = 'owner'
+  ) INTO v_has_owner;
+
+  IF NOT v_has_owner AND NOT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid() AND ur.role = 'super_admin'
+  ) THEN
+    v_errors := v_errors || jsonb_build_array('门店尚未认领店主');
+  END IF;
+
+  SELECT count(*) INTO v_public_count
+  FROM public.drinks d
+  WHERE d.tenant_id = p_tenant_id
+    AND d.enabled = true
+    AND d.is_public_visible = true;
+
+  IF v_public_count < 1 THEN
+    v_errors := v_errors || jsonb_build_array('至少需要 1 个公开酒款');
+  END IF;
+
+  SELECT count(*) INTO v_unpriced
+  FROM public.drinks d
+  WHERE d.tenant_id = p_tenant_id
+    AND d.enabled = true
+    AND d.is_public_visible = true
+    AND NOT EXISTS (
+      SELECT 1 FROM public.drink_serving_options so
+      WHERE so.drink_id = d.id
+        AND so.is_active = true
+        AND so.price > 0
+        AND (
+          so.is_default = true
+          OR (
+            SELECT count(*) FROM public.drink_serving_options so2
+            WHERE so2.drink_id = d.id AND so2.is_active = true AND so2.price > 0
+          ) = 1
+        )
+    );
+
+  IF v_unpriced > 0 THEN
+    v_errors := v_errors || jsonb_build_array(
+      format('%s 个公开酒款缺少有效价格规格', v_unpriced));
+  END IF;
+
+  RETURN jsonb_build_object(
+    'ok', jsonb_array_length(v_errors) = 0,
+    'errors', v_errors,
+    'public_drink_count', v_public_count,
+    'has_owner', v_has_owner
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_tenant_publish_readiness(uuid) TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Owner-only publish / unpublish with minimum guard
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.set_tenant_public_visibility(
+  p_tenant_id uuid,
+  p_visible boolean
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_ready jsonb;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.taplist_is_tenant_owner(p_tenant_id) THEN
+    RAISE EXCEPTION 'Forbidden: only owner can publish or unpublish the storefront';
+  END IF;
+
+  IF p_visible THEN
+    v_ready := public.get_tenant_publish_readiness(p_tenant_id);
+    IF NOT coalesce((v_ready->>'ok')::boolean, false) THEN
+      RAISE EXCEPTION 'Publish blocked: %', coalesce(v_ready->>'errors', '[]');
+    END IF;
+  END IF;
+
+  UPDATE public.tenants
+  SET is_public_visible = p_visible, last_menu_updated_at = now()
+  WHERE id = p_tenant_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.set_tenant_public_visibility(uuid, boolean) TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- upsert_taplist_drink: sync drinks.price from servings; disable POS if unset
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.upsert_taplist_drink(
+  p_tenant_id uuid,
+  p_drink jsonb
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_errors jsonb := '[]'::jsonb;
+  v_drink_id uuid;
+  v_category_id uuid;
+  v_is_new boolean := false;
+  v_name text;
+  v_status text;
+  v_is_public boolean;
+  v_profile jsonb;
+  v_servings jsonb;
+  v_elem jsonb;
+  v_type text;
+  v_default_count integer;
+  v_sync_price numeric;
+  v_priced_count integer;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Tenant id is required';
+  END IF;
+
+  IF NOT public.taplist_can_view_tenant(p_tenant_id) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  IF p_drink IS NULL OR jsonb_typeof(p_drink) <> 'object' THEN
+    RAISE EXCEPTION 'p_drink must be a JSON object';
+  END IF;
+
+  v_drink_id := nullif(p_drink->>'id', '')::uuid;
+  v_name := trim(coalesce(p_drink->>'name', ''));
+  v_status := coalesce(nullif(trim(p_drink->>'public_status'), ''), 'available');
+  v_is_public := coalesce((p_drink->>'is_public_visible')::boolean, false);
+  v_profile := p_drink->'profile';
+  v_servings := p_drink->'servings';
+
+  IF v_name = '' THEN
+    v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+      'field', 'name', 'message', '请填写酒款名称'));
+  END IF;
+
+  IF v_status NOT IN ('new', 'available', 'low', 'sold_out', 'coming_soon') THEN
+    v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+      'field', 'public_status', 'message', '无效的状态值'));
+  END IF;
+
+  IF jsonb_typeof(v_servings) = 'array' THEN
+    FOR v_elem IN SELECT value FROM jsonb_array_elements(v_servings) LOOP
+      v_type := coalesce(nullif(trim(v_elem->>'serving_type'), ''), 'draft');
+      IF v_type NOT IN ('draft', 'can', 'bottle', 'flight', 'other') THEN
+        v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+          'field', 'serving_type', 'message', '无效的规格类型'));
+      END IF;
+    END LOOP;
+  END IF;
+
+  IF v_drink_id IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.drinks d WHERE d.id = v_drink_id AND d.tenant_id = p_tenant_id
+    ) THEN
+      v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+        'field', 'id', 'message', '酒款不属于该门店'));
+    END IF;
+  END IF;
+
+  IF jsonb_array_length(v_errors) > 0 THEN
+    RETURN jsonb_build_object('ok', false, 'errors', v_errors);
+  END IF;
+
+  v_category_id := nullif(p_drink->>'category_id', '')::uuid;
+  IF v_category_id IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM public.categories c WHERE c.id = v_category_id AND c.tenant_id = p_tenant_id
+     ) THEN
+    v_category_id := NULL;
+  END IF;
+
+  IF v_drink_id IS NULL THEN
+    v_is_new := true;
+
+    IF v_category_id IS NULL THEN
+      SELECT c.id INTO v_category_id
+      FROM public.categories c
+      WHERE c.tenant_id = p_tenant_id
+      ORDER BY c.sort_order, c.created_at, c.id
+      LIMIT 1;
+
+      IF v_category_id IS NULL THEN
+        INSERT INTO public.categories (tenant_id, name, sort_order, enabled, is_public_visible)
+        VALUES (p_tenant_id, '生啤', 1, true, true)
+        RETURNING id INTO v_category_id;
+      END IF;
+    END IF;
+
+    -- Start not POS-orderable until priced serving sync runs below.
+    INSERT INTO public.drinks (
+      tenant_id, category_id, brand_name, name, price, price_unit,
+      sort_order, enabled, image_url, is_public_visible, public_status, public_sort_order
+    )
+    VALUES (
+      p_tenant_id, v_category_id,
+      nullif(trim(p_drink->>'brand_name'), ''),
+      v_name,
+      0, '杯',
+      coalesce((SELECT max(sort_order) FROM public.drinks WHERE tenant_id = p_tenant_id), 0) + 1,
+      false,
+      nullif(trim(p_drink->>'image_url'), ''),
+      false, v_status,
+      coalesce((SELECT max(public_sort_order) FROM public.drinks WHERE tenant_id = p_tenant_id), 0) + 1
+    )
+    RETURNING id INTO v_drink_id;
+  ELSE
+    UPDATE public.drinks
+    SET
+      brand_name = nullif(trim(p_drink->>'brand_name'), ''),
+      name = v_name,
+      image_url = nullif(trim(p_drink->>'image_url'), ''),
+      public_status = v_status,
+      category_id = coalesce(v_category_id, category_id)
+    WHERE id = v_drink_id AND tenant_id = p_tenant_id;
+  END IF;
+
+  IF v_profile IS NOT NULL AND jsonb_typeof(v_profile) = 'object' THEN
+    INSERT INTO public.drink_beer_profiles (
+      tenant_id, drink_id, brewery, beer_style, abv, ibu, country, description
+    )
+    VALUES (
+      p_tenant_id, v_drink_id,
+      nullif(trim(v_profile->>'brewery'), ''),
+      nullif(trim(v_profile->>'beer_style'), ''),
+      nullif(trim(v_profile->>'abv'), '')::numeric,
+      nullif(trim(v_profile->>'ibu'), '')::integer,
+      nullif(trim(v_profile->>'country'), ''),
+      nullif(trim(v_profile->>'description'), '')
+    )
+    ON CONFLICT (drink_id) DO UPDATE SET
+      brewery = excluded.brewery,
+      beer_style = excluded.beer_style,
+      abv = excluded.abv,
+      ibu = excluded.ibu,
+      country = excluded.country,
+      description = excluded.description,
+      updated_at = now();
+  END IF;
+
+  IF jsonb_typeof(v_servings) = 'array' THEN
+    FOR v_elem IN SELECT value FROM jsonb_array_elements(v_servings) LOOP
+      IF coalesce((v_elem->>'delete')::boolean, false) THEN
+        IF nullif(v_elem->>'id', '') IS NOT NULL THEN
+          DELETE FROM public.drink_serving_options
+          WHERE id = (v_elem->>'id')::uuid AND tenant_id = p_tenant_id;
+        END IF;
+        CONTINUE;
+      END IF;
+
+      IF nullif(v_elem->>'id', '') IS NOT NULL THEN
+        UPDATE public.drink_serving_options
+        SET
+          serving_type = coalesce(nullif(trim(v_elem->>'serving_type'), ''), 'draft'),
+          label = coalesce(nullif(trim(v_elem->>'label'), ''), '杯'),
+          volume_ml = nullif(trim(v_elem->>'volume_ml'), '')::integer,
+          price = coalesce((v_elem->>'price')::numeric, 0),
+          is_default = coalesce((v_elem->>'is_default')::boolean, false),
+          is_active = coalesce((v_elem->>'is_active')::boolean, true),
+          public_sort_order = coalesce((v_elem->>'public_sort_order')::integer, 0),
+          updated_at = now()
+        WHERE id = (v_elem->>'id')::uuid AND tenant_id = p_tenant_id;
+      ELSE
+        INSERT INTO public.drink_serving_options (
+          tenant_id, drink_id, serving_type, label, volume_ml, price,
+          is_default, is_active, public_sort_order
+        )
+        VALUES (
+          p_tenant_id, v_drink_id,
+          coalesce(nullif(trim(v_elem->>'serving_type'), ''), 'draft'),
+          coalesce(nullif(trim(v_elem->>'label'), ''), '杯'),
+          nullif(trim(v_elem->>'volume_ml'), '')::integer,
+          coalesce((v_elem->>'price')::numeric, 0),
+          coalesce((v_elem->>'is_default')::boolean, false),
+          coalesce((v_elem->>'is_active')::boolean, true),
+          coalesce((v_elem->>'public_sort_order')::integer, 0)
+        );
+      END IF;
+    END LOOP;
+
+    SELECT count(*) INTO v_default_count
+    FROM public.drink_serving_options
+    WHERE drink_id = v_drink_id AND is_default = true;
+
+    IF v_default_count > 1 THEN
+      UPDATE public.drink_serving_options so
+      SET is_default = false
+      WHERE so.drink_id = v_drink_id
+        AND so.is_default = true
+        AND so.id <> (
+          SELECT id FROM public.drink_serving_options
+          WHERE drink_id = v_drink_id AND is_default = true
+          ORDER BY public_sort_order, created_at
+          LIMIT 1
+        );
+    END IF;
+  END IF;
+
+  -- Sync legacy drinks.price from servings (never invent from cheapest of many).
+  SELECT so.price INTO v_sync_price
+  FROM public.drink_serving_options so
+  WHERE so.drink_id = v_drink_id
+    AND so.is_active = true
+    AND so.is_default = true
+    AND so.price > 0
+  ORDER BY so.public_sort_order, so.created_at
+  LIMIT 1;
+
+  IF v_sync_price IS NULL THEN
+    SELECT count(*) INTO v_priced_count
+    FROM public.drink_serving_options so
+    WHERE so.drink_id = v_drink_id
+      AND so.is_active = true
+      AND so.price > 0;
+
+    IF v_priced_count = 1 THEN
+      SELECT so.price INTO v_sync_price
+      FROM public.drink_serving_options so
+      WHERE so.drink_id = v_drink_id
+        AND so.is_active = true
+        AND so.price > 0
+      LIMIT 1;
+    END IF;
+  END IF;
+
+  IF v_sync_price IS NOT NULL THEN
+    UPDATE public.drinks
+    SET
+      price = v_sync_price,
+      enabled = true,
+      is_public_visible = v_is_public
+    WHERE id = v_drink_id AND tenant_id = p_tenant_id;
+  ELSE
+    -- No valid priced serving: not POS-orderable; cannot be public.
+    UPDATE public.drinks
+    SET
+      price = 0,
+      enabled = false,
+      is_public_visible = false
+    WHERE id = v_drink_id AND tenant_id = p_tenant_id;
+  END IF;
+
+  UPDATE public.tenants SET last_menu_updated_at = now() WHERE id = p_tenant_id;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'drink_id', v_drink_id,
+    'created', v_is_new,
+    'pos_orderable', v_sync_price IS NOT NULL,
+    'public_cleared', v_sync_price IS NULL AND v_is_public
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.upsert_taplist_drink(uuid, jsonb) TO authenticated;
+
+
+-- ========================================================
+-- Phase 1a: invites + membership
+-- Mirror of migrations/20260719130000_tenant_invites_membership.sql
+-- ========================================================
+
+-- Phase 1a: user profiles, tenant invites (email bridge), onboarding_status,
+-- narrow audit log, and membership RPCs. Account creation is email+password
+-- in the app; invite accept requires authenticated email match.
+
+-- ---------------------------------------------------------------------------
+-- Schema
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  mobile text UNIQUE,
+  display_name text,
+  avatar_url text,
+  email text,
+  status text NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'disabled')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_profiles_email
+  ON public.user_profiles (lower(email));
+
+ALTER TABLE public.tenants
+  ADD COLUMN IF NOT EXISTS onboarding_status text NOT NULL DEFAULT 'draft',
+  ADD COLUMN IF NOT EXISTS owner_claimed_at timestamptz NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'tenants_onboarding_status_check'
+  ) THEN
+    ALTER TABLE public.tenants
+      ADD CONSTRAINT tenants_onboarding_status_check
+      CHECK (onboarding_status IN (
+        'draft',
+        'pending_owner_claim',
+        'setup_in_progress',
+        'ready_for_review',
+        'public_live',
+        'suspended'
+      ));
+  END IF;
+END $$;
+
+-- Existing live bars: treat as setup/public based on visibility.
+UPDATE public.tenants
+SET onboarding_status = CASE
+  WHEN is_public_visible THEN 'public_live'
+  WHEN EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.tenant_id = tenants.id AND ur.role = 'owner'
+  ) THEN 'setup_in_progress'
+  ELSE 'draft'
+END
+WHERE onboarding_status = 'draft';
+
+CREATE TABLE IF NOT EXISTS public.tenant_invites (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  contact_type text NOT NULL CHECK (contact_type IN ('email', 'mobile')),
+  email text NULL,
+  mobile text NULL,
+  role text NOT NULL CHECK (role IN ('owner', 'manager', 'staff')),
+  token_hash text NOT NULL UNIQUE,
+  invited_by uuid NULL REFERENCES auth.users(id),
+  expires_at timestamptz NOT NULL,
+  accepted_by uuid NULL REFERENCES auth.users(id),
+  accepted_at timestamptz NULL,
+  revoked_at timestamptz NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT tenant_invites_contact_match CHECK (
+    (contact_type = 'email' AND email IS NOT NULL AND mobile IS NULL)
+    OR (contact_type = 'mobile' AND mobile IS NOT NULL AND email IS NULL)
+  )
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_invites_pending_email
+  ON public.tenant_invites (tenant_id, role, lower(email))
+  WHERE revoked_at IS NULL AND accepted_at IS NULL AND contact_type = 'email';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_invites_pending_mobile
+  ON public.tenant_invites (tenant_id, role, mobile)
+  WHERE revoked_at IS NULL AND accepted_at IS NULL AND contact_type = 'mobile';
+
+CREATE INDEX IF NOT EXISTS idx_tenant_invites_tenant
+  ON public.tenant_invites (tenant_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS public.audit_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NULL REFERENCES public.tenants(id) ON DELETE SET NULL,
+  actor_user_id uuid NULL REFERENCES auth.users(id) ON DELETE SET NULL,
+  event_type text NOT NULL,
+  entity_type text NULL,
+  entity_id uuid NULL,
+  before jsonb NULL,
+  after jsonb NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_created
+  ON public.audit_events (tenant_id, created_at DESC);
+
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tenant_invites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS user_profiles_self ON public.user_profiles;
+CREATE POLICY user_profiles_self ON public.user_profiles
+  FOR ALL TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS user_profiles_super_admin ON public.user_profiles;
+CREATE POLICY user_profiles_super_admin ON public.user_profiles
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid() AND ur.role = 'super_admin'
+    )
+  );
+
+-- Invites / audit are RPC-only (no broad client policies).
+DROP POLICY IF EXISTS tenant_invites_no_direct ON public.tenant_invites;
+CREATE POLICY tenant_invites_no_direct ON public.tenant_invites
+  FOR ALL TO authenticated
+  USING (false)
+  WITH CHECK (false);
+
+DROP POLICY IF EXISTS audit_events_no_direct ON public.audit_events;
+CREATE POLICY audit_events_no_direct ON public.audit_events
+  FOR ALL TO authenticated
+  USING (false)
+  WITH CHECK (false);
+
+-- ---------------------------------------------------------------------------
+-- Helpers
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public._audit_log(
+  p_tenant_id uuid,
+  p_event_type text,
+  p_entity_type text,
+  p_entity_id uuid,
+  p_before jsonb,
+  p_after jsonb
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.audit_events (
+    tenant_id, actor_user_id, event_type, entity_type, entity_id, before, after
+  ) VALUES (
+    p_tenant_id, auth.uid(), p_event_type, p_entity_type, p_entity_id, p_before, p_after
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public._normalize_invite_email(p_email text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT nullif(lower(trim(p_email)), '');
+$$;
+
+CREATE OR REPLACE FUNCTION public._hash_invite_token(p_token text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+SET search_path = public, extensions
+AS $$
+  SELECT encode(digest(p_token, 'sha256'), 'hex');
+$$;
+
+CREATE OR REPLACE FUNCTION public._new_invite_token()
+RETURNS text
+LANGUAGE sql
+VOLATILE
+SET search_path = public, extensions
+AS $$
+  -- 10 hex chars, suitable for paste codes.
+  -- pgcrypto lives in extensions; callers often SET search_path = public only.
+  SELECT upper(substr(encode(gen_random_bytes(8), 'hex'), 1, 10));
+$$;
+
+-- ---------------------------------------------------------------------------
+-- ensure_user_profile
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.ensure_user_profile()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_email text;
+  v_phone text;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT u.email, u.phone INTO v_email, v_phone
+  FROM auth.users u WHERE u.id = v_uid;
+
+  INSERT INTO public.user_profiles (user_id, email, mobile, display_name)
+  VALUES (
+    v_uid,
+    public._normalize_invite_email(v_email),
+    nullif(trim(coalesce(v_phone, '')), ''),
+    split_part(coalesce(v_email, ''), '@', 1)
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    email = coalesce(excluded.email, public.user_profiles.email),
+    mobile = coalesce(public.user_profiles.mobile, excluded.mobile),
+    updated_at = now();
+
+  RETURN (
+    SELECT to_jsonb(p) FROM public.user_profiles p WHERE p.user_id = v_uid
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.ensure_user_profile() TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- get_my_tenants
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.get_my_tenants()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  PERFORM public.ensure_user_profile();
+
+  RETURN coalesce((
+    SELECT jsonb_agg(
+      jsonb_build_object(
+        'tenant_id', t.id,
+        'name', t.name,
+        'display_name', t.display_name,
+        'slug', t.slug,
+        'role', ur.role,
+        'status', t.status,
+        'onboarding_status', t.onboarding_status,
+        'is_public_visible', t.is_public_visible
+      )
+      ORDER BY
+        CASE ur.role WHEN 'super_admin' THEN 0 WHEN 'owner' THEN 1 ELSE 2 END,
+        t.name
+    )
+    FROM public.user_roles ur
+    JOIN public.tenants t ON t.id = ur.tenant_id
+    WHERE ur.user_id = v_uid
+      AND ur.role IN ('owner', 'staff', 'super_admin')
+      AND coalesce(t.slug, '') <> '__platform__'
+  ), '[]'::jsonb);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_my_tenants() TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- create_tenant_invite
+-- Returns raw_token once (never stored in plaintext).
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.create_tenant_invite(
+  p_tenant_id uuid,
+  p_contact_type text,
+  p_email text,
+  p_mobile text,
+  p_role text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_email text;
+  v_mobile text;
+  v_token text;
+  v_hash text;
+  v_id uuid;
+  v_is_super boolean;
+  v_is_owner boolean;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Tenant id is required';
+  END IF;
+
+  IF p_role NOT IN ('owner', 'staff') THEN
+    RAISE EXCEPTION 'Role must be owner or staff';
+  END IF;
+
+  IF p_contact_type NOT IN ('email', 'mobile') THEN
+    RAISE EXCEPTION 'Invalid contact_type';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = v_uid AND ur.role = 'super_admin'
+  ) INTO v_is_super;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = v_uid AND ur.tenant_id = p_tenant_id AND ur.role = 'owner'
+  ) INTO v_is_owner;
+
+  IF p_role = 'owner' AND NOT v_is_super THEN
+    RAISE EXCEPTION 'Only super_admin can create owner invites';
+  END IF;
+
+  IF p_role = 'staff' AND NOT (v_is_owner OR v_is_super) THEN
+    RAISE EXCEPTION 'Only owner can create staff invites';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM public.tenants t WHERE t.id = p_tenant_id) THEN
+    RAISE EXCEPTION 'Tenant not found';
+  END IF;
+
+  v_email := NULL;
+  v_mobile := NULL;
+  IF p_contact_type = 'email' THEN
+    v_email := public._normalize_invite_email(p_email);
+    IF v_email IS NULL THEN
+      RAISE EXCEPTION 'Email is required';
+    END IF;
+  ELSE
+    v_mobile := nullif(trim(p_mobile), '');
+    IF v_mobile IS NULL THEN
+      RAISE EXCEPTION 'Mobile is required';
+    END IF;
+  END IF;
+
+  -- Revoke prior pending invite for same tenant/role/contact.
+  UPDATE public.tenant_invites
+  SET revoked_at = now()
+  WHERE tenant_id = p_tenant_id
+    AND role = p_role
+    AND revoked_at IS NULL
+    AND accepted_at IS NULL
+    AND (
+      (p_contact_type = 'email' AND lower(email) = v_email)
+      OR (p_contact_type = 'mobile' AND mobile = v_mobile)
+    );
+
+  v_token := public._new_invite_token();
+  v_hash := public._hash_invite_token(v_token);
+
+  INSERT INTO public.tenant_invites (
+    tenant_id, contact_type, email, mobile, role, token_hash, invited_by, expires_at
+  ) VALUES (
+    p_tenant_id, p_contact_type, v_email, v_mobile, p_role, v_hash, v_uid, now() + interval '7 days'
+  )
+  RETURNING id INTO v_id;
+
+  IF p_role = 'owner' THEN
+    UPDATE public.tenants
+    SET onboarding_status = CASE
+      WHEN onboarding_status IN ('public_live', 'setup_in_progress', 'ready_for_review')
+        THEN onboarding_status
+      ELSE 'pending_owner_claim'
+    END
+    WHERE id = p_tenant_id;
+  END IF;
+
+  PERFORM public._audit_log(
+    p_tenant_id,
+    CASE WHEN p_role = 'owner' THEN 'owner_invite_created' ELSE 'staff_invite_created' END,
+    'tenant_invite',
+    v_id,
+    NULL,
+    jsonb_build_object(
+      'contact_type', p_contact_type,
+      'email', v_email,
+      'mobile', v_mobile,
+      'role', p_role
+    )
+  );
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'invite_id', v_id,
+    'raw_token', v_token,
+    'expires_at', (now() + interval '7 days'),
+    'role', p_role,
+    'contact_type', p_contact_type,
+    'email', v_email,
+    'mobile', v_mobile
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.create_tenant_invite(uuid, text, text, text, text) TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- accept_tenant_invite
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.accept_tenant_invite(p_token text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_email text;
+  v_hash text;
+  v_inv public.tenant_invites%ROWTYPE;
+  v_tenant public.tenants%ROWTYPE;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF nullif(trim(p_token), '') IS NULL THEN
+    RAISE EXCEPTION 'Invite code is required';
+  END IF;
+
+  PERFORM public.ensure_user_profile();
+
+  SELECT public._normalize_invite_email(u.email) INTO v_email
+  FROM auth.users u WHERE u.id = v_uid;
+
+  v_hash := public._hash_invite_token(upper(trim(p_token)));
+
+  SELECT * INTO v_inv
+  FROM public.tenant_invites
+  WHERE token_hash = v_hash
+  LIMIT 1;
+
+  IF v_inv.id IS NULL THEN
+    -- Also try raw (case-sensitive) hash for deep-link tokens.
+    v_hash := public._hash_invite_token(trim(p_token));
+    SELECT * INTO v_inv FROM public.tenant_invites WHERE token_hash = v_hash LIMIT 1;
+  END IF;
+
+  IF v_inv.id IS NULL THEN
+    RAISE EXCEPTION 'Invalid invite code';
+  END IF;
+
+  IF v_inv.revoked_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Invite has been revoked';
+  END IF;
+
+  IF v_inv.accepted_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Invite already used';
+  END IF;
+
+  IF v_inv.expires_at < now() THEN
+    RAISE EXCEPTION 'Invite has expired';
+  END IF;
+
+  IF v_inv.contact_type = 'email' THEN
+    IF v_email IS NULL OR v_email <> v_inv.email THEN
+      RAISE EXCEPTION 'Invite email does not match your account';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Mobile invites are not enabled yet';
+  END IF;
+
+  SELECT * INTO v_tenant FROM public.tenants WHERE id = v_inv.tenant_id;
+  IF v_tenant.id IS NULL THEN
+    RAISE EXCEPTION 'Tenant not found';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = v_uid AND ur.tenant_id = v_inv.tenant_id
+  ) THEN
+    -- Already a member: mark invite accepted and return.
+    UPDATE public.tenant_invites
+    SET accepted_at = now(), accepted_by = v_uid
+    WHERE id = v_inv.id AND accepted_at IS NULL;
+  ELSE
+    IF v_inv.role = 'owner' AND EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.tenant_id = v_inv.tenant_id AND ur.role = 'owner'
+    ) THEN
+      RAISE EXCEPTION 'This bar already has an owner';
+    END IF;
+
+    INSERT INTO public.user_roles (user_id, tenant_id, role)
+    VALUES (v_uid, v_inv.tenant_id, v_inv.role);
+
+    UPDATE public.tenant_invites
+    SET accepted_at = now(), accepted_by = v_uid
+    WHERE id = v_inv.id;
+  END IF;
+
+  IF v_inv.role = 'owner' THEN
+    UPDATE public.tenants
+    SET
+      owner_claimed_at = coalesce(owner_claimed_at, now()),
+      onboarding_status = CASE
+        WHEN onboarding_status = 'public_live' THEN 'public_live'
+        ELSE 'setup_in_progress'
+      END
+    WHERE id = v_inv.tenant_id;
+  END IF;
+
+  PERFORM public._audit_log(
+    v_inv.tenant_id,
+    'invite_accepted',
+    'tenant_invite',
+    v_inv.id,
+    NULL,
+    jsonb_build_object('role', v_inv.role, 'user_id', v_uid)
+  );
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'tenant_id', v_inv.tenant_id,
+    'role', v_inv.role,
+    'tenant_name', coalesce(v_tenant.display_name, v_tenant.name)
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.accept_tenant_invite(text) TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- revoke / list invites
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.revoke_tenant_invite(p_invite_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_inv public.tenant_invites%ROWTYPE;
+  v_uid uuid := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT * INTO v_inv FROM public.tenant_invites WHERE id = p_invite_id;
+  IF v_inv.id IS NULL THEN
+    RAISE EXCEPTION 'Invite not found';
+  END IF;
+
+  IF NOT (
+    public.taplist_is_tenant_owner(v_inv.tenant_id)
+    OR EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = v_uid AND ur.role = 'super_admin'
+    )
+  ) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  IF v_inv.role = 'owner' AND NOT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = v_uid AND ur.role = 'super_admin'
+  ) THEN
+    RAISE EXCEPTION 'Only super_admin can revoke owner invites';
+  END IF;
+
+  UPDATE public.tenant_invites
+  SET revoked_at = now()
+  WHERE id = p_invite_id AND revoked_at IS NULL AND accepted_at IS NULL;
+
+  PERFORM public._audit_log(
+    v_inv.tenant_id, 'invite_revoked', 'tenant_invite', p_invite_id, NULL, NULL
+  );
+
+  RETURN jsonb_build_object('ok', true);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.revoke_tenant_invite(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.list_tenant_invites(p_tenant_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT (
+    public.taplist_is_tenant_owner(p_tenant_id)
+    OR EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = v_uid AND ur.role = 'super_admin'
+    )
+  ) THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
+  RETURN coalesce((
+    SELECT jsonb_agg(
+      jsonb_build_object(
+        'id', i.id,
+        'contact_type', i.contact_type,
+        'email', i.email,
+        'mobile', i.mobile,
+        'role', i.role,
+        'expires_at', i.expires_at,
+        'accepted_at', i.accepted_at,
+        'revoked_at', i.revoked_at,
+        'created_at', i.created_at,
+        'status', CASE
+          WHEN i.accepted_at IS NOT NULL THEN 'accepted'
+          WHEN i.revoked_at IS NOT NULL THEN 'revoked'
+          WHEN i.expires_at < now() THEN 'expired'
+          ELSE 'pending'
+        END
+      )
+      ORDER BY i.created_at DESC
+    )
+    FROM public.tenant_invites i
+    WHERE i.tenant_id = p_tenant_id
+  ), '[]'::jsonb);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.list_tenant_invites(uuid) TO authenticated;
+
+-- Wire publish/unpublish into onboarding_status + audit (extends Phase 0).
+CREATE OR REPLACE FUNCTION public.set_tenant_public_visibility(
+  p_tenant_id uuid,
+  p_visible boolean
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_ready jsonb;
+  v_before boolean;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.taplist_is_tenant_owner(p_tenant_id) THEN
+    RAISE EXCEPTION 'Forbidden: only owner can publish or unpublish the storefront';
+  END IF;
+
+  SELECT is_public_visible INTO v_before FROM public.tenants WHERE id = p_tenant_id;
+
+  IF p_visible THEN
+    v_ready := public.get_tenant_publish_readiness(p_tenant_id);
+    IF NOT coalesce((v_ready->>'ok')::boolean, false) THEN
+      RAISE EXCEPTION 'Publish blocked: %', coalesce(v_ready->>'errors', '[]');
+    END IF;
+
+    UPDATE public.tenants
+    SET
+      is_public_visible = true,
+      onboarding_status = 'public_live',
+      last_menu_updated_at = now()
+    WHERE id = p_tenant_id;
+
+    PERFORM public._audit_log(
+      p_tenant_id, 'tenant_published', 'tenant', p_tenant_id,
+      jsonb_build_object('is_public_visible', v_before),
+      jsonb_build_object('is_public_visible', true)
+    );
+  ELSE
+    UPDATE public.tenants
+    SET
+      is_public_visible = false,
+      onboarding_status = CASE
+        WHEN onboarding_status = 'public_live' THEN 'setup_in_progress'
+        ELSE onboarding_status
+      END,
+      last_menu_updated_at = now()
+    WHERE id = p_tenant_id;
+
+    PERFORM public._audit_log(
+      p_tenant_id, 'tenant_unpublished', 'tenant', p_tenant_id,
+      jsonb_build_object('is_public_visible', v_before),
+      jsonb_build_object('is_public_visible', false)
+    );
+  END IF;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.set_tenant_public_visibility(uuid, boolean) TO authenticated;
+
+
+-- ========================================================
+-- Mobile invite matching + profile phone
+-- Mirror of migrations/20260719140000_invite_mobile_auth.sql
+-- ========================================================
+
+-- Enable mobile invite matching against verified auth.users.phone.
+-- Phone OTP login/signup is handled by Supabase Auth (see config.toml [auth.sms]).
+
+CREATE OR REPLACE FUNCTION public._normalize_invite_mobile(p_mobile text)
+RETURNS text
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  d text;
+BEGIN
+  d := regexp_replace(coalesce(p_mobile, ''), '\D', '', 'g');
+  IF d = '' THEN
+    RETURN NULL;
+  END IF;
+
+  IF d ~ '^86[1][3-9]\d{9}$' THEN
+    RETURN d; -- 8613xxxxxxxxx
+  END IF;
+
+  IF d ~ '^086[1][3-9]\d{9}$' THEN
+    RETURN substr(d, 2);
+  END IF;
+
+  IF d ~ '^0[1][3-9]\d{9}$' THEN
+    RETURN '86' || substr(d, 2);
+  END IF;
+
+  IF d ~ '^[1][3-9]\d{9}$' THEN
+    RETURN '86' || d;
+  END IF;
+
+  RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.ensure_user_profile()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_email text;
+  v_phone text;
+  v_mobile_key text;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT u.email, u.phone INTO v_email, v_phone
+  FROM auth.users u WHERE u.id = v_uid;
+
+  v_mobile_key := public._normalize_invite_mobile(v_phone);
+
+  INSERT INTO public.user_profiles (user_id, email, mobile, display_name)
+  VALUES (
+    v_uid,
+    public._normalize_invite_email(v_email),
+    v_mobile_key,
+    coalesce(
+      nullif(v_mobile_key, ''),
+      split_part(coalesce(v_email, ''), '@', 1),
+      'user'
+    )
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    email = coalesce(excluded.email, public.user_profiles.email),
+    mobile = coalesce(excluded.mobile, public.user_profiles.mobile),
+    updated_at = now();
+
+  RETURN (
+    SELECT to_jsonb(p) FROM public.user_profiles p WHERE p.user_id = v_uid
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.create_tenant_invite(
+  p_tenant_id uuid,
+  p_contact_type text,
+  p_email text,
+  p_mobile text,
+  p_role text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_email text;
+  v_mobile text;
+  v_token text;
+  v_hash text;
+  v_id uuid;
+  v_is_super boolean;
+  v_is_owner boolean;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Tenant id is required';
+  END IF;
+
+  IF p_role NOT IN ('owner', 'staff') THEN
+    RAISE EXCEPTION 'Role must be owner or staff';
+  END IF;
+
+  IF p_contact_type NOT IN ('email', 'mobile') THEN
+    RAISE EXCEPTION 'Invalid contact_type';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = v_uid AND ur.role = 'super_admin'
+  ) INTO v_is_super;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = v_uid AND ur.tenant_id = p_tenant_id AND ur.role = 'owner'
+  ) INTO v_is_owner;
+
+  IF p_role = 'owner' AND NOT v_is_super THEN
+    RAISE EXCEPTION 'Only super_admin can create owner invites';
+  END IF;
+
+  IF p_role = 'staff' AND NOT (v_is_owner OR v_is_super) THEN
+    RAISE EXCEPTION 'Only owner can create staff invites';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM public.tenants t WHERE t.id = p_tenant_id) THEN
+    RAISE EXCEPTION 'Tenant not found';
+  END IF;
+
+  v_email := NULL;
+  v_mobile := NULL;
+  IF p_contact_type = 'email' THEN
+    v_email := public._normalize_invite_email(p_email);
+    IF v_email IS NULL THEN
+      RAISE EXCEPTION 'Email is required';
+    END IF;
+  ELSE
+    v_mobile := public._normalize_invite_mobile(p_mobile);
+    IF v_mobile IS NULL THEN
+      RAISE EXCEPTION 'Invalid China mobile number';
+    END IF;
+  END IF;
+
+  UPDATE public.tenant_invites
+  SET revoked_at = now()
+  WHERE tenant_id = p_tenant_id
+    AND role = p_role
+    AND revoked_at IS NULL
+    AND accepted_at IS NULL
+    AND (
+      (p_contact_type = 'email' AND lower(email) = v_email)
+      OR (p_contact_type = 'mobile' AND mobile = v_mobile)
+    );
+
+  v_token := public._new_invite_token();
+  v_hash := public._hash_invite_token(v_token);
+
+  INSERT INTO public.tenant_invites (
+    tenant_id, contact_type, email, mobile, role, token_hash, invited_by, expires_at
+  ) VALUES (
+    p_tenant_id, p_contact_type, v_email, v_mobile, p_role, v_hash, v_uid, now() + interval '7 days'
+  )
+  RETURNING id INTO v_id;
+
+  IF p_role = 'owner' THEN
+    UPDATE public.tenants
+    SET onboarding_status = CASE
+      WHEN onboarding_status IN ('public_live', 'setup_in_progress', 'ready_for_review')
+        THEN onboarding_status
+      ELSE 'pending_owner_claim'
+    END
+    WHERE id = p_tenant_id;
+  END IF;
+
+  PERFORM public._audit_log(
+    p_tenant_id,
+    CASE WHEN p_role = 'owner' THEN 'owner_invite_created' ELSE 'staff_invite_created' END,
+    'tenant_invite',
+    v_id,
+    NULL,
+    jsonb_build_object(
+      'contact_type', p_contact_type,
+      'email', v_email,
+      'mobile', v_mobile,
+      'role', p_role
+    )
+  );
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'invite_id', v_id,
+    'raw_token', v_token,
+    'expires_at', (now() + interval '7 days'),
+    'role', p_role,
+    'contact_type', p_contact_type,
+    'email', v_email,
+    'mobile', v_mobile
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.accept_tenant_invite(p_token text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_email text;
+  v_phone text;
+  v_mobile_key text;
+  v_hash text;
+  v_inv public.tenant_invites%ROWTYPE;
+  v_tenant public.tenants%ROWTYPE;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF nullif(trim(p_token), '') IS NULL THEN
+    RAISE EXCEPTION 'Invite code is required';
+  END IF;
+
+  PERFORM public.ensure_user_profile();
+
+  SELECT
+    public._normalize_invite_email(u.email),
+    u.phone
+  INTO v_email, v_phone
+  FROM auth.users u WHERE u.id = v_uid;
+
+  v_mobile_key := public._normalize_invite_mobile(v_phone);
+
+  v_hash := public._hash_invite_token(upper(trim(p_token)));
+
+  SELECT * INTO v_inv
+  FROM public.tenant_invites
+  WHERE token_hash = v_hash
+  LIMIT 1;
+
+  IF v_inv.id IS NULL THEN
+    v_hash := public._hash_invite_token(trim(p_token));
+    SELECT * INTO v_inv FROM public.tenant_invites WHERE token_hash = v_hash LIMIT 1;
+  END IF;
+
+  IF v_inv.id IS NULL THEN
+    RAISE EXCEPTION 'Invalid invite code';
+  END IF;
+
+  IF v_inv.revoked_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Invite has been revoked';
+  END IF;
+
+  IF v_inv.accepted_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Invite already used';
+  END IF;
+
+  IF v_inv.expires_at < now() THEN
+    RAISE EXCEPTION 'Invite has expired';
+  END IF;
+
+  IF v_inv.contact_type = 'email' THEN
+    IF v_email IS NULL OR v_email <> v_inv.email THEN
+      RAISE EXCEPTION 'Invite email does not match your account';
+    END IF;
+  ELSIF v_inv.contact_type = 'mobile' THEN
+    IF v_mobile_key IS NULL OR v_mobile_key <> v_inv.mobile THEN
+      RAISE EXCEPTION 'Invite mobile does not match your account';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Invalid invite contact type';
+  END IF;
+
+  SELECT * INTO v_tenant FROM public.tenants WHERE id = v_inv.tenant_id;
+  IF v_tenant.id IS NULL THEN
+    RAISE EXCEPTION 'Tenant not found';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = v_uid AND ur.tenant_id = v_inv.tenant_id
+  ) THEN
+    UPDATE public.tenant_invites
+    SET accepted_at = now(), accepted_by = v_uid
+    WHERE id = v_inv.id AND accepted_at IS NULL;
+  ELSE
+    IF v_inv.role = 'owner' AND EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.tenant_id = v_inv.tenant_id AND ur.role = 'owner'
+    ) THEN
+      RAISE EXCEPTION 'This bar already has an owner';
+    END IF;
+
+    INSERT INTO public.user_roles (user_id, tenant_id, role)
+    VALUES (v_uid, v_inv.tenant_id, v_inv.role);
+
+    UPDATE public.tenant_invites
+    SET accepted_at = now(), accepted_by = v_uid
+    WHERE id = v_inv.id;
+  END IF;
+
+  IF v_inv.role = 'owner' THEN
+    UPDATE public.tenants
+    SET
+      owner_claimed_at = coalesce(owner_claimed_at, now()),
+      onboarding_status = CASE
+        WHEN onboarding_status = 'public_live' THEN 'public_live'
+        ELSE 'setup_in_progress'
+      END
+    WHERE id = v_inv.tenant_id;
+  END IF;
+
+  PERFORM public._audit_log(
+    v_inv.tenant_id,
+    'invite_accepted',
+    'tenant_invite',
+    v_inv.id,
+    NULL,
+    jsonb_build_object('role', v_inv.role, 'user_id', v_uid)
+  );
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'tenant_id', v_inv.tenant_id,
+    'role', v_inv.role,
+    'tenant_name', coalesce(v_tenant.display_name, v_tenant.name)
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public._normalize_invite_mobile(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.ensure_user_profile() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_tenant_invite(uuid, text, text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.accept_tenant_invite(text) TO authenticated;
+
 -- --- END (optional: seed.sql, seed_platform_super_admin.sql after auth user exists) ---

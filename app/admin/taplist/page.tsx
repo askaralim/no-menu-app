@@ -73,6 +73,27 @@ const PLATFORM_SLUG = '__platform__'
 
 type BarOption = { id: string; name: string; slug: string }
 
+/** Tonight tap # is 1–99; null / 0 / empty means not on tonight. */
+function normalizeTonightTap(value: unknown): number | null {
+  if (value === '' || value === null || value === undefined) return null
+  const n = typeof value === 'number' ? value : parseInt(String(value), 10)
+  if (!Number.isFinite(n) || n < 1) return null
+  return Math.min(99, Math.floor(n))
+}
+
+function listingErrorMessage(data: unknown, fallback: string): string {
+  if (!data || typeof data !== 'object') return fallback
+  const errors = (data as { errors?: unknown }).errors
+  if (!Array.isArray(errors) || errors.length === 0) return fallback
+  return errors
+    .map((e) => {
+      if (typeof e === 'string') return e
+      if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message)
+      return JSON.stringify(e)
+    })
+    .join('；')
+}
+
 function TaplistAdminPageInner() {
   const [role, setRole] = useState<UserRole>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
@@ -378,14 +399,35 @@ function TaplistAdminPageInner() {
 
   const toggleDrinkPublic = async (drink: Drink, nextVisible: boolean) => {
     try {
-      const { error } = await supabase.rpc('set_drink_taplist_consumer_fields', {
-        p_drink_id: drink.id,
-        p_image_url: drink.image_url ?? '',
-        p_is_public_visible: nextVisible,
-        p_public_status: drink.public_status || 'available',
-        p_public_sort_order: drink.public_sort_order ?? 0,
-      })
-      if (error) throw error
+      const status = (drink.public_status as (typeof PUBLIC_STATUS)[number]) || 'available'
+      const tap = normalizeTonightTap(drink.public_sort_order)
+
+      if (nextVisible) {
+        if (!drink.enabled) {
+          throw new Error('请先在「酒品管理」中启用该酒款，再公开到顾客端。')
+        }
+        if (!tap) {
+          throw new Error('公开前请先展开「编辑 Tap List」并填写酒头编号（1–99）。未在今晚酒单的酒不会出现在顾客端。')
+        }
+        const { data, error } = await supabase.rpc('set_drink_taplist_listing', {
+          p_drink_id: drink.id,
+          p_is_public_visible: true,
+          p_public_status: status,
+          p_public_sort_order: tap,
+        })
+        if (error) throw error
+        if (data && typeof data === 'object' && (data as { ok?: boolean }).ok === false) {
+          throw new Error(listingErrorMessage(data, '公开失败'))
+        }
+      } else {
+        // Hide for consumers but keep tonight tap # (售罄/隐藏 ≠ 移出今晚).
+        const { error } = await supabase.rpc('set_drink_taplist_status', {
+          p_drink_id: drink.id,
+          p_is_public_visible: false,
+          p_public_status: status,
+        })
+        if (error) throw error
+      }
       if (tenantId) await loadDrinks(tenantId)
     } catch (err) {
       console.error(err)
@@ -452,6 +494,9 @@ function TaplistAdminPageInner() {
         <p style={{ color: '#4b5563', marginTop: '0.5rem' }}>
           当前编辑门店：<strong>{tenant.display_name || tenant.name}</strong>
           <code style={{ marginLeft: 8, fontSize: '0.9rem' }}>{tenant.slug}</code>
+        </p>
+        <p style={{ color: '#6b7280', marginTop: '0.5rem', fontSize: 14, maxWidth: 640 }}>
+          顾客端只展示今晚酒单（酒头编号 1–99）。列表「公开」= 对顾客可见但仍在今晚；编辑里清空编号并保存 = 移出今晚。
         </p>
         {barOptions.length > 1 ? (
           <div style={{ marginTop: '0.75rem' }}>
@@ -689,6 +734,13 @@ function TaplistAdminPageInner() {
                       >
                         <span style={{ flex: '1 1 200px', minWidth: 0 }}>
                           {[d.brand_name, d.name].filter(Boolean).join(' · ')}
+                          {normalizeTonightTap(d.public_sort_order) != null ? (
+                            <span style={{ marginLeft: 8, color: '#6b7280', fontSize: 13 }}>
+                              #{normalizeTonightTap(d.public_sort_order)}
+                            </span>
+                          ) : (
+                            <span style={{ marginLeft: 8, color: '#9ca3af', fontSize: 12 }}>未在今晚</span>
+                          )}
                         </span>
                         <label className="admin-label-checkbox">
                           <input
@@ -762,7 +814,7 @@ function DrinkTaplistPanel({
     image_url: drink.image_url ?? '',
     is_public_visible: !!drink.is_public_visible,
     public_status: (drink.public_status as (typeof PUBLIC_STATUS)[number]) || 'available',
-    public_sort_order: drink.public_sort_order ?? 0,
+    public_sort_order: (normalizeTonightTap(drink.public_sort_order) ?? '') as number | '',
   })
   const [beer, setBeer] = useState({
     brewery: '',
@@ -788,9 +840,9 @@ function DrinkTaplistPanel({
       image_url: drink.image_url ?? '',
       is_public_visible: !!drink.is_public_visible,
       public_status: (drink.public_status as (typeof PUBLIC_STATUS)[number]) || 'available',
-      public_sort_order: drink.public_sort_order ?? 0,
+      public_sort_order: (normalizeTonightTap(drink.public_sort_order) ?? '') as number | '',
     })
-  }, [drink.id])
+  }, [drink.id, drink.image_url, drink.is_public_visible, drink.public_status, drink.public_sort_order])
 
   const fetchServings = useCallback(async () => {
     const { data: so, error } = await supabase
@@ -891,22 +943,62 @@ function DrinkTaplistPanel({
     if (next.is_public_visible && !drink.enabled) {
       throw new Error('请先在上架 POS（酒品管理）中启用该酒款，再对消费者公开 Tap List。')
     }
-    const { error } = await supabase.rpc('set_drink_taplist_consumer_fields', {
+
+    const imageUrl = next.image_url.trim() === '' ? null : next.image_url.trim()
+    const { error: imageError } = await supabase
+      .from('drinks')
+      .update({ image_url: imageUrl })
+      .eq('id', drink.id)
+    if (imageError) throw imageError
+
+    const tap = normalizeTonightTap(next.public_sort_order)
+
+    if (tap == null) {
+      const { data, error } = await supabase.rpc('remove_drink_from_tonight', {
+        p_drink_id: drink.id,
+      })
+      if (error) throw error
+      if (data && typeof data === 'object' && (data as { ok?: boolean }).ok === false) {
+        throw new Error(listingErrorMessage(data, '移出今晚酒单失败'))
+      }
+      setForm({
+        ...next,
+        image_url: imageUrl ?? '',
+        public_sort_order: '',
+        is_public_visible: false,
+        public_status: 'available',
+      })
+      return
+    }
+
+    const { data, error } = await supabase.rpc('set_drink_taplist_listing', {
       p_drink_id: drink.id,
-      p_image_url: next.image_url,
       p_is_public_visible: next.is_public_visible,
       p_public_status: next.public_status,
-      p_public_sort_order: next.public_sort_order,
+      p_public_sort_order: tap,
     })
     if (error) throw error
-    setForm(next)
+    if (data && typeof data === 'object' && (data as { ok?: boolean }).ok === false) {
+      throw new Error(listingErrorMessage(data, '保存今晚酒单失败'))
+    }
+    setForm({
+      ...next,
+      image_url: imageUrl ?? '',
+      public_sort_order: tap,
+    })
   }
 
   const handleDrinkImageFile = async (file: File) => {
     setUploadingImage(true)
     try {
       const publicUrl = await uploadTaplistDrinkImage(supabase, tenantId, drink.id, file)
-      await persistDrinkConsumerFields({ image_url: publicUrl })
+      // Image-only: avoid remove/listing side effects when just uploading artwork.
+      const { error } = await supabase
+        .from('drinks')
+        .update({ image_url: publicUrl })
+        .eq('id', drink.id)
+      if (error) throw error
+      setForm((prev) => ({ ...prev, image_url: publicUrl }))
       alert('酒款图片已上传并保存')
       onDrinkSaved()
     } catch (err) {
@@ -1025,7 +1117,9 @@ function DrinkTaplistPanel({
 
           <section className="taplist-drink-panel-section">
             <h4 className="taplist-drink-panel-section-title">展示字段</h4>
-            <p className="taplist-drink-panel-section-hint">消费者 App 看到的图片、库存状态与排序</p>
+            <p className="taplist-drink-panel-section-hint">
+              顾客端只展示「今晚酒单」：酒头编号 1–99。留空并保存 = 移出今晚（同时取消公开）。隐藏公开但保留编号请用列表上的「公开」开关。
+            </p>
             <TaplistImageUploadField
               label="酒款图片"
               hint="JPEG / PNG / WebP，最大 2MB"
@@ -1063,16 +1157,38 @@ function DrinkTaplistPanel({
                 </select>
               </div>
               <div className="taplist-field">
-                <label htmlFor={`${drink.id}-public-sort`}>Tap List 排序</label>
+                <label htmlFor={`${drink.id}-public-sort`}>酒头编号（今晚）</label>
                 <input
                   id={`${drink.id}-public-sort`}
                   className="admin-input"
                   type="number"
+                  min={1}
+                  max={99}
+                  placeholder="1–99，留空=移出"
                   value={form.public_sort_order}
-                  onChange={(e) =>
-                    setForm({ ...form, public_sort_order: parseInt(e.target.value, 10) || 0 })
-                  }
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    if (raw === '') {
+                      setForm({ ...form, public_sort_order: '' })
+                      return
+                    }
+                    const n = parseInt(raw, 10)
+                    setForm({
+                      ...form,
+                      public_sort_order: Number.isFinite(n) ? n : '',
+                    })
+                  }}
                 />
+              </div>
+              <div className="taplist-field">
+                <label className="admin-label-checkbox" style={{ marginTop: 22 }}>
+                  <input
+                    type="checkbox"
+                    checked={form.is_public_visible}
+                    onChange={(e) => setForm({ ...form, is_public_visible: e.target.checked })}
+                  />
+                  <span>顾客端公开（需有效酒头编号）</span>
+                </label>
               </div>
             </div>
             <div className="taplist-panel-actions">

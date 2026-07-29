@@ -1,16 +1,32 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+import { ensureUserProfile, getMyTenants, type MyTenant } from './membershipApi'
 import type { UserRole } from './types'
+
+const ACTIVE_TENANT_KEY = 'nomenu.activeTenantId'
 
 type AuthContextType = {
   session: Session | null
   user: User | null
   tenantId: string | null
   role: UserRole | null
+  orderingEnabled: boolean
+  memberships: MyTenant[]
+  needsTenantSelection: boolean
   isLoading: boolean
-  /** Re-query `user_roles` after e.g. `register_bar` (session alone does not change). */
   refreshMembership: () => Promise<void>
+  setActiveTenantId: (tenantId: string) => Promise<void>
+}
+
+// Missing flag (older backend) is treated as enabled so bars keep POS until
+// the opt-in column ships; once present, only true shows 点单/订单.
+function resolveOrdering(row: MyTenant | null | undefined): boolean {
+  if (row && 'ordering_enabled' in row && row.ordering_enabled !== undefined) {
+    return row.ordering_enabled === true
+  }
+  return true
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,33 +34,25 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   tenantId: null,
   role: null,
+  orderingEnabled: true,
+  memberships: [],
+  needsTenantSelection: false,
   isLoading: true,
   refreshMembership: async () => {},
+  setActiveTenantId: async () => {},
 })
 
-type RoleRow = { tenant_id: string; role: string; created_at: string }
-
-function deriveTenantAndRole(rows: RoleRow[] | null): { tenantId: string | null; role: UserRole | null } {
-  if (!rows?.length) return { tenantId: null, role: null }
-
-  if (rows.some((r) => r.role === 'super_admin')) {
-    const row = rows.find((r) => r.role === 'super_admin')!
-    return { tenantId: row.tenant_id, role: 'super_admin' }
+function pickInitialTenant(
+  memberships: MyTenant[],
+  preferredId: string | null,
+): MyTenant | null {
+  if (!memberships.length) return null
+  if (preferredId) {
+    const preferred = memberships.find((m) => m.tenant_id === preferredId)
+    if (preferred) return preferred
   }
-
-  const owners = rows.filter((r) => r.role === 'owner')
-  if (owners.length) {
-    return { tenantId: owners[0].tenant_id, role: 'owner' }
-  }
-
-  const staff = rows
-    .filter((r) => r.role === 'staff')
-    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-  if (staff.length) {
-    return { tenantId: staff[0].tenant_id, role: 'staff' }
-  }
-
-  return { tenantId: null, role: null }
+  if (memberships.length === 1) return memberships[0]
+  return null
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -52,39 +60,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [role, setRole] = useState<UserRole | null>(null)
+  const [orderingEnabled, setOrderingEnabled] = useState(true)
+  const [memberships, setMemberships] = useState<MyTenant[]>([])
+  const [needsTenantSelection, setNeedsTenantSelection] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const initialized = useRef(false)
 
-  const fetchUserRole = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('tenant_id, role, created_at')
-        .eq('user_id', userId)
-
-      if (!error && data?.length) {
-        const { tenantId: tid, role: r } = deriveTenantAndRole(data as RoleRow[])
-        setTenantId(tid)
-        setRole(r)
-      } else {
-        setTenantId(null)
-        setRole(null)
+  const applyMemberships = useCallback(async (rows: MyTenant[]) => {
+    setMemberships(rows)
+    const stored = await AsyncStorage.getItem(ACTIVE_TENANT_KEY)
+    const chosen = pickInitialTenant(rows, stored)
+    if (chosen) {
+      setTenantId(chosen.tenant_id)
+      setRole(chosen.role)
+      setOrderingEnabled(resolveOrdering(chosen))
+      setNeedsTenantSelection(false)
+      if (stored !== chosen.tenant_id) {
+        await AsyncStorage.setItem(ACTIVE_TENANT_KEY, chosen.tenant_id)
       }
+    } else if (rows.length > 1) {
+      setTenantId(null)
+      setRole(null)
+      setNeedsTenantSelection(true)
+    } else {
+      setTenantId(null)
+      setRole(null)
+      setNeedsTenantSelection(false)
+      await AsyncStorage.removeItem(ACTIVE_TENANT_KEY)
+    }
+  }, [])
+
+  const fetchMembership = useCallback(async (_userId: string) => {
+    try {
+      await ensureUserProfile()
+      const rows = await getMyTenants()
+      await applyMemberships(rows)
     } catch (e) {
-      console.error('fetchUserRole error:', e)
+      console.error('fetchMembership error:', e)
+      setMemberships([])
+      setTenantId(null)
+      setRole(null)
+      setNeedsTenantSelection(false)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [applyMemberships])
 
   const refreshMembership = useCallback(async () => {
     const { data } = await supabase.auth.getSession()
     const uid = data.session?.user?.id
     if (uid) {
       setIsLoading(true)
-      await fetchUserRole(uid)
+      await fetchMembership(uid)
     }
-  }, [fetchUserRole])
+  }, [fetchMembership])
+
+  const setActiveTenantId = useCallback(async (nextId: string) => {
+    const row = memberships.find((m) => m.tenant_id === nextId)
+    if (!row) {
+      setNeedsTenantSelection(true)
+      return
+    }
+    await AsyncStorage.setItem(ACTIVE_TENANT_KEY, nextId)
+    setTenantId(row.tenant_id)
+    setRole(row.role)
+    setOrderingEnabled(resolveOrdering(row))
+    setNeedsTenantSelection(false)
+  }, [memberships])
 
   useEffect(() => {
     if (initialized.current) return
@@ -107,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(s)
         setUser(s?.user ?? null)
         if (s?.user) {
-          await fetchUserRole(s.user.id)
+          await fetchMembership(s.user.id)
         } else {
           setIsLoading(false)
         }
@@ -121,26 +163,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     init()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchUserRole(session.user.id)
-      } else {
-        setTenantId(null)
-        setRole(null)
-        setIsLoading(false)
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setUser(nextSession?.user ?? null)
+      const uid = nextSession?.user?.id
+      setTimeout(() => {
+        if (uid) {
+          void fetchMembership(uid)
+        } else {
+          setMemberships([])
+          setTenantId(null)
+          setRole(null)
+          setNeedsTenantSelection(false)
+          setIsLoading(false)
+          void AsyncStorage.removeItem(ACTIVE_TENANT_KEY)
+        }
+      }, 0)
     })
 
     return () => {
       clearTimeout(timeout)
       subscription.unsubscribe()
     }
-  }, [fetchUserRole])
+  }, [fetchMembership])
 
   return (
-    <AuthContext.Provider value={{ session, user, tenantId, role, isLoading, refreshMembership }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        tenantId,
+        role,
+        orderingEnabled,
+        memberships,
+        needsTenantSelection,
+        isLoading,
+        refreshMembership,
+        setActiveTenantId,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

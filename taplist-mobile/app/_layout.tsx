@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { FirstLaunchLegalGate } from '@/components/taplist/FirstLaunchLegalGate';
+import { AnalyticsTracker } from '@/components/taplist/AnalyticsTracker';
 import { useColorScheme } from '@/components/useColorScheme';
 import { queryClient } from '@/lib/queryClient';
 import { setupTaplistQueryFocusManager } from '@/lib/setupQueryFocusManager';
@@ -57,6 +58,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <TaplistCityProvider>
         <FirstLaunchLegalGate>
+          <AnalyticsTracker />
           <RootLayoutNav />
         </FirstLaunchLegalGate>
       </TaplistCityProvider>
@@ -76,6 +78,7 @@ function RootLayoutNav() {
         <Stack.Screen name="bar/[slug]/events" options={{ headerShown: false }} />
         <Stack.Screen name="bar/[slug]/event/[eventId]" options={{ headerShown: false }} />
         <Stack.Screen name="bar/[slug]/beer/[drinkId]" options={{ headerShown: false }} />
+        <Stack.Screen name="drink-log/[lightId]" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

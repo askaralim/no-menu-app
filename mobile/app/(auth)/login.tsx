@@ -1,70 +1,150 @@
 import React, { useState } from 'react'
-import { Alert, StyleSheet, View, TextInput, TouchableOpacity, Text, KeyboardAvoidingView, Platform } from 'react-native'
-import { useRouter } from 'expo-router'
+import {
+  Alert,
+  StyleSheet,
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+} from 'react-native'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../lib/authProvider'
+import { getMyTenants } from '../../lib/membershipApi'
+import { mobileToLoginEmail, normalizeChinaMobile } from '../../lib/phoneAuth'
 import { COLORS } from '../../lib/constants'
+
+function mustChangePassword(user: { user_metadata?: Record<string, unknown> } | null | undefined) {
+  return user?.user_metadata?.must_change_password === true
+}
 
 export default function LoginScreen() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const params = useLocalSearchParams<{ next?: string }>()
+  const { refreshMembership, setActiveTenantId } = useAuth()
+
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function signInWithEmail() {
-    setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    })
+  async function routeAfterAuth() {
+    const { data } = await supabase.auth.getUser()
+    if (mustChangePassword(data.user)) {
+      router.replace('/(auth)/change-password')
+      return
+    }
 
-    if (error) Alert.alert('登录失败', error.message)
-    setLoading(false)
+    await refreshMembership()
+    const tenants = await getMyTenants()
+
+    if (params.next === 'accept-invite' || tenants.length === 0) {
+      if (params.next === 'accept-invite') {
+        router.replace('/(auth)/accept-invite')
+        return
+      }
+      router.replace('/(auth)/no-access')
+      return
+    }
+    if (tenants.length > 1) {
+      router.replace('/(auth)/select-tenant')
+      return
+    }
+    const only = tenants[0]
+    await setActiveTenantId(only.tenant_id)
+    const isOwnerOrAdmin = only.role === 'owner' || only.role === 'super_admin'
+    router.replace(isOwnerOrAdmin ? '/(tabs)/taplist' : '/(tabs)')
+  }
+
+  async function signInWithPhonePassword() {
+    if (!normalizeChinaMobile(phone)) {
+      return Alert.alert('提示', '请输入有效的中国大陆手机号')
+    }
+    const loginEmail = mobileToLoginEmail(phone)
+    if (!loginEmail) {
+      return Alert.alert('提示', '请输入有效的中国大陆手机号')
+    }
+    if (!password) {
+      return Alert.alert('提示', '请输入密码')
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password,
+      })
+      if (error) {
+        Alert.alert('登录失败', error.message)
+        return
+      }
+      await routeAfterAuth()
+    } catch (e: any) {
+      Alert.alert('登录失败', e?.message || '网络异常，请重试')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>No Menu</Text>
-        <Text style={styles.headerSubtitle}>Staff & Management Login</Text>
+        <Image
+          source={require('../../assets/brand/no-menu-tonight-lockup.png')}
+          style={styles.brandLockup}
+          resizeMode="contain"
+          accessibilityLabel="No Menu Tonight"
+        />
+        <Text style={styles.headerSubtitle}>酒吧今晚运营</Text>
       </View>
 
       <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          onChangeText={setEmail}
-          value={email}
-          placeholder="Email"
-          placeholderTextColor={COLORS.muted}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
+        <Text style={styles.label}>手机号</Text>
+        <View style={styles.phoneRow}>
+          <Text style={styles.prefix}>+86</Text>
+          <TextInput
+            style={[styles.input, { flex: 1, marginBottom: 0 }]}
+            onChangeText={setPhone}
+            value={phone}
+            placeholder="请输入中国大陆手机号"
+            placeholderTextColor={COLORS.muted}
+            keyboardType="phone-pad"
+            maxLength={11}
+          />
+        </View>
+
+        <Text style={[styles.label, { marginTop: 16 }]}>密码</Text>
         <TextInput
           style={styles.input}
           onChangeText={setPassword}
           value={password}
           secureTextEntry
-          placeholder="Password"
+          placeholder="由店主或 No Menu 提供的密码"
           placeholderTextColor={COLORS.muted}
           autoCapitalize="none"
         />
+
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
           disabled={loading}
-          onPress={signInWithEmail}
+          onPress={signInWithPhonePassword}
         >
           <Text style={styles.buttonText}>{loading ? '登录中...' : '登录'}</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.inviteLink}
+          onPress={() => router.push('/(auth)/accept-invite')}
+        >
+          <Text style={styles.inviteLinkText}>我有邀请码</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>或</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <TouchableOpacity style={styles.registerBtn} onPress={() => router.push('/(auth)/register')}>
-        <Text style={styles.registerBtnText}>注册新酒吧</Text>
-      </TouchableOpacity>
+      <Text style={styles.contactHint}>
+        店主账号由 No Menu 开通。员工用被邀请手机号与初始密码登录后，在「我有邀请码」中加入门店。
+      </Text>
     </KeyboardAvoidingView>
   )
 }
@@ -77,21 +157,39 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   headerContainer: {
-    marginBottom: 48,
+    marginBottom: 36,
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: COLORS.gold,
-    marginBottom: 8,
+  brandLockup: {
+    width: 210,
+    height: 132,
+    marginBottom: 12,
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.muted,
   },
   formContainer: {
     width: '100%',
+  },
+  label: {
+    color: COLORS.muted,
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  prefix: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: '700',
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
   },
   input: {
     backgroundColor: COLORS.card,
@@ -116,31 +214,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.border,
-  },
-  dividerText: {
-    color: COLORS.muted,
-    marginHorizontal: 16,
-    fontSize: 14,
-  },
-  registerBtn: {
-    borderWidth: 1,
-    borderColor: COLORS.gold,
-    borderRadius: 8,
-    paddingVertical: 16,
+  inviteLink: {
+    marginTop: 18,
     alignItems: 'center',
   },
-  registerBtnText: {
+  inviteLinkText: {
     color: COLORS.gold,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
+  },
+  contactHint: {
+    color: COLORS.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 28,
+    lineHeight: 18,
   },
 })

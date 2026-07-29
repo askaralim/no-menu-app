@@ -1,8 +1,9 @@
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 
 import { RailVenueBadge } from '@/components/taplist/RailVenueBadge'
+import { CachedImageBackground } from '@/components/taplist/CachedImage'
 import {
   RAIL_CARD_HEIGHT,
   RAIL_CARD_IMAGE_BORDER,
@@ -17,9 +18,16 @@ import {
   railCardScrimStyle,
 } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
+import { trackEvent, type AnalyticsSource } from '@/lib/analytics'
 import type { PublicNewTapRow } from '@/lib/types'
 
-export function NewTapRailCard({ drink }: { drink: PublicNewTapRow }) {
+export function NewTapRailCard({
+  drink,
+  source = 'direct',
+}: {
+  drink: PublicNewTapRow
+  source?: AnalyticsSource
+}) {
   const router = useRouter()
   const typeLine = drink.beer_style ?? null
   const brandLine = drink.brewery ?? drink.brand_name ?? null
@@ -58,15 +66,22 @@ export function NewTapRailCard({ drink }: { drink: PublicNewTapRow }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      onPress={() => router.push(`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`)}
+      onPress={() => {
+        trackEvent('beer_opened', {
+          tenant_id: drink.tenant_id,
+          drink_id: drink.drink_id,
+          source,
+        })
+        router.push(`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`)
+      }}
       style={({ pressed }) => [
         styles.newTapCard,
         hasImage && styles.newTapCardImage,
         pressed && styles.newTapCardPressed,
       ]}>
       {hasImage ? (
-        <ImageBackground
-          source={{ uri: drink.image_url as string }}
+        <CachedImageBackground
+          source={drink.image_url as string}
           style={styles.newTapImageFill}
           imageStyle={styles.newTapImageRadius}>
           <LinearGradient
@@ -76,7 +91,7 @@ export function NewTapRailCard({ drink }: { drink: PublicNewTapRow }) {
             {textBlock}
             {venueBadge}
           </LinearGradient>
-        </ImageBackground>
+        </CachedImageBackground>
       ) : (
         <LinearGradient
           colors={RAIL_TEXT_ONLY_SCRIM_COLORS}

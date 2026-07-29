@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 
 import { palette } from '@/constants/design'
@@ -24,6 +24,7 @@ type TaplistCityContextValue = {
   cityCatalogAvailable: boolean
   canSelectCity: boolean
   selectCity: (city: PublicTaplistCity) => Promise<void>
+  refreshCities: () => Promise<void>
 }
 
 const TaplistCityContext = createContext<TaplistCityContextValue | null>(null)
@@ -56,55 +57,50 @@ export function TaplistCityProvider({ children }: { children: ReactNode }) {
   const [selectedCity, setSelectedCity] = useState<PublicTaplistCity | null>(null)
   const [cities, setCities] = useState<PublicTaplistCity[]>([])
   const [cityCatalogAvailable, setCityCatalogAvailable] = useState(false)
+  const refreshIdRef = useRef(0)
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadCityState() {
-      let persistedCity: string | null = null
-      try {
-        persistedCity = await AsyncStorage.getItem(STORAGE_KEY)
-      } catch {
-        persistedCity = null
-      }
-
-      if (!configured) {
-        if (!cancelled) {
-          setSelectedCity(FALLBACK_CITY)
-          setCities([])
-          setCityCatalogAvailable(false)
-        }
-        return
-      }
-
-      try {
-        const catalog = await fetchPublicCities()
-        const nextCity = pickCity(persistedCity, catalog)
-
-        if (!cancelled) {
-          setSelectedCity(nextCity)
-          setCities(catalog)
-          setCityCatalogAvailable(catalog.length > 0)
-        }
-
-        if (nextCity.city && !taplistCityMatches(nextCity.city, persistedCity)) {
-          await AsyncStorage.setItem(STORAGE_KEY, nextCity.city)
-        }
-      } catch {
-        if (!cancelled) {
-          setSelectedCity(FALLBACK_CITY)
-          setCities([])
-          setCityCatalogAvailable(false)
-        }
-      }
+  const refreshCities = useCallback(async () => {
+    const refreshId = ++refreshIdRef.current
+    let persistedCity: string | null = null
+    try {
+      persistedCity = await AsyncStorage.getItem(STORAGE_KEY)
+    } catch {
+      persistedCity = null
     }
 
-    void loadCityState()
+    if (refreshId !== refreshIdRef.current) return
 
-    return () => {
-      cancelled = true
+    if (!configured) {
+      setSelectedCity(FALLBACK_CITY)
+      setCities([])
+      setCityCatalogAvailable(false)
+      return
+    }
+
+    try {
+      const catalog = await fetchPublicCities()
+      const nextCity = pickCity(persistedCity, catalog)
+
+      if (refreshId !== refreshIdRef.current) return
+
+      setSelectedCity(nextCity)
+      setCities(catalog)
+      setCityCatalogAvailable(catalog.length > 0)
+
+      if (nextCity.city && !taplistCityMatches(nextCity.city, persistedCity)) {
+        await AsyncStorage.setItem(STORAGE_KEY, nextCity.city)
+      }
+    } catch {
+      if (refreshId !== refreshIdRef.current) return
+      setSelectedCity(FALLBACK_CITY)
+      setCities([])
+      setCityCatalogAvailable(false)
     }
   }, [configured])
+
+  useEffect(() => {
+    void refreshCities()
+  }, [refreshCities])
 
   const selectCity = useCallback(
     async (city: PublicTaplistCity) => {
@@ -125,8 +121,9 @@ export function TaplistCityProvider({ children }: { children: ReactNode }) {
       cityCatalogAvailable,
       canSelectCity: cityCatalogAvailable && cities.length > 1,
       selectCity,
+      refreshCities,
     }
-  }, [cities, cityCatalogAvailable, selectCity, selectedCity])
+  }, [cities, cityCatalogAvailable, refreshCities, selectCity, selectedCity])
 
   if (!value) {
     return (

@@ -4,6 +4,7 @@ import { EventListCard, shouldGroupEventsByVenue } from '@/components/taplist/Ev
 import { BEER_CARD_GAP } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
 import type { PublicEventRow } from '@/lib/types'
+import type { AnalyticsSource } from '@/lib/analytics'
 
 type EventListSectionProps = {
   title: string
@@ -12,9 +13,10 @@ type EventListSectionProps = {
   /** Bar detail screen: never show venue on cards. */
   hideVenue?: boolean
   compact?: boolean
+  source?: AnalyticsSource
 }
 
-export function EventListSection({ title, count, events, hideVenue = false, compact = false }: EventListSectionProps) {
+export function EventListSection({ title, count, events, hideVenue = false, compact = false, source = 'direct' }: EventListSectionProps) {
   const anyVenueHasMultiple = !hideVenue && shouldGroupEventsByVenue(events)
 
   return (
@@ -36,20 +38,20 @@ export function EventListSection({ title, count, events, hideVenue = false, comp
               </View>
               <View style={styles.eventStack}>
                 {venueGroup.events.map((event) => (
-                  <EventListCard key={event.id} event={event} showVenue={false} />
+                  <EventListCard key={event.id} event={event} showVenue={false} source={source} />
                 ))}
               </View>
             </View>
           ) : (
             <View key={venueGroup.tenantId} style={styles.singleVenueCard}>
-              <EventListCard event={venueGroup.events[0]} showVenue />
+              <EventListCard event={venueGroup.events[0]} showVenue source={source} />
             </View>
           )
         )
       ) : (
         <View style={styles.eventStack}>
           {events.map((event) => (
-            <EventListCard key={event.id} event={event} showVenue={!hideVenue} />
+            <EventListCard key={event.id} event={event} showVenue={!hideVenue} source={source} />
           ))}
         </View>
       )}

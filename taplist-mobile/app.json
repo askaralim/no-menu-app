@@ -2,7 +2,7 @@
   "expo": {
     "name": "No Menu",
     "slug": "no-menu-app",
-    "version": "1.3.0",
+    "version": "1.2.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "nomenuapp",
@@ -15,8 +15,9 @@
     },
     "ios": {
       "supportsTablet": false,
+      "usesAppleSignIn": true,
       "bundleIdentifier": "com.nomenuapp.taplist",
-      "buildNumber": "17",
+      "buildNumber": "32",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "No Menu 需要访问相册权限以保存酒单图片。",
@@ -40,6 +41,8 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-localization",
+      "expo-apple-authentication",
       [
         "expo-media-library",
         {

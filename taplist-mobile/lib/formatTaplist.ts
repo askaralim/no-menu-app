@@ -65,11 +65,16 @@ export function defaultServing(drink: PublicDrinkRow) {
   )
 }
 
+/**
+ * Public servings for display.
+ * - When tenant public_price_mode=hide, API returns [] (no prices / cup rows).
+ * - When show: only active options with price > 0 (unpriced options stay private).
+ */
 export function displayServingOptions(options: PublicServingOption[]) {
   const seen = new Set<string>()
 
   return options
-    .filter((option) => option.is_active && option.price > 0)
+    .filter((option) => option.is_active && typeof option.price === 'number' && option.price > 0)
     .filter((option) => {
       const key = `${option.label || option.serving_type}:${option.volume_ml ?? 'unknown'}`
       if (seen.has(key)) return false
@@ -93,7 +98,7 @@ export function menuUpdatedLabel(value?: string | null) {
   return `酒单更新 · ${date.toLocaleDateString('zh-CN')}`
 }
 
-function localizeServingLabel(label: string) {
+export function localizeServingLabel(label: string) {
   const normalized = label.toLowerCase()
   const labels: Record<string, string> = {
     small: '小杯',
@@ -101,6 +106,7 @@ function localizeServingLabel(label: string) {
     large: '大杯',
     pint: '品脱',
     glass: '杯装',
+    draft: '杯装',
     bottle: '瓶装',
     can: '罐装',
     tulip: '郁金香杯',
@@ -109,12 +115,17 @@ function localizeServingLabel(label: string) {
   return labels[normalized] ?? label
 }
 
+function formatPublicPrice(price: number | null | undefined): string | null {
+  if (typeof price === 'number' && price > 0) return `¥${price}`
+  return null
+}
+
 export function servingParts(option: Pick<PublicServingOption, 'label' | 'serving_type' | 'volume_ml' | 'price'>) {
   const label = option.label || option.serving_type
   return [
     label ? localizeServingLabel(label) : null,
     option.volume_ml ? `${option.volume_ml}ml` : null,
-    option.price > 0 ? `¥${option.price}` : null,
+    formatPublicPrice(option.price),
   ].filter((part): part is string => Boolean(part))
 }
 
@@ -123,7 +134,7 @@ export function formatCardPriceVolume(option?: PublicServingOption | null): stri
   if (!option) return null
 
   const parts = [
-    option.price > 0 ? `¥${option.price}` : null,
+    formatPublicPrice(option.price),
     option.volume_ml ? `${option.volume_ml}ml` : null,
   ].filter((part): part is string => Boolean(part))
 

@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const STORAGE_KEY = '@taplist/legal_ack_v1'
+const CONSENT_VERSION_KEY = '@taplist/first_launch_consent_v2'
 
-export async function hasAcknowledgedLegalNotice(): Promise<boolean> {
-  const value = await AsyncStorage.getItem(STORAGE_KEY)
+export async function hasCompletedFirstLaunchConsent(): Promise<boolean> {
+  const value = await AsyncStorage.getItem(CONSENT_VERSION_KEY)
   return value === '1'
 }
 
-export async function setAcknowledgedLegalNotice(): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, '1')
+export async function completeFirstLaunchConsent(): Promise<void> {
+  await AsyncStorage.setItem(CONSENT_VERSION_KEY, '1')
 }

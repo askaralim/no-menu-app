@@ -8,12 +8,23 @@ export interface Category {
   is_public_visible?: boolean
 }
 
+export interface DrinkServingOption {
+  id: string
+  label: string | null
+  volume_ml: number | null
+  price: number
+  serving_type?: string | null
+  is_default?: boolean
+  is_active?: boolean
+}
+
 export interface Drink {
   id: string
   category_id: string
   brand_name?: string | null
   name: string
   volume_ml?: number | null
+  /** @deprecated POS uses drink_serving_options */
   price: number
   price_unit: string
   price_bottle: number | null
@@ -24,17 +35,14 @@ export interface Drink {
   ml_per_cup?: number | null
   ml_per_bottle?: number | null
   created_at: string
-  /** Tap List hero image (not the same as POS-only assets) */
   image_url?: string | null
   is_public_visible?: boolean
   public_status?: string | null
   public_sort_order?: number | null
-  /** Canonical Product Pool link (nullable) */
   product_id?: string | null
-  /** Bar-level public name override when linked to a product */
   display_name?: string | null
-  /** Bar-level public description override when linked to a product */
   display_description?: string | null
+  drink_serving_options?: DrinkServingOption[]
 }
 
 export interface CategoryWithDrinks extends Category {
@@ -49,7 +57,7 @@ export interface Settings {
   updated_at: string
 }
 
-export type OrderStatus = 'active' | 'checked_out' | 'finished'
+export type OrderStatus = 'active' | 'checked_out' | 'finished' // finished = legacy settled
 
 export interface BusinessDay {
   id: string
@@ -78,10 +86,10 @@ export interface OrderItem {
   id: string
   order_id: string
   drink_id: string
-  quantity_cup: number
-  quantity_bottle: number
-  unit_price_cup: number
-  unit_price_bottle: number | null
+  serving_option_id: string
+  quantity: number
+  unit_price: number
+  label_snapshot: string | null
   created_at: string
 }
 
@@ -89,6 +97,15 @@ export interface OrderWithItems extends Order {
   items: (OrderItem & {
     drink: Drink
   })[]
+}
+
+export interface CartItem {
+  drink_id: string
+  drink: Drink
+  serving_option_id: string
+  serving_label: string
+  unit_price: number
+  quantity: number
 }
 
 export type UserRole = 'owner' | 'staff' | 'super_admin'
@@ -101,6 +118,7 @@ export interface TenantInfo {
   created_at: string
   owner_email: string
   staff_count: number
+  ordering_enabled?: boolean
 }
 
 /** Row from `admin_list_taplist_cities` */

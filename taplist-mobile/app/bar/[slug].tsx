@@ -24,7 +24,8 @@ import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicDrinks, fetchPublicTenantBySlug, fetchPublicTenantEvents } from '@/lib/api/taplist'
 import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
-import type { PublicEventRow } from '@/lib/types'
+import { trackEvent } from '@/lib/analytics'
+import { partitionPublicDrinks, type PublicEventRow } from '@/lib/types'
 
 export default function BarDetailScreen() {
   const insets = useSafeAreaInsets()
@@ -56,18 +57,20 @@ export default function BarDetailScreen() {
   })
 
   const drinkResult = drinksQuery.data
-  const remoteDrinks = drinkResult?.ok ? drinkResult.drinks : []
+  const partitions = drinkResult?.ok
+    ? partitionPublicDrinks(drinkResult)
+    : { drinks: [], comingSoon: [], recentlySoldOut: [], allForLookup: [] }
+  const drinks = partitions.drinks
+  const comingSoon = partitions.comingSoon
+  const recentlySoldOut = partitions.recentlySoldOut
   const events = eventsQuery.data ?? []
-  const drinks = [...remoteDrinks].sort((a, b) => {
-    const aSold = a.public_status === '售罄' ? 1 : 0
-    const bSold = b.public_status === '售罄' ? 1 : 0
-    return aSold - bSold || a.public_sort_order - b.public_sort_order
-  })
+  const shareDrinks = [...drinks, ...comingSoon]
+  const hasAnyDrinks = shareDrinks.length > 0 || recentlySoldOut.length > 0
   const openingHoursLabel = tenant ? formatOpeningHourLabel(tenant.opening_hour) : null
-  const canSaveTaplist = Boolean(tenant && drinks.length > 0 && !isSavingTaplist)
+  const canSaveTaplist = Boolean(tenant && shareDrinks.length > 0 && !isSavingTaplist)
 
   const handleSaveTaplistImage = async () => {
-    if (!tenant || drinks.length === 0) {
+    if (!tenant || shareDrinks.length === 0) {
       Alert.alert('暂无可保存的酒单')
       return
     }
@@ -77,17 +80,27 @@ export default function BarDetailScreen() {
       setIsSavingTaplist(true)
       const uri = await shareableRef.current?.capture()
       if (!uri) {
+        trackEvent('taplist_image_save_failed', {
+          tenant_id: tenant.id,
+          reason: 'capture_failed',
+        })
         Alert.alert('保存失败', '酒单图片生成失败，请稍后再试')
         return
       }
 
       await saveImageUriToPhotoLibrary(uri)
+      trackEvent('taplist_image_save_succeeded', { tenant_id: tenant.id })
       Alert.alert('保存成功', '酒单已保存到相册')
     } catch (error) {
       if (error instanceof PhotoLibraryPermissionError) {
+        trackEvent('taplist_image_save_failed', {
+          tenant_id: tenant.id,
+          reason: 'permission_denied',
+        })
         Alert.alert('无法保存', '需要相册权限才能保存酒单')
         return
       }
+      trackEvent('taplist_image_save_failed', { tenant_id: tenant.id, reason: 'unknown' })
       console.error('Save taplist image failed', error)
       Alert.alert('保存失败', '酒单图片生成失败，请稍后再试')
     } finally {
@@ -179,14 +192,47 @@ export default function BarDetailScreen() {
             <>
               {drinksQuery.isError || drinkResult?.ok === false ? (
                 <EmptyState title="暂时无法加载酒单" body="请稍后重试，或以门店实际供应为准。" />
-              ) : drinks.length === 0 && !drinksQuery.isLoading ? (
+              ) : !hasAnyDrinks && !drinksQuery.isLoading ? (
                 <EmptyState title="暂无公开酒款" body="这家酒吧当前还没有发布可展示的酒单。" />
               ) : (
-                <TapListSection drinkCount={drinks.length}>
-                  {drinks.map((drink) => (
-                    <BeerListCard key={drink.id} drink={drink} slug={tenant.slug} />
-                  ))}
-                </TapListSection>
+                <>
+                  {drinks.length > 0 ? (
+                    <TapListSection title={`今晚 ${drinks.length} 款`}>
+                      {drinks.map((drink) => (
+                        <BeerListCard
+                          key={drink.id}
+                          drink={drink}
+                          slug={tenant.slug}
+                          tenantId={tenant.id}
+                        />
+                      ))}
+                    </TapListSection>
+                  ) : null}
+                  {comingSoon.length > 0 ? (
+                    <TapListSection title={`即将上枪 ${comingSoon.length}`}>
+                      {comingSoon.map((drink) => (
+                        <BeerListCard
+                          key={drink.id}
+                          drink={drink}
+                          slug={tenant.slug}
+                          tenantId={tenant.id}
+                        />
+                      ))}
+                    </TapListSection>
+                  ) : null}
+                  {recentlySoldOut.length > 0 ? (
+                    <TapListSection title={`刚售罄 ${recentlySoldOut.length}`} muted>
+                      {recentlySoldOut.map((drink) => (
+                        <BeerListCard
+                          key={drink.id}
+                          drink={drink}
+                          slug={tenant.slug}
+                          tenantId={tenant.id}
+                        />
+                      ))}
+                    </TapListSection>
+                  ) : null}
+                </>
               )}
               <BeerRoadmapSection startTenantId={tenant.id} enabled={configured} />
             </>
@@ -197,9 +243,9 @@ export default function BarDetailScreen() {
           </View>
         </View>
       </ScrollView>
-      {tenant && drinks.length > 0 ? (
+      {tenant && shareDrinks.length > 0 ? (
         <View pointerEvents="none" style={styles.shareableCanvas}>
-          <ShareableBarTaplistImage ref={shareableRef} tenant={tenant} drinks={drinks} />
+          <ShareableBarTaplistImage ref={shareableRef} tenant={tenant} drinks={shareDrinks} />
         </View>
       ) : null}
       {isSavingTaplist ? (
@@ -214,11 +260,19 @@ export default function BarDetailScreen() {
   )
 }
 
-function TapListSection({ drinkCount, children }: { drinkCount: number; children: ReactNode }) {
+function TapListSection({
+  title,
+  muted,
+  children,
+}: {
+  title: string
+  muted?: boolean
+  children: ReactNode
+}) {
   return (
     <View style={styles.tapListSection}>
       <View style={styles.tapListHeader}>
-        <Text style={styles.tapListSub}>今晚 {drinkCount} 款在售</Text>
+        <Text style={[styles.tapListSub, muted && styles.tapListSubMuted]}>{title}</Text>
       </View>
       <View style={styles.tapList}>{children}</View>
     </View>
@@ -249,7 +303,7 @@ function BarEventsSection({ slug, events }: { slug: string; events: PublicEventR
         style={[styles.eventScrollView, styles.eventRailHeight]}
         contentContainerStyle={styles.eventScroller}>
         {visibleEvents.map((event) => (
-          <EventCard key={event.id} event={event} showVenue={false} />
+          <EventCard key={event.id} event={event} showVenue={false} source="bar_event" />
         ))}
       </ScrollView>
     </View>
@@ -437,7 +491,11 @@ const styles = StyleSheet.create({
   },
   tapListSub: {
     ...typography.caption,
-    color: 'rgba(245,238,225,0.42)',
+    color: 'rgba(245,238,225,0.62)',
+    fontWeight: '600',
+  },
+  tapListSubMuted: {
+    color: 'rgba(245,238,225,0.38)',
   },
   tapList: {
     gap: BEER_CARD_GAP,

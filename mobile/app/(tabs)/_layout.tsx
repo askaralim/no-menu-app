@@ -1,29 +1,46 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS } from '../../lib/constants'
+import { THEME } from '../../lib/theme'
 import { useAuth } from '../../lib/authProvider'
 
 export default function TabLayout() {
-  const { role } = useAuth()
-  const isOwnerOrAdmin = role === 'owner' || role === 'super_admin'
+  const { orderingEnabled } = useAuth()
 
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
-        headerStyle: { backgroundColor: COLORS.background },
-        headerTintColor: COLORS.gold,
+        // Pages own their hero titles; native header duplicated "商品库/门店" etc.
+        headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.background,
-          borderTopColor: COLORS.border,
+          backgroundColor: THEME.background,
+          borderTopColor: THEME.borderFaint,
         },
-        tabBarActiveTintColor: COLORS.gold,
-        tabBarInactiveTintColor: COLORS.muted,
+        tabBarActiveTintColor: THEME.gold,
+        tabBarInactiveTintColor: THEME.muted,
       }}>
+      <Tabs.Screen
+        name="taplist"
+        options={{
+          title: '酒单',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="sparkles-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="menu"
+        options={{
+          title: '商品库',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="wine-outline" size={size} color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{
           title: '点单',
+          href: orderingEnabled ? '/(tabs)/' : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart-outline" size={size} color={color} />
           ),
@@ -33,28 +50,27 @@ export default function TabLayout() {
         name="orders"
         options={{
           title: '订单',
+          href: orderingEnabled ? '/(tabs)/orders' : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="receipt-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="menu"
+        name="house"
         options={{
-          title: '菜单',
-          href: isOwnerOrAdmin ? undefined : null,
+          title: '门店',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
+            <Ionicons name="storefront-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="more"
         options={{
-          title: '更多',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="ellipsis-horizontal" size={size} color={color} />
-          ),
+          // Hidden from tab bar — open from 门店 → 经营数据. Account actions live on 门店.
+          href: null,
+          title: '经营数据',
         }}
       />
     </Tabs>

@@ -6,25 +6,61 @@ import { View, ActivityIndicator } from 'react-native'
 import { COLORS } from '../lib/constants'
 
 function RootLayoutNav() {
-  const { session, tenantId, role, isLoading } = useAuth()
-  const segments = useSegments()
+  const { session, tenantId, role, memberships, needsTenantSelection, isLoading } = useAuth()
+  const segments = useSegments() as string[]
   const router = useRouter()
 
   useEffect(() => {
     if (isLoading) return
 
-    const inAuthGroup = segments[0] === '(auth)'
+    const group = segments[0]
+    const screen = segments[1]
+    const inAuthGroup = group === '(auth)'
+    const authAllowWhileAuthed =
+      screen === 'accept-invite' ||
+      screen === 'select-tenant' ||
+      screen === 'no-access' ||
+      screen === 'change-password'
 
-    if (session && inAuthGroup) {
-      if (tenantId && role) {
-        router.replace('/(tabs)')
+    if (!session) {
+      if (!inAuthGroup) {
+        router.replace('/(auth)/login')
       }
-      // If session exists but no tenantId, user is mid-registration (on the bar setup step).
-      // Stay in auth group so register.tsx can call register_bar RPC.
-    } else if (!session && !inAuthGroup) {
-      router.replace('/(auth)/login')
+      return
     }
-  }, [session, tenantId, role, isLoading, segments])
+
+    const needsPasswordChange = session.user?.user_metadata?.must_change_password === true
+    if (needsPasswordChange) {
+      if (!(inAuthGroup && screen === 'change-password')) {
+        router.replace('/(auth)/change-password')
+      }
+      return
+    }
+
+    // Authenticated
+    if (needsTenantSelection) {
+      if (!(inAuthGroup && screen === 'select-tenant')) {
+        router.replace('/(auth)/select-tenant')
+      }
+      return
+    }
+
+    if (!tenantId || !role) {
+      if (memberships.length === 0) {
+        if (!(inAuthGroup && (screen === 'no-access' || screen === 'accept-invite'))) {
+          router.replace('/(auth)/no-access')
+        }
+        return
+      }
+    }
+
+    if (session && inAuthGroup && !authAllowWhileAuthed) {
+      if (tenantId && role) {
+        const isOwnerOrAdmin = role === 'owner' || role === 'super_admin'
+        router.replace(isOwnerOrAdmin ? '/(tabs)/taplist' : '/(tabs)')
+      }
+    }
+  }, [session, tenantId, role, memberships, needsTenantSelection, isLoading, segments])
 
   if (isLoading) {
     return (

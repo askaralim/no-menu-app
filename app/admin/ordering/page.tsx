@@ -3,13 +3,30 @@
 import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { Order, OrderItem, OrderWithItems, Drink, CategoryWithDrinks, BusinessDay } from '@/lib/types'
+import {
+  Order,
+  OrderWithItems,
+  Drink,
+  DrinkServingOption,
+  CategoryWithDrinks,
+  CartItem,
+} from '@/lib/types'
 
-interface CartItem {
-  drink_id: string
-  drink: Drink
-  quantity_cup: number
-  quantity_bottle: number
+function activeServings(drink: Drink): DrinkServingOption[] {
+  return (drink.drink_serving_options ?? []).filter((s) => s.is_active && Number(s.price) > 0)
+}
+
+function formatServingLabel(s: Pick<DrinkServingOption, 'label' | 'volume_ml'>): string {
+  const name = (s.label || '').trim() || '规格'
+  return s.volume_ml != null && s.volume_ml > 0 ? `${name} · ${s.volume_ml}ml` : name
+}
+
+function priceHint(drink: Drink): string {
+  const servings = activeServings(drink)
+  if (!servings.length) return ''
+  if (servings.length === 1) return `¥${Number(servings[0].price).toFixed(2)}`
+  const min = Math.min(...servings.map((s) => Number(s.price)))
+  return `从 ¥${min.toFixed(2)}`
 }
 
 function OrderingPageContent() {
@@ -25,6 +42,7 @@ function OrderingPageContent() {
   const [drinks, setDrinks] = useState<CategoryWithDrinks[]>([])
   const [customerName, setCustomerName] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
+  const [pickDrink, setPickDrink] = useState<Drink | null>(null)
   const [currentBusinessDayId, setCurrentBusinessDayId] = useState<string | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -40,12 +58,10 @@ function OrderingPageContent() {
     if (data) setTenantId(data.tenant_id)
   }
 
-  // Get or create current open business day
   const getCurrentBusinessDay = async (): Promise<{ id: string | null; error: string | null }> => {
     try {
-      // Call the database function to get or create open business day
       const { data, error } = await supabase.rpc('get_or_create_open_business_day')
-      
+
       if (error) {
         console.error('Error calling get_or_create_open_business_day RPC:', {
           message: error.message,
@@ -55,13 +71,12 @@ function OrderingPageContent() {
         })
         return { id: null, error: error.message || '数据库函数调用失败' }
       }
-      
+
       if (!data) {
         console.error('RPC function returned null or undefined')
         return { id: null, error: '数据库函数返回空值' }
       }
-      
-      console.log('Business day retrieved/created:', data)
+
       return { id: data, error: null }
     } catch (error: any) {
       console.error('Unexpected error getting business day:', error)
@@ -69,7 +84,6 @@ function OrderingPageContent() {
     }
   }
 
-  // Fetch active orders for current open business day
   const fetchActiveOrders = useCallback(async () => {
     try {
       const result = await getCurrentBusinessDay()
@@ -84,7 +98,7 @@ function OrderingPageContent() {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .in('status', ['active', 'checked_out'])
+        .eq('status', 'active')
         .eq('business_day_id', result.id)
         .order('created_at', { ascending: false })
 
@@ -95,7 +109,6 @@ function OrderingPageContent() {
     }
   }, [])
 
-  // Fetch selected order with items
   const fetchOrderDetails = async (orderId: string) => {
     try {
       const { data: orderData, error: orderError } = await supabase
@@ -110,7 +123,7 @@ function OrderingPageContent() {
         .from('order_items')
         .select(`
           *,
-          drinks (*)
+          drinks (*, drink_serving_options(id, label, volume_ml, price, is_active, is_default))
         `)
         .eq('order_id', orderId)
         .order('created_at', { ascending: true })
@@ -126,13 +139,14 @@ function OrderingPageContent() {
       }
 
       setSelectedOrder(orderWithItems)
-      // Initialize cart with existing items
       setCart(
         itemsData.map((item: any) => ({
           drink_id: item.drink_id,
           drink: item.drinks,
-          quantity_cup: item.quantity_cup,
-          quantity_bottle: item.quantity_bottle,
+          serving_option_id: item.serving_option_id,
+          serving_label: item.label_snapshot || '规格',
+          unit_price: Number(item.unit_price),
+          quantity: item.quantity,
         }))
       )
       setCustomerName(orderData.customer_name)
@@ -141,7 +155,6 @@ function OrderingPageContent() {
     }
   }
 
-  // Fetch drinks grouped by category
   const fetchDrinks = async () => {
     try {
       const { data, error } = await supabase
@@ -149,7 +162,7 @@ function OrderingPageContent() {
         .select(
           `
           *,
-          drinks (*)
+          drinks (*, drink_serving_options(id, label, volume_ml, price, is_active, is_default))
         `
         )
         .eq('enabled', true)
@@ -157,16 +170,18 @@ function OrderingPageContent() {
 
       if (error) throw error
 
-      const categoriesWithDrinks: CategoryWithDrinks[] = (data || []).map((category: any) => ({
-        id: category.id,
-        name: category.name,
-        sort_order: category.sort_order,
-        enabled: category.enabled,
-        created_at: category.created_at,
-        drinks: (category.drinks || [])
-          .filter((drink: any) => drink.enabled)
-          .sort((a: any, b: any) => a.sort_order - b.sort_order),
-      }))
+      const categoriesWithDrinks: CategoryWithDrinks[] = (data || [])
+        .map((category: any) => ({
+          id: category.id,
+          name: category.name,
+          sort_order: category.sort_order,
+          enabled: category.enabled,
+          created_at: category.created_at,
+          drinks: (category.drinks || [])
+            .filter((drink: Drink) => drink.enabled && activeServings(drink).length > 0)
+            .sort((a: Drink, b: Drink) => a.sort_order - b.sort_order),
+        }))
+        .filter((cat) => cat.drinks.length > 0)
 
       setDrinks(categoriesWithDrinks)
     } catch (error) {
@@ -179,6 +194,7 @@ function OrderingPageContent() {
     setSelectedOrder(null)
     setCustomerName('')
     setCart([])
+    setPickDrink(null)
   }
 
   const handleSelectOrder = (order: Order) => {
@@ -203,16 +219,15 @@ function OrderingPageContent() {
     }
   }
 
-  const addToCart = (drink: Drink) => {
+  const addServingToCart = (drink: Drink, serving: DrinkServingOption) => {
+    const label = formatServingLabel(serving)
+    const price = Number(serving.price)
     setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.drink_id === drink.id)
+      const existingItem = prevCart.find((item) => item.serving_option_id === serving.id)
       if (existingItem) {
         return prevCart.map((item) =>
-          item.drink_id === drink.id
-            ? {
-                ...item,
-                quantity_cup: item.quantity_cup + 1,
-              }
+          item.serving_option_id === serving.id
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       }
@@ -221,27 +236,47 @@ function OrderingPageContent() {
         {
           drink_id: drink.id,
           drink,
-          quantity_cup: 1,
-          quantity_bottle: 0,
+          serving_option_id: serving.id,
+          serving_label: label,
+          unit_price: price,
+          quantity: 1,
         },
       ]
     })
+    setPickDrink(null)
   }
 
-  const updateCartItem = (drinkId: string, field: 'quantity_cup' | 'quantity_bottle', value: number) => {
+  const onPressDrink = (drink: Drink) => {
+    const servings = activeServings(drink)
+    if (!servings.length) {
+      alert('该酒款没有有效价格规格')
+      return
+    }
+    if (servings.length === 1) {
+      addServingToCart(drink, servings[0])
+      return
+    }
+    setPickDrink(drink)
+  }
+
+  const updateCartItem = (servingOptionId: string, value: number) => {
+    if (value <= 0) {
+      setCart((prevCart) => prevCart.filter((item) => item.serving_option_id !== servingOptionId))
+      return
+    }
     setCart((prevCart) =>
-      prevCart.map((item) => (item.drink_id === drinkId ? { ...item, [field]: value } : item))
+      prevCart.map((item) =>
+        item.serving_option_id === servingOptionId ? { ...item, quantity: value } : item
+      )
     )
   }
 
-  const removeFromCart = (drinkId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.drink_id !== drinkId))
+  const removeFromCart = (servingOptionId: string) => {
+    setCart((prevCart) => prevCart.filter((item) => item.serving_option_id !== servingOptionId))
   }
 
   const calculateCartTotal = () => {
-    return cart.reduce((total, item) => {
-      return total + item.quantity_cup * item.drink.price + item.quantity_bottle * (item.drink.price_bottle || 0)
-    }, 0)
+    return cart.reduce((total, item) => total + item.quantity * item.unit_price, 0)
   }
 
   const handleSaveOrder = async () => {
@@ -250,20 +285,29 @@ function OrderingPageContent() {
       return
     }
 
-    const itemsWithQuantity = cart.filter((item) => item.quantity_cup > 0 || item.quantity_bottle > 0)
+    const itemsWithQuantity = cart.filter((item) => item.quantity > 0)
     if (itemsWithQuantity.length === 0) {
       alert('请至少添加一个商品')
       return
     }
 
     try {
-      // Get today's date in China timezone (UTC+8 / Asia/Shanghai)
       const now = new Date()
-      const chinaDateString = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }) // Format: YYYY-MM-DD
+      const chinaDateString = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' })
       const today = chinaDateString
 
+      const toRows = (orderId: string) =>
+        itemsWithQuantity.map((item) => ({
+          order_id: orderId,
+          drink_id: item.drink_id,
+          serving_option_id: item.serving_option_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          label_snapshot: item.serving_label,
+          tenant_id: tenantId,
+        }))
+
       if (selectedOrder) {
-        // Update existing order
         const { error: orderError } = await supabase
           .from('orders')
           .update({ customer_name: customerName })
@@ -271,41 +315,27 @@ function OrderingPageContent() {
 
         if (orderError) throw orderError
 
-        // Delete existing items
         const { error: deleteError } = await supabase.from('order_items').delete().eq('order_id', selectedOrder.id)
 
         if (deleteError) throw deleteError
 
-        // Insert new items
-        const orderItems = itemsWithQuantity.map((item) => ({
-          order_id: selectedOrder.id,
-          drink_id: item.drink_id,
-          quantity_cup: item.quantity_cup,
-          quantity_bottle: item.quantity_bottle,
-          unit_price_cup: item.drink.price,
-          unit_price_bottle: item.drink.price_bottle,
-          tenant_id: tenantId,
-        }))
-
-        const { error: insertError } = await supabase.from('order_items').insert(orderItems)
+        const { error: insertError } = await supabase.from('order_items').insert(toRows(selectedOrder.id))
 
         if (insertError) throw insertError
 
         alert('订单更新成功')
       } else {
-        // Get or create current business day
         const result = await getCurrentBusinessDay()
         if (!result.id) {
-          const errorMsg = result.error 
+          const errorMsg = result.error
             ? `无法获取营业日: ${result.error}\n\n请检查:\n1. 数据库函数 get_or_create_open_business_day 是否存在\n2. 数据库权限设置是否正确\n3. 查看浏览器控制台获取详细错误信息`
             : '无法获取营业日，请重试'
           alert(errorMsg)
           return
         }
-        
+
         const businessDayId = result.id
 
-        // Create new order
         const { data: newOrder, error: orderError } = await supabase
           .from('orders')
           .insert({
@@ -320,28 +350,17 @@ function OrderingPageContent() {
 
         if (orderError) throw orderError
 
-        // Insert order items
-        const orderItems = itemsWithQuantity.map((item) => ({
-          order_id: newOrder.id,
-          drink_id: item.drink_id,
-          quantity_cup: item.quantity_cup,
-          quantity_bottle: item.quantity_bottle,
-          unit_price_cup: item.drink.price,
-          unit_price_bottle: item.drink.price_bottle,
-          tenant_id: tenantId,
-        }))
-
-        const { error: insertError } = await supabase.from('order_items').insert(orderItems)
+        const { error: insertError } = await supabase.from('order_items').insert(toRows(newOrder.id))
 
         if (insertError) throw insertError
 
         alert('订单创建成功')
       }
 
-      // Reset form and go back to list
       setCustomerName('')
       setCart([])
       setSelectedOrder(null)
+      setPickDrink(null)
       router.push('/admin/ordering')
       fetchActiveOrders()
     } catch (error) {
@@ -384,6 +403,7 @@ function OrderingPageContent() {
       setSelectedOrder(null)
       setCustomerName('')
       setCart([])
+      setPickDrink(null)
     } else {
       setSelectedOrder(null)
     }
@@ -397,7 +417,6 @@ function OrderingPageContent() {
     )
   }
 
-  // Show form view for create/edit
   if (isCreating || isEditing) {
     return (
       <div className="admin-container">
@@ -415,7 +434,6 @@ function OrderingPageContent() {
         </div>
 
         <div className="admin-section">
-          {/* Customer Name */}
           <div style={{ marginBottom: '1.5rem' }}>
             <label className="admin-label">客户姓名</label>
             <input
@@ -428,7 +446,6 @@ function OrderingPageContent() {
             />
           </div>
 
-          {/* Cart */}
           {cart.length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '1rem' }}>订单内容</h3>
@@ -437,62 +454,39 @@ function OrderingPageContent() {
                   <thead>
                     <tr>
                       <th>商品</th>
-                      <th>杯数</th>
-                      <th>瓶数</th>
-                      <th>单价（杯）</th>
-                      <th>单价（瓶）</th>
+                      <th>规格</th>
+                      <th>数量</th>
+                      <th>单价</th>
                       <th>小计</th>
                       <th>操作</th>
                     </tr>
                   </thead>
                   <tbody>
                     {cart
-                      .filter((item) => item.quantity_cup > 0 || item.quantity_bottle > 0)
+                      .filter((item) => item.quantity > 0)
                       .map((item) => {
-                        const subtotal =
-                          item.quantity_cup * item.drink.price +
-                          item.quantity_bottle * (item.drink.price_bottle || 0)
+                        const subtotal = item.quantity * item.unit_price
                         return (
-                          <tr key={item.drink_id}>
+                          <tr key={item.serving_option_id}>
                             <td className="name-cell">{item.drink.name}</td>
+                            <td>{item.serving_label}</td>
                             <td>
                               <input
                                 type="number"
                                 min="0"
-                                value={item.quantity_cup}
+                                value={item.quantity}
                                 onChange={(e) =>
-                                  updateCartItem(item.drink_id, 'quantity_cup', parseInt(e.target.value) || 0)
+                                  updateCartItem(item.serving_option_id, parseInt(e.target.value) || 0)
                                 }
                                 className="admin-input"
                                 style={{ width: '60px', textAlign: 'center' }}
                               />
                             </td>
-                            <td>
-                              {item.drink.price_bottle ? (
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={item.quantity_bottle}
-                                  onChange={(e) =>
-                                    updateCartItem(item.drink_id, 'quantity_bottle', parseInt(e.target.value) || 0)
-                                  }
-                                  className="admin-input"
-                                  style={{ width: '60px', textAlign: 'center' }}
-                                />
-                              ) : (
-                                <span style={{ color: '#9ca3af' }}>—</span>
-                              )}
-                            </td>
-                            <td>¥{item.drink.price.toFixed(2)}/{item.drink.price_unit}</td>
-                            <td>
-                              {item.drink.price_bottle
-                                ? `¥${item.drink.price_bottle.toFixed(2)}/${item.drink.price_unit_bottle}`
-                                : '—'}
-                            </td>
+                            <td>¥{item.unit_price.toFixed(2)}</td>
                             <td style={{ fontWeight: 600 }}>¥{subtotal.toFixed(2)}</td>
                             <td>
                               <button
-                                onClick={() => removeFromCart(item.drink_id)}
+                                onClick={() => removeFromCart(item.serving_option_id)}
                                 className="admin-button admin-button-danger"
                                 style={{ padding: '0.25rem 0.75rem', fontSize: '12px' }}
                               >
@@ -521,7 +515,43 @@ function OrderingPageContent() {
             </div>
           )}
 
-          {/* Drink Selection */}
+          {pickDrink && (
+            <div
+              style={{
+                marginBottom: '1.5rem',
+                padding: '1rem',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
+                  选择规格 — {pickDrink.name}
+                </h3>
+                <button
+                  onClick={() => setPickDrink(null)}
+                  className="admin-button admin-button-secondary"
+                  style={{ padding: '0.25rem 0.75rem', fontSize: '12px' }}
+                >
+                  取消
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {activeServings(pickDrink).map((serving) => (
+                  <button
+                    key={serving.id}
+                    onClick={() => addServingToCart(pickDrink, serving)}
+                    className="admin-button admin-button-primary"
+                    style={{ padding: '0.5rem 1rem', fontSize: '14px' }}
+                  >
+                    {formatServingLabel(serving)} · ¥{Number(serving.price).toFixed(2)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '1rem' }}>选择商品</h3>
             <div>
@@ -540,32 +570,44 @@ function OrderingPageContent() {
                     {category.name}
                   </h4>
                   <div className="drink-selection-grid">
-                    {category.drinks.map((drink) => (
-                      <button
-                        key={drink.id}
-                        onClick={() => addToCart(drink)}
-                        className="admin-button admin-button-secondary"
-                        style={{
-                          padding: '0.5rem 1rem',
-                          fontSize: '14px',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {drink.name}
-                      </button>
-                    ))}
+                    {category.drinks.map((drink) => {
+                      const hint = priceHint(drink)
+                      const multi = activeServings(drink).length > 1
+                      return (
+                        <button
+                          key={drink.id}
+                          onClick={() => onPressDrink(drink)}
+                          className="admin-button admin-button-secondary"
+                          style={{
+                            padding: '0.5rem 1rem',
+                            fontSize: '14px',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: '0.15rem',
+                          }}
+                        >
+                          <span>{drink.name}</span>
+                          {hint && (
+                            <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: 400 }}>
+                              {hint}{multi ? ' · 选规格' : ''}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Save Button */}
           <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
             <button
               onClick={handleSaveOrder}
               className="admin-button admin-button-primary"
-              disabled={!customerName.trim() || cart.filter((i) => i.quantity_cup > 0 || i.quantity_bottle > 0).length === 0}
+              disabled={!customerName.trim() || cart.filter((i) => i.quantity > 0).length === 0}
             >
               {isEditing ? '更新订单' : '创建订单'}
             </button>
@@ -575,7 +617,6 @@ function OrderingPageContent() {
     )
   }
 
-  // Show list view
   return (
     <div className="admin-container">
       <div className="admin-header">
@@ -624,23 +665,15 @@ function OrderingPageContent() {
                         backgroundColor:
                           order.status === 'active'
                             ? '#dbeafe'
-                            : order.status === 'checked_out'
-                            ? '#fef3c7'
-                            : '#e5e7eb',
+                            : '#fef3c7',
                         color:
                           order.status === 'active'
                             ? '#1e40af'
-                            : order.status === 'checked_out'
-                            ? '#92400e'
-                            : '#374151',
+                            : '#92400e',
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {order.status === 'active'
-                        ? '进行中'
-                        : order.status === 'checked_out'
-                        ? '已结账'
-                        : '已完成'}
+                      {order.status === 'active' ? '进行中' : '已结账'}
                     </span>
                   </div>
                   {order.status === 'active' && (

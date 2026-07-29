@@ -19,7 +19,7 @@ function OrdersPageContent() {
   const [businessDays, setBusinessDays] = useState<BusinessDayWithOrders[]>([])
   const [availableBusinessDays, setAvailableBusinessDays] = useState<BusinessDay[]>([])
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'checked_out'>('all')
   const [loading, setLoading] = useState(true)
 
   // Fetch all business days
@@ -35,8 +35,10 @@ function OrdersPageContent() {
       // Fetch all orders
       let ordersQuery = supabase.from('orders').select('*').order('created_at', { ascending: false })
 
-      if (statusFilter !== 'all') {
-        ordersQuery = ordersQuery.eq('status', statusFilter)
+      if (statusFilter === 'active') {
+        ordersQuery = ordersQuery.eq('status', 'active')
+      } else if (statusFilter === 'checked_out') {
+        ordersQuery = ordersQuery.in('status', ['checked_out', 'finished'])
       }
 
       if (selectedBusinessDayId) {
@@ -203,9 +205,8 @@ function OrdersPageContent() {
       case 'active':
         return { bg: '#dbeafe', color: '#1e40af', text: '进行中' }
       case 'checked_out':
-        return { bg: '#fef3c7', color: '#92400e', text: '已结账' }
       case 'finished':
-        return { bg: '#e5e7eb', color: '#374151', text: '已完成' }
+        return { bg: '#fef3c7', color: '#92400e', text: '已结账' }
       default:
         return { bg: '#e5e7eb', color: '#374151', text: status }
     }
@@ -336,30 +337,21 @@ function OrdersPageContent() {
                 <thead>
                   <tr>
                     <th>商品</th>
-                    <th>杯数</th>
-                    <th>瓶数</th>
+                    <th>规格</th>
+                    <th>数量</th>
                     <th>单价</th>
                     <th>小计</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedOrder.items.map((item) => {
-                    const subtotal =
-                      item.quantity_cup * item.unit_price_cup +
-                      item.quantity_bottle * (item.unit_price_bottle || 0)
+                    const subtotal = item.quantity * item.unit_price
                     return (
                       <tr key={item.id}>
                         <td className="name-cell">{item.drink.name}</td>
-                        <td>{item.quantity_cup}</td>
-                        <td>{item.quantity_bottle || 0}</td>
-                        <td>
-                          {item.quantity_cup > 0 && (
-                            <div>¥{item.unit_price_cup.toFixed(2)}/{item.drink.price_unit}</div>
-                          )}
-                          {item.quantity_bottle > 0 && item.unit_price_bottle && (
-                            <div>¥{item.unit_price_bottle.toFixed(2)}/{item.drink.price_unit_bottle}</div>
-                          )}
-                        </td>
+                        <td>{item.label_snapshot || '—'}</td>
+                        <td>{item.quantity}</td>
+                        <td>¥{item.unit_price.toFixed(2)}</td>
                         <td style={{ fontWeight: 600 }}>¥{subtotal.toFixed(2)}</td>
                       </tr>
                     )
@@ -382,7 +374,7 @@ function OrdersPageContent() {
             </div>
           </div>
 
-          {/* Status Change Buttons */}
+          {/* Status Change Buttons — active ↔ checked_out only */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {selectedOrder.status === 'active' && (
               <button
@@ -392,28 +384,12 @@ function OrdersPageContent() {
                 标记为已结账
               </button>
             )}
-            {selectedOrder.status === 'checked_out' && (
-              <>
-                <button
-                  onClick={() => handleStatusChange(selectedOrder.id, 'finished')}
-                  className="admin-button admin-button-primary"
-                >
-                  标记为已完成
-                </button>
-                <button
-                  onClick={() => handleStatusChange(selectedOrder.id, 'active')}
-                  className="admin-button admin-button-secondary"
-                >
-                  恢复为进行中
-                </button>
-              </>
-            )}
-            {selectedOrder.status === 'finished' && (
+            {(selectedOrder.status === 'checked_out' || selectedOrder.status === 'finished') && (
               <button
-                onClick={() => handleStatusChange(selectedOrder.id, 'checked_out')}
+                onClick={() => handleStatusChange(selectedOrder.id, 'active')}
                 className="admin-button admin-button-secondary"
               >
-                恢复为已结账
+                恢复为进行中
               </button>
             )}
           </div>
@@ -472,13 +448,6 @@ function OrdersPageContent() {
                   style={{ padding: '0.5rem 1rem' }}
                 >
                   已结账
-                </button>
-                <button
-                  onClick={() => setStatusFilter('finished')}
-                  className={`admin-button ${statusFilter === 'finished' ? 'admin-button-primary' : 'admin-button-secondary'}`}
-                  style={{ padding: '0.5rem 1rem' }}
-                >
-                  已完成
                 </button>
               </div>
             </div>

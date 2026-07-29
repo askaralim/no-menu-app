@@ -1,9 +1,10 @@
 import { Link, useRouter } from 'expo-router'
-import { Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 
 import { palette, spacing, typography } from '@/constants/design'
 import { RailVenueBadge } from '@/components/taplist/RailVenueBadge'
+import { CachedImage, CachedImageBackground } from '@/components/taplist/CachedImage'
 import {
   listCapsuleCardStyles,
   listCapsuleMetaStyle,
@@ -29,11 +30,13 @@ import {
   railCardScrimStyle,
 } from '@/components/taplist/railCardStyle'
 import type { PublicEventRow } from '@/lib/types'
+import { trackEvent, type AnalyticsSource } from '@/lib/analytics'
 
 type EventCardProps = {
   event: PublicEventRow
   compact?: boolean
   showVenue?: boolean
+  source?: AnalyticsSource
 }
 
 export function compactEventTypeLabel(event: PublicEventRow) {
@@ -88,7 +91,7 @@ export function eventMetaLine(event: PublicEventRow) {
   return eventDisplayStateLabel(event.display_state)
 }
 
-export function EventCard({ event, compact = false, showVenue = true }: EventCardProps) {
+export function EventCard({ event, compact = false, showVenue = true, source = 'direct' }: EventCardProps) {
   const router = useRouter()
   const hasImage = Boolean(event.image_url)
   const titleLines = compact ? 2 : 2
@@ -117,15 +120,22 @@ export function EventCard({ event, compact = false, showVenue = true }: EventCar
         .filter(Boolean)
         .join('，')}
       onPress={() =>
-        router.push({
-          pathname: '/bar/[slug]/event/[eventId]',
-          params: { slug: event.tenant_slug, eventId: event.id },
-        })
+        {
+          trackEvent('event_opened', {
+            tenant_id: event.tenant_id,
+            event_id: event.id,
+            source,
+          })
+          router.push({
+            pathname: '/bar/[slug]/event/[eventId]',
+            params: { slug: event.tenant_slug, eventId: event.id },
+          })
+        }
       }
       style={({ pressed }) => [styles.card, hasImage && styles.imageCard, pressed && styles.pressed]}>
       {hasImage ? (
-        <ImageBackground
-          source={{ uri: event.image_url as string }}
+        <CachedImageBackground
+          source={event.image_url as string}
           style={styles.imageFill}
           imageStyle={styles.imageRadius}>
           <LinearGradient
@@ -134,7 +144,7 @@ export function EventCard({ event, compact = false, showVenue = true }: EventCar
             style={styles.imageScrim}>
             {copy}
           </LinearGradient>
-        </ImageBackground>
+        </CachedImageBackground>
       ) : (
         <LinearGradient
           colors={RAIL_TEXT_ONLY_SCRIM_COLORS}
@@ -148,7 +158,15 @@ export function EventCard({ event, compact = false, showVenue = true }: EventCar
   )
 }
 
-export function EventListCard({ event, showVenue = true }: { event: PublicEventRow; showVenue?: boolean }) {
+export function EventListCard({
+  event,
+  showVenue = true,
+  source = 'direct',
+}: {
+  event: PublicEventRow
+  showVenue?: boolean
+  source?: AnalyticsSource
+}) {
   const hasImage = Boolean(event.image_url)
   const artworkWidth = hasImage ? EVENT_CARD_ARTWORK_WIDTH : BEER_CARD_ARTWORK_WIDTH
   const detailLine = eventListDetailLine(event)
@@ -162,6 +180,13 @@ export function EventListCard({ event, showVenue = true }: { event: PublicEventR
       }}
       asChild>
       <Pressable
+        onPress={() =>
+          trackEvent('event_opened', {
+            tenant_id: event.tenant_id,
+            event_id: event.id,
+            source,
+          })
+        }
         accessibilityRole="button"
         accessibilityLabel={[event.tenant_display_name, event.title, event.display_time, event.event_type_label]
           .filter(Boolean)
@@ -170,10 +195,9 @@ export function EventListCard({ event, showVenue = true }: { event: PublicEventR
         <View style={listCapsuleCardStyles.cardInner}>
           {hasImage ? (
             <View style={[listCapsuleCardStyles.artworkFrame, { width: artworkWidth }]}>
-              <Image
-                source={{ uri: event.image_url as string }}
+              <CachedImage
+                source={event.image_url as string}
                 style={listCapsuleCardStyles.artwork}
-                resizeMode="cover"
               />
             </View>
           ) : (

@@ -5,21 +5,17 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
-  Switch,
   Alert,
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/authProvider'
-import { COLORS, CUSTOMER_NAME_MAP } from '../../lib/constants'
-import type { Settings, StaffMember } from '../../lib/types'
+import { THEME as T, LAYOUT } from '../../lib/theme'
 
-type Section = 'dashboard' | 'analytics' | 'customers' | 'settings' | 'staff'
+type Section = 'dashboard' | 'analytics' | 'customers'
 
 interface CustomerSpending {
   name: string
@@ -37,11 +33,14 @@ interface DailyRevenue {
   revenue: number
 }
 
-export default function MoreScreen() {
+const SECTIONS: { key: Section; label: string }[] = [
+  { key: 'dashboard', label: '概览' },
+  { key: 'analytics', label: '分析' },
+  { key: 'customers', label: '客户' },
+]
+
+export default function InsightsScreen() {
   const { tenantId, role } = useAuth()
-  const isOwner = role === 'owner' || role === 'super_admin'
-  /** Staff RPCs are owner-only (see install_all_in_one.sql) */
-  const canManageBarStaff = role === 'owner'
   const [activeSection, setActiveSection] = useState<Section>('dashboard')
 
   const [stats, setStats] = useState({ categories: 0, drinks: 0, enabledDrinks: 0, todayOrders: 0, todayRevenue: 0 })
@@ -54,33 +53,6 @@ export default function MoreScreen() {
   const [topDrinks, setTopDrinks] = useState<TopDrink[]>([])
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([])
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
-
-  const [settings, setSettings] = useState<Settings | null>(null)
-  const [settingsForm, setSettingsForm] = useState({ theme: 'dark' as Settings['theme'], auto_refresh: true, refresh_interval: '3600' })
-  const [settingsLoading, setSettingsLoading] = useState(false)
-
-  const [staffList, setStaffList] = useState<StaffMember[]>([])
-  const [staffLoading, setStaffLoading] = useState(false)
-  const [newStaffEmail, setNewStaffEmail] = useState('')
-  const [addingStaff, setAddingStaff] = useState(false)
-
-  const ownerSections: { key: Section; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { key: 'dashboard', label: '概览', icon: 'stats-chart-outline' },
-    { key: 'analytics', label: '分析', icon: 'bar-chart-outline' },
-    { key: 'customers', label: '客户', icon: 'people-outline' },
-    { key: 'staff', label: '员工', icon: 'person-add-outline' },
-    { key: 'settings', label: '设置', icon: 'settings-outline' },
-  ]
-
-  const staffSections: { key: Section; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { key: 'dashboard', label: '概览', icon: 'stats-chart-outline' },
-    { key: 'settings', label: '账户', icon: 'person-outline' },
-  ]
-
-  const baseSections = isOwner ? ownerSections : staffSections
-  const visibleSections = baseSections.filter(
-    (s) => s.key !== 'staff' || canManageBarStaff
-  )
 
   // --- Dashboard ---
   const fetchDashboard = useCallback(async () => {
@@ -138,15 +110,14 @@ export default function MoreScreen() {
 
       const map = new Map<string, { total: number; count: number }>()
       for (const order of data || []) {
-        const raw = (order.customer_name || '').trim() || '(未填写)'
-        const canonical = CUSTOMER_NAME_MAP[raw] ?? raw
+        const name = (order.customer_name || '').trim() || '(未填写)'
         const amount = Number(order.total_amount || 0)
-        const existing = map.get(canonical)
+        const existing = map.get(name)
         if (existing) {
           existing.total += amount
           existing.count += 1
         } else {
-          map.set(canonical, { total: amount, count: 1 })
+          map.set(name, { total: amount, count: 1 })
         }
       }
 
@@ -172,7 +143,7 @@ export default function MoreScreen() {
 
       const { data: itemsData, error: itemsError } = await supabase
         .from('order_items')
-        .select('drink_id, quantity_cup, quantity_bottle, drinks(name)')
+        .select('drink_id, quantity, drinks(name)')
         .gte('created_at', thirtyDaysAgo.toISOString())
 
       if (itemsError) throw itemsError
@@ -180,7 +151,7 @@ export default function MoreScreen() {
       const drinkMap = new Map<string, { name: string; count: number }>()
       for (const item of itemsData || []) {
         const name = (item as any).drinks?.name || '未知'
-        const count = (item.quantity_cup || 0) + (item.quantity_bottle || 0)
+        const count = item.quantity || 0
         const existing = drinkMap.get(item.drink_id)
         if (existing) {
           existing.count += count
@@ -223,125 +194,11 @@ export default function MoreScreen() {
     }
   }, [])
 
-  // --- Settings ---
-  const fetchSettings = useCallback(async () => {
-    if (!tenantId) return
-    setSettingsLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .limit(1)
-        .maybeSingle()
-      if (!error && data) {
-        setSettings(data)
-        setSettingsForm({
-          theme: data.theme,
-          auto_refresh: data.auto_refresh,
-          refresh_interval: String(data.refresh_interval),
-        })
-      }
-    } catch (e) {
-      console.error('Settings error:', e)
-    } finally {
-      setSettingsLoading(false)
-    }
-  }, [tenantId])
-
-  const saveSettings = async () => {
-    try {
-      const payload = {
-        theme: settingsForm.theme,
-        auto_refresh: settingsForm.auto_refresh,
-        refresh_interval: parseInt(settingsForm.refresh_interval) || 3600,
-        updated_at: new Date().toISOString(),
-      }
-      if (settings) {
-        const { error } = await supabase.from('settings').update(payload).eq('id', settings.id)
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('settings').insert([{ ...payload, tenant_id: tenantId }])
-        if (error) throw error
-      }
-      Alert.alert('成功', '设置已保存')
-      fetchSettings()
-    } catch (e) {
-      Alert.alert('错误', '保存失败')
-    }
-  }
-
-  // --- Staff Management ---
-  const fetchStaff = useCallback(async () => {
-    setStaffLoading(true)
-    try {
-      const { data, error } = await supabase.rpc('list_staff')
-      if (error) throw error
-      setStaffList((data || []) as StaffMember[])
-    } catch (e) {
-      Alert.alert('错误', '加载员工列表失败')
-    } finally {
-      setStaffLoading(false)
-    }
-  }, [])
-
-  const handleAddStaff = async () => {
-    const email = newStaffEmail.trim()
-    if (!email) return Alert.alert('提示', '请输入员工邮箱')
-    setAddingStaff(true)
-    try {
-      const { error } = await supabase.rpc('add_staff_member', { staff_email: email })
-      if (error) throw error
-      Alert.alert('成功', `已添加 ${email} 为员工`)
-      setNewStaffEmail('')
-      fetchStaff()
-    } catch (e: any) {
-      Alert.alert('错误', e?.message || '添加员工失败')
-    } finally {
-      setAddingStaff(false)
-    }
-  }
-
-  const handleRemoveStaff = (member: StaffMember) => {
-    if (member.role === 'owner') return Alert.alert('提示', '无法移除店主')
-    Alert.alert('确认', `确定要移除 ${member.email} 吗？`, [
-      { text: '取消', style: 'cancel' },
-      {
-        text: '移除',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const { error } = await supabase.rpc('remove_staff_member', { staff_user_id: member.user_id })
-            if (error) throw error
-            fetchStaff()
-          } catch (e: any) {
-            Alert.alert('错误', e?.message || '移除失败')
-          }
-        },
-      },
-    ])
-  }
-
-  const handleLogout = async () => {
-    Alert.alert('确认', '确定要退出登录吗？', [
-      { text: '取消', style: 'cancel' },
-      { text: '退出', style: 'destructive', onPress: () => supabase.auth.signOut() },
-    ])
-  }
-
   useEffect(() => {
     if (activeSection === 'dashboard') fetchDashboard()
     else if (activeSection === 'analytics') fetchAnalytics()
     else if (activeSection === 'customers') fetchCustomers()
-    else if (activeSection === 'settings') fetchSettings()
-    else if (activeSection === 'staff') fetchStaff()
-  }, [activeSection, fetchDashboard, fetchAnalytics, fetchCustomers, fetchSettings, fetchStaff])
-
-  const themeOptions: { key: Settings['theme']; label: string }[] = [
-    { key: 'dark', label: '深色夜店风' },
-    { key: 'minimal', label: '简约黑白' },
-    { key: 'luxury', label: '高端酒吧' },
-  ]
+  }, [activeSection, fetchDashboard, fetchAnalytics, fetchCustomers])
 
   const getRoleLabel = (r: string) => {
     switch (r) {
@@ -353,28 +210,31 @@ export default function MoreScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Section Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sectionRow}>
-        {visibleSections.map((s) => (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.hero}>
+        <Text style={styles.title}>经营数据</Text>
+      </View>
+
+      {/* Section switcher */}
+      <View style={styles.segmented}>
+        {SECTIONS.map((s) => (
           <TouchableOpacity
             key={s.key}
-            style={[styles.sectionBtn, activeSection === s.key && styles.sectionBtnActive]}
+            style={[styles.segment, activeSection === s.key && styles.segmentActive]}
             onPress={() => setActiveSection(s.key)}
           >
-            <Ionicons name={s.icon} size={18} color={activeSection === s.key ? '#000' : COLORS.text} />
-            <Text style={[styles.sectionBtnText, activeSection === s.key && styles.sectionBtnTextActive]}>
+            <Text style={[styles.segmentText, activeSection === s.key && styles.segmentTextActive]}>
               {s.label}
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
       {/* DASHBOARD */}
       {activeSection === 'dashboard' && (
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={styles.scrollBody}>
           {dashLoading ? (
-            <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
+            <ActivityIndicator size="large" color={T.gold} style={{ marginTop: 40 }} />
           ) : (
             <>
               <View style={styles.statsGrid}>
@@ -384,33 +244,28 @@ export default function MoreScreen() {
                 </View>
                 <View style={[styles.statCard, { flex: 2 }]}>
                   <Text style={styles.statLabel}>今日营收</Text>
-                  <Text style={[styles.statValue, { color: COLORS.gold }]}>¥{stats.todayRevenue.toFixed(2)}</Text>
+                  <Text style={[styles.statValue, { color: T.gold }]}>¥{stats.todayRevenue.toFixed(2)}</Text>
                 </View>
               </View>
-              {isOwner && (
-                <View style={styles.statsGrid}>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statLabel}>分类总数</Text>
-                    <Text style={styles.statValue}>{stats.categories}</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statLabel}>酒品总数</Text>
-                    <Text style={styles.statValue}>{stats.drinks}</Text>
-                  </View>
-                  <View style={styles.statCard}>
-                    <Text style={styles.statLabel}>在售酒品</Text>
-                    <Text style={styles.statValue}>{stats.enabledDrinks}</Text>
-                  </View>
+              <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>分类总数</Text>
+                  <Text style={styles.statValue}>{stats.categories}</Text>
                 </View>
-              )}
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>酒品总数</Text>
+                  <Text style={styles.statValue}>{stats.drinks}</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>在售酒品</Text>
+                  <Text style={styles.statValue}>{stats.enabledDrinks}</Text>
+                </View>
+              </View>
 
-              {/* Role badge */}
               <View style={styles.roleBadgeContainer}>
                 <View style={styles.roleBadge}>
-                  <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.gold} />
-                  <Text style={styles.roleBadgeText}>
-                    当前角色: {getRoleLabel(role || 'staff')}
-                  </Text>
+                  <Ionicons name="shield-checkmark-outline" size={15} color={T.gold} />
+                  <Text style={styles.roleBadgeText}>当前角色：{getRoleLabel(role || 'staff')}</Text>
                 </View>
               </View>
             </>
@@ -418,14 +273,14 @@ export default function MoreScreen() {
         </ScrollView>
       )}
 
-      {/* ANALYTICS (owner only) */}
-      {activeSection === 'analytics' && isOwner && (
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      {/* ANALYTICS */}
+      {activeSection === 'analytics' && (
+        <ScrollView contentContainerStyle={styles.scrollBody}>
           {analyticsLoading ? (
-            <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
+            <ActivityIndicator size="large" color={T.gold} style={{ marginTop: 40 }} />
           ) : (
             <>
-              <Text style={styles.analyticsTitle}>近7天营收</Text>
+              <Text style={styles.sectionLabel}>近 7 天营收</Text>
               <View style={styles.chartContainer}>
                 {dailyRevenue.length > 0 && (() => {
                   const maxRevenue = Math.max(...dailyRevenue.map((d) => d.revenue), 1)
@@ -436,10 +291,7 @@ export default function MoreScreen() {
                       </Text>
                       <View style={styles.chartBarContainer}>
                         <View
-                          style={[
-                            styles.chartBar,
-                            { width: `${Math.max((day.revenue / maxRevenue) * 100, 2)}%` },
-                          ]}
+                          style={[styles.chartBar, { width: `${Math.max((day.revenue / maxRevenue) * 100, 2)}%` }]}
                         />
                       </View>
                       <Text style={styles.chartValue}>¥{day.revenue.toFixed(0)}</Text>
@@ -448,7 +300,7 @@ export default function MoreScreen() {
                 })()}
               </View>
 
-              <Text style={[styles.analyticsTitle, { marginTop: 24 }]}>热销酒品 TOP 10（近30天）</Text>
+              <Text style={[styles.sectionLabel, { marginTop: 24 }]}>热销酒品 TOP 10（近 30 天）</Text>
               {topDrinks.length === 0 ? (
                 <Text style={styles.emptyText}>暂无销售数据</Text>
               ) : (
@@ -461,10 +313,7 @@ export default function MoreScreen() {
                         <Text style={styles.chartDrinkName} numberOfLines={1}>{drink.name}</Text>
                         <View style={styles.chartBarContainer}>
                           <View
-                            style={[
-                              styles.chartBar,
-                              { width: `${Math.max((drink.count / maxCount) * 100, 2)}%` },
-                            ]}
+                            style={[styles.chartBar, { width: `${Math.max((drink.count / maxCount) * 100, 2)}%` }]}
                           />
                         </View>
                         <Text style={styles.chartValue}>{drink.count}</Text>
@@ -478,20 +327,20 @@ export default function MoreScreen() {
         </ScrollView>
       )}
 
-      {/* CUSTOMERS (owner only) */}
-      {activeSection === 'customers' && isOwner && (
+      {/* CUSTOMERS */}
+      {activeSection === 'customers' && (
         custLoading ? (
-          <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={T.gold} style={{ marginTop: 40 }} />
         ) : customers.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={48} color={COLORS.muted} />
+            <Ionicons name="people-outline" size={44} color={T.faint} />
             <Text style={styles.emptyText}>暂无消费记录</Text>
           </View>
         ) : (
           <FlatList
             data={customers}
             keyExtractor={(item) => item.name}
-            contentContainerStyle={{ paddingBottom: 40 }}
+            contentContainerStyle={styles.scrollBody}
             refreshing={refreshing}
             onRefresh={() => fetchCustomers(true)}
             renderItem={({ item, index }) => (
@@ -507,254 +356,99 @@ export default function MoreScreen() {
           />
         )
       )}
-
-      {/* STAFF MANAGEMENT (owner only) */}
-      {activeSection === 'staff' && canManageBarStaff && (
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-            {staffLoading ? (
-              <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
-            ) : (
-              <>
-                <Text style={styles.staffSectionTitle}>添加员工</Text>
-                <Text style={styles.staffHint}>
-                  员工需要先用邮箱注册账号，然后在这里输入邮箱添加到您的酒吧
-                </Text>
-                <View style={styles.addStaffRow}>
-                  <TextInput
-                    style={styles.addStaffInput}
-                    value={newStaffEmail}
-                    onChangeText={setNewStaffEmail}
-                    placeholder="员工邮箱地址"
-                    placeholderTextColor={COLORS.muted}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    style={[styles.addStaffBtn, addingStaff && { opacity: 0.5 }]}
-                    onPress={handleAddStaff}
-                    disabled={addingStaff}
-                  >
-                    {addingStaff ? (
-                      <ActivityIndicator size="small" color="#000" />
-                    ) : (
-                      <Ionicons name="person-add" size={20} color="#000" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={[styles.staffSectionTitle, { marginTop: 24 }]}>当前成员</Text>
-                {staffList.map((member) => (
-                  <View key={member.user_id} style={styles.staffRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.staffEmail}>{member.email}</Text>
-                      <View style={styles.staffRoleBadge}>
-                        <Text style={styles.staffRoleText}>{getRoleLabel(member.role)}</Text>
-                      </View>
-                    </View>
-                    {member.role === 'staff' && (
-                      <TouchableOpacity
-                        style={styles.removeStaffBtn}
-                        onPress={() => handleRemoveStaff(member)}
-                      >
-                        <Ionicons name="close-circle-outline" size={22} color={COLORS.danger} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-              </>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      )}
-
-      {/* SETTINGS */}
-      {activeSection === 'settings' && (
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-            {settingsLoading ? (
-              <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
-            ) : (
-              <>
-                {isOwner && (
-                  <>
-                    <Text style={styles.formLabel}>展示页主题</Text>
-                    <View style={styles.themeRow}>
-                      {themeOptions.map((t) => (
-                        <TouchableOpacity
-                          key={t.key}
-                          style={[styles.themeBtn, settingsForm.theme === t.key && styles.themeBtnActive]}
-                          onPress={() => setSettingsForm((f) => ({ ...f, theme: t.key }))}
-                        >
-                          <Text style={[styles.themeBtnText, settingsForm.theme === t.key && styles.themeBtnTextActive]}>
-                            {t.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-
-                    <View style={styles.switchRow}>
-                      <Text style={styles.switchLabel}>自动刷新</Text>
-                      <Switch
-                        value={settingsForm.auto_refresh}
-                        onValueChange={(v) => setSettingsForm((f) => ({ ...f, auto_refresh: v }))}
-                        trackColor={{ false: '#555', true: COLORS.gold }}
-                        thumbColor="#fff"
-                      />
-                    </View>
-
-                    <Text style={styles.formLabel}>刷新间隔（秒）</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={settingsForm.refresh_interval}
-                      onChangeText={(t) => setSettingsForm((f) => ({ ...f, refresh_interval: t }))}
-                      keyboardType="number-pad"
-                      placeholderTextColor={COLORS.muted}
-                    />
-
-                    <TouchableOpacity style={styles.saveBtn} onPress={saveSettings}>
-                      <Text style={styles.saveBtnText}>保存设置</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-
-                <View style={{ marginTop: isOwner ? 40 : 0 }}>
-                  <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                    <Ionicons name="log-out-outline" size={20} color={COLORS.danger} />
-                    <Text style={styles.logoutBtnText}>退出登录</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      )}
-    </View>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background, padding: 16 },
-  sectionRow: { flexGrow: 0, marginBottom: 20 },
-  sectionBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 16, paddingVertical: 14, borderRadius: 8, marginRight: 8,
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
+  container: { flex: 1, backgroundColor: T.background },
+  hero: {
+    paddingHorizontal: LAYOUT.pagePad,
+    paddingTop: LAYOUT.heroPadTop,
+    paddingBottom: LAYOUT.heroPadBottom,
   },
-  sectionBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
-  sectionBtnText: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
-  sectionBtnTextActive: { color: '#000' },
+  title: { color: T.text, fontSize: 26, fontWeight: '800' },
+  segmented: {
+    flexDirection: 'row',
+    backgroundColor: T.surfaceMuted,
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
+  },
+  segment: { flex: 1, paddingVertical: 11, borderRadius: 8, alignItems: 'center' },
+  segmentActive: {
+    backgroundColor: T.goldFill,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+  },
+  segmentText: { color: T.muted, fontSize: 15, fontWeight: '600' },
+  segmentTextActive: { color: T.gold, fontWeight: '700' },
+  scrollBody: { paddingHorizontal: LAYOUT.pagePad, paddingBottom: 48 },
   statsGrid: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   statCard: {
-    flex: 1, backgroundColor: COLORS.card, borderRadius: 12, padding: 18, alignItems: 'center',
+    flex: 1,
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 18,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: T.borderFaint,
   },
-  statLabel: { fontSize: 12, color: COLORS.muted, textTransform: 'uppercase', fontWeight: '600', letterSpacing: 1, marginBottom: 8 },
-  statValue: { fontSize: 28, fontWeight: '800', color: COLORS.text },
+  statLabel: { fontSize: 12, color: T.muted, textTransform: 'uppercase', fontWeight: '600', letterSpacing: 1, marginBottom: 8 },
+  statValue: { fontSize: 26, fontWeight: '800', color: T.text },
   roleBadgeContainer: { alignItems: 'center', marginTop: 20 },
   roleBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: T.goldFill,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
   },
-  roleBadgeText: { color: COLORS.muted, fontSize: 13, fontWeight: '500' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
-  emptyText: { color: COLORS.muted, fontSize: 16, marginTop: 12 },
-  custRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
-    borderRadius: 10, padding: 14, marginBottom: 8,
-  },
-  custRank: { fontSize: 16, fontWeight: '700', color: COLORS.muted, width: 30 },
-  custName: { fontSize: 16, fontWeight: '600', color: COLORS.text },
-  custCount: { fontSize: 13, color: COLORS.muted, marginTop: 2 },
-  custTotal: { fontSize: 17, fontWeight: '700', color: COLORS.gold },
-  formLabel: { fontSize: 13, color: COLORS.muted, marginBottom: 6, fontWeight: '600' },
-  formInput: {
-    backgroundColor: COLORS.card, color: COLORS.text, borderRadius: 8,
-    padding: 12, fontSize: 15, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border,
-  },
-  themeRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
-  themeBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center',
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
-  },
-  themeBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
-  themeBtnText: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
-  themeBtnTextActive: { color: '#000' },
-  switchRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 16,
-  },
-  switchLabel: { fontSize: 15, color: COLORS.text, fontWeight: '500' },
-  saveBtn: {
-    backgroundColor: COLORS.gold, borderRadius: 10, paddingVertical: 14, alignItems: 'center',
-  },
-  saveBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
-  logoutBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    paddingVertical: 14, borderRadius: 10,
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.danger,
-  },
-  logoutBtnText: { color: COLORS.danger, fontSize: 16, fontWeight: '600' },
-  analyticsTitle: {
-    fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 12,
+  roleBadgeText: { color: T.gold, fontSize: 13, fontWeight: '500' },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80, gap: 12 },
+  emptyText: { color: T.muted, fontSize: 15, marginTop: 12, textAlign: 'center' },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 12,
   },
   chartContainer: {
-    backgroundColor: COLORS.card, borderRadius: 12, padding: 14,
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
   },
-  chartRow: {
-    flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8,
+  chartRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 },
+  chartLabel: { width: 40, fontSize: 12, color: T.muted, textAlign: 'right' },
+  chartRank: { width: 20, fontSize: 13, fontWeight: '700', color: T.muted, textAlign: 'right' },
+  chartDrinkName: { width: 70, fontSize: 13, color: T.text, fontWeight: '500' },
+  chartBarContainer: { flex: 1, height: 20, backgroundColor: T.surfaceMuted, borderRadius: 6, overflow: 'hidden' },
+  chartBar: { height: '100%', backgroundColor: T.gold, borderRadius: 6, minWidth: 4 },
+  chartValue: { width: 55, fontSize: 12, color: T.text, fontWeight: '600', textAlign: 'right' },
+  custRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
   },
-  chartLabel: {
-    width: 40, fontSize: 12, color: COLORS.muted, textAlign: 'right',
-  },
-  chartRank: {
-    width: 20, fontSize: 13, fontWeight: '700', color: COLORS.muted, textAlign: 'right',
-  },
-  chartDrinkName: {
-    width: 70, fontSize: 13, color: COLORS.text, fontWeight: '500',
-  },
-  chartBarContainer: {
-    flex: 1, height: 20, backgroundColor: COLORS.background, borderRadius: 4, overflow: 'hidden',
-  },
-  chartBar: {
-    height: '100%', backgroundColor: COLORS.gold, borderRadius: 4, minWidth: 4,
-  },
-  chartValue: {
-    width: 55, fontSize: 12, color: COLORS.text, fontWeight: '600', textAlign: 'right',
-  },
-  staffSectionTitle: {
-    fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 8,
-  },
-  staffHint: {
-    fontSize: 13, color: COLORS.muted, marginBottom: 12, lineHeight: 18,
-  },
-  addStaffRow: {
-    flexDirection: 'row', gap: 8,
-  },
-  addStaffInput: {
-    flex: 1, backgroundColor: COLORS.card, color: COLORS.text, borderRadius: 8,
-    padding: 12, fontSize: 15, borderWidth: 1, borderColor: COLORS.border,
-  },
-  addStaffBtn: {
-    backgroundColor: COLORS.gold, borderRadius: 8, width: 48, height: 48,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  staffRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
-    borderRadius: 10, padding: 14, marginBottom: 8,
-  },
-  staffEmail: { fontSize: 15, fontWeight: '500', color: COLORS.text, marginBottom: 4 },
-  staffRoleBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4,
-    backgroundColor: COLORS.border,
-  },
-  staffRoleText: { fontSize: 11, fontWeight: '600', color: COLORS.gold },
-  removeStaffBtn: { padding: 10 },
+  custRank: { fontSize: 16, fontWeight: '700', color: T.muted, width: 30 },
+  custName: { fontSize: 16, fontWeight: '600', color: T.text },
+  custCount: { fontSize: 13, color: T.muted, marginTop: 2 },
+  custTotal: { fontSize: 17, fontWeight: '800', color: T.gold },
 })

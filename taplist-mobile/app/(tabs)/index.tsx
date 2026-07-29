@@ -21,6 +21,7 @@ import {
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicBars, fetchPublicEvents, fetchPublicNewDrinks } from '@/lib/api/taplist'
+import { trackEvent } from '@/lib/analytics'
 import { formatRelativeUpdatedAt, sortPublicBarsByMenuUpdated } from '@/lib/formatTaplist'
 import { taplistCityMatches, useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
@@ -95,6 +96,9 @@ export default function TonightScreen() {
         onClose={() => setCityPickerVisible(false)}
         onSelect={(city) => {
           setCityPickerVisible(false)
+          if (!taplistCityMatches(city.city, selectedCity.city)) {
+            trackEvent('city_changed', { from_city: selectedCity.city, to_city: city.city })
+          }
           void selectCity(city)
         }}
       />
@@ -219,7 +223,7 @@ function TonightEventsSection({ events }: { events: PublicEventRow[] }) {
         style={[styles.discoveryScrollView, styles.eventRailScrollView]}
         contentContainerStyle={styles.discoveryScroller}>
         {events.map((event) => (
-          <EventCard key={event.id} event={event} compact />
+          <EventCard key={event.id} event={event} compact source="home_event" />
         ))}
       </ScrollView>
     </View>
@@ -238,7 +242,7 @@ function NewTapTodaySection({ drinks }: { drinks: PublicNewTapRow[] }) {
         style={[styles.discoveryScrollView, styles.newTapRailScrollView]}
         contentContainerStyle={styles.discoveryScroller}>
         {drinks.map((drink) => (
-          <NewTapRailCard key={drink.drink_id} drink={drink} />
+          <NewTapRailCard key={drink.drink_id} drink={drink} source="home_new_tap" />
         ))}
       </ScrollView>
     </View>
@@ -258,7 +262,15 @@ function BarFeedCard({
 
   return (
     <Link href={`/bar/${bar.slug}`} asChild>
-      <Pressable style={({ pressed }) => [styles.feedCard, pressed && styles.feedCardPressed]}>
+      <Pressable
+        onPress={() =>
+          trackEvent('bar_opened', {
+            tenant_id: bar.id,
+            tenant_slug: bar.slug,
+            source: 'home_bar',
+          })
+        }
+        style={({ pressed }) => [styles.feedCard, pressed && styles.feedCardPressed]}>
         <View style={styles.imageFrame}>
           <AtmosphereImage source={bar.cover_image_url} aspectRatio={4 / 3} overlayOpacity={0.24}>
             <View style={styles.cardOverlay}>

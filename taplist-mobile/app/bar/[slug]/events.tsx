@@ -69,6 +69,7 @@ export default function BarEventsScreen() {
                 events={tonightEvents}
                 hideVenue
                 compact={sparseList}
+                source="bar_event"
               />
             ) : null}
             {upcomingEvents.length > 0 ? (
@@ -78,6 +79,7 @@ export default function BarEventsScreen() {
                 events={upcomingEvents}
                 hideVenue
                 compact={sparseList}
+                source="bar_event"
               />
             ) : null}
           </>

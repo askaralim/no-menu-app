@@ -1,6 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocalSearchParams } from 'expo-router'
+import * as Sharing from 'expo-sharing'
 import { useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -8,14 +9,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { BackButton } from '@/components/taplist/BackButton'
 import { BeerRoadmapSection } from '@/components/taplist/BeerRoadmapSection'
+import { DrinkLightAction, DrinkLightFeedback, useDrinkLightController } from '@/components/taplist/DrinkLightSection'
 import { ShareableBeerImage, type ShareableBeerImageHandle } from '@/components/taplist/ShareableBeerImage'
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
-import { defaultServing, displayServingOptions, servingParts } from '@/lib/formatTaplist'
+import { displayServingOptions, localizeServingLabel } from '@/lib/formatTaplist'
 import { fetchPublicDrinks, fetchPublicTenantBySlug } from '@/lib/api/taplist'
+import { partitionPublicDrinks } from '@/lib/types'
+import { getMyDrinkState } from '@/lib/api/drinkLog'
 import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicDrinkRow, PublicServingOption } from '@/lib/types'
+import { trackEvent } from '@/lib/analytics'
 
 export default function BeerDetailScreen() {
   const insets = useSafeAreaInsets()
@@ -40,15 +45,46 @@ export default function BeerDetailScreen() {
   })
 
   const drinkResult = drinksQuery.data
-  const drinks = drinkResult?.ok ? drinkResult.drinks : []
+  const drinks = drinkResult?.ok ? partitionPublicDrinks(drinkResult).allForLookup : []
   const drink = drinks.find((item) => item.id === drinkId) ?? null
-  const serving = drink ? defaultServing(drink) : null
   const artworkUrl = drink?.image_url
   const servingOptions = drink ? displayServingOptions(drink.serving_options) : []
-  const subtitle = drink ? beerSubtitle(drink) : null
+  const servingGroups = groupServingOptions(servingOptions)
   const metadata = drink ? beerMetadata(drink) : []
   const isResolvingDrink = configured && (tenantQuery.isLoading || (!!tenant && drinksQuery.isLoading))
-  const canSaveBeer = Boolean(tenant && drink && !isSavingBeer)
+  const drinkLogStateQuery = useQuery({
+    queryKey: ['drink-log', 'state', drink?.id],
+    queryFn: () => getMyDrinkState(drink!.id),
+    enabled: Boolean(drink?.id),
+  })
+  const canSaveBeer = Boolean(tenant && drink && !isSavingBeer && !drinkLogStateQuery.isLoading)
+  const drinkLightController = useDrinkLightController({
+    drinkId: drink?.id ?? '',
+    tenantId: tenant?.id ?? '',
+  })
+
+  const handleShareBeerImage = async () => {
+    if (!tenant || !drink || isSavingBeer) return
+    if (drinkLogStateQuery.isLoading) return
+    if (drinkLogStateQuery.isError) {
+      Alert.alert('暂时无法生成图片', '无法确认这款酒的酒迹状态，请稍后重试。')
+      void drinkLogStateQuery.refetch()
+      return
+    }
+    try {
+      setIsSavingBeer(true)
+      const uri = await shareableRef.current?.capture()
+      if (!uri || !(await Sharing.isAvailableAsync())) {
+        Alert.alert('分享失败', '暂时无法打开系统分享面板')
+        return
+      }
+      await Sharing.shareAsync(uri)
+    } catch {
+      Alert.alert('分享失败', '酒款图片生成失败，请稍后再试')
+    } finally {
+      setIsSavingBeer(false)
+    }
+  }
 
   const handleSaveBeerImage = async () => {
     if (!tenant || !drink) {
@@ -56,22 +92,47 @@ export default function BeerDetailScreen() {
       return
     }
     if (isSavingBeer) return
+    if (drinkLogStateQuery.isLoading) return
+    if (drinkLogStateQuery.isError) {
+      Alert.alert('暂时无法生成图片', '无法确认这款酒的酒迹状态，请稍后重试。')
+      void drinkLogStateQuery.refetch()
+      return
+    }
 
     try {
       setIsSavingBeer(true)
       const uri = await shareableRef.current?.capture()
       if (!uri) {
+        trackEvent('beer_image_save_failed', {
+          tenant_id: tenant.id,
+          drink_id: drink.id,
+          reason: 'capture_failed',
+        })
         Alert.alert('保存失败', '酒款图片生成失败，请稍后再试')
         return
       }
 
       await saveImageUriToPhotoLibrary(uri)
+      trackEvent('beer_image_save_succeeded', {
+        tenant_id: tenant.id,
+        drink_id: drink.id,
+      })
       Alert.alert('保存成功', '酒款已保存到相册')
     } catch (error) {
       if (error instanceof PhotoLibraryPermissionError) {
+        trackEvent('beer_image_save_failed', {
+          tenant_id: tenant.id,
+          drink_id: drink.id,
+          reason: 'permission_denied',
+        })
         Alert.alert('无法保存', '需要相册权限才能保存酒款')
         return
       }
+      trackEvent('beer_image_save_failed', {
+        tenant_id: tenant.id,
+        drink_id: drink.id,
+        reason: 'unknown',
+      })
       console.error('Save beer image failed', error)
       Alert.alert('保存失败', '酒款图片生成失败，请稍后再试')
     } finally {
@@ -82,6 +143,21 @@ export default function BeerDetailScreen() {
   return (
     <View style={styles.screen}>
       <BackButton />
+      {tenant && drink ? (
+        <Pressable
+          accessibilityLabel="分享酒款图片"
+          hitSlop={10}
+          disabled={!canSaveBeer}
+          onPress={() => void handleShareBeerImage()}
+          style={({ pressed }) => [
+            styles.shareButton,
+            { top: insets.top + 14 },
+            !canSaveBeer && styles.downloadButtonDisabled,
+            pressed && canSaveBeer && styles.downloadButtonPressed,
+          ]}>
+          <FontAwesome name="share-square-o" size={16} color={canSaveBeer ? palette.text : palette.faint} />
+        </Pressable>
+      ) : null}
       {tenant && drink ? (
         <Pressable
           accessibilityLabel="保存酒款图片"
@@ -125,8 +201,17 @@ export default function BeerDetailScreen() {
           ) : drink ? (
             <>
               <Text style={styles.kicker}>{tenant?.display_name || tenant?.name || '酒吧'}</Text>
-              <Text style={styles.title}>{drink.name}</Text>
-              {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+              <View style={styles.titleRow}>
+                <View style={styles.titleCopy}>
+                  <Text style={styles.title}>{drink.name}</Text>
+                  {drink.beer?.brewery ?? drink.brand_name ? (
+                    <Text style={styles.brewery}>{drink.beer?.brewery ?? drink.brand_name}</Text>
+                  ) : null}
+                </View>
+                <DrinkLightAction controller={drinkLightController} />
+              </View>
+
+              <DrinkLightFeedback controller={drinkLightController} />
 
               {drink.beer?.description ? (
                 <Text style={styles.description}>{drink.beer.description}</Text>
@@ -134,25 +219,42 @@ export default function BeerDetailScreen() {
 
               {metadata.length > 0 ? (
                 <View style={styles.metadataChips}>
-                  {metadata.map((item) => (
-                    <Meta key={item.label} label={item.label} value={item.value} />
+                  {metadata.map((item, index) => (
+                    <Meta key={item.label} label={item.label} value={item.value} divided={index > 0} />
                   ))}
                 </View>
               ) : null}
-
-            {servingOptions.length > 0 ? (
+            {servingGroups.length > 0 ? (
               <>
-                <Text style={styles.sectionTitle}>杯型与价格</Text>
+                <Text style={styles.sectionTitle}>
+                  {servingOptions.some((o) => typeof o.price === 'number' && o.price > 0)
+                    ? '杯型与价格'
+                    : '杯型'}
+                </Text>
                 <View style={styles.servingList}>
-                  {servingOptions.map((option) => (
-                    <View key={option.id} style={styles.primaryServing}>
-                      <View>
-                        <Text style={styles.primaryServingLabel}>
-                          {option.id === serving?.id ? '默认规格' : '规格'}
-                        </Text>
-                        <Text style={styles.primaryServingMeta}>{servingLabel(option)}</Text>
+                  {servingGroups.map((group) => (
+                    <View key={group.servingType} style={styles.primaryServing}>
+                      <Text style={styles.primaryServingLabel}>{group.label}</Text>
+                      <View style={styles.servingValues}>
+                        {group.options.map((option, index) => {
+                          const priceText =
+                            typeof option.price === 'number' && option.price > 0
+                              ? `¥${option.price}`
+                              : null
+                          const volumeText = option.volume_ml ? `${option.volume_ml}ml` : null
+                          const meta = [volumeText, priceText].filter(Boolean).join(' ')
+                          if (!meta) return null
+                          return (
+                            <Text key={option.id} style={styles.primaryServingMeta}>
+                              {index > 0 ? ' · ' : ''}
+                              {volumeText ? `${volumeText}${priceText ? ' ' : ''}` : ''}
+                              {priceText ? (
+                                <Text style={styles.primaryServingPrice}>{priceText}</Text>
+                              ) : null}
+                            </Text>
+                          )
+                        })}
                       </View>
-                      <Text style={styles.primaryServingPrice}>¥{option.price}</Text>
                     </View>
                   ))}
                 </View>
@@ -184,7 +286,7 @@ export default function BeerDetailScreen() {
       </ScrollView>
       {tenant && drink ? (
         <View pointerEvents="none" style={styles.shareableCanvas}>
-          <ShareableBeerImage ref={shareableRef} tenant={tenant} drink={drink} />
+          <ShareableBeerImage ref={shareableRef} tenant={tenant} drink={drink} litAt={drinkLogStateQuery.data?.is_lit ? drinkLogStateQuery.data.first_lit_at : null} />
         </View>
       ) : null}
       {isSavingBeer ? (
@@ -199,9 +301,9 @@ export default function BeerDetailScreen() {
   )
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function Meta({ label, value, divided }: { label: string; value: string; divided: boolean }) {
   return (
-    <View style={styles.metaChip}>
+    <View style={[styles.metaChip, label === '风格' && styles.metaChipWide, divided && styles.metaChipDivided]}>
       <Text style={styles.metaLabel}>{label}</Text>
       <Text style={styles.metaValue}>{value}</Text>
     </View>
@@ -217,16 +319,18 @@ function EmptyState({ title, body }: { title: string; body: string }) {
   )
 }
 
-function servingLabel(option: PublicServingOption) {
-  return servingParts(option).filter((part) => !part.startsWith('¥')).join(' · ')
-}
-
-function beerSubtitle(drink: PublicDrinkRow) {
-  return [
-    drink.beer?.brewery ?? drink.brand_name,
-    drink.beer?.beer_style,
-    typeof drink.beer?.abv === 'number' ? `${drink.beer.abv}%` : null,
-  ].filter(Boolean).join(' · ')
+function groupServingOptions(options: PublicServingOption[]) {
+  const groups = new Map<string, PublicServingOption[]>()
+  options.forEach((option) => {
+    const current = groups.get(option.serving_type) ?? []
+    current.push(option)
+    groups.set(option.serving_type, current)
+  })
+  return Array.from(groups, ([servingType, groupedOptions]) => ({
+    servingType,
+    label: localizeServingLabel(servingType),
+    options: groupedOptions,
+  }))
 }
 
 function beerMetadata(drink: PublicDrinkRow) {
@@ -234,7 +338,6 @@ function beerMetadata(drink: PublicDrinkRow) {
     drink.beer?.beer_style ? { label: '风格', value: drink.beer.beer_style } : null,
     typeof drink.beer?.abv === 'number' ? { label: 'ABV', value: `${drink.beer.abv}%` } : null,
     typeof drink.beer?.ibu === 'number' ? { label: 'IBU', value: `${drink.beer.ibu}` } : null,
-    (drink.beer?.brewery ?? drink.brand_name) ? { label: '酒厂', value: drink.beer?.brewery ?? drink.brand_name! } : null,
     drink.beer?.country ? { label: '产地', value: drink.beer.country } : null,
   ].filter((item): item is { label: string; value: string } => item !== null)
 }
@@ -247,6 +350,19 @@ const styles = StyleSheet.create({
   downloadButton: {
     position: 'absolute',
     right: 16,
+    zIndex: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(17,17,17,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,241,230,0.14)',
+  },
+  shareButton: {
+    position: 'absolute',
+    right: 62,
     zIndex: 10,
     width: 38,
     height: 38,
@@ -324,32 +440,46 @@ const styles = StyleSheet.create({
     fontSize: 46,
     lineHeight: 52,
   },
-  subtitle: {
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  titleCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  brewery: {
     ...typography.title,
     color: palette.muted,
     marginTop: spacing.xs,
-    marginBottom: spacing.lg,
+    fontSize: 16,
+    lineHeight: 23,
   },
   description: {
     ...typography.body,
     color: palette.muted,
-    marginBottom: spacing.lg,
+    marginTop: spacing.lg,
   },
   metadataChips: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
+    marginTop: spacing.xl,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: palette.hairline,
   },
   metaChip: {
-    minWidth: '31%',
-    flexGrow: 1,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(245,241,232,0.06)',
-    backgroundColor: 'rgba(17,17,17,0.28)',
+    flex: 1,
+    minWidth: 0,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.md,
+  },
+  metaChipWide: {
+    flex: 1.45,
+  },
+  metaChipDivided: {
+    borderLeftWidth: 1,
+    borderLeftColor: palette.hairline,
   },
   metaLabel: {
     ...typography.label,
@@ -362,35 +492,44 @@ const styles = StyleSheet.create({
     color: palette.text,
   },
   sectionTitle: {
-    ...typography.displayL,
-    color: palette.text,
-    fontSize: 24,
-    lineHeight: 30,
+    ...typography.label,
+    color: palette.tungsten,
+    fontSize: 12,
+    lineHeight: 17,
     marginTop: spacing.xl,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   primaryServing: {
+    minHeight: 48,
     borderTopWidth: 1,
     borderTopColor: palette.hairline,
-    paddingVertical: spacing.md,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
+    alignItems: 'stretch',
   },
   primaryServingLabel: {
-    ...typography.label,
-    color: palette.faint,
-    fontSize: 10,
-    marginBottom: spacing.xs,
-  },
-  primaryServingMeta: {
     ...typography.body,
     color: palette.text,
+    width: 76,
+    paddingVertical: spacing.sm,
+    paddingRight: spacing.sm,
+  },
+  primaryServingMeta: {
+    ...typography.caption,
+    color: palette.muted,
   },
   primaryServingPrice: {
-    ...typography.title,
+    ...typography.caption,
     color: palette.tungsten,
+  },
+  servingValues: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: palette.hairline,
+    paddingVertical: spacing.sm,
+    paddingLeft: spacing.md,
   },
   servingList: {
     borderBottomWidth: 1,

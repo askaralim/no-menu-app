@@ -83,7 +83,8 @@ export type PublicServingOption = {
   serving_type: string
   label: string
   volume_ml: number | null
-  price: number
+  /** Null when tenant public_price_mode = hide, or unpriced. */
+  price: number | null
   is_default: boolean
   is_active: boolean
   public_sort_order: number
@@ -106,6 +107,8 @@ export type PublicDrinkRow = {
   public_sort_order: number
   /** Canonical Product Pool link when bar drink is linked (additive). */
   product_id?: string | null
+  /** Present on recently_sold_out rows (and optionally others). */
+  public_status_changed_at?: string | null
   beer: PublicBeerProfile | null
   serving_options: PublicServingOption[]
 }
@@ -120,10 +123,48 @@ export type PublicTaplistCitiesRpc =
   | { ok: true; cities: PublicTaplistCity[] }
   | { ok: false; code?: string }
 
-/** RPC `get_public_taplist_drinks` JSON union */
+/** RPC `get_public_taplist_drinks` JSON union (Phase 6 partitions). */
 export type PublicTaplistDrinksRpc =
-  | { ok: true; drinks: PublicDrinkRow[] }
+  | {
+      ok: true
+      drinks: PublicDrinkRow[]
+      coming_soon?: PublicDrinkRow[]
+      recently_sold_out?: PublicDrinkRow[]
+      public_price_mode?: 'show' | 'hide'
+      business_day_start?: string
+    }
   | { ok: false; code: string }
+
+/** Normalize Phase 6 (or legacy flat) drinks payload for list/detail screens. */
+export function partitionPublicDrinks(payload: Extract<PublicTaplistDrinksRpc, { ok: true }>): {
+  drinks: PublicDrinkRow[]
+  comingSoon: PublicDrinkRow[]
+  recentlySoldOut: PublicDrinkRow[]
+  allForLookup: PublicDrinkRow[]
+} {
+  const comingSoon = payload.coming_soon ?? []
+  const recentlySoldOut = payload.recently_sold_out ?? []
+  // Legacy: sold_out / coming_soon still inside drinks → split client-side.
+  if (!payload.coming_soon && !payload.recently_sold_out) {
+    const drinks = payload.drinks.filter(
+      (d) => d.public_status !== '售罄' && d.public_status !== '即将上新',
+    )
+    const legacyComing = payload.drinks.filter((d) => d.public_status === '即将上新')
+    const legacySold = payload.drinks.filter((d) => d.public_status === '售罄')
+    return {
+      drinks,
+      comingSoon: legacyComing,
+      recentlySoldOut: legacySold,
+      allForLookup: [...drinks, ...legacyComing, ...legacySold],
+    }
+  }
+  return {
+    drinks: payload.drinks,
+    comingSoon,
+    recentlySoldOut,
+    allForLookup: [...payload.drinks, ...comingSoon, ...recentlySoldOut],
+  }
+}
 
 /** Row from `search_public_taplist` */
 export type PublicTaplistSearchResult = {
@@ -236,3 +277,60 @@ export type BeerRoadmapFailureCode =
 export type BeerRoadmapResponse =
   | { ok: true; route: BeerRoadmapRoute }
   | { ok: false; code: BeerRoadmapFailureCode }
+
+export type MyDrinkVenue = {
+  tenant_id: string
+  tenant_name: string
+  tenant_slug: string
+  country: string | null
+  city: string | null
+  city_label: string | null
+  district: string | null
+  address: string | null
+  first_drank_at: string
+}
+
+export type MyDrinkHistoryRow = {
+  light_id: string
+  product_id: string | null
+  source_drink_id: string | null
+  source_drink_is_public: boolean
+  tenant_slug: string | null
+  name: string
+  brewery: string | null
+  beer_style: string | null
+  abv: number | null
+  ibu: number | null
+  country: string | null
+  image_url: string | null
+  first_lit_at: string
+  last_activity_at: string
+  venue_count: number
+  venues: MyDrinkVenue[]
+}
+
+export type MyDrinkState = {
+  ok: true
+  light_id: string | null
+  is_lit: boolean
+  is_current_venue_lit: boolean
+  first_lit_at: string | null
+  venue_count: number
+}
+
+export type LightDrinkResult = MyDrinkState & {
+  created_light: boolean
+  created_venue: boolean
+  drink_count: number
+  bar_count: number
+}
+
+export type MyDrinkSummary = {
+  ok: true
+  drink_count: number
+  bar_count: number
+  started_at: string | null
+  recent: MyDrinkHistoryRow[]
+}
+
+export type AccountProtectionState = 'anonymous' | 'apple' | 'unavailable'

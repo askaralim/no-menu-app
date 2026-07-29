@@ -1,6 +1,7 @@
-import { ImageBackground, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 
+import { CachedImageBackground } from '@/components/taplist/CachedImage'
 import { palette, spacing } from '@/constants/design'
 
 type AtmosphereImageProps = {
@@ -47,7 +48,7 @@ export function AtmosphereImage({
   }
 
   return (
-    <ImageBackground source={{ uri: source }} style={frameStyle} imageStyle={{ borderRadius }}>
+    <CachedImageBackground source={source} style={frameStyle} imageStyle={{ borderRadius }}>
       <LinearGradient
         colors={[
           `rgba(75,54,31,${overlayOpacity})`,
@@ -58,7 +59,7 @@ export function AtmosphereImage({
         <View pointerEvents="none" style={styles.grain} />
         {children}
       </LinearGradient>
-    </ImageBackground>
+    </CachedImageBackground>
   )
 }
 

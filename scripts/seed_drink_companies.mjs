@@ -57,6 +57,7 @@ const COUNTRY_BY_CODE = {
   CZ: 'Czech Republic',
   AT: 'Austria',
   IE: 'Ireland',
+  RU: 'Russia',
 }
 
 const COUNTRY_ZH_TO_EN = {
@@ -81,6 +82,7 @@ const COUNTRY_ZH_TO_EN = {
   捷克: 'Czech Republic',
   奥地利: 'Austria',
   爱尔兰: 'Ireland',
+  俄罗斯: 'Russia',
 }
 
 function loadEnvFile(path) {

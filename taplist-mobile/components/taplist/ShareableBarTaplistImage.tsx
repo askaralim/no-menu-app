@@ -246,7 +246,7 @@ function paperPriceLine(drink: PublicDrinkRow) {
   const servingOptions = displayServingOptions(drink.serving_options)
   const servingOption = servingOptions.find((option) => option.is_default) ?? servingOptions[0]
 
-  if (!servingOption || servingOption.price <= 0) return null
+  if (!servingOption || servingOption.price == null || servingOption.price <= 0) return null
   return `${formatPrice(servingOption.price)}元`
 }
 

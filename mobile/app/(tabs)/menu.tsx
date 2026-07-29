@@ -1,132 +1,127 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   View,
   Text,
   StyleSheet,
-  SectionList,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   TextInput,
   Switch,
   Alert,
   ActivityIndicator,
   Modal,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useFocusEffect } from 'expo-router'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/authProvider'
-import { COLORS, LOW_STOCK_THRESHOLD } from '../../lib/constants'
-import type { Category, Drink } from '../../lib/types'
+import { THEME as T, LAYOUT } from '../../lib/theme'
+import type { Category, DrinkUpsertResult } from '../../lib/types'
+import {
+  type DraftDrink,
+  type TaplistDraft,
+  archiveDrink,
+  buildDraft,
+  emptyDraftDrink,
+  isOnTonight,
+  loadOwnerTaplist,
+  restoreDrink,
+} from '../../lib/taplistOwnerApi'
+import DrinkEditSheet from '../../components/taplist/DrinkEditSheet'
+import JoinTonightSheet from '../../components/taplist/JoinTonightSheet'
 
 type ViewMode = 'categories' | 'drinks'
+type DrinkStatusTab = 'active' | 'archived' | 'all'
+/** Category chip key — no "全部"; default is first real category (prefer 生啤). */
+type CategoryRailKey = 'uncategorized' | string
+
+function pickDefaultCategoryKey(cats: { id: string; name: string }[]): CategoryRailKey | null {
+  if (!cats.length) return null
+  const shengpi = cats.find((c) => c.name.includes('生啤'))
+  return (shengpi ?? cats[0]).id
+}
+
+function tonightLabel(drink: DraftDrink): string {
+  if (!isOnTonight(drink)) return '未加入酒单'
+  const n = drink.public_sort_order!
+  return drink.is_public_visible ? `酒单 #${n}` : `酒单 #${n} · 隐藏`
+}
+
+function servingsLine(drink: DraftDrink): string | null {
+  const servings = drink.servings.filter((s) => !s._deleted && s.is_active)
+  if (!servings.length) return null
+  return servings
+    .map((s) => `${s.label?.trim() || '规格'} ¥${s.price}`)
+    .join(' · ')
+}
 
 export default function MenuScreen() {
   const { tenantId } = useAuth()
-  const [viewMode, setViewMode] = useState<ViewMode>('categories')
+  const [viewMode, setViewMode] = useState<ViewMode>('drinks')
+  const [draft, setDraft] = useState<TaplistDraft | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
-  const [drinks, setDrinks] = useState<Drink[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [togglingCategoryId, setTogglingCategoryId] = useState<string | null>(null)
   const [togglingDrinkId, setTogglingDrinkId] = useState<string | null>(null)
   const [drinkSearchQuery, setDrinkSearchQuery] = useState('')
+  const [drinkStatusTab, setDrinkStatusTab] = useState<DrinkStatusTab>('active')
+  const [categoryRail, setCategoryRail] = useState<CategoryRailKey | null>(null)
 
-  // Category form
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
   const [categoryName, setCategoryName] = useState('')
   const [categorySortOrder, setCategorySortOrder] = useState('0')
 
-  // Drink form
-  const [showDrinkForm, setShowDrinkForm] = useState(false)
-  const [editingDrinkId, setEditingDrinkId] = useState<string | null>(null)
-  const [drinkForm, setDrinkForm] = useState({
-    category_id: '',
-    brand_name: '',
-    name: '',
-    volume_ml: '',
-    price: '',
-    price_unit: '杯',
-    price_bottle: '',
-    price_unit_bottle: '瓶',
-    sort_order: '0',
-    stock: '',
-    ml_per_cup: '',
-    ml_per_bottle: '',
-  })
+  const [editing, setEditing] = useState<DraftDrink | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [joinDrink, setJoinDrink] = useState<DraftDrink | null>(null)
 
-  const fetchCategories = useCallback(async () => {
+  const loadCatalog = useCallback(async () => {
     if (!tenantId) {
+      setDraft(null)
       setCategories([])
       return
     }
-    try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('sort_order', { ascending: true })
-      if (error) throw error
-      setCategories(data || [])
-    } catch (e) {
-      Alert.alert('错误', '加载分类失败，请稍后重试')
-    }
+    const [payload, catRes] = await Promise.all([
+      loadOwnerTaplist(tenantId),
+      supabase.from('categories').select('*').eq('tenant_id', tenantId).order('sort_order', { ascending: true }),
+    ])
+    if (catRes.error) throw catRes.error
+    setDraft(buildDraft(payload))
+    setCategories(catRes.data || [])
   }, [tenantId])
 
-  const fetchDrinks = useCallback(async () => {
-    if (!tenantId) {
-      setDrinks([])
-      return
-    }
+  const load = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('drinks')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('sort_order', { ascending: true })
-      if (error) throw error
-      setDrinks(data || [])
-    } catch (e) {
-      Alert.alert('错误', '加载酒品失败，请稍后重试')
-    }
-  }, [tenantId])
-
-  useEffect(() => {
-    if (!tenantId) {
-      setCategories([])
-      setDrinks([])
+      setLoading(true)
+      await loadCatalog()
+    } catch (e: any) {
+      Alert.alert('错误', e?.message || '加载失败')
+    } finally {
       setLoading(false)
-      return
     }
-    setLoading(true)
-    Promise.all([fetchCategories(), fetchDrinks()]).finally(() => setLoading(false))
+  }, [loadCatalog])
 
-    const ch1 = supabase
-      .channel('menu-cat')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => fetchCategories())
-      .subscribe()
-    const ch2 = supabase
-      .channel('menu-drinks')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, () => fetchDrinks())
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(ch1)
-      supabase.removeChannel(ch2)
-    }
-  }, [tenantId, fetchCategories, fetchDrinks])
+  useFocusEffect(
+    useCallback(() => {
+      void load()
+    }, [load]),
+  )
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     try {
-      await Promise.all([fetchCategories(), fetchDrinks()])
+      await loadCatalog()
     } finally {
       setRefreshing(false)
     }
-  }, [tenantId, fetchCategories, fetchDrinks])
+  }, [loadCatalog])
 
   // --- Category CRUD ---
   const openCategoryForm = (cat?: Category) => {
@@ -154,383 +149,503 @@ export default function MenuScreen() {
         if (error) throw error
       }
       setShowCategoryForm(false)
-    } catch (e) {
+      await loadCatalog()
+    } catch {
       Alert.alert('错误', '保存失败')
     }
-  }
-
-  const deleteCategory = (id: string) => {
-    Alert.alert('确认', '确定要删除这个分类吗？', [
-      { text: '取消', style: 'cancel' },
-      {
-        text: '删除',
-        style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.from('categories').delete().eq('id', id)
-          if (error) Alert.alert('错误', '删除失败')
-        },
-      },
-    ])
   }
 
   const toggleCategoryEnabled = async (cat: Category) => {
     if (togglingCategoryId === cat.id) return
     setTogglingCategoryId(cat.id)
     try {
-      const { error } = await supabase
-        .from('categories')
-        .update({ enabled: !cat.enabled })
-        .eq('id', cat.id)
+      const { error } = await supabase.from('categories').update({ enabled: !cat.enabled }).eq('id', cat.id)
       if (error) throw error
-      await fetchCategories()
-    } catch (e) {
+      await loadCatalog()
+    } catch {
       Alert.alert('错误', '操作失败')
     } finally {
       setTogglingCategoryId(null)
     }
   }
 
-  // --- Drink CRUD ---
-  const openDrinkForm = (drink?: Drink) => {
-    if (drink) {
-      setEditingDrinkId(drink.id)
-      setDrinkForm({
-        category_id: drink.category_id,
-        brand_name: drink.brand_name || '',
-        name: drink.name,
-        volume_ml: drink.volume_ml != null ? String(drink.volume_ml) : '',
-        price: String(drink.price),
-        price_unit: drink.price_unit || '杯',
-        price_bottle: drink.price_bottle != null ? String(drink.price_bottle) : '',
-        price_unit_bottle: drink.price_unit_bottle || '瓶',
-        sort_order: String(drink.sort_order),
-        stock: drink.stock != null ? String(drink.stock) : '',
-        ml_per_cup: drink.ml_per_cup != null ? String(drink.ml_per_cup) : '',
-        ml_per_bottle: drink.ml_per_bottle != null ? String(drink.ml_per_bottle) : '',
-      })
-    } else {
-      setEditingDrinkId(null)
-      setDrinkForm({
-        category_id: categories[0]?.id || '',
-        brand_name: '',
-        name: '',
-        volume_ml: '',
-        price: '',
-        price_unit: '杯',
-        price_bottle: '',
-        price_unit_bottle: '瓶',
-        sort_order: '0',
-        stock: '',
-        ml_per_cup: '',
-        ml_per_bottle: '',
-      })
-    }
-    setShowDrinkForm(true)
+  // --- Drink editor (unified) ---
+  const openCreate = () => {
+    const d = emptyDraftDrink({ entryPoint: 'catalog' })
+    d.category_id = categories[0]?.id ?? null
+    setCreating(true)
+    setEditing(d)
   }
 
-  const saveDrinkForm = async () => {
-    if (!drinkForm.name.trim() || !drinkForm.price || !drinkForm.category_id) {
-      return Alert.alert('提示', '请填写必要字段')
-    }
-
-    const parsedStock = drinkForm.stock.trim() === '' ? null : parseInt(drinkForm.stock, 10)
-    const parsedVolumeMl = drinkForm.volume_ml.trim() === '' ? null : parseInt(drinkForm.volume_ml, 10)
-    const parsedMlPerCup = drinkForm.ml_per_cup.trim() === '' ? null : parseInt(drinkForm.ml_per_cup, 10)
-    if (parsedVolumeMl != null && (!Number.isFinite(parsedVolumeMl) || parsedVolumeMl <= 0)) {
-      return Alert.alert('提示', '容量ml必须是大于0的整数')
-    }
-
-    const parsedMlPerBottle =
-      drinkForm.ml_per_bottle.trim() === '' ? null : parseInt(drinkForm.ml_per_bottle, 10)
-    if (parsedStock != null && (!Number.isFinite(parsedStock) || parsedStock < 0)) {
-      return Alert.alert('提示', '库存(ml)必须是大于等于0的整数')
-    }
-
-    if (parsedMlPerCup != null && (!Number.isFinite(parsedMlPerCup) || parsedMlPerCup <= 0)) {
-      return Alert.alert('提示', '杯装ml必须是大于0的整数')
-    }
-    if (parsedMlPerBottle != null && (!Number.isFinite(parsedMlPerBottle) || parsedMlPerBottle <= 0)) {
-      return Alert.alert('提示', '瓶装ml必须是大于0的整数')
-    }
-
-    try {
-      const payload = {
-        category_id: drinkForm.category_id,
-        brand_name: drinkForm.brand_name.trim() || null,
-        name: drinkForm.name.trim(),
-        volume_ml: parsedVolumeMl,
-        price: parseFloat(drinkForm.price) || 0,
-        price_unit: drinkForm.price_unit,
-        price_bottle: drinkForm.price_bottle ? parseFloat(drinkForm.price_bottle) : null,
-        price_unit_bottle: drinkForm.price_unit_bottle,
-        sort_order: parseInt(drinkForm.sort_order) || 0,
-        stock: parsedStock,
-        ml_per_cup: parsedMlPerCup,
-        ml_per_bottle: parsedMlPerBottle,
-      }
-      if (editingDrinkId) {
-        const { error } = await supabase.from('drinks').update(payload).eq('id', editingDrinkId)
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('drinks').insert([{ ...payload, tenant_id: tenantId }])
-        if (error) throw error
-      }
-      await fetchDrinks()
-      setShowDrinkForm(false)
-    } catch (e) {
-      Alert.alert('错误', '保存失败')
-    }
+  const openEdit = (d: DraftDrink) => {
+    setCreating(false)
+    setEditing(d)
   }
 
-  const deleteDrink = (id: string) => {
-    Alert.alert('确认', '确定要删除这个酒品吗？', [
-      { text: '取消', style: 'cancel' },
-      {
-        text: '删除',
-        style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.from('drinks').delete().eq('id', id)
-          if (error) Alert.alert('错误', '删除失败')
+  const closeEditor = () => {
+    setEditing(null)
+    setCreating(false)
+  }
+
+  const handleSaved = async (result?: DrinkUpsertResult) => {
+    const wasCreate = creating
+    closeEditor()
+    await loadCatalog()
+    if (wasCreate && result?.ok && result.drink_id && draft) {
+      // Offer join-tonight CTA after catalog create.
+      Alert.alert('已保存到商品库', '要现在加入酒单吗？', [
+        { text: '稍后', style: 'cancel' },
+        {
+          text: '加入酒单',
+          onPress: () => {
+            void (async () => {
+              await loadCatalog()
+              const payload = await loadOwnerTaplist(tenantId!)
+              const next = buildDraft(payload)
+              setDraft(next)
+              const found = next.drinks.find((d) => d.id === result.drink_id) ?? null
+              if (found) setJoinDrink(found)
+            })()
+          },
         },
-      },
-    ])
+      ])
+    }
   }
 
-  const toggleDrinkEnabled = async (drink: Drink) => {
+  const runArchiveRestore = async (drink: DraftDrink, archive: boolean) => {
     if (togglingDrinkId === drink.id) return
     setTogglingDrinkId(drink.id)
     try {
-      const { error } = await supabase
-        .from('drinks')
-        .update({ enabled: !drink.enabled })
-        .eq('id', drink.id)
-      if (error) throw error
-      await fetchDrinks()
-    } catch (e) {
-      Alert.alert('错误', '操作失败')
+      if (archive) await archiveDrink(drink.id)
+      else await restoreDrink(drink.id)
+      await loadCatalog()
+    } catch (e: any) {
+      Alert.alert('错误', e?.message || '操作失败')
     } finally {
       setTogglingDrinkId(null)
     }
   }
 
-  const getCategoryName = (catId: string) => categories.find((c) => c.id === catId)?.name || '未知分类'
-
-  const formatDrinkDisplayName = (drink: Pick<Drink, 'brand_name' | 'name' | 'volume_ml'>) => {
-    const brand = drink.brand_name?.trim()
-    const volume = drink.volume_ml != null ? `${drink.volume_ml}ml` : ''
-    return [brand, drink.name, volume].filter(Boolean).join(' ')
+  const confirmArchive = (drink: DraftDrink) => {
+    const name = drink.display_name || drink.name
+    const onTonight = isOnTonight(drink)
+    Alert.alert(
+      '下架商品？',
+      onTonight
+        ? `「${name}」将从商品库下架，并离开酒单。之后可在「已下架」中上架。`
+        : `「${name}」将从商品库下架。之后可在「已下架」中上架。`,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '下架商品',
+          style: 'destructive',
+          onPress: () => void runArchiveRestore(drink, true),
+        },
+      ],
+    )
   }
 
+  const confirmRestore = (drink: DraftDrink) => {
+    const name = drink.display_name || drink.name
+    Alert.alert('上架商品？', `「${name}」将回到商品库可用。不会自动加入酒单。`, [
+      { text: '取消', style: 'cancel' },
+      { text: '上架', onPress: () => void runArchiveRestore(drink, false) },
+    ])
+  }
+
+  const drinks = draft?.drinks
+  const drinkList = drinks ?? []
   const drinkSearchNormalized = drinkSearchQuery.trim().toLowerCase()
-  const drinksForList =
+  const drinksInTab = useMemo(
+    () =>
+      drinkList.filter((d) => {
+        if (drinkStatusTab === 'active') return d.enabled
+        if (drinkStatusTab === 'archived') return !d.enabled
+        return true
+      }),
+    [drinkList, drinkStatusTab],
+  )
+  const drinksMatched = useMemo(() => {
+    if (drinkSearchNormalized === '') return drinksInTab
+    return drinksInTab.filter((d) => {
+      const searchable = `${d.brand_name || ''} ${d.name} ${d.display_name || ''}`.toLowerCase()
+      return searchable.includes(drinkSearchNormalized)
+    })
+  }, [drinksInTab, drinkSearchNormalized])
+
+  const activeCount = drinkList.filter((d) => d.enabled).length
+  const archivedCount = drinkList.length - activeCount
+  const allCount = drinkList.length
+  const archivedMatchCount =
     drinkSearchNormalized === ''
-      ? drinks
-      : drinks.filter((d) => {
-          const searchable = `${d.brand_name || ''} ${d.name} ${d.volume_ml ?? ''}`.toLowerCase()
+      ? archivedCount
+      : drinkList.filter((d) => {
+          if (d.enabled) return false
+          const searchable = `${d.brand_name || ''} ${d.name} ${d.display_name || ''}`.toLowerCase()
           return searchable.includes(drinkSearchNormalized)
-        })
+        }).length
+  const searchPlaceholder =
+    drinkStatusTab === 'active'
+      ? '搜索可用商品'
+      : drinkStatusTab === 'archived'
+        ? '搜索已下架'
+        : '搜索全部商品'
 
-  // Group drinks by category
-  const drinksByCategory = categories
-    .map((cat) => ({
-      category: cat,
-      data: drinksForList
-        .filter((d) => d.category_id === cat.id)
-        .sort((a, b) => {
-          if (a.enabled !== b.enabled) return a.enabled ? -1 : 1
-          if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
-          return a.name.localeCompare(b.name)
-        }),
-    }))
-    .filter((g) => g.data.length > 0)
+  const catalogCategories = draft?.categories ?? []
+  const categorizedIds = useMemo(
+    () => new Set(catalogCategories.map((c) => c.id)),
+    [catalogCategories],
+  )
+  const orphanCount = useMemo(
+    () => drinksMatched.filter((d) => !d.category_id || !categorizedIds.has(d.category_id)).length,
+    [drinksMatched, categorizedIds],
+  )
 
-  const sectionData = drinksByCategory.map((g) => ({ title: g.category.name, data: g.data }))
+  const categoryRailItems = useMemo(() => {
+    const items: { key: CategoryRailKey; label: string; count: number }[] = []
+    for (const cat of catalogCategories) {
+      const count = drinksMatched.filter((d) => d.category_id === cat.id).length
+      items.push({ key: cat.id, label: cat.name, count })
+    }
+    if (orphanCount > 0 || categoryRail === 'uncategorized') {
+      items.push({ key: 'uncategorized', label: '未分类', count: orphanCount })
+    }
+    return items
+  }, [catalogCategories, drinksMatched, orphanCount, categoryRail])
 
-  if (loading) {
+  useEffect(() => {
+    const defaultKey = pickDefaultCategoryKey(catalogCategories)
+    const currentOk =
+      categoryRail != null &&
+      (categoryRail === 'uncategorized'
+        ? orphanCount > 0 || catalogCategories.length === 0
+        : catalogCategories.some((c) => c.id === categoryRail))
+
+    if (currentOk) return
+
+    if (defaultKey) {
+      setCategoryRail(defaultKey)
+      return
+    }
+    if (orphanCount > 0 || catalogCategories.length === 0) {
+      setCategoryRail('uncategorized')
+    }
+  }, [catalogCategories, categoryRail, orphanCount])
+
+  const drinksForList = useMemo(() => {
+    if (!categoryRail) return []
+    const list =
+      categoryRail === 'uncategorized'
+        ? drinksMatched.filter((d) => !d.category_id || !categorizedIds.has(d.category_id))
+        : drinksMatched.filter((d) => d.category_id === categoryRail)
+    return [...list].sort((a, b) => {
+      const ta = a.updated_at ? Date.parse(a.updated_at) : 0
+      const tb = b.updated_at ? Date.parse(b.updated_at) : 0
+      if (tb !== ta) return tb - ta
+      return (a.display_name || a.name).localeCompare(b.display_name || b.name, 'zh')
+    })
+  }, [drinksMatched, categoryRail, categorizedIds])
+
+  const selectedCategoryLabel =
+    categoryRailItems.find((c) => c.key === categoryRail)?.label ?? '商品'
+
+  if (loading && !draft) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <ActivityIndicator size="large" color={T.gold} />
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
-      {/* Tab Toggle */}
-      <View style={styles.tabRow}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.hero}>
+        <Text style={styles.title}>商品库</Text>
+      </View>
+
+      <View style={styles.segmented}>
         <TouchableOpacity
-          style={[styles.tabBtn, viewMode === 'categories' && styles.tabBtnActive]}
-          onPress={() => setViewMode('categories')}
-        >
-          <Text style={[styles.tabBtnText, viewMode === 'categories' && styles.tabBtnTextActive]}>分类管理</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabBtn, viewMode === 'drinks' && styles.tabBtnActive]}
+          style={[styles.segment, viewMode === 'drinks' && styles.segmentActive]}
           onPress={() => setViewMode('drinks')}
         >
-          <Text style={[styles.tabBtnText, viewMode === 'drinks' && styles.tabBtnTextActive]}>酒品管理</Text>
+          <Text style={[styles.segmentText, viewMode === 'drinks' && styles.segmentTextActive]}>商品</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, viewMode === 'categories' && styles.segmentActive]}
+          onPress={() => setViewMode('categories')}
+        >
+          <Text style={[styles.segmentText, viewMode === 'categories' && styles.segmentTextActive]}>分类</Text>
         </TouchableOpacity>
       </View>
 
-      {/* CATEGORIES VIEW */}
       {viewMode === 'categories' && (
-        <>
-          <TouchableOpacity style={styles.addBtn} onPress={() => openCategoryForm()}>
-            <Ionicons name="add" size={20} color="#000" />
-            <Text style={styles.addBtnText}>新增分类</Text>
-          </TouchableOpacity>
-          <FlatList
-            data={categories}
-            keyExtractor={(item) => item.id}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            contentContainerStyle={[styles.listContent, categories.length === 0 && styles.listContentEmpty]}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>暂无分类</Text>
-                <Text style={styles.emptyStateHint}>点击「新增分类」添加</Text>
+        <FlatList
+          data={categories}
+          keyExtractor={(item) => item.id}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          contentContainerStyle={[styles.listContent, categories.length === 0 && styles.listContentEmpty]}
+          ListHeaderComponent={
+            categories.length === 0 ? null : (
+              <Text style={styles.categoryPolicyHint}>
+                关闭分类后，No Menu 酒单与点单都不会显示该分类下的商品；商品仍保留在商品库。请用开关管理，不支持删除分类（避免误删其下商品）。
+              </Text>
+            )
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="pricetags-outline" size={44} color={T.faint} />
+              <Text style={styles.emptyStateText}>暂无分类</Text>
+              <Text style={styles.emptyStateHint}>点击右下角新增分类</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.listItem}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.listItemTitle}>{item.name}</Text>
+                <Text style={styles.listItemSub}>排序 {item.sort_order}</Text>
               </View>
-            }
-            renderItem={({ item }) => (
-              <View style={styles.listItem}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.listItemTitle}>{item.name}</Text>
-                  <Text style={styles.listItemSub}>排序: {item.sort_order}</Text>
+              {togglingCategoryId === item.id ? (
+                <View style={styles.switchLoadingWrap}>
+                  <ActivityIndicator size="small" color={T.gold} />
                 </View>
-                {togglingCategoryId === item.id ? (
-                  <View style={styles.switchLoadingWrap}>
-                    <ActivityIndicator size="small" color={COLORS.gold} />
-                  </View>
-                ) : (
-                  <Switch
-                    value={item.enabled}
-                    onValueChange={() => toggleCategoryEnabled(item)}
-                    trackColor={{ false: '#555', true: COLORS.gold }}
-                    thumbColor="#fff"
-                  />
-                )}
-                <TouchableOpacity onPress={() => openCategoryForm(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={18} color={COLORS.gold} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => deleteCategory(item.id)} style={styles.iconBtn}>
-                  <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
-                </TouchableOpacity>
-              </View>
-            )}
-          />
-        </>
+              ) : (
+                <Switch
+                  value={item.enabled}
+                  onValueChange={() => void toggleCategoryEnabled(item)}
+                  trackColor={{ false: '#3a3a3a', true: T.gold }}
+                  thumbColor="#fff"
+                />
+              )}
+              <TouchableOpacity onPress={() => openCategoryForm(item)} style={styles.iconBtn}>
+                <Ionicons name="create-outline" size={20} color={T.goldSoft} />
+              </TouchableOpacity>
+            </View>
+          )}
+        />
       )}
 
-      {/* DRINKS VIEW */}
       {viewMode === 'drinks' && (
-        <>
+        <View style={styles.drinksPane}>
+          <View style={styles.statusTabRow}>
+            {(
+              [
+                { key: 'active' as const, label: '可用', count: activeCount },
+                { key: 'archived' as const, label: '已下架', count: archivedCount },
+                { key: 'all' as const, label: '全部', count: allCount },
+              ] as const
+            ).map((tab) => (
+              <TouchableOpacity
+                key={tab.key}
+                style={[styles.statusTab, drinkStatusTab === tab.key && styles.statusTabActive]}
+                onPress={() => setDrinkStatusTab(tab.key)}
+              >
+                <Text
+                  style={[styles.statusTabText, drinkStatusTab === tab.key && styles.statusTabTextActive]}
+                >
+                  {tab.label} {tab.count}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           <View style={styles.drinkSearchRow}>
-            <Ionicons name="search" size={18} color={COLORS.muted} style={styles.drinkSearchIcon} />
+            <Ionicons name="search" size={18} color={T.muted} style={styles.drinkSearchIcon} />
             <TextInput
               style={styles.drinkSearchInput}
               value={drinkSearchQuery}
               onChangeText={setDrinkSearchQuery}
-              placeholder="搜索酒品名称"
-              placeholderTextColor={COLORS.muted}
+              placeholder={searchPlaceholder}
+              placeholderTextColor={T.faint}
               clearButtonMode="while-editing"
             />
           </View>
-          <TouchableOpacity style={styles.addBtn} onPress={() => openDrinkForm()}>
-            <Ionicons name="add" size={20} color="#000" />
-            <Text style={styles.addBtnText}>新增酒品</Text>
-          </TouchableOpacity>
-          <SectionList
-            sections={sectionData}
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryTabs}
+            contentContainerStyle={styles.categoryTabsContent}
+          >
+            {categoryRailItems.map((item) => {
+              const active = categoryRail === item.key
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[styles.categoryTab, active && styles.categoryTabActive]}
+                  onPress={() => setCategoryRail(item.key)}
+                >
+                  <Text style={[styles.categoryTabText, active && styles.categoryTabTextActive]}>
+                    {item.label}
+                    {item.count > 0 ? ` ${item.count}` : ''}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </ScrollView>
+
+          <FlatList
+            style={styles.drinksList}
+            data={drinksForList}
             keyExtractor={(item) => item.id}
             refreshing={refreshing}
             onRefresh={onRefresh}
             contentContainerStyle={[
-              styles.listContent,
-              (drinks.length === 0 || sectionData.length === 0) && styles.listContentEmpty,
+              styles.drinksListContent,
+              drinksForList.length === 0 && styles.listContentEmpty,
             ]}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                {drinks.length === 0 ? (
+                {drinkStatusTab === 'active' && drinkSearchNormalized !== '' && archivedMatchCount > 0 ? (
                   <>
-                    <Text style={styles.emptyStateText}>暂无酒品</Text>
-                    <Text style={styles.emptyStateHint}>点击「新增酒品」添加</Text>
+                    <Text style={styles.emptyStateText}>「{selectedCategoryLabel}」暂无匹配</Text>
+                    <TouchableOpacity
+                      style={styles.searchArchivedBtn}
+                      onPress={() => setDrinkStatusTab('archived')}
+                    >
+                      <Ionicons name="archive-outline" size={16} color={T.gold} />
+                      <Text style={styles.searchArchivedText}>
+                        在已下架中搜索（{archivedMatchCount}）
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                ) : drinksMatched.length === 0 && drinkStatusTab === 'active' && drinkSearchNormalized === '' ? (
+                  <>
+                    <Ionicons name="wine-outline" size={40} color={T.faint} />
+                    <Text style={styles.emptyStateText}>暂无可用商品</Text>
+                    <Text style={styles.emptyStateHint}>在此新增商品，再用「加入酒单」上墙</Text>
                   </>
                 ) : (
                   <>
-                    <Text style={styles.emptyStateText}>没有匹配的酒品</Text>
-                    <Text style={styles.emptyStateHint}>试试其他关键词</Text>
+                    <Text style={styles.emptyStateText}>「{selectedCategoryLabel}」暂无商品</Text>
+                    <Text style={styles.emptyStateHint}>换个分类或调整筛选</Text>
                   </>
                 )}
               </View>
             }
-            renderSectionHeader={({ section }) => (
-              <Text style={styles.drinkSectionHeader}>{section.title}</Text>
-            )}
-            renderItem={({ item }) => (
-              <View style={styles.listItem}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.listItemTitle}>{formatDrinkDisplayName(item)}</Text>
-                    {item.stock != null && item.stock <= 0 && (
-                      <View style={[styles.stockBadge, { backgroundColor: COLORS.danger }]}>
-                        <Text style={styles.stockBadgeText}>缺货</Text>
-                      </View>
-                    )}
-                    {item.stock != null && item.stock > 0 && item.stock <= LOW_STOCK_THRESHOLD && (
-                      <View style={[styles.stockBadge, { backgroundColor: '#f59e0b' }]}>
-                        <Text style={styles.stockBadgeText}>库存{item.stock}ml</Text>
-                      </View>
-                    )}
+            renderItem={({ item }) => {
+              const onTonight = isOnTonight(item)
+              const busy = togglingDrinkId === item.id
+              const listing = tonightLabel(item)
+              const servings = servingsLine(item)
+              const breweryStyle = [item.profile?.brewery, item.profile?.beer_style]
+                .filter(Boolean)
+                .join(' · ')
+              return (
+                <View style={[styles.rowCard, !item.enabled && styles.rowCardArchived]}>
+                  {item.image_url ? (
+                    <Image source={{ uri: item.image_url }} style={styles.rowImage} />
+                  ) : (
+                    <View style={[styles.rowImage, styles.rowImagePlaceholder]}>
+                      <Ionicons name="wine-outline" size={22} color={T.faint} />
+                    </View>
+                  )}
+                  <View style={styles.rowBody}>
+                    <TouchableOpacity
+                      style={styles.rowMain}
+                      activeOpacity={0.85}
+                      onPress={() => openEdit(item)}
+                    >
+                      <Text style={styles.rowTitle} numberOfLines={2}>
+                        {item.display_name || item.name}
+                      </Text>
+                      <Text style={styles.rowListing} numberOfLines={1}>
+                        {!item.enabled ? `已下架 · ${listing}` : listing}
+                      </Text>
+                      {breweryStyle ? (
+                        <Text style={styles.rowMeta} numberOfLines={1}>
+                          {breweryStyle}
+                        </Text>
+                      ) : null}
+                      {servings ? (
+                        <Text style={styles.rowServing} numberOfLines={1}>
+                          {servings}
+                        </Text>
+                      ) : null}
+                    </TouchableOpacity>
+                    <View style={styles.rowActions}>
+                      {busy ? (
+                        <ActivityIndicator size="small" color={T.gold} />
+                      ) : (
+                        <>
+                          {item.enabled && !onTonight ? (
+                            <TouchableOpacity
+                              style={[styles.textAction, styles.textActionPrimary]}
+                              onPress={() => setJoinDrink(item)}
+                            >
+                              <Text style={[styles.textActionLabel, styles.textActionLabelPrimary]}>
+                                加入酒单
+                              </Text>
+                            </TouchableOpacity>
+                          ) : null}
+                          <TouchableOpacity style={styles.textAction} onPress={() => openEdit(item)}>
+                            <Text style={styles.textActionLabel}>编辑</Text>
+                          </TouchableOpacity>
+                          {item.enabled ? (
+                            <TouchableOpacity
+                              style={styles.textAction}
+                              onPress={() => confirmArchive(item)}
+                            >
+                              <Text style={[styles.textActionLabel, styles.textActionDanger]}>下架</Text>
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity
+                              style={[styles.textAction, styles.textActionPrimary]}
+                              onPress={() => confirmRestore(item)}
+                            >
+                              <Text style={[styles.textActionLabel, styles.textActionLabelPrimary]}>
+                                上架
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </>
+                      )}
+                    </View>
                   </View>
-                  <Text style={styles.listItemSub}>
-                    ¥{item.price}/{item.price_unit || '杯'}
-                    {item.price_bottle != null && ` · ¥${item.price_bottle}/${item.price_unit_bottle || '瓶'}`}
-                    {item.stock != null && ` · 库存: ${item.stock}ml`}
-                    {item.ml_per_cup != null && ` · ${item.price_unit || '杯'}=${item.ml_per_cup}ml`}
-                    {item.ml_per_bottle != null &&
-                      ` · ${item.price_unit_bottle || '瓶'}=${item.ml_per_bottle}ml`}
-                  </Text>
                 </View>
-                {togglingDrinkId === item.id ? (
-                  <View style={styles.switchLoadingWrap}>
-                    <ActivityIndicator size="small" color={COLORS.gold} />
-                  </View>
-                ) : (
-                  <Switch
-                    value={item.enabled}
-                    onValueChange={() => toggleDrinkEnabled(item)}
-                    trackColor={{ false: '#555', true: COLORS.gold }}
-                    thumbColor="#fff"
-                  />
-                )}
-                <TouchableOpacity onPress={() => openDrinkForm(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={18} color={COLORS.gold} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => deleteDrink(item.id)} style={styles.iconBtn}>
-                  <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
-                </TouchableOpacity>
-              </View>
-            )}
+              )
+            }}
           />
-        </>
+        </View>
       )}
 
-      {/* Category Form Modal */}
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.85}
+        onPress={() => (viewMode === 'categories' ? openCategoryForm() : openCreate())}
+      >
+        <Ionicons name="add" size={22} color={T.background} />
+        <Text style={styles.fabText}>{viewMode === 'categories' ? '新增分类' : '新增商品'}</Text>
+      </TouchableOpacity>
+
       <Modal visible={showCategoryForm} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{editingCategoryId ? '编辑分类' : '新增分类'}</Text>
             <Text style={styles.formLabel}>分类名称</Text>
-            <TextInput style={styles.formInput} value={categoryName} onChangeText={setCategoryName}
-              placeholder="输入分类名称" placeholderTextColor={COLORS.muted} />
+            <TextInput
+              style={styles.formInput}
+              value={categoryName}
+              onChangeText={setCategoryName}
+              placeholder="输入分类名称"
+              placeholderTextColor={T.faint}
+            />
             <Text style={styles.formLabel}>排序</Text>
-            <TextInput style={styles.formInput} value={categorySortOrder} onChangeText={setCategorySortOrder}
-              keyboardType="number-pad" placeholder="0" placeholderTextColor={COLORS.muted} />
+            <TextInput
+              style={styles.formInput}
+              value={categorySortOrder}
+              onChangeText={setCategorySortOrder}
+              keyboardType="number-pad"
+              placeholder="0"
+              placeholderTextColor={T.faint}
+            />
             <View style={styles.modalBtnRow}>
               <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowCategoryForm(false)}>
                 <Text style={styles.modalCancelText}>取消</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSaveBtn} onPress={saveCategoryForm}>
+              <TouchableOpacity style={styles.modalSaveBtn} onPress={() => void saveCategoryForm()}>
                 <Text style={styles.modalSaveText}>保存</Text>
               </TouchableOpacity>
             </View>
@@ -538,218 +653,251 @@ export default function MenuScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Drink Form Modal */}
-      <Modal visible={showDrinkForm} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>{editingDrinkId ? '编辑酒品' : '新增酒品'}</Text>
+      <DrinkEditSheet
+        visible={!!editing}
+        drink={editing}
+        tenantId={tenantId}
+        categories={draft?.categories ?? []}
+        isCreate={creating}
+        entryPoint="catalog"
+        onClose={closeEditor}
+        onSaved={handleSaved}
+      />
 
-              <Text style={styles.formLabel}>分类</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                {categories.map((cat) => (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[styles.catPickerBtn, drinkForm.category_id === cat.id && styles.catPickerBtnActive]}
-                    onPress={() => setDrinkForm((f) => ({ ...f, category_id: cat.id }))}
-                  >
-                    <Text style={[styles.catPickerText, drinkForm.category_id === cat.id && styles.catPickerTextActive]}>
-                      {cat.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <Text style={styles.formLabel}>名称</Text>
-              <TextInput style={styles.formInput} value={drinkForm.name}
-                onChangeText={(t) => setDrinkForm((f) => ({ ...f, name: t }))}
-                placeholder="酒品名称" placeholderTextColor={COLORS.muted} />
-
-              <View style={styles.formRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.formLabel}>品牌(选填)</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.brand_name}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, brand_name: t }))}
-                    placeholder="如 朝日 / 百威" placeholderTextColor={COLORS.muted} />
-                </View>
-                <View style={{ width: 120, marginLeft: 8 }}>
-                  <Text style={styles.formLabel}>容量ml(选填)</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.volume_ml}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, volume_ml: t }))}
-                    keyboardType="number-pad" placeholder="如 500" placeholderTextColor={COLORS.muted} />
-                </View>
-              </View>
-
-              <View style={styles.formRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.formLabel}>价格</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.price}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, price: t }))}
-                    keyboardType="decimal-pad" placeholder="0" placeholderTextColor={COLORS.muted} />
-                </View>
-                <View style={{ width: 80, marginLeft: 8 }}>
-                  <Text style={styles.formLabel}>单位</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.price_unit}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, price_unit: t }))}
-                    placeholder="杯" placeholderTextColor={COLORS.muted} />
-                </View>
-              </View>
-
-              <View style={styles.formRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.formLabel}>瓶装价格(选填)</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.price_bottle}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, price_bottle: t }))}
-                    keyboardType="decimal-pad" placeholder="留空则无" placeholderTextColor={COLORS.muted} />
-                </View>
-                <View style={{ width: 80, marginLeft: 8 }}>
-                  <Text style={styles.formLabel}>单位</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.price_unit_bottle}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, price_unit_bottle: t }))}
-                    placeholder="瓶" placeholderTextColor={COLORS.muted} />
-                </View>
-              </View>
-
-              <View style={styles.formRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.formLabel}>排序</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.sort_order}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, sort_order: t }))}
-                    keyboardType="number-pad" placeholder="0" placeholderTextColor={COLORS.muted} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={styles.formLabel}>库存ml (选填)</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.stock}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, stock: t }))}
-                    keyboardType="number-pad" placeholder="留空=不追踪" placeholderTextColor={COLORS.muted} />
-                </View>
-              </View>
-
-              <View style={styles.formRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.formLabel}>每杯ml (选填)</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.ml_per_cup}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, ml_per_cup: t }))}
-                    keyboardType="number-pad" placeholder="如 470" placeholderTextColor={COLORS.muted} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={styles.formLabel}>每瓶ml (选填)</Text>
-                  <TextInput style={styles.formInput} value={drinkForm.ml_per_bottle}
-                    onChangeText={(t) => setDrinkForm((f) => ({ ...f, ml_per_bottle: t }))}
-                    keyboardType="number-pad" placeholder="如 500" placeholderTextColor={COLORS.muted} />
-                </View>
-              </View>
-
-              <View style={styles.modalBtnRow}>
-                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowDrinkForm(false)}>
-                  <Text style={styles.modalCancelText}>取消</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.modalSaveBtn} onPress={saveDrinkForm}>
-                  <Text style={styles.modalSaveText}>保存</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Modal>
-    </View>
+      <JoinTonightSheet
+        visible={!!joinDrink}
+        drink={joinDrink}
+        allDrinks={drinkList}
+        onClose={() => setJoinDrink(null)}
+        onJoined={async () => {
+          setJoinDrink(null)
+          await loadCatalog()
+        }}
+      />
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background, padding: 16 },
-  centered: { flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
-  tabRow: { flexDirection: 'row', marginBottom: 16, gap: 8 },
-  tabBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center',
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border,
+  container: { flex: 1, backgroundColor: T.background },
+  centered: { flex: 1, backgroundColor: T.background, justifyContent: 'center', alignItems: 'center' },
+  hero: {
+    paddingHorizontal: LAYOUT.pagePad,
+    paddingTop: LAYOUT.heroPadTop,
+    paddingBottom: LAYOUT.heroPadBottom,
   },
-  tabBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
-  tabBtnText: { color: COLORS.text, fontSize: 15, fontWeight: '600' },
-  tabBtnTextActive: { color: '#000' },
+  title: { color: T.text, fontSize: 26, fontWeight: '800' },
+  segmented: {
+    flexDirection: 'row',
+    backgroundColor: T.surfaceMuted,
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+    marginHorizontal: LAYOUT.pagePad,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
+  },
+  segment: { flex: 1, paddingVertical: 11, borderRadius: 8, alignItems: 'center' },
+  segmentActive: {
+    backgroundColor: T.goldFill,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+  },
+  segmentText: { color: T.muted, fontSize: 15, fontWeight: '600' },
+  segmentTextActive: { color: T.gold, fontWeight: '700' },
+  statusTabRow: { flexDirection: 'row', gap: 6, marginBottom: 10, paddingHorizontal: LAYOUT.pagePad },
+  statusTab: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  statusTabActive: { backgroundColor: T.goldFill, borderColor: T.goldBorder },
+  statusTabText: { color: T.muted, fontSize: 13, fontWeight: '600' },
+  statusTabTextActive: { color: T.gold },
+  searchArchivedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldFill,
+  },
+  searchArchivedText: { color: T.gold, fontSize: 13, fontWeight: '600' },
   drinkSearchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: T.card,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.borderFaint,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 10,
+    marginHorizontal: LAYOUT.pagePad,
   },
   drinkSearchIcon: { marginRight: 8 },
-  drinkSearchInput: {
-    flex: 1,
-    color: COLORS.text,
-    fontSize: 15,
-    paddingVertical: 12,
-    minHeight: 44,
+  drinkSearchInput: { flex: 1, color: T.text, fontSize: 15, paddingVertical: 10, minHeight: 40 },
+  drinksPane: { flex: 1 },
+  categoryTabs: { flexGrow: 0, marginBottom: 8 },
+  categoryTabsContent: {
+    paddingHorizontal: LAYOUT.pagePad,
+    paddingBottom: 4,
+    gap: 8,
+    alignItems: 'center',
   },
-  addBtn: {
-    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end',
-    backgroundColor: COLORS.gold, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 8, gap: 4,
+  categoryTab: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+    backgroundColor: T.surface,
+  },
+  categoryTabActive: {
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldFill,
+  },
+  categoryTabText: { color: T.muted, fontSize: 13, fontWeight: '600' },
+  categoryTabTextActive: { color: T.gold },
+  drinksList: { flex: 1 },
+  drinksListContent: { paddingHorizontal: LAYOUT.pagePad, paddingBottom: LAYOUT.listPadBottom },
+  listContent: { paddingBottom: LAYOUT.listPadBottom, paddingHorizontal: LAYOUT.pagePad },
+  listContentEmpty: { flexGrow: 1 },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: LAYOUT.pagePad,
+    gap: 8,
+  },
+  emptyStateText: { fontSize: 15, fontWeight: '600', color: T.text, textAlign: 'center', marginTop: 8 },
+  emptyStateHint: { fontSize: 13, color: T.muted, textAlign: 'center' },
+  categoryPolicyHint: {
+    color: T.muted,
+    fontSize: 13,
+    lineHeight: 19,
     marginBottom: 12,
   },
-  addBtnText: { color: '#000', fontWeight: '600', fontSize: 14 },
-  listContent: { paddingBottom: 40 },
-  listContentEmpty: { flexGrow: 1 },
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24 },
-  emptyStateText: { fontSize: 16, fontWeight: '600', color: COLORS.text, textAlign: 'center' },
-  emptyStateHint: { fontSize: 14, color: COLORS.muted, marginTop: 8, textAlign: 'center' },
+  rowCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    paddingTop: 14,
+    paddingHorizontal: 14,
+    paddingBottom: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
+  },
+  rowCardArchived: { opacity: 0.55 },
+  rowImage: { width: 56, height: 56, borderRadius: 8, backgroundColor: T.surfaceMuted },
+  rowImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  rowBody: { flex: 1, minWidth: 0 },
+  rowMain: { gap: 3 },
+  rowTitle: { color: T.text, fontSize: 16, fontWeight: '700' },
+  rowListing: { color: T.goldSoft, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  rowMeta: { color: T.muted, fontSize: 13, marginTop: 2 },
+  rowServing: { color: T.muted, fontSize: 12, marginTop: 2 },
+  rowActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  textAction: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  textActionPrimary: {
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldFill,
+  },
+  textActionLabel: { fontSize: 13, fontWeight: '600', color: T.muted },
+  textActionLabelPrimary: { color: T.gold },
+  textActionDanger: { color: 'rgba(220,120,100,0.95)' },
+  iconBtn: { padding: 6 },
+  switchLoadingWrap: { width: 51, alignItems: 'center' },
   listItem: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
-    borderRadius: 10, padding: 14, marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: T.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: T.borderFaint,
   },
-  listItemTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text },
-  listItemSub: { fontSize: 13, color: COLORS.muted, marginTop: 2 },
-  iconBtn: { padding: 14 },
-  drinkSectionHeader: {
-    fontSize: 13, fontWeight: '700', color: COLORS.gold, textTransform: 'uppercase',
-    letterSpacing: 1.5, marginTop: 12, marginBottom: 8, paddingHorizontal: 4,
+  listItemTitle: { color: T.text, fontSize: 15, fontWeight: '700' },
+  listItemSub: { color: T.muted, fontSize: 12, marginTop: 4 },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: T.gold,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 28,
   },
+  fabText: { color: T.background, fontSize: 15, fontWeight: '800' },
   modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20,
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: 20,
   },
   modalContent: {
-    backgroundColor: COLORS.card, borderRadius: 16, padding: 24,
+    backgroundColor: T.background,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: T.border,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text, marginBottom: 20 },
-  formLabel: { fontSize: 13, color: COLORS.muted, marginBottom: 4, fontWeight: '600' },
+  modalTitle: { color: T.text, fontSize: 18, fontWeight: '800', marginBottom: 16 },
+  formLabel: { color: T.muted, fontSize: 13, marginBottom: 6 },
   formInput: {
-    backgroundColor: COLORS.background, color: COLORS.text, borderRadius: 8,
-    padding: 12, fontSize: 15, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: T.surfaceMuted,
+    color: T.text,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: T.border,
+    marginBottom: 12,
   },
-  formRow: { flexDirection: 'row', alignItems: 'flex-end' },
   modalBtnRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   modalCancelBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center',
-    backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border,
-  },
-  modalCancelText: { color: COLORS.text, fontWeight: '600' },
-  modalSaveBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center', backgroundColor: COLORS.gold,
-  },
-  modalSaveText: { color: '#000', fontWeight: '700' },
-  catPickerBtn: {
-    paddingHorizontal: 14, paddingVertical: 12, borderRadius: 8, marginRight: 8,
-    backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border,
-  },
-  catPickerBtnActive: { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
-  catPickerText: { color: COLORS.text, fontSize: 14 },
-  catPickerTextActive: { color: '#000' },
-  stockBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  stockBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  switchLoadingWrap: {
-    width: 52,
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: T.border,
     alignItems: 'center',
-    justifyContent: 'center',
   },
+  modalCancelText: { color: T.muted, fontWeight: '600' },
+  modalSaveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: T.gold,
+    alignItems: 'center',
+  },
+  modalSaveText: { color: T.background, fontWeight: '800' },
 })

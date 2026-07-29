@@ -58,6 +58,7 @@ export default function EventsScreen() {
                 count={tonightEvents.length}
                 events={tonightEvents}
                 compact={sparseList}
+                source="home_event"
               />
             ) : null}
             {upcomingEvents.length > 0 ? (
@@ -66,6 +67,7 @@ export default function EventsScreen() {
                 count={upcomingEvents.length}
                 events={upcomingEvents}
                 compact={sparseList}
+                source="home_event"
               />
             ) : null}
           </>

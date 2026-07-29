@@ -1,40 +1,37 @@
-# Real bar onboarding (concierge / engineering)
+# Real bar onboarding (concierge)
 
-Ops checklist (permissions, bar list, hiding demos) is owned by the team separately. This doc covers **admin + Supabase** steps only.
+For ~30 bars: **you create the owner account, bind it to the bar, send login via WeChat.**
+No SMS OTP. No invite codes for owners.
 
 ## Prerequisites
 
-- Log in as **`super_admin`** (see `supabase/seed_platform_super_admin.sql`).
-- Production DB has migration **`20260524120000_admin_create_bar_concierge.sql`** applied (or greenfield `install_all_in_one.sql` including that section).
+- Log in to web admin as **`super_admin`** (`supabase/seed_platform_super_admin.sql`).
+- Apply migrations **`20260720120000_admin_bind_owner.sql`** and **`20260720130000_admin_provision_owner.sql`**.
+- Admin web is static-export friendly: owner create/bind runs via Supabase RPC (no Next API routes).
 
-## New city (before onboarding bars there)
+## Per bar
 
-1. **平台管理** → **城市管理** (`/admin/platform/cities`): add city key + 中文展示名 (e.g. `Beijing` / `北京`), set sort order, keep **启用**.
-2. Or click **从活跃门店同步缺失城市** after bars already have `city` set on Tap List storefront.
-3. Consumer App shows the city only when it is **enabled** and at least one bar is **active + 门店公开可见** with matching `tenants.city`.
+1. Ask owner for **mobile number**.
+2. **平台管理** → create bar (or open existing) → **绑定店主** with mobile (+ optional temp password).
+3. Copy the WeChat blurb (手机号 + 临时密码) and send to owner.
+4. Owner opens POS → **手机号 + 密码** → first login **改密码** → lands on **今晚酒单**.
 
-Requires migration **`20260630120000_taplist_public_cities.sql`** and **`20260630130000_admin_taplist_cities.sql`**.
+Re-binding the same or a new mobile resets the temp password and replaces the previous owner role on that bar.
 
-These migrations are **safe on production while App Store 1.2.x is live** (see `supabase/DEPLOY_MULTI_CITY_BACKEND.md`). Bump `taplist-mobile/app.json` to 1.3.0 only when submitting the multi-city app build.
+## How login works (no SMS)
 
-## Per bar (repeat)
+POS shows “手机号”, but Auth uses a synthetic email:
 
-1. **平台管理** → **创建酒吧** (name + slug). New bars default to **not** consumer-visible.
-2. Click **编辑 Tap List** (or open `/admin/taplist?tenant=<uuid>`).
-3. Confirm header: **当前编辑门店** matches the bar.
-4. **POS menu** (same tenant): add categories and drinks in **分类管理** / **酒品管理**; enable drinks (`enabled=true`). Tap List admin only lists enabled drinks.
-5. On Tap List: storefront → category **[公开]** → per-drink **[公开]** → **编辑 Tap List** (image, status, beer profile, serving options).
-6. Preview: consumer app `/bar/<slug>` or `npm run taplist:smoke` (with env pointing at prod/local).
-7. When accurate: toggle **门店公开可见** on Tap List admin.
+`13800138000` → `13800138000@owners.nomenu.app`
+
+Password is normal Supabase email/password. SMS is not required.
 
 ## Roles
 
-| Role | Create bar | Edit Tap List |
-|------|------------|---------------|
-| `super_admin` | Yes (platform form) | Any bar via picker / `?tenant=` |
-| `owner` | No | Own bar(s) only; foreign `?tenant=` ignored |
-| `staff` | No | Tap List tab not available |
+| Role | Create bar / bind owner | Publish storefront | Tonight list |
+|------|-------------------------|--------------------|--------------|
+| `super_admin` | Yes | Yes (any bar) | Yes |
+| `owner` | No | Own bar | Yes |
+| `staff` | No | No | Yes |
 
-## Optional owner handoff later
-
-SQL: insert `user_roles` with `role=owner` for the bar’s `tenant_id` (see midnightswim seed pattern). Owner can then use Tap List for their bar only.
+Staff invites remain available later; owner onboarding does not use them.

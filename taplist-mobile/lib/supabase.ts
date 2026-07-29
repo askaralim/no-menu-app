@@ -2,6 +2,8 @@ import 'react-native-url-polyfill/auto'
 
 import Constants from 'expo-constants'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
 
 /** Same defaults as Supabase CLI `supabase start` (issuer `supabase-demo`). */
@@ -17,11 +19,24 @@ const INVALID_SUPABASE_KEYS = new Set([
   'sb_publishable_REPLACE_ME_FROM_supabase_status',
 ])
 
-/** Tap List MVP uses anon RPCs only — no persisted auth session. */
+/** Static rendering must never touch browser or native persistence. */
 const noopAuthStorage = {
   getItem: async () => null,
   setItem: async () => undefined,
   removeItem: async () => undefined,
+}
+
+const secureAuthStorage = {
+  getItem: (key: string) => SecureStore.getItemAsync(key),
+  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
+  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+}
+
+function authStorage() {
+  if (Platform.OS === 'web') {
+    return typeof window === 'undefined' ? noopAuthStorage : AsyncStorage
+  }
+  return secureAuthStorage
 }
 
 /**
@@ -75,9 +90,9 @@ export function getTaplistSupabase(): SupabaseClient {
     if (!cachedClient) {
       cachedClient = createClient('http://127.0.0.1:54321', 'missing-config', {
         auth: {
-          storage: noopAuthStorage,
-          autoRefreshToken: false,
-          persistSession: false,
+          storage: authStorage(),
+          autoRefreshToken: true,
+          persistSession: true,
           detectSessionInUrl: false,
         },
         global: { headers: { 'X-Client-Info': 'taplist-mobile' } },
@@ -91,9 +106,9 @@ export function getTaplistSupabase(): SupabaseClient {
     cachedKey = key
     cachedClient = createClient(url, key, {
       auth: {
-        storage: noopAuthStorage,
-        autoRefreshToken: false,
-        persistSession: false,
+        storage: authStorage(),
+        autoRefreshToken: true,
+        persistSession: true,
         detectSessionInUrl: false,
       },
       global: { headers: { 'X-Client-Info': 'taplist-mobile' } },

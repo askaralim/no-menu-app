@@ -7,6 +7,7 @@ import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicBeerRoadmap } from '@/lib/api/taplist'
 import { navigationUrlForLeg } from '@/lib/navigationLinks'
 import type { BeerRoadmapLeg, BeerRoadmapRoute, BeerRoadmapStop } from '@/lib/types'
+import { trackEvent } from '@/lib/analytics'
 
 type BeerRoadmapSectionProps = {
   startTenantId: string | null | undefined
@@ -78,11 +79,20 @@ function RoadmapStopRow({
   const showActions = !isStart
 
   const handleOpenMenu = () => {
+    trackEvent('bar_opened', {
+      tenant_id: stop.tenantId,
+      tenant_slug: stop.tenantSlug,
+      source: 'beer_route',
+    })
     router.push(`/bar/${stop.tenantSlug}`)
   }
 
   const handleOpenNavigation = () => {
     if (!navigationUrl) return
+    trackEvent('apple_maps_opened', {
+      start_tenant_id: stops[0]?.tenantId,
+      destination_tenant_id: stop.tenantId,
+    })
     void Linking.openURL(navigationUrl).catch((error) => {
       console.warn('Open Apple Maps navigation failed', error)
     })

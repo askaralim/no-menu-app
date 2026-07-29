@@ -3,12 +3,21 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { generateTempOwnerPassword } from '@/lib/ownerAuth'
 import type { TenantInfo, UserRole } from '@/lib/types'
 
 const PLATFORM_SLUG = '__platform__'
 
 function isRealBar(t: TenantInfo) {
   return t.slug != null && t.slug !== PLATFORM_SLUG
+}
+
+type BoundOwnerCreds = {
+  tenantName: string
+  mobile: string
+  loginEmail: string
+  temporaryPassword: string
+  created: boolean
 }
 
 export default function PlatformAdminPage() {
@@ -18,7 +27,14 @@ export default function PlatformAdminPage() {
   const [role, setRole] = useState<UserRole | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
-  const [createForm, setCreateForm] = useState({ name: '', slug: '' })
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    slug: '',
+    ownerMobile: '',
+    ownerPassword: '',
+  })
+  const [lastBound, setLastBound] = useState<BoundOwnerCreds | null>(null)
+  const [bindingId, setBindingId] = useState<string | null>(null)
 
   useEffect(() => {
     const checkRoleAndFetch = async () => {
@@ -66,11 +82,57 @@ export default function PlatformAdminPage() {
     }
   }
 
+  const bindOwner = async (
+    tenantId: string,
+    tenantName: string,
+    ownerMobile: string,
+    ownerPassword?: string,
+  ) => {
+    const mobile = ownerMobile.trim()
+    if (!mobile) {
+      alert('请填写店主手机号')
+      return
+    }
+
+    const password = (ownerPassword || '').trim() || generateTempOwnerPassword(mobile)
+    setBindingId(tenantId)
+    try {
+      const { data, error: rpcError } = await supabase.rpc('admin_provision_owner', {
+        p_tenant_id: tenantId,
+        p_mobile: mobile,
+        p_password: password,
+      })
+      if (rpcError) throw rpcError
+
+      const json = data as {
+        ok?: boolean
+        created?: boolean
+        mobile?: string
+        login_email?: string
+        temporary_password?: string
+      }
+
+      setLastBound({
+        tenantName,
+        mobile: json.mobile || mobile,
+        loginEmail: json.login_email || '',
+        temporaryPassword: json.temporary_password || password,
+        created: !!json.created,
+      })
+      await fetchTenants()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '绑定店主失败')
+    } finally {
+      setBindingId(null)
+    }
+  }
 
   const handleCreateBar = async (e: React.FormEvent) => {
     e.preventDefault()
     const name = createForm.name.trim()
     const slug = createForm.slug.trim().toLowerCase()
+    const ownerMobile = createForm.ownerMobile.trim()
+    const ownerPassword = createForm.ownerPassword.trim()
     if (!name || !slug) {
       alert('请填写酒吧名称和 slug')
       return
@@ -82,10 +144,12 @@ export default function PlatformAdminPage() {
         p_slug: slug,
       })
       if (rpcError) throw rpcError
-      setCreateForm({ name: '', slug: '' })
-      await fetchTenants()
       const id = data as string
-      if (id && confirm('酒吧已创建。是否现在编辑 Tap List？')) {
+      setCreateForm({ name: '', slug: '', ownerMobile: '', ownerPassword: '' })
+      await fetchTenants()
+      if (id && ownerMobile) {
+        await bindOwner(id, name, ownerMobile, ownerPassword)
+      } else if (id && confirm('酒吧已创建。是否现在编辑 Tap List？')) {
         window.location.href = `/admin/taplist?tenant=${id}`
       }
     } catch (err: unknown) {
@@ -106,6 +170,26 @@ export default function PlatformAdminPage() {
       const { error: rpcError } = await supabase.rpc('admin_set_tenant_status', {
         target_tenant_id: tenant.id,
         new_status: newStatus,
+      })
+      if (rpcError) throw rpcError
+      await fetchTenants()
+    } catch (e: any) {
+      alert(e?.message || '操作失败')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const handleToggleOrdering = async (tenant: TenantInfo) => {
+    const next = !tenant.ordering_enabled
+    const action = next ? '开启点单/订单' : '关闭点单/订单'
+    if (!confirm(`确定要为「${tenant.name}」${action}吗？`)) return
+
+    setUpdating(tenant.id)
+    try {
+      const { error: rpcError } = await supabase.rpc('admin_set_tenant_ordering_enabled', {
+        p_tenant_id: tenant.id,
+        p_enabled: next,
       })
       if (rpcError) throw rpcError
       await fetchTenants()
@@ -145,8 +229,8 @@ export default function PlatformAdminPage() {
           {role === 'super_admin' && (
             <p style={{ color: '#888', marginTop: '1rem', fontSize: '0.95rem', maxWidth: '36rem', marginLeft: 'auto', marginRight: 'auto' }}>
               若提示 permission denied 或 function 不存在，请在 Supabase SQL Editor 执行{' '}
-              <code style={{ color: '#ccc' }}>supabase/migrations/20260524120000_admin_create_bar_concierge.sql</code>
-              末尾的 <code style={{ color: '#ccc' }}>GRANT</code> 段（或在新库完整执行该安装脚本）。
+              <code style={{ color: '#ccc' }}>supabase/migrations/20260720130000_admin_provision_owner.sql</code>
+              （以及 <code style={{ color: '#ccc' }}>20260720120000_admin_bind_owner.sql</code>）
             </p>
           )}
         </div>
@@ -184,9 +268,10 @@ export default function PlatformAdminPage() {
       </div>
 
       <div className="admin-section" style={{ marginBottom: '2rem' }}>
-        <h2 style={{ marginBottom: '1rem' }}>创建酒吧（代运营）</h2>
+        <h2 style={{ marginBottom: '1rem' }}>创建酒吧并绑定店主</h2>
         <p style={{ color: '#6b7280', marginBottom: '1rem', fontSize: '0.95rem' }}>
-          不创建店主账号。新酒吧默认不对消费者公开，请在 Tap List 编辑完成后再开启公开。
+          填写店主手机号后会创建 POS 账号（手机号 + 临时密码），并直接绑定为该店 owner。
+          把账号发给微信即可，无需邀请码 / 短信验证码。密码留空则自动生成。
         </p>
         <form onSubmit={handleCreateBar} className="admin-form" style={{ maxWidth: 480 }}>
           <input
@@ -202,13 +287,67 @@ export default function PlatformAdminPage() {
             onChange={(e) => setCreateForm({ ...createForm, slug: e.target.value })}
             autoCapitalize="none"
           />
+          <input
+            className="admin-input"
+            placeholder="店主手机号（可选，创建并绑定）"
+            value={createForm.ownerMobile}
+            onChange={(e) => setCreateForm({ ...createForm, ownerMobile: e.target.value })}
+            autoCapitalize="none"
+          />
+          <input
+            className="admin-input"
+            placeholder="临时密码（可选，留空自动生成）"
+            value={createForm.ownerPassword}
+            onChange={(e) => setCreateForm({ ...createForm, ownerPassword: e.target.value })}
+            autoCapitalize="none"
+          />
           <button type="submit" className="admin-button admin-button-primary" disabled={creating}>
             {creating ? '创建中…' : '创建酒吧'}
           </button>
         </form>
+
+        {lastBound ? (
+          <div
+            style={{
+              marginTop: '1.25rem',
+              padding: '1rem',
+              borderRadius: 8,
+              border: '1px solid #ca8a04',
+              background: '#1c1917',
+              maxWidth: 520,
+            }}
+          >
+            <strong style={{ color: '#fbbf24' }}>
+              店主账号已{lastBound.created ? '创建并' : ''}绑定（请复制发给微信）
+            </strong>
+            <p style={{ margin: '0.5rem 0 0', color: '#e5e7eb', fontSize: '0.95rem' }}>
+              门店：{lastBound.tenantName}
+              <br />
+              手机号：{lastBound.mobile}
+              <br />
+              临时密码：
+              <code style={{ fontSize: '1.15rem', letterSpacing: 1 }}>{lastBound.temporaryPassword}</code>
+              <br />
+              <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                POS 用手机号 + 密码登录；首次登录会要求改密码。
+              </span>
+            </p>
+            <button
+              type="button"
+              className="admin-button admin-button-secondary"
+              style={{ marginTop: 12 }}
+              onClick={() => {
+                const text = `【No Menu】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n临时密码：${lastBound.temporaryPassword}\n请用 POS App 登录后修改密码。`
+                void navigator.clipboard.writeText(text)
+                alert('已复制微信文案')
+              }}
+            >
+              复制微信文案
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      {/* Stats overview */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
         <div className="admin-section">
           <h3>总酒吧数</h3>
@@ -228,7 +367,6 @@ export default function PlatformAdminPage() {
         </div>
       </div>
 
-      {/* Tenant list */}
       <div className="admin-section">
         <h2 style={{ marginBottom: '1rem' }}>酒吧列表</h2>
         <div style={{ overflowX: 'auto' }}>
@@ -240,6 +378,7 @@ export default function PlatformAdminPage() {
                 <th style={thStyle}>店主</th>
                 <th style={thStyle}>成员</th>
                 <th style={thStyle}>状态</th>
+                <th style={thStyle}>点单</th>
                 <th style={thStyle}>注册时间</th>
                 <th style={thStyle}>操作</th>
               </tr>
@@ -276,6 +415,27 @@ export default function PlatformAdminPage() {
                     </span>
                   </td>
                   <td style={tdStyle}>
+                    <button
+                      type="button"
+                      onClick={() => void handleToggleOrdering(tenant)}
+                      disabled={updating === tenant.id}
+                      style={{
+                        padding: '3px 10px',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        border: '1px solid',
+                        cursor: updating === tenant.id ? 'wait' : 'pointer',
+                        background: tenant.ordering_enabled ? '#052e16' : '#1e293b',
+                        borderColor: tenant.ordering_enabled ? '#166534' : '#334155',
+                        color: tenant.ordering_enabled ? '#4ade80' : '#94a3b8',
+                      }}
+                      title="平台开关：控制运营端是否显示点单/订单"
+                    >
+                      {tenant.ordering_enabled ? '已开启' : '未开启'}
+                    </button>
+                  </td>
+                  <td style={tdStyle}>
                     {new Date(tenant.created_at).toLocaleDateString('zh-CN')}
                   </td>
                   <td style={tdStyle}>
@@ -287,6 +447,20 @@ export default function PlatformAdminPage() {
                       >
                         编辑 Tap List
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const mobile = window.prompt('店主手机号', '')
+                          if (!mobile) return
+                          const pwd = window.prompt('临时密码（留空自动生成）', '') ?? ''
+                          void bindOwner(tenant.id, tenant.name, mobile, pwd)
+                        }}
+                        disabled={bindingId === tenant.id}
+                        className="admin-button admin-button-secondary"
+                        style={{ fontSize: '0.85rem' }}
+                      >
+                        {bindingId === tenant.id ? '绑定中…' : '绑定店主'}
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(tenant)}

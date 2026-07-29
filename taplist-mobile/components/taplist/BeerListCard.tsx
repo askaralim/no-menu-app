@@ -1,7 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient'
 import { Link } from 'expo-router'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 
+import { CachedImage } from '@/components/taplist/CachedImage'
 import {
   listCapsuleCardStyles,
   listCapsuleMetaStyle,
@@ -14,14 +15,16 @@ import {
 } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
 import { displayServingOptions, servingParts } from '@/lib/formatTaplist'
+import { trackEvent } from '@/lib/analytics'
 import type { PublicDrinkRow } from '@/lib/types'
 
 type BeerListCardProps = {
   drink: PublicDrinkRow
   slug: string
+  tenantId: string
 }
 
-export function BeerListCard({ drink, slug }: BeerListCardProps) {
+export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
   const hasArtwork = Boolean(drink.image_url)
   const publicStatus = drink.public_status || null
   const isSoldOut = publicStatus === '售罄'
@@ -35,6 +38,13 @@ export function BeerListCard({ drink, slug }: BeerListCardProps) {
   return (
     <Link href={`/bar/${slug}/beer/${drink.id}`} asChild>
       <Pressable
+        onPress={() =>
+          trackEvent('beer_opened', {
+            tenant_id: tenantId,
+            drink_id: drink.id,
+            source: 'bar_taplist',
+          })
+        }
         style={({ pressed }) => [
           listCapsuleCardStyles.card,
           isSoldOut && listCapsuleCardStyles.cardSoldOut,
@@ -43,10 +53,9 @@ export function BeerListCard({ drink, slug }: BeerListCardProps) {
         <View style={listCapsuleCardStyles.cardInner}>
           {hasArtwork ? (
             <View style={listCapsuleCardStyles.artworkFrame}>
-              <Image
-                source={{ uri: drink.image_url as string }}
+              <CachedImage
+                source={drink.image_url as string}
                 style={listCapsuleCardStyles.artwork}
-                resizeMode="cover"
               />
             </View>
           ) : (
@@ -62,7 +71,7 @@ export function BeerListCard({ drink, slug }: BeerListCardProps) {
 
             <View style={listCapsuleCardStyles.panelContent}>
               <View style={styles.nameRow}>
-                <Text style={listCapsuleTitleStyle} numberOfLines={2} ellipsizeMode="tail">
+                <Text style={[listCapsuleTitleStyle, { flex: 1 }]} numberOfLines={2} ellipsizeMode="tail">
                   {drink.name}
                 </Text>
                 {publicStatus ? (

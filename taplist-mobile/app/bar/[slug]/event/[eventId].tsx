@@ -1,16 +1,18 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocalSearchParams } from 'expo-router'
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BackButton } from '@/components/taplist/BackButton'
+import { CachedImageBackground } from '@/components/taplist/CachedImage'
 import { eventMetaLine } from '@/components/taplist/EventCards'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicEvent } from '@/lib/api/taplist'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
+import { trackEvent } from '@/lib/analytics'
 
 const EVENT_INFORMATION_DISCLAIMER = '活动信息由门店提供，时间、内容与供应情况以门店现场为准。'
 
@@ -45,13 +47,13 @@ export default function EventDetailScreen() {
         ) : event ? (
           <>
             {event.image_url ? (
-              <ImageBackground source={{ uri: event.image_url }} style={styles.cover}>
+              <CachedImageBackground source={event.image_url} style={styles.cover}>
                 <LinearGradient
                   colors={['rgba(13,13,13,0.04)', 'rgba(13,13,13,0.30)', 'rgba(13,13,13,1)']}
                   locations={[0, 0.52, 1]}
                   style={styles.coverScrim}
                 />
-              </ImageBackground>
+              </CachedImageBackground>
             ) : null}
 
             <View style={event.image_url ? styles.paddedContent : undefined}>
@@ -83,7 +85,15 @@ export default function EventDetailScreen() {
 
             <View style={styles.venueSection}>
               <Link href={{ pathname: '/bar/[slug]', params: { slug: event.tenant_slug } }} asChild>
-                <Pressable style={({ pressed }) => [styles.venueCard, pressed && styles.venueCardPressed]}>
+                <Pressable
+                  onPress={() =>
+                    trackEvent('bar_opened', {
+                      tenant_id: event.tenant_id,
+                      tenant_slug: event.tenant_slug,
+                      source: 'bar_event',
+                    })
+                  }
+                  style={({ pressed }) => [styles.venueCard, pressed && styles.venueCardPressed]}>
                   <Text style={styles.venueName}>{event.tenant_display_name}</Text>
                   <Text style={styles.venueMeta} numberOfLines={1} ellipsizeMode="tail">
                     {event.tenant_address || event.tenant_district || '查看实时酒单'}

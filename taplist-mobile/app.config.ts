@@ -26,7 +26,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const privacyPolicyUrl = envFirst(
     'EXPO_PUBLIC_PRIVACY_POLICY_URL',
     'NEXT_PUBLIC_PRIVACY_POLICY_URL'
-  );
+  ) || 'https://nomenuapp.com/privacy';
+  const posthogApiKey = envFirst('EXPO_PUBLIC_POSTHOG_API_KEY', 'NEXT_PUBLIC_POSTHOG_API_KEY');
+  const posthogHost =
+    envFirst('EXPO_PUBLIC_POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST') ||
+    'https://us.i.posthog.com';
+  const posthogDebug =
+    envFirst('EXPO_PUBLIC_POSTHOG_DEBUG', 'NEXT_PUBLIC_POSTHOG_DEBUG') === 'true';
 
   return {
     ...config,
@@ -53,6 +59,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supabaseUrl,
       supabaseAnonKey,
       privacyPolicyUrl,
+      posthogApiKey,
+      posthogHost,
+      posthogDebug,
     },
   };
 };

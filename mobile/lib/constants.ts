@@ -1,12 +1,3 @@
-export const CUSTOMER_NAME_MAP: Record<string, string> = {
-  '阿尔法': '阿尔法, 凯瑟琳',
-  '凯瑟琳': '阿尔法, 凯瑟琳',
-  '阿尔法凯瑟琳': '阿尔法, 凯瑟琳',
-  'Arafat': '阿尔法, 凯瑟琳',
-  'kamil': '卡门',
-  '尼加提': 'nijat',
-}
-
 export const COLORS = {
   background: '#060913',
   card: '#1E2336',
@@ -17,13 +8,24 @@ export const COLORS = {
   border: '#2A3148',
   statusActive: { bg: '#dbeafe', text: '#1e40af' },
   statusCheckedOut: { bg: '#fef3c7', text: '#92400e' },
-  statusFinished: { bg: '#e5e7eb', text: '#374151' },
+  statusFinished: { bg: '#fef3c7', text: '#92400e' }, // legacy alias → same as checked_out
 } as const
 
+/** Operator-facing labels. Legacy `finished` displays as 已结账. */
 export const STATUS_LABELS: Record<string, string> = {
   active: '进行中',
   checked_out: '已结账',
-  finished: '已完成',
+  finished: '已结账',
+}
+
+/** Settled terminal states (paid). `finished` is legacy, treated as checked_out. */
+export function isOrderSettled(status: string | null | undefined): boolean {
+  return status === 'checked_out' || status === 'finished'
+}
+
+export function orderStatusLabel(status: string | null | undefined): string {
+  if (!status) return '—'
+  return STATUS_LABELS[status] || status
 }
 
 // In v1 inventory we track stock in ml.

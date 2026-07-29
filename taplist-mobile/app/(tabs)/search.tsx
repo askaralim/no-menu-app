@@ -1,26 +1,34 @@
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useRouter } from 'expo-router'
 import {
   ActivityIndicator,
-  ImageBackground,
+  BackHandler,
+  Keyboard,
+  Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type TextInput as TextInputType,
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
+import { CachedImageBackground } from '@/components/taplist/CachedImage'
 import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicNewDrinks, fetchPublicTaplistBreweries, searchPublicTaplist } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicNewTapRow, PublicTaplistBreweryDiscoveryRow, PublicTaplistSearchResult } from '@/lib/types'
+import { trackEvent } from '@/lib/analytics'
 
 const searchPresets = [
   { label: 'IPA', query: 'IPA' },
@@ -28,6 +36,8 @@ const searchPresets = [
   { label: '世涛', query: '世涛' },
   { label: '拉格', query: '拉格' },
   { label: '小麦', query: '小麦' },
+  { label: '西打', query: '西打' },
+  { label: '果泥', query: '果泥' },
 ]
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -35,27 +45,74 @@ const PAGE_GUTTER = spacing.md
 const GRID_GAP = spacing.md
 const GRID_COLS = 3
 const DISCOVERY_RADIUS = 10
+const PULL_BACK_THRESHOLD = 72
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
   const { selectedCity } = useTaplistCity()
+  const inputRef = useRef<TextInputType>(null)
+  const queryKindRef = useRef<'preset' | 'custom'>('custom')
+  const trackedSearchRef = useRef<string | null>(null)
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [pullOffset, setPullOffset] = useState(0)
   const trimmedQuery = query.trim()
   const selectedCityName = selectedCity.city
   const isSearching = trimmedQuery.length > 0
   const isDebouncing = isSearching && debouncedQuery !== trimmedQuery
+  const pullReady = pullOffset >= PULL_BACK_THRESHOLD
+
+  const clearSearch = () => {
+    setQuery('')
+    setDebouncedQuery('')
+    setPullOffset(0)
+    trackedSearchRef.current = null
+    inputRef.current?.blur()
+    Keyboard.dismiss()
+  }
+
+  const selectDiscoveryQuery = (nextQuery: string) => {
+    queryKindRef.current = 'preset'
+    setQuery(nextQuery)
+  }
 
   useEffect(() => {
     if (!trimmedQuery) {
       setDebouncedQuery('')
+      setPullOffset(0)
       return
     }
 
     const timeout = setTimeout(() => setDebouncedQuery(trimmedQuery), SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(timeout)
   }, [trimmedQuery])
+
+  useEffect(() => {
+    if (!isSearching) return
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      clearSearch()
+      return true
+    })
+
+    return () => subscription.remove()
+  }, [isSearching])
+
+  const handleSearchScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!isSearching || Platform.OS !== 'ios') return
+    const y = event.nativeEvent.contentOffset.y
+    setPullOffset(y < 0 ? -y : 0)
+  }
+
+  const handleSearchScrollEndDrag = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!isSearching || Platform.OS !== 'ios') return
+    if (event.nativeEvent.contentOffset.y <= -PULL_BACK_THRESHOLD) {
+      clearSearch()
+      return
+    }
+    setPullOffset(0)
+  }
 
   const drinksQuery = useQuery({
     queryKey: ['taplist', 'search', selectedCityName, debouncedQuery],
@@ -81,17 +138,81 @@ export default function SearchScreen() {
 
   const showDrinkSection = isSearching
 
+  useEffect(() => {
+    if (!drinksQuery.isSuccess || !debouncedQuery) return
+    const searchKey = `${selectedCityName}:${debouncedQuery}`
+    if (trackedSearchRef.current === searchKey) return
+    trackedSearchRef.current = searchKey
+    trackEvent('search_completed', {
+      query_kind: queryKindRef.current,
+      query_length: debouncedQuery.length,
+      result_count: drinkResults.length,
+      has_results: drinkResults.length > 0,
+    })
+  }, [debouncedQuery, drinkResults.length, drinksQuery.isSuccess, selectedCityName])
+
   return (
-    <ScrollView
-      style={styles.screen}
-      keyboardDismissMode="on-drag"
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
-      <Text style={styles.pageTitle}>搜索</Text>
+    <View style={styles.screen}>
+      {isSearching && Platform.OS === 'ios' && pullOffset > 10 ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.pullBackHint,
+            {
+              top: insets.top + 6,
+              opacity: Math.min(1, pullOffset / PULL_BACK_THRESHOLD),
+            },
+          ]}>
+          <FontAwesome
+            name={pullReady ? 'chevron-up' : 'arrow-up'}
+            size={12}
+            color={pullReady ? palette.amber : palette.faint}
+          />
+          <Text style={[styles.pullBackHintText, pullReady && styles.pullBackHintTextReady]}>
+            {pullReady ? '释放返回浏览' : '下拉返回浏览'}
+          </Text>
+        </View>
+      ) : null}
+
+      <ScrollView
+        style={styles.scroll}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        alwaysBounceVertical={isSearching}
+        bounces
+        scrollEventThrottle={16}
+        onScroll={handleSearchScroll}
+        onScrollEndDrag={handleSearchScrollEndDrag}
+        refreshControl={
+          isSearching && Platform.OS === 'android' ? (
+            <RefreshControl
+              refreshing={false}
+              onRefresh={clearSearch}
+              colors={[palette.amber]}
+              progressBackgroundColor={palette.panelElevated}
+            />
+          ) : undefined
+        }
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
+      {isSearching ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="返回浏览"
+          accessibilityHint="清空搜索并返回风格、上新与酒厂浏览"
+          hitSlop={8}
+          onPress={clearSearch}
+          style={({ pressed }) => [styles.backTitleRow, pressed && styles.backTitlePressed]}>
+          <FontAwesome name="chevron-left" size={15} color={palette.text} />
+          <Text style={styles.pageTitleText}>搜索</Text>
+        </Pressable>
+      ) : (
+        <Text style={[styles.pageTitleText, styles.pageTitleSpacing]}>搜索</Text>
+      )}
 
       <View style={styles.inputFrame}>
         <FontAwesome name="search" size={17} color={palette.faint} />
         <TextInput
+          ref={inputRef}
           accessibilityLabel="搜索公开酒单"
           accessibilityHint="可搜索酒款、酒厂、风格、酒吧或区域"
           placeholder="搜索酒款、酒厂、风格或酒吧"
@@ -99,7 +220,10 @@ export default function SearchScreen() {
           style={styles.input}
           selectionColor={palette.amber}
           value={query}
-          onChangeText={setQuery}
+          onChangeText={(value) => {
+            queryKindRef.current = 'custom'
+            setQuery(value)
+          }}
           autoCorrect={false}
           autoCapitalize="none"
           clearButtonMode="never"
@@ -110,7 +234,7 @@ export default function SearchScreen() {
             accessibilityRole="button"
             accessibilityLabel="清空搜索"
             hitSlop={10}
-            onPress={() => setQuery('')}
+            onPress={clearSearch}
             style={({ pressed }) => [styles.clearButton, pressed && styles.clearButtonPressed]}>
             <FontAwesome name="times-circle" size={18} color={palette.faint} />
           </Pressable>
@@ -121,7 +245,7 @@ export default function SearchScreen() {
         <SearchGuide
           breweries={breweriesQuery.isError ? [] : breweries}
           newTaps={newTapsQuery.isError ? [] : newTaps}
-          onSelect={setQuery}
+          onSelect={selectDiscoveryQuery}
         />
       ) : null}
 
@@ -131,6 +255,7 @@ export default function SearchScreen() {
 
       {configured && showDrinkSection ? (
         <>
+          <Text style={styles.pullGuide}>下拉可返回浏览</Text>
           {isDebouncing || drinksQuery.isLoading ? (
             <View style={styles.loading}>
               <ActivityIndicator color={palette.amber} />
@@ -145,7 +270,7 @@ export default function SearchScreen() {
             <EmptyState title="没有匹配的酒款" body="试试酒厂名、风格、酒款中文名或酒吧名称。">
               <View style={styles.emptyRecovery}>
                 <Text style={styles.emptyRecoveryLabel}>换个风格试试</Text>
-                <PresetSearches onSelect={setQuery} />
+                <PresetSearches onSelect={selectDiscoveryQuery} />
               </View>
             </EmptyState>
           ) : (
@@ -154,7 +279,8 @@ export default function SearchScreen() {
         </>
       ) : null}
 
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
@@ -290,15 +416,22 @@ function SearchNewTapTile({
       accessibilityLabel={[breweryLine, drink.name, `@ ${drink.tenant_display_name}`]
         .filter(Boolean)
         .join('，')}
-      onPress={() => router.push(`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`)}
+      onPress={() => {
+        trackEvent('beer_opened', {
+          tenant_id: drink.tenant_id,
+          drink_id: drink.drink_id,
+          source: 'search_discovery',
+        })
+        router.push(`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`)
+      }}
       style={({ pressed }) => [
         styles.newTapTile,
         { width, height },
         pressed && styles.newTapTilePressed,
       ]}>
       {hasImage ? (
-        <ImageBackground
-          source={{ uri: drink.image_url as string }}
+        <CachedImageBackground
+          source={drink.image_url as string}
           style={styles.newTapTileImage}
           imageStyle={styles.newTapTileImageRadius}>
           <LinearGradient
@@ -307,7 +440,7 @@ function SearchNewTapTile({
             style={styles.newTapTileScrim}>
             {copy}
           </LinearGradient>
-        </ImageBackground>
+        </CachedImageBackground>
       ) : (
         <LinearGradient
           colors={['rgba(75,54,31,0.28)', 'rgba(17,16,15,0.94)']}
@@ -388,7 +521,15 @@ function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
   return (
     <View style={[styles.resultItem, isSoldOut && styles.resultItemMuted]}>
       <Link href={`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`} asChild>
-        <Pressable style={({ pressed }) => [styles.drinkPressable, pressed && styles.pressed]}>
+        <Pressable
+          onPress={() =>
+            trackEvent('beer_opened', {
+              tenant_id: drink.tenant_id,
+              drink_id: drink.drink_id,
+              source: 'search_result',
+            })
+          }
+          style={({ pressed }) => [styles.drinkPressable, pressed && styles.pressed]}>
           <View style={styles.drinkRowInner}>
             {drink.image_url ? (
               <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
@@ -433,10 +574,11 @@ function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
 
 function searchServingLine(serving: PublicTaplistSearchResult['default_serving']) {
   if (!serving) return null
+  if (!(typeof serving.price === 'number' && serving.price > 0)) return null
   const parts = [
     serving.label,
     serving.volume_ml ? `${serving.volume_ml}ml` : null,
-    typeof serving.price === 'number' && serving.price > 0 ? `¥${serving.price}` : null,
+    `¥${serving.price}`,
   ].filter(Boolean)
 
   return parts.length > 0 ? parts.join(' · ') : null
@@ -457,17 +599,52 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.background,
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: PAGE_GUTTER,
     paddingBottom: 96,
   },
-  pageTitle: {
+  pullBackHint: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  pullBackHintText: {
+    ...typography.micro,
+    color: palette.faint,
+    letterSpacing: 0.4,
+  },
+  pullBackHintTextReady: {
+    color: palette.amber,
+  },
+  pageTitleText: {
     ...typography.title,
     color: palette.text,
     fontSize: 28,
     lineHeight: 36,
     fontWeight: '500',
+  },
+  pageTitleSpacing: {
     marginBottom: spacing.md,
+  },
+  backTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+    marginLeft: -2,
+    minHeight: 36,
+  },
+  backTitlePressed: {
+    opacity: 0.72,
   },
   inputFrame: {
     height: 52,
@@ -480,6 +657,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
     marginBottom: spacing.xl,
+  },
+  pullGuide: {
+    ...typography.micro,
+    color: palette.faint,
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: -spacing.md,
+    marginBottom: spacing.md,
+    opacity: 0.78,
   },
   input: {
     ...typography.body,
