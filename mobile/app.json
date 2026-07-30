@@ -15,9 +15,12 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.taklip.nomenuapp",
-      "buildNumber": "6",
+      "buildNumber": "10",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "zh-Hans",
+        "NSPhotoLibraryUsageDescription": "No Menu Tonight 需要访问相册，以便你为酒款选择并上传图片到今晚酒单。",
+        "NSPhotoLibraryAddUsageDescription": "No Menu Tonight 需要访问相册，以便保存酒款图片。"
       }
     },
     "android": {
@@ -34,7 +37,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "No Menu Tonight 需要访问相册，以便你为酒款选择并上传图片到今晚酒单。",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "extra": {
       "router": {},

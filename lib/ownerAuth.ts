@@ -47,10 +47,14 @@ export function mobileToLoginEmail(input: string): string | null {
   return `${national}@${OWNER_LOGIN_EMAIL_DOMAIN}`
 }
 
-/** Simple temp password for WeChat handoff (owner should change on first login). */
+/**
+ * Temp password for WeChat handoff (owner changes on first login).
+ * Letters + digits only — no punctuation (WeChat copy/paste often drops `!`).
+ * Example: Nm95953742
+ */
 export function generateTempOwnerPassword(mobileInput: string): string {
   const national = toNationalMobile(mobileInput) || '0000'
   const tail = national.slice(-4)
-  const rand = Math.floor(10 + Math.random() * 90)
-  return `Nm${tail}${rand}!`
+  const rand = Math.floor(1000 + Math.random() * 9000)
+  return `Nm${tail}${rand}`
 }

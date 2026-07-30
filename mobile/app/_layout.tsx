@@ -1,9 +1,13 @@
+import 'react-native-gesture-handler'
+import 'react-native-reanimated'
+
 import { Slot, useRouter, useSegments } from 'expo-router'
 import { useEffect } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../lib/authProvider'
-import { View, ActivityIndicator } from 'react-native'
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native'
 import { COLORS } from '../lib/constants'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 function RootLayoutNav() {
   const { session, tenantId, role, memberships, needsTenantSelection, isLoading } = useAuth()
@@ -73,7 +77,28 @@ function RootLayoutNav() {
   return <Slot />
 }
 
+function MissingConfigScreen() {
+  return (
+    <View style={styles.configWrap}>
+      <Text style={styles.configTitle}>应用配置不完整</Text>
+      <Text style={styles.configBody}>
+        当前安装包缺少生产环境的 Supabase 地址。请在 EAS Production 环境设置
+        EXPO_PUBLIC_SUPABASE_URL 与 EXPO_PUBLIC_SUPABASE_ANON_KEY 后重新打包。
+      </Text>
+    </View>
+  )
+}
+
 export default function RootLayout() {
+  if (!isSupabaseConfigured) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <MissingConfigScreen />
+      </>
+    )
+  }
+
   return (
     <AuthProvider>
       <StatusBar style="light" />
@@ -81,3 +106,24 @@ export default function RootLayout() {
     </AuthProvider>
   )
 }
+
+const styles = StyleSheet.create({
+  configWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    backgroundColor: COLORS.background,
+  },
+  configTitle: {
+    color: COLORS.text,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  configBody: {
+    color: COLORS.muted,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+})
+

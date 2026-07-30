@@ -14,7 +14,10 @@ No SMS OTP. No invite codes for owners.
 1. Ask owner for **mobile number**.
 2. **平台管理** → create bar (or open existing) → **绑定店主** with mobile (+ optional temp password).
 3. Copy the WeChat blurb (手机号 + 临时密码) and send to owner.
-4. Owner opens POS → **手机号 + 密码** → first login **改密码** → lands on **今晚酒单**.
+   See **`OWNER_WECHAT_GUIDE.md`** for the Chinese template store owners actually receive.
+4. Owner opens POS (**No Menu Tonight**) → **手机号 + 密码** → first login **改密码** → lands on **今晚酒单**.
+
+Temp passwords are letters+digits only (no `!`), so WeChat copy/paste is less error-prone.
 
 Re-binding the same or a new mobile resets the temp password and replaces the previous owner role on that bar.
 
