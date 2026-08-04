@@ -1,31 +1,70 @@
-# No Menu (consumer tap list)
+# No Menu (consumer app)
 
-Home-screen / App Store display name: **No Menu** (`expo.name` in `app.json`). Subtitle in App Store Connect: e.g. **城市精酿酒吧公开酒单**.
+No Menu is a Chinese-first Expo / React Native app for discovering live craft beer tap
+lists in supported cities. It also includes a private personal history called **酒迹**:
+users can record a drink without registering first, protect the record with Sign in with
+Apple, and create share images.
 
-Expo app in this monorepo, **sibling to** `mobile/` (**No Menu POS** / staff). Same Supabase project; reads public data via **`get_public_taplist_*`** RPCs using the **anon** key.
+Home-screen and App Store display name: **No Menu** (`expo.name` in `app.json`).
+Bundle identifier: `com.nomenuapp.taplist`.
+
+This app is a sibling of the No Menu POS app. They share a Supabase project, but the
+consumer app must not depend on POS UI or mutate POS workflows.
 
 ## Setup
 
 ```bash
 cd taplist-mobile
 cp .env.example .env
-# EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_PRIVACY_POLICY_URL
-# EXPO_PUBLIC_POSTHOG_API_KEY, EXPO_PUBLIC_POSTHOG_HOST
 npm install
-npm run ios   # or android / start
+npm run ios
 ```
 
-Apply database objects from repo `supabase/` migrations before expecting RPC calls to succeed. Demo UI data: `npm run db:seed-taplist-demo` from repo root.
+Required public environment variables:
+
+```bash
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_PRIVACY_POLICY_URL=
+EXPO_PUBLIC_POSTHOG_API_KEY=
+EXPO_PUBLIC_POSTHOG_HOST=
+```
+
+PostHog is optional at runtime and only activates after analytics consent. Apply the
+repository-level `supabase/migrations/` before expecting corresponding RPCs to work.
+
+## Product surfaces
+
+- `今晚`: city feed, public bars, events, and new taps
+- `搜索`: public beer and bar discovery
+- `我的`: private 酒迹, Apple protection, sharing, and account deletion
+- `关于`: product, privacy, compliance, and analytics controls
+- Bar detail: live public tap list
+- Beer detail: beer information, serving prices, sharing, and `喝过`
+
+酒迹 is private history, not a purchase receipt, rating, public check-in, or social feed.
+One canonical beer counts once; distinct bar experiences can accumulate.
 
 ## Release
 
 ```bash
-npm run typecheck
-npm run export:web
+npm run preflight
 eas build --platform ios --profile production
 ```
 
-**App Store Connect** (app id `6771324382`): **Name** = `No Menu`, **Subtitle** = `城市精酿酒吧公开酒单` (or your locale copy). Icon label updates only after a new build is installed.
+Before an iOS release:
+
+1. Confirm `expo.version` and `expo.ios.buildNumber` in `app.json`.
+2. Deploy required production migrations before the App Store build.
+3. Confirm Anonymous Sign-Ins and Manual Identity Linking in Supabase Auth.
+4. Confirm the Apple provider and the `com.nomenuapp.taplist` Sign in with Apple capability.
+5. Confirm production secrets used for Apple token handling.
+6. Deploy `merge-apple-account` and `delete-my-account`.
+7. Test anonymous recording, Apple protection/restore, sharing, photo saving, unlight, and
+   account deletion in TestFlight.
+
+App Store Connect app ID: `6771324382`.
+Privacy policy: `https://nomenuapp.com/privacy`.
 
 See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_STORE_SUBMISSION.md](docs/APP_STORE_SUBMISSION.md)** (App Store review).
 
@@ -35,26 +74,33 @@ See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_ST
 |------|------|
 | `app/(tabs)/index.tsx` | Tonight feed |
 | `app/(tabs)/search.tsx` | Search (drinks + bars) |
+| `app/(tabs)/mine.tsx` | Private 酒迹 |
 | `app/(tabs)/about.tsx` | About / compliance |
+| `app/bar/[slug].tsx` | Bar detail and live tap list |
+| `app/bar/[slug]/beer/[drinkId].tsx` | Beer detail and record action |
+| `app/drink-log/[lightId].tsx` | One drink's venue history |
+| `components/taplist/ShareableDrinkLogImage.tsx` | 酒迹 summary export |
 | `components/taplist/FirstLaunchLegalGate.tsx` | First-launch age notice |
-| `lib/api/taplist.ts` | RPC wrappers |
+| `lib/api/taplist.ts` | Public RPC wrappers |
+| `lib/api/drinkLog.ts` | Authenticated history RPC wrappers |
+| `lib/drinkLogAuth.ts` | Anonymous auth, Apple protection, deletion |
+| `lib/analytics.ts` | Consent-gated PostHog client and event contract |
 | `lib/types.ts` | DTO types |
+| `tools/app-store-screenshots.html` | App Store screenshot compositor |
 
-## Bundle IDs
+## Data and privacy
 
-- iOS / Android: `com.nomenuapp.taplist`
-- App Store Connect app ID (`ascAppId`): `6771324382`
-- Privacy policy: `https://nomenuapp.com/privacy`
+- Public screens use public RPCs with the Supabase anon key.
+- Personal history uses authenticated RPCs and RLS isolation by `auth.uid()`.
+- The first record can create an anonymous Supabase identity.
+- Sign in with Apple links or merges that identity so records can be restored.
+- Personal data and raw drink history must not be sent to PostHog.
+- PostHog tracks consented behavioral events such as record success, history opens, share
+  generation, and Apple-link outcomes.
+- Missing images never receive fake artwork.
+- Delisted drinks remain in private history; invalid public detail/share links are hidden.
 
-Production env vars: set in **Expo dashboard → Secrets → production** (same names as `.env.example`), not in `eas.json`.
+Production client env vars belong in the EAS `production` environment. Apple private-key
+material belongs in Supabase Edge Function secrets, never in `EXPO_PUBLIC_*` variables.
 
-## DRINK LOG release prerequisites
-
-Before shipping the consumer drink log:
-
-1. Apply `supabase/migrations/20260721120000_consumer_drink_log_v1.sql`.
-2. Enable Anonymous Sign-Ins and Manual Identity Linking in Supabase Auth.
-3. Configure the Apple provider for `com.nomenuapp.taplist` and enable Sign in with Apple for the App ID.
-4. Deploy `merge-apple-account` and `delete-my-account` Edge Functions.
-5. Update the public privacy policy for anonymous account IDs, private drink history, Apple account protection, deletion, and analytics processing.
-6. Verify point-lighting, Apple recovery, account deletion, sharing, and photo-library save on a TestFlight build.
+Detailed coding and product constraints are in **[AGENTS.md](AGENTS.md)**.

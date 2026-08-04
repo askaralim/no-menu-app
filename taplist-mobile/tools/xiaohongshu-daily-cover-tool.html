@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>No Menu 每日新 Tap 封面工具</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0b0a;
+      --panel: #12110f;
+      --panel-soft: #171511;
+      --line: #2d2921;
+      --text: #f6f1e8;
+      --muted: #b8afa1;
+      --faint: #7d7568;
+      --gold: #c7a86f;
+      --bronze: #745333;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
+    }
+
+    .sidebar {
+      height: 100vh;
+      overflow: auto;
+      padding: 28px;
+      border-right: 1px solid var(--line);
+      background: #10100f;
+    }
+
+    .brand {
+      margin-bottom: 28px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.02;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+    }
+
+    .brand .rule {
+      width: 116px;
+      height: 2px;
+      margin: 16px 0 12px;
+      background: var(--bronze);
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .group {
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .group-title {
+      margin: 0 0 14px;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 12px;
+      outline: none;
+    }
+
+    .field input,
+    .field select {
+      height: 42px;
+    }
+
+    .field textarea {
+      min-height: 150px;
+      padding-top: 10px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: rgba(199, 168, 111, 0.72);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .action {
+      height: 44px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .action.primary {
+      border-color: var(--bronze);
+      background: var(--text);
+      color: #0b0b0a;
+      font-weight: 700;
+    }
+
+    .hint {
+      margin: 10px 0 0;
+      color: var(--faint);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .stage {
+      min-width: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      background:
+        linear-gradient(rgba(246, 241, 232, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(246, 241, 232, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+    }
+
+    .preview-wrap {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 36px;
+    }
+
+    .preview-frame {
+      width: min(520px, 100%);
+      aspect-ratio: 3 / 4;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #070706;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      background: #10100f;
+    }
+
+    .metric {
+      min-height: 76px;
+      padding: 16px 20px;
+      border-right: 1px solid var(--line);
+    }
+
+    .metric:last-child {
+      border-right: 0;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 920px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .meta {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>NO MENU<br>每日总览封面</h1>
+        <div class="rule"></div>
+        <p>第一张图只保留核心信息：日期、上海新 Tap、新酒头数量。酒吧数量和具体清单放后续图片。</p>
+      </div>
+
+      <section class="group">
+        <h2 class="group-title">Cover Copy</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="dateInput">日期</label>
+            <input id="dateInput" type="text" value="07.23">
+          </div>
+          <div class="field">
+            <label for="cityInput">城市标题</label>
+            <input id="cityInput" type="text" value="上海新 Tap">
+          </div>
+        </div>
+        <div class="field">
+          <label for="tapCountInput">新酒头数</label>
+          <input id="tapCountInput" type="text" value="20">
+        </div>
+        <div class="field">
+          <label for="sourceInput">粘贴新 Tap 清单（可选）</label>
+          <textarea id="sourceInput" placeholder="粘贴正文或按酒吧分组的清单，工具会尝试自动识别日期和新酒头数量。"></textarea>
+        </div>
+        <button id="parseButton" class="action" type="button">从粘贴内容生成</button>
+      </section>
+
+      <section class="group">
+        <h2 class="group-title">Export</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="formatInput">版式</label>
+            <select id="formatInput">
+              <option value="portrait" selected>小红书 3:4 · 1080×1440</option>
+              <option value="square">方图 1:1 · 1080×1080</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filenameInput">文件名</label>
+            <input id="filenameInput" type="text" value="no-menu-xhs-0723-daily-cover">
+          </div>
+        </div>
+        <p class="hint">主图保持极简：不要酒吧数量、App Store CTA 或解释文字。具体酒款放后续图。</p>
+        <div class="actions">
+          <button id="resetButton" class="action" type="button">恢复示例</button>
+          <button id="downloadButton" class="action primary" type="button">下载 PNG</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <div class="preview-wrap">
+        <div class="preview-frame" id="previewFrame">
+          <canvas id="canvas" width="1080" height="1440"></canvas>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="metric">
+          <span>Output</span>
+          <strong id="outputMetric">1080 × 1440</strong>
+        </div>
+        <div class="metric">
+          <span>Cover</span>
+          <strong id="coverMetric">Daily overview</strong>
+        </div>
+        <div class="metric">
+          <span>Format</span>
+          <strong id="formatMetric">3:4 cover</strong>
+        </div>
+        <div class="metric">
+          <span>Style</span>
+          <strong>No Menu dark</strong>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const colors = {
+      bg: '#090908',
+      panel: '#11100e',
+      panelSoft: '#171511',
+      line: '#2d2921',
+      text: '#f6f1e8',
+      muted: '#b8afa1',
+      faint: '#7d7568',
+      gold: '#c7a86f',
+      bronze: '#745333',
+    }
+
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    const previewFrame = document.getElementById('previewFrame')
+    const outputMetric = document.getElementById('outputMetric')
+    const coverMetric = document.getElementById('coverMetric')
+    const formatMetric = document.getElementById('formatMetric')
+
+    const controls = {
+      date: document.getElementById('dateInput'),
+      city: document.getElementById('cityInput'),
+      tapCount: document.getElementById('tapCountInput'),
+      source: document.getElementById('sourceInput'),
+      parse: document.getElementById('parseButton'),
+      format: document.getElementById('formatInput'),
+      filename: document.getElementById('filenameInput'),
+      reset: document.getElementById('resetButton'),
+      download: document.getElementById('downloadButton'),
+    }
+
+    function value(input, fallback) {
+      const text = input.value.trim()
+      return text || fallback
+    }
+
+    function setCanvasSize() {
+      const square = controls.format.value === 'square'
+      canvas.width = 1080
+      canvas.height = square ? 1080 : 1440
+      previewFrame.style.aspectRatio = square ? '1 / 1' : '3 / 4'
+      outputMetric.textContent = square ? '1080 × 1080' : '1080 × 1440'
+      formatMetric.textContent = square ? '1:1 cover' : '3:4 cover'
+    }
+
+    function font(size, weight = 400, mono = false) {
+      const family = mono
+        ? '"SFMono-Regular", "SF Mono", Menlo, Consolas, monospace'
+        : '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif'
+      return `${weight} ${size}px ${family}`
+    }
+
+    function drawText(text, x, y, options = {}) {
+      ctx.save()
+      ctx.fillStyle = options.color || colors.text
+      ctx.font = font(options.size || 32, options.weight || 400, options.mono || false)
+      ctx.textBaseline = 'top'
+      if (options.shadow) {
+        ctx.shadowColor = options.shadow.color || 'rgba(0, 0, 0, 0.5)'
+        ctx.shadowBlur = options.shadow.blur || 18
+        ctx.shadowOffsetX = options.shadow.x || 0
+        ctx.shadowOffsetY = options.shadow.y || 8
+      }
+      if (options.letterSpacing) {
+        let currentX = x
+        for (const char of text) {
+          ctx.fillText(char, currentX, y)
+          currentX += ctx.measureText(char).width + options.letterSpacing
+        }
+      } else {
+        ctx.fillText(text, x, y)
+      }
+      ctx.restore()
+    }
+
+    function fitText(text, x, y, maxWidth, size, minSize, options = {}) {
+      let currentSize = size
+      ctx.font = font(currentSize, options.weight || 400, options.mono || false)
+      while (ctx.measureText(text).width > maxWidth && currentSize > minSize) {
+        currentSize -= 2
+        ctx.font = font(currentSize, options.weight || 400, options.mono || false)
+      }
+      drawText(text, x, y, { ...options, size: currentSize })
+      return currentSize
+    }
+
+    function roundRect(x, y, width, height, radius, fill, stroke, lineWidth = 1) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.roundRect(x, y, width, height, radius)
+      if (fill) {
+        ctx.fillStyle = fill
+        ctx.fill()
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke
+        ctx.lineWidth = lineWidth
+        ctx.stroke()
+      }
+      ctx.restore()
+    }
+
+    function drawBackground(width, height) {
+      ctx.fillStyle = colors.bg
+      ctx.fillRect(0, 0, width, height)
+
+      const warm = ctx.createRadialGradient(130, 108, 20, 130, 108, 820)
+      warm.addColorStop(0, 'rgba(123, 82, 37, 0.34)')
+      warm.addColorStop(0.48, 'rgba(38, 28, 16, 0.18)')
+      warm.addColorStop(1, 'rgba(9, 9, 8, 0)')
+      ctx.fillStyle = warm
+      ctx.fillRect(0, 0, width, height)
+
+      const shadow = ctx.createRadialGradient(width * 0.72, height * 0.66, 10, width * 0.72, height * 0.66, 840)
+      shadow.addColorStop(0, 'rgba(199, 168, 111, 0.11)')
+      shadow.addColorStop(1, 'rgba(9, 9, 8, 0)')
+      ctx.fillStyle = shadow
+      ctx.fillRect(0, 0, width, height)
+
+      const beam = ctx.createLinearGradient(0, 260, width, height * 0.78)
+      beam.addColorStop(0, 'rgba(199, 168, 111, 0.13)')
+      beam.addColorStop(0.34, 'rgba(199, 168, 111, 0.035)')
+      beam.addColorStop(1, 'rgba(9, 9, 8, 0)')
+      ctx.fillStyle = beam
+      ctx.fillRect(0, 0, width, height)
+
+      ctx.save()
+      ctx.globalAlpha = 0.18
+      ctx.strokeStyle = colors.gold
+      ctx.lineWidth = 2
+      for (let radius = 260; radius <= 900; radius += 116) {
+        ctx.beginPath()
+        ctx.arc(width + 70, 388, radius, Math.PI * 0.86, Math.PI * 1.58)
+        ctx.stroke()
+      }
+      ctx.restore()
+
+      ctx.save()
+      ctx.globalAlpha = 0.1
+      ctx.strokeStyle = colors.gold
+      ctx.lineWidth = 1.5
+      for (let radius = 300; radius <= 760; radius += 92) {
+        ctx.beginPath()
+        ctx.arc(-130, height - 78, radius, Math.PI * 1.08, Math.PI * 1.86)
+        ctx.stroke()
+      }
+      ctx.restore()
+
+      ctx.save()
+      ctx.fillStyle = 'rgba(199, 168, 111, 0.048)'
+      ctx.font = font(width === height ? 190 : 260, 700, false)
+      ctx.textBaseline = 'top'
+      ctx.fillText('TAP', width === height ? 450 : 360, height - (width === height ? 330 : 430))
+      ctx.restore()
+
+      ctx.save()
+      ctx.fillStyle = 'rgba(246, 241, 232, 0.12)'
+      for (let index = 0; index < 520; index += 1) {
+        const x = (index * 193) % width
+        const y = (index * 389) % height
+        const alpha = ((index * 29) % 100) / 100
+        ctx.globalAlpha = alpha < 0.55 ? 0.025 : 0.055
+        ctx.fillRect(x, y, 1, 1)
+      }
+      ctx.restore()
+    }
+
+    function drawCover() {
+      setCanvasSize()
+      const width = canvas.width
+      const height = canvas.height
+      const square = controls.format.value === 'square'
+      drawBackground(width, height)
+
+      const top = square ? 64 : 84
+      drawText('NO MENU', 64, top, {
+        size: 30,
+        mono: true,
+        color: colors.gold,
+        letterSpacing: 8,
+      })
+
+      ctx.strokeStyle = colors.line
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(64, top + 78)
+      ctx.lineTo(1016, top + 78)
+      ctx.stroke()
+
+      const titleY = square ? 222 : 300
+      drawText(value(controls.date, '07.23'), 64, titleY, {
+        size: square ? 114 : 136,
+        weight: 700,
+        mono: true,
+        color: colors.text,
+        shadow: { blur: 24, y: 10 },
+      })
+      fitText(value(controls.city, '上海新 Tap'), 64, titleY + (square ? 140 : 162), 920, square ? 112 : 130, 66, {
+        weight: 700,
+        shadow: { blur: 26, y: 10 },
+      })
+
+      const tapY = square ? 640 : 830
+      drawText(value(controls.tapCount, '20'), 72, tapY, {
+        size: square ? 154 : 186,
+        weight: 700,
+        mono: true,
+        color: colors.gold,
+        shadow: { color: 'rgba(0, 0, 0, 0.42)', blur: 16, y: 6 },
+      })
+      drawText('款新酒头', 72 + (square ? 270 : 326), tapY + (square ? 88 : 110), {
+        size: square ? 42 : 52,
+        color: colors.text,
+        shadow: { color: 'rgba(0, 0, 0, 0.38)', blur: 14, y: 5 },
+      })
+
+      coverMetric.textContent = `${value(controls.date, '07.23')} · ${value(controls.tapCount, '20')} taps`
+    }
+
+    function download() {
+      drawCover()
+      const link = document.createElement('a')
+      const name = controls.filename.value.trim() || 'no-menu-xhs-daily-cover'
+      link.download = `${name}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    }
+
+    function resetExample() {
+      controls.date.value = '07.23'
+      controls.city.value = '上海新 Tap'
+      controls.tapCount.value = '20'
+      controls.source.value = ''
+      controls.filename.value = 'no-menu-xhs-0723-daily-cover'
+      drawCover()
+    }
+
+    function countTapLines(text) {
+      const lines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean)
+      const numbered = lines.filter((line) => /^[①②③④⑤⑥⑦⑧⑨⑩]|\b\d+[).、]/.test(line))
+      if (numbered.length) return numbered.length
+      return lines.filter((line) => /%|ABV|IPA|艾尔|拉格|皮尔森|酸|世涛|苦啤|小麦/i.test(line)).length
+    }
+
+    function parseSource() {
+      const text = controls.source.value.trim()
+      if (!text) return
+      const dateMatch = text.match(/(?:20\d{2}[./-])?(\d{1,2})[./-](\d{1,2})/)
+      if (dateMatch) {
+        controls.date.value = `${dateMatch[1]}.${dateMatch[2].padStart(2, '0')}`
+      }
+      const explicitCount = text.match(/(?:上新|收录|今天|今晚)[^\d]{0,8}(\d{1,3})\s*(?:款|个)?\s*(?:Tap|TAP|新酒头|酒头)/i)
+      const parsedCount = explicitCount ? Number(explicitCount[1]) : countTapLines(text)
+      if (parsedCount > 0) controls.tapCount.value = String(parsedCount)
+      const dateKey = controls.date.value.replace('.', '')
+      controls.filename.value = `no-menu-xhs-${dateKey}-daily-cover`
+      drawCover()
+    }
+
+    for (const input of document.querySelectorAll('input[type="text"], textarea, select')) {
+      input.addEventListener('input', drawCover)
+      input.addEventListener('change', drawCover)
+    }
+    controls.parse.addEventListener('click', parseSource)
+    controls.reset.addEventListener('click', resetExample)
+    controls.download.addEventListener('click', download)
+    drawCover()
+  </script>
+</body>
+</html>

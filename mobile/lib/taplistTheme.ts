@@ -11,8 +11,8 @@ export const TAPLIST_THEME = {
   card: 'rgba(17,17,17,0.92)',
   text: '#F5F1E6',
   textSoft: 'rgba(245,241,232,0.86)',
-  muted: 'rgba(245,238,225,0.52)',
-  faint: 'rgba(245,238,225,0.32)',
+  muted: 'rgba(245,238,225,0.64)',
+  faint: 'rgba(245,238,225,0.48)',
   gold: '#D39A45',
   goldSoft: '#C6A875',
   border: 'rgba(245,241,230,0.14)',
@@ -28,7 +28,7 @@ export const PUBLIC_STATUS_LABELS: Record<PublicStatus, string> = {
   available: '在售',
   low: '少量',
   sold_out: '售罄',
-  coming_soon: '即将上枪',
+  coming_soon: '即将上新',
 }
 
 // Primary chips owners/staff toggle during service on the tonight list.

@@ -1,0 +1,4757 @@
+{
+  "generated_at": "2026-07-23T08:37:18.285Z",
+  "csv": "/Users/askar/Documents/code/demo/no-menu-app/taplist-mobile/tools/product-pool-audit/brewery_brand_web_verified.csv",
+  "company_count": 179,
+  "alias_count": 89,
+  "pending_review": 46,
+  "archived": 1,
+  "companies": [
+    {
+      "normalized_key": "艾尔复兴",
+      "canonical_name": "艾尔复兴",
+      "canonical_name_en": "Re Ale Revival Brewing",
+      "display_name": "艾尔复兴",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Cambridge, Maryland",
+      "raw_country_values": [
+        "美国",
+        "Cambridge, Maryland",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "微信文案/审核：马里兰州剑桥；水果酸艾尔与酒花型。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "艾尔复兴",
+        "source_rows": [
+          "艾尔复兴"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "艾根伯格",
+      "canonical_name": "艾根伯格",
+      "canonical_name_en": "Brauerei Schloss Eggenberg",
+      "display_name": "艾根伯格",
+      "entity_type": "brewery_brand",
+      "country": "Austria",
+      "country_code": "AT",
+      "origin_region": "Vorchdorf",
+      "raw_country_values": [
+        "奥地利",
+        "Vorchdorf"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.schloss-eggenberg.at/en/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "艾根伯格",
+        "source_rows": [
+          "艾根伯格"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "everywhere",
+      "canonical_name": "艾薇儿",
+      "canonical_name_en": "everywhere beer company",
+      "display_name": "艾薇儿",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Orange, California",
+      "raw_country_values": [
+        "美国",
+        "Orange, California",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.everywherebeer.com/ | https://untappd.com/b/everywhere-little-egg/5738227",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "Everywhere",
+        "source_rows": [
+          "Everywhere"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "艾英格",
+      "canonical_name": "艾英格",
+      "canonical_name_en": "Ayinger Privatbrauerei",
+      "display_name": "艾英格",
+      "entity_type": "brewery_brand",
+      "country": "Germany",
+      "country_code": "DE",
+      "origin_region": "Aying",
+      "raw_country_values": [
+        "德国",
+        "Aying",
+        "Germany"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.ayinger.de/index-en.html",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "艾英格",
+        "source_rows": [
+          "艾英格"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "巴伐利亚武僧",
+      "canonical_name": "巴伐利亚武僧",
+      "canonical_name_en": null,
+      "display_name": "巴伐利亚武僧",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "巴伐利亚武僧",
+        "source_rows": [
+          "巴伐利亚武僧"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "百得福",
+      "canonical_name": "百得福",
+      "canonical_name_en": "Budweiser Budvar Brewery",
+      "display_name": "百得福",
+      "entity_type": "brewery_brand",
+      "country": "Czech Republic",
+      "country_code": "CZ",
+      "origin_region": "České Budějovice",
+      "raw_country_values": [
+        "捷克",
+        "České Budějovice",
+        "Czech Republic"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://budweiserbudvar.com/brewery/ | https://www.budejovickybudvar.cz/en/home",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "百得福",
+        "source_rows": [
+          "百得福"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "百格波特",
+      "canonical_name": "百格波特",
+      "canonical_name_en": "Big Pot Brewery",
+      "display_name": "百格波特",
+      "entity_type": "brand",
+      "country": "Russia",
+      "country_code": "RU",
+      "origin_region": "Rostov-on-Don",
+      "raw_country_values": [
+        "Rostov-on-Don"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "俄罗斯契约型果泥/酸啤品牌；中文亦称大锅。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "百格波特",
+        "source_rows": [
+          "百格波特"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "班克斯",
+      "canonical_name": "班克斯",
+      "canonical_name_en": "Banks Brewing",
+      "display_name": "班克斯",
+      "entity_type": "brewery_brand",
+      "country": "Australia",
+      "country_code": "AU",
+      "origin_region": "Seaford, Victoria",
+      "raw_country_values": [
+        "澳大利亚",
+        "Seaford, Victoria",
+        "Australia"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://www.banksbrewing.com.au/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "班克斯",
+        "source_rows": [
+          "班克斯"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "半颠",
+      "canonical_name": "半颠精酿",
+      "canonical_name_en": "So Mad",
+      "display_name": "半颠精酿",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "桂林",
+      "raw_country_values": [
+        "桂林"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/w/so-mad/392781",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "半颠",
+        "source_rows": [
+          "半颠"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "半吨",
+      "canonical_name": "半吨",
+      "canonical_name_en": null,
+      "display_name": "半吨",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "半吨",
+        "source_rows": [
+          "半吨"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "本末",
+      "canonical_name": "本末",
+      "canonical_name_en": "ROOT + BRANCH",
+      "display_name": "本末",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [
+        "美国"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "ROOT + BRANCH；「本末·特伦」为合酿/展示写法，作 alias 不独立建厂。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "本末",
+        "source_rows": [
+          "本末"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "鼻行兽",
+      "canonical_name": "鼻行兽",
+      "canonical_name_en": "Oozlefinch Beers & Blending",
+      "display_name": "鼻行兽",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Hampton, Virginia",
+      "raw_country_values": [
+        "西安",
+        "Hampton, Virginia",
+        "China"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://oozlefinchbeers.com/",
+      "source_note": "由样例酒款及品牌匹配确认。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "鼻行兽",
+        "source_rows": [
+          "鼻行兽"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "比尔斯兄弟",
+      "canonical_name": "比尔斯兄弟",
+      "canonical_name_en": "Bissell Brothers Brewing",
+      "display_name": "比尔斯兄弟",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Portland, Maine",
+      "raw_country_values": [
+        "美国",
+        "Portland, Maine",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://bissellbrothers.com/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "比尔斯兄弟",
+        "source_rows": [
+          "比尔斯兄弟",
+          "Bissell Brothers Brewing"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "彼岸酿造",
+      "canonical_name": "彼岸酿造",
+      "canonical_name_en": "The Other Shore",
+      "display_name": "彼岸酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "乐山",
+      "raw_country_values": [
+        "乐山"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/b/the-other-shore/6689038",
+      "source_note": "英文名由酒款/酒厂页面交叉确认。 || 英文名由酒款/酒厂页面交叉确认。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "彼岸酿造",
+        "source_rows": [
+          "彼岸酿造",
+          "彼岸"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "碧特博格",
+      "canonical_name": "碧特博格",
+      "canonical_name_en": "Bitburger Brewery",
+      "display_name": "碧特博格",
+      "entity_type": "brewery_brand",
+      "country": "Germany",
+      "country_code": "DE",
+      "origin_region": "Bitburg",
+      "raw_country_values": [
+        "Bitburg"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.bitburger-international.com/en/our-brands/bitburger/bitburger-brewery",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "碧特博格",
+        "source_rows": [
+          "碧特博格"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "伯多克",
+      "canonical_name": "伯多克",
+      "canonical_name_en": "Burdock Brewery",
+      "display_name": "伯多克",
+      "entity_type": "brewery_brand",
+      "country": "Canada",
+      "country_code": "CA",
+      "origin_region": "Toronto",
+      "raw_country_values": [
+        "Toronto"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "伯多克",
+        "source_rows": [
+          "伯多克"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "伯利橡树",
+      "canonical_name": "伯利橡树",
+      "canonical_name_en": "Burley Oak Brewing Company",
+      "display_name": "伯利橡树",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [
+        "美国"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "马里兰；JREAM 系列。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "伯利橡树",
+        "source_rows": [
+          "伯利橡树"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "布鲁瑞 / the bruery",
+      "canonical_name": "布鲁瑞",
+      "canonical_name_en": "The Bruery",
+      "display_name": "布鲁瑞",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Placentia, California",
+      "raw_country_values": [
+        "美国",
+        "Placentia, California",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.thebruery.com/pages/location-placentia",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "布鲁瑞 / The Bruery",
+        "source_rows": [
+          "布鲁瑞",
+          "The Bruery"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "草原与风",
+      "canonical_name": "草原与风",
+      "canonical_name_en": "STEPPE & WIND",
+      "display_name": "草原与风",
+      "entity_type": "meadery",
+      "country": "Russia",
+      "country_code": "RU",
+      "origin_region": null,
+      "raw_country_values": [
+        "俄罗斯"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "俄罗斯蜂蜜酒厂；Bochet 风格强项。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "草原与风",
+        "source_rows": [
+          "草原与风"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "朝日",
+      "canonical_name": "朝日",
+      "canonical_name_en": "Asahi",
+      "display_name": "朝日",
+      "entity_type": "brewery_brand",
+      "country": "Japan",
+      "country_code": "JP",
+      "origin_region": "东京",
+      "raw_country_values": [
+        "日本",
+        "东京",
+        "Japan"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.asahibeer.co.jp/aboutus/summary/",
+      "source_note": "城市按公司总部填写。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "朝日",
+        "source_rows": [
+          "朝日"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "城市酿造",
+      "canonical_name": "城市酿造",
+      "canonical_name_en": null,
+      "display_name": "城市酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": null,
+      "raw_country_values": [
+        "中国"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "英文留空；禁止译为 City Brewing（美国代工厂撞名）。 | english_unverified | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "城市酿造",
+        "source_rows": [
+          "城市酿造"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "齿轮酿造",
+      "canonical_name": "齿轮精酿",
+      "canonical_name_en": "Gear Craft Brewing",
+      "display_name": "齿轮精酿",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "齿轮酿造",
+        "source_rows": [
+          "齿轮精酿"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "赤耳酿造",
+      "canonical_name": "赤耳酿造",
+      "canonical_name_en": "REDEARS BREWING",
+      "display_name": "赤耳酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "北京",
+      "raw_country_values": [
+        "北京",
+        "China"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.bjbrew.com/exDetail.aspx?exid=98",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "赤耳酿造",
+        "source_rows": [
+          "赤耳酿造"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "赤屿谷盗",
+      "canonical_name": "赤屿谷盗",
+      "canonical_name_en": "Grain Thief",
+      "display_name": "赤屿谷盗",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "海南",
+      "raw_country_values": [
+        "海南",
+        "China"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "“依帕”是酒款；公开来源不足以确认官方英文名和具体城市，英文留空。 | partially_verified | english_unverified",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "赤屿谷盗",
+        "source_rows": [
+          "赤屿谷盗"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "打嗝海狸",
+      "canonical_name": "打嗝海狸",
+      "canonical_name_en": "Belching Beaver Brewery",
+      "display_name": "打嗝海狸",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Oceanside, California",
+      "raw_country_values": [
+        "美国",
+        "Oceanside, California",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://belchingbeaver.com/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "打嗝海狸",
+        "source_rows": [
+          "打嗝海狸"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "大九酿造",
+      "canonical_name": "大九酿造",
+      "canonical_name_en": "MAHANINE BREWING",
+      "display_name": "大九酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "呼和浩特",
+      "raw_country_values": [
+        "呼和浩特"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "Maha Nine 可作为拆分写法别名。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "大九酿造",
+        "source_rows": [
+          "大九"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "凡人",
+      "canonical_name": "凡人",
+      "canonical_name_en": "Mortalis Brewing Company",
+      "display_name": "凡人",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Avon, New York",
+      "raw_country_values": [
+        "美国",
+        "Avon, New York",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.mortalisbrewing.com/",
+      "source_note": "审核确认 Avon, NY；英文全称 Mortalis Brewing Company。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "凡人",
+        "source_rows": [
+          "凡人"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "费登斯",
+      "canonical_name": "费登斯",
+      "canonical_name_en": "Fidens Brewing",
+      "display_name": "费登斯",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Albany, New York",
+      "raw_country_values": [
+        "美国",
+        "Albany, New York",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://fidensbrewing.com/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "费登斯",
+        "source_rows": [
+          "费登斯"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "分野酿造",
+      "canonical_name": "分野酿造",
+      "canonical_name_en": "Quadrant Brewing",
+      "display_name": "分野酿造",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [
+        "山东",
+        "China"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "分野酿造",
+        "source_rows": [
+          "分野酿造",
+          "分野"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "分支",
+      "canonical_name": "分支酒厂",
+      "canonical_name_en": "Offshoot Beer Co.",
+      "display_name": "分支酒厂",
+      "entity_type": "brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Placentia, California",
+      "raw_country_values": [
+        "Placentia, California"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.thebruery.com/pages/offshoot-about-us",
+      "source_note": "审核确认：分支=Offshoot（The Bruery 子品牌），不是 Branch & Bone。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "分支",
+        "source_rows": [
+          "分支"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "愤怒的谷物",
+      "canonical_name": "愤怒的谷物",
+      "canonical_name_en": "Grains of Wrath Brewing",
+      "display_name": "愤怒的谷物",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [
+        "美国"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "西海岸 IPA 与拉格；城市暂空。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "愤怒的谷物",
+        "source_rows": [
+          "愤怒的谷物"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "风险酿造",
+      "canonical_name": "风险酿造",
+      "canonical_name_en": "Venture Brewing",
+      "display_name": "风险酿造",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "风险酿造",
+        "source_rows": [
+          "风险酿造"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "疯熊工业",
+      "canonical_name": "疯熊工业",
+      "canonical_name_en": "Crazy Bear Industries",
+      "display_name": "疯熊工业",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "东莞",
+      "raw_country_values": [
+        "广州",
+        "东莞",
+        "China"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://crazybearindustry.com/",
+      "source_note": "品牌起源于广州海珠，2023 年自有酒厂建于东莞；城市按当前酒厂所在地填写。",
+      "status": "active",
+      "alias_count": 3,
+      "meta": {
+        "group_label": "疯熊工业",
+        "source_rows": [
+          "疯熊",
+          "疯熊工业"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "佛里蒙",
+      "canonical_name": "佛里蒙",
+      "canonical_name_en": "Fremont Brewing",
+      "display_name": "佛里蒙",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Seattle, Washington",
+      "raw_country_values": [
+        "美国",
+        "Seattle, Washington",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.fremontbrewing.com/contact-us",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "佛里蒙",
+        "source_rows": [
+          "佛里蒙"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "hoegaarden",
+      "canonical_name": "福佳",
+      "canonical_name_en": "Hoegaarden",
+      "display_name": "福佳",
+      "entity_type": "brewery_brand",
+      "country": "Belgium",
+      "country_code": "BE",
+      "origin_region": "Hoegaarden",
+      "raw_country_values": [
+        "Hoegaarden"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://hoegaarden.com/",
+      "source_note": "中文市场常用名为“福佳”。",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Hoegaarden",
+        "source_rows": [
+          "Hoegaarden"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "谷语者",
+      "canonical_name": "谷语者",
+      "canonical_name_en": null,
+      "display_name": "谷语者",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "谷语者",
+        "source_rows": [
+          "谷语者"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "哈德逊河谷",
+      "canonical_name": "哈德逊河谷",
+      "canonical_name_en": "Hudson Valley Brewery",
+      "display_name": "哈德逊河谷",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [
+        "美国",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "审核确认 Hudson Valley；城市暂空。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "哈德逊河谷",
+        "source_rows": [
+          "哈德逊河谷"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "焊接工厂",
+      "canonical_name": "焊接工厂",
+      "canonical_name_en": "WeldWerks Brewing Co.",
+      "display_name": "焊接工厂",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Greeley, Colorado",
+      "raw_country_values": [
+        "Greeley, Colorado"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "焊接工厂",
+        "source_rows": [
+          "焊接工厂"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "航标酿造",
+      "canonical_name": "航标酿造",
+      "canonical_name_en": null,
+      "display_name": "航标酿造",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "航标酿造",
+        "source_rows": [
+          "航标酿造"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "和弦",
+      "canonical_name": "和弦",
+      "canonical_name_en": null,
+      "display_name": "和弦",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "和弦",
+        "source_rows": [
+          "和弦"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "黑猫酿造",
+      "canonical_name": "黑猫酿造",
+      "canonical_name_en": "Black Cat",
+      "display_name": "黑猫酿造",
+      "entity_type": "brewery_brand",
+      "country": "Russia",
+      "country_code": "RU",
+      "origin_region": null,
+      "raw_country_values": [
+        "俄罗斯"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "黑猫酿造",
+        "source_rows": [
+          "黑猫酿造"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "黑森林 / waldhaus",
+      "canonical_name": "黑森林",
+      "canonical_name_en": "Privatbrauerei Waldhaus",
+      "display_name": "黑森林",
+      "entity_type": "brewery_brand",
+      "country": "Germany",
+      "country_code": "DE",
+      "origin_region": "Weilheim, Baden-Württemberg",
+      "raw_country_values": [
+        "德国",
+        "Weilheim, Baden-Württemberg",
+        "Germany"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.waldhaus-bier.de/en/private-brewery/",
+      "source_note": "Waldhaus 为正式品牌；“黑森林”为中文市场称呼。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "黑森林 / Waldhaus",
+        "source_rows": [
+          "黑森林"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "黑烟囱",
+      "canonical_name": "黑烟囱",
+      "canonical_name_en": "BlackStack Brewing",
+      "display_name": "黑烟囱",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Saint Paul, Minnesota",
+      "raw_country_values": [
+        "美国",
+        "Saint Paul, Minnesota",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.blackstackbrewing.com/ | https://untappd.com/b/blackstack-brewing-art-history/6614897",
+      "source_note": "样例 ART HISTORY 与 BlackStack 官方/平台记录一致。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "黑烟囱",
+        "source_rows": [
+          "黑烟囱"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "红男爵",
+      "canonical_name": "红男爵",
+      "canonical_name_en": null,
+      "display_name": "红男爵",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "红男爵",
+        "source_rows": [
+          "红男爵"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "狐朋酿造",
+      "canonical_name": "狐朋酿造",
+      "canonical_name_en": "Hupeng Brewing",
+      "display_name": "狐朋酿造",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "狐朋酿造",
+        "source_rows": [
+          "狐朋酿造"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "蝴蝶结",
+      "canonical_name": "蝴蝶结",
+      "canonical_name_en": null,
+      "display_name": "蝴蝶结",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "蝴蝶结",
+        "source_rows": [
+          "蝴蝶结"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "花雅酿造",
+      "canonical_name": "花雅酿造",
+      "canonical_name_en": "HARMO BREW",
+      "display_name": "花雅酿造",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "花雅酿造",
+        "source_rows": [
+          "花雅酿造"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "坏骨头",
+      "canonical_name": "坏骨头",
+      "canonical_name_en": "Bad Bones Beer",
+      "display_name": "坏骨头",
+      "entity_type": "brewery_brand",
+      "country": "Canada",
+      "country_code": "CA",
+      "origin_region": "Dunham, Quebec",
+      "raw_country_values": [
+        "加拿大",
+        "Dunham, Quebec",
+        "Canada"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.badbonesbeer.com/home-en | https://brewver.com/beers/1151069/Accident-Report",
+      "source_note": "样例 Accident Report 与 Bad Bones 对应。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "坏骨头",
+        "source_rows": [
+          "坏骨头"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "幻果实验室",
+      "canonical_name": "幻果实验室",
+      "canonical_name_en": "Elmeleven",
+      "display_name": "幻果实验室",
+      "entity_type": "brewery_brand",
+      "country": "Sweden",
+      "country_code": "SE",
+      "origin_region": "Arlöv, Skåne",
+      "raw_country_values": [
+        "Arlöv, Skåne"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "合并幻果实验/幻果实验室。 | audit_2026-07-23_approved || 与幻果实验室同组。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "幻果实验室",
+        "source_rows": [
+          "幻果实验室",
+          "幻果实验"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "辉光",
+      "canonical_name": "辉光",
+      "canonical_name_en": "Glow Brewing",
+      "display_name": "辉光",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [
+        "美国",
+        "United States"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "辉光",
+        "source_rows": [
+          "辉光"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "回头客",
+      "canonical_name": "回头客",
+      "canonical_name_en": "Frequentem Brewing",
+      "display_name": "回头客",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Canandaigua, New York",
+      "raw_country_values": [
+        "美国",
+        "Canandaigua, New York",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://frequentembrewing.com/taplist/ | https://www.beeradvocate.com/beer/profile/60004/",
+      "source_note": "样例 Canandaigua Premium Lager 与 Frequentem 官方酒单对应。",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "回头客",
+        "source_rows": [
+          "回头客"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "洄游造物",
+      "canonical_name": "洄游造物",
+      "canonical_name_en": "WayfarerLab",
+      "display_name": "洄游造物",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "洄游造物",
+        "source_rows": [
+          "洄游造物"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "会饮酿造",
+      "canonical_name": "会饮酿造",
+      "canonical_name_en": null,
+      "display_name": "会饮酿造",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [
+        "北京",
+        "China"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "会饮酿造",
+        "source_rows": [
+          "会饮酿造"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "佳卡哈",
+      "canonical_name": "佳卡哈",
+      "canonical_name_en": null,
+      "display_name": "佳卡哈",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "佳卡哈",
+        "source_rows": [
+          "佳卡哈"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "健力士",
+      "canonical_name": "健力士",
+      "canonical_name_en": "Guinness",
+      "display_name": "健力士",
+      "entity_type": "brewery_brand",
+      "country": "Ireland",
+      "country_code": "IE",
+      "origin_region": "Dublin",
+      "raw_country_values": [
+        "Dublin",
+        "爱尔兰"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.guinness.com/en | https://www.guinness-storehouse.com/en",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "健力士",
+        "source_rows": [
+          "Guinness",
+          "健力士"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "涧溪",
+      "canonical_name": "涧溪",
+      "canonical_name_en": "Braybrooke Beer Co.",
+      "display_name": "涧溪",
+      "entity_type": "brewery_brand",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "origin_region": "Braybrooke Farm, Market Harborough",
+      "raw_country_values": [
+        "Braybrooke Farm, Market Harborough"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "涧溪为中国市场译名；专注拉格。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "涧溪",
+        "source_rows": [
+          "涧溪"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "金点",
+      "canonical_name": "金点",
+      "canonical_name_en": "Gold Dot",
+      "display_name": "金点",
+      "entity_type": "brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [
+        "美国"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "与 Heater Allen 同体系平行品牌。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "金点",
+        "source_rows": [
+          "金点"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "金兰姐妹",
+      "canonical_name": "金兰姐妹",
+      "canonical_name_en": null,
+      "display_name": "金兰姐妹",
+      "entity_type": "brewery_brand",
+      "country": "New Zealand",
+      "country_code": "NZ",
+      "origin_region": null,
+      "raw_country_values": [
+        "新西兰"
+      ],
+      "confidence": "low",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "审核：英文暂空。 | english_unverified | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "金兰姐妹",
+        "source_rows": [
+          "金兰姐妹"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "酒花民族",
+      "canonical_name": "酒花民族",
+      "canonical_name_en": "Hop Nation Brewing",
+      "display_name": "酒花民族",
+      "entity_type": "brewery_brand",
+      "country": "Australia",
+      "country_code": "AU",
+      "origin_region": "Footscray, Melbourne",
+      "raw_country_values": [
+        "澳大利亚",
+        "Footscray, Melbourne",
+        "Australia"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/b/hop-nation-brewing-co-2026-fresh-hop-chop-ipa/6640918 | https://hopnation.com.au/",
+      "source_note": "中文市场名由同款酒对应关系确认；“酒花名族”为错别字。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "酒花民族",
+        "source_rows": [
+          "酒花民族",
+          "酒花民族"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "酒花农场",
+      "canonical_name": "酒花农场",
+      "canonical_name_en": "Hops Farm",
+      "display_name": "酒花农场",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "酒花农场",
+        "source_rows": [
+          "酒花农场"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "巨石酒厂 / stone brewing",
+      "canonical_name": "巨石酒厂",
+      "canonical_name_en": "Stone Brewing",
+      "display_name": "巨石酒厂",
+      "entity_type": "brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Escondido, California",
+      "raw_country_values": [
+        "Escondido, California"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://www.stonebrewing.com/",
+      "source_note": "品牌源自 Escondido；2026 起生产向 Paso Robles / Kansas City 转移，城市为历史主锚点非永久唯一产地。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "巨石酒厂 / Stone Brewing",
+        "source_rows": [
+          "Stone Brewing"
+        ],
+        "verification_status": "verified_historical"
+      }
+    },
+    {
+      "normalized_key": "郡区",
+      "canonical_name": "郡区",
+      "canonical_name_en": "Parish Brewing",
+      "display_name": "郡区",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Broussard, Louisiana",
+      "raw_country_values": [
+        "美国",
+        "Broussard, Louisiana",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://parishbeer.com/beer/reve/",
+      "source_note": "样例 Rêve Coffee Stout 明确属于 Parish Brewing；原中文“郡区”疑似把 Parish 直译为行政区。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "郡区",
+        "source_rows": [
+          "郡区"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "凯西",
+      "canonical_name": "凯西",
+      "canonical_name_en": "Casey Brewing & Blending",
+      "display_name": "凯西",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Glenwood Springs, Colorado",
+      "raw_country_values": [
+        "美国",
+        "Glenwood Springs, Colorado",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://caseybrewing.com/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "凯西",
+        "source_rows": [
+          "凯西"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "朗客熏啤",
+      "canonical_name": "朗客熏啤",
+      "canonical_name_en": "Schlenkerla",
+      "display_name": "朗客熏啤",
+      "entity_type": "brewery_brand",
+      "country": "Germany",
+      "country_code": "DE",
+      "origin_region": "Bamberg, Bavaria",
+      "raw_country_values": [
+        "Bamberg, Bavaria"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.schlenkerla.de/indexe.html",
+      "source_note": "品牌 Schlenkerla；法人 Heller-Trum 可作 legal alias。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 3,
+      "meta": {
+        "group_label": "朗客熏啤",
+        "source_rows": [
+          "朗客"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "乐威",
+      "canonical_name": "乐威",
+      "canonical_name_en": "Lervig",
+      "display_name": "乐威",
+      "entity_type": "brewery_brand",
+      "country": "Norway",
+      "country_code": "NO",
+      "origin_region": null,
+      "raw_country_values": [
+        "挪威"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "挪威精酿；Mike Murphy 相关。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "乐威",
+        "source_rows": [
+          "乐威"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "狸造",
+      "canonical_name": "狸造",
+      "canonical_name_en": null,
+      "display_name": "狸造",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [
+        "北京",
+        "China"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "狸造",
+        "source_rows": [
+          "狸造"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "裂变酿造",
+      "canonical_name": "裂变酿造",
+      "canonical_name_en": "Fission Brewing",
+      "display_name": "裂变酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "佛山",
+      "raw_country_values": [
+        "佛山",
+        "China"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/Fission_Brewing_Company",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "裂变酿造",
+        "source_rows": [
+          "裂变酿造"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "另一半",
+      "canonical_name": "另一半",
+      "canonical_name_en": "Other Half Brewing",
+      "display_name": "另一半",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Brooklyn, New York City",
+      "raw_country_values": [
+        "美国",
+        "Brooklyn, New York City",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://otherhalfbrewing.com/",
+      "source_note": "城市按品牌创立地及主要纽约酒厂填写。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "另一半",
+        "source_rows": [
+          "另一半",
+          "Other Half"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "洛莱",
+      "canonical_name": "洛莱",
+      "canonical_name_en": "Lolev Beer",
+      "display_name": "洛莱",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Pittsburgh, Pennsylvania",
+      "raw_country_values": [
+        "美国",
+        "Pittsburgh, Pennsylvania",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://lolev.beer/beer/hyena | https://www.beermenus.com/breweries/34105-lolev-beer",
+      "source_note": "样例 Hyena、Jaguar、Arcole、Rubicon 等均与 Lolev Beer 对应。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "洛莱",
+        "source_rows": [
+          "洛莱"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "蔓延酿造",
+      "canonical_name": "蔓延酿造",
+      "canonical_name_en": "Derive Brewery",
+      "display_name": "蔓延酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "武汉",
+      "raw_country_values": [
+        "武汉",
+        "China"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.bjbrew.com/exDetail.aspx?exid=369 | https://untappd.com/DeriveBrewery",
+      "source_note": "原表 MANYAN Brewing 未获支持；公开资料使用 Derive Brewery。与美国 Derive Brewing Company 不是同一实体。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "蔓延酿造",
+        "source_rows": [
+          "蔓延酿造"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "猫宁",
+      "canonical_name": "猫宁",
+      "canonical_name_en": "Morningcider",
+      "display_name": "猫宁",
+      "entity_type": "cidery",
+      "country": "New Zealand",
+      "country_code": "NZ",
+      "origin_region": null,
+      "raw_country_values": [
+        "新西兰"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "新西兰西打品牌；城市暂空。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "猫宁",
+        "source_rows": [
+          "猫宁"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "矛盾体",
+      "canonical_name": "矛盾体",
+      "canonical_name_en": "Halfway Crooks Beer",
+      "display_name": "矛盾体",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Atlanta, Georgia",
+      "raw_country_values": [
+        "美国",
+        "Atlanta, Georgia"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://halfwaycrooks.beer/",
+      "source_note": "审核纠正：矛盾体=Halfway Crooks（佐治亚），不是 Equilibrium。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "矛盾体",
+        "source_rows": [
+          "矛盾体"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "美西",
+      "canonical_name": "美西啤酒",
+      "canonical_name_en": "Wild West Brewing",
+      "display_name": "美西啤酒",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "成都",
+      "raw_country_values": [
+        "成都",
+        "China"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://www.wildwestbrewing.cn/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "美西",
+        "source_rows": [
+          "美西"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "明日酿造",
+      "canonical_name": "明日酿造",
+      "canonical_name_en": "Mingri Brewing",
+      "display_name": "明日酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "上海",
+      "raw_country_values": [
+        "上海",
+        "China"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/v/mingri-brewing/9992037",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "明日酿造",
+        "source_rows": [
+          "明日酿造"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "牛啤堂 / nbeer craft brewing",
+      "canonical_name": "牛啤堂",
+      "canonical_name_en": "NBeer Craft Brewing",
+      "display_name": "牛啤堂",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [
+        "北京",
+        "China"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "牛啤堂 / NBeer Craft Brewing",
+        "source_rows": [
+          "牛皮堂"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "农舍山",
+      "canonical_name": "农舍山",
+      "canonical_name_en": "Hill Farmstead Brewery",
+      "display_name": "农舍山",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Greensboro Bend, Vermont",
+      "raw_country_values": [
+        "美国",
+        "Greensboro Bend, Vermont",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://hillfarmstead.com/visit-us/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "农舍山",
+        "source_rows": [
+          "农舍山"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "欧米尼珀罗",
+      "canonical_name": "欧米尼珀罗",
+      "canonical_name_en": "Omnipollo",
+      "display_name": "欧米尼珀罗",
+      "entity_type": "brewery_brand",
+      "country": "Sweden",
+      "country_code": "SE",
+      "origin_region": "Stockholm",
+      "raw_country_values": [
+        "瑞典",
+        "Stockholm",
+        "Sweden"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://omnipollo.com/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "欧米尼珀罗",
+        "source_rows": [
+          "欧米尼珀罗"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "牌点",
+      "canonical_name": "牌点",
+      "canonical_name_en": "Pips Meadery",
+      "display_name": "牌点",
+      "entity_type": "meadery",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [
+        "美国"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "蜂蜜酒厂；城市暂空。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "牌点",
+        "source_rows": [
+          "牌点"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "澎湃家族",
+      "canonical_name": "澎湃家族",
+      "canonical_name_en": null,
+      "display_name": "澎湃家族",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [
+        "比利时",
+        "Belgium"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "澎湃家族",
+        "source_rows": [
+          "澎湃家族"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "啤匠",
+      "canonical_name": "啤匠",
+      "canonical_name_en": "Birrificio Italiano",
+      "display_name": "啤匠",
+      "entity_type": "brewery_brand",
+      "country": "Italy",
+      "country_code": "IT",
+      "origin_region": null,
+      "raw_country_values": [
+        "意大利"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "意式皮尔森先驱。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "啤匠",
+        "source_rows": [
+          "啤匠"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "葡月圣树",
+      "canonical_name": "葡月圣树",
+      "canonical_name_en": "Lua Brewing",
+      "display_name": "葡月圣树",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Des Moines, Iowa",
+      "raw_country_values": [
+        "美国",
+        "Des Moines, Iowa",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://luabeer.com/des-moines-sherman-hill-lua-brewing-drink-menu | https://untappd.com/LuaBrewing/beer",
+      "source_note": "Tulpa、Zen Scientist 等样例与 Lua Brewing 官方酒单一致。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "葡月圣树",
+        "source_rows": [
+          "葡月圣树"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "浦江半岛",
+      "canonical_name": "浦江半岛",
+      "canonical_name_en": null,
+      "display_name": "浦江半岛",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "浦江半岛",
+        "source_rows": [
+          "浦江半岛"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "麒麟啤酒",
+      "canonical_name": "麒麟啤酒",
+      "canonical_name_en": "Kirin Brewery Company, Limited",
+      "display_name": "麒麟啤酒",
+      "entity_type": "brand",
+      "country": "Japan",
+      "country_code": "JP",
+      "origin_region": null,
+      "raw_country_values": [
+        "日本"
+      ],
+      "confidence": "medium",
+      "review_status": "pending",
+      "source": "https://www.kirinholdings.com/en/",
+      "source_note": "大型跨地区品牌；城市不写死；中国市场部分产品或为珠海等地生产。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "麒麟啤酒",
+        "source_rows": [
+          "麒麟"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "气泡实验室",
+      "canonical_name": "气泡实验室",
+      "canonical_name_en": "Bubble Lab",
+      "display_name": "气泡实验室",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "武汉",
+      "raw_country_values": [
+        "武汉"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "起源于武汉；常州有酒吧；当前批量生产工厂待复核。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "气泡实验室",
+        "source_rows": [
+          "气泡实验室"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "巧计",
+      "canonical_name": "巧计",
+      "canonical_name_en": "Ruse Brewing",
+      "display_name": "巧计",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [
+        "美国"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "俄勒冈 / 波特兰一带。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "巧计",
+        "source_rows": [
+          "巧计"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "撬啤酿造",
+      "canonical_name": "撬啤酿造",
+      "canonical_name_en": "Qiao Beer Brewing",
+      "display_name": "撬啤酿造",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "撬啤酿造",
+        "source_rows": [
+          "撬啤酿造"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "秦人造",
+      "canonical_name": "秦人造",
+      "canonical_name_en": "Qin Craft Beer",
+      "display_name": "秦人造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "西安",
+      "raw_country_values": [
+        "西安"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "秦人造",
+        "source_rows": [
+          "秦人造"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "倾斜谷仓",
+      "canonical_name": "倾斜谷仓",
+      "canonical_name_en": "Tilted Barn Brewery",
+      "display_name": "倾斜谷仓",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Exeter, Rhode Island",
+      "raw_country_values": [
+        "Exeter, Rhode Island"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.tiltedbarnbrewery.com/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "倾斜谷仓",
+        "source_rows": [
+          "倾斜谷仓"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "撒切尔",
+      "canonical_name": "撒切尔",
+      "canonical_name_en": "Thatchers Cider",
+      "display_name": "撒切尔",
+      "entity_type": "cidery",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "origin_region": "Sandford, Somerset",
+      "raw_country_values": [
+        "英国",
+        "Sandford, Somerset",
+        "United Kingdom"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.thatcherscider.co.uk/",
+      "source_note": "属于苹果酒生产商，而非啤酒厂。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "撒切尔",
+        "source_rows": [
+          "撒切尔"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "塞拉多艾尔",
+      "canonical_name": "塞拉多艾尔",
+      "canonical_name_en": null,
+      "display_name": "塞拉多艾尔",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "塞拉多艾尔",
+        "source_rows": [
+          "塞拉多艾尔"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "三宝乐 / sapporo",
+      "canonical_name": "三宝乐",
+      "canonical_name_en": "Sapporo Breweries",
+      "display_name": "三宝乐",
+      "entity_type": "brewery_brand",
+      "country": "Japan",
+      "country_code": "JP",
+      "origin_region": "札幌",
+      "raw_country_values": [
+        "札幌"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://www.sapporobeer.jp/",
+      "source_note": "城市按品牌起源地填写；公司总部位于东京。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "三宝乐 / Sapporo",
+        "source_rows": [
+          "三宝乐"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "三得利 / suntory",
+      "canonical_name": "三得利",
+      "canonical_name_en": "Suntory",
+      "display_name": "三得利",
+      "entity_type": "brewery_brand",
+      "country": "Japan",
+      "country_code": "JP",
+      "origin_region": "东京",
+      "raw_country_values": [
+        "东京"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.suntory.com/",
+      "source_note": "城市按公司总部填写。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "三得利 / Suntory",
+        "source_rows": [
+          "三得利"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "三子酿造",
+      "canonical_name": "三子酿造",
+      "canonical_name_en": "3 Sons Brewing",
+      "display_name": "三子酿造",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Dania Beach, Florida",
+      "raw_country_values": [
+        "美国",
+        "Dania Beach, Florida",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.3sonsbrewingco.com/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "三子酿造",
+        "source_rows": [
+          "三子",
+          "三子酿造"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "僧侣",
+      "canonical_name": "僧侣",
+      "canonical_name_en": "Monkish Brewing",
+      "display_name": "僧侣",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Torrance",
+      "raw_country_values": [
+        "美国",
+        "Torrance",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.monkishbrewing.com/",
+      "source_note": "按主酒厂所在地填写。",
+      "status": "active",
+      "alias_count": 3,
+      "meta": {
+        "group_label": "僧侣",
+        "source_rows": [
+          "僧侣",
+          "Monkish"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "山乘酿造 / sheng craft beer",
+      "canonical_name": "山乘酿造",
+      "canonical_name_en": "Sheng Craft Beer",
+      "display_name": "山乘酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "嵊州，绍兴",
+      "raw_country_values": [
+        "嵊州，绍兴"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://www.beertasting.com/en/brewery/sheng-craft-beer | https://www.instagram.com/p/CYQwj4PlvwN/",
+      "source_note": "公开资料确认创立并设厂于浙江绍兴嵊州；城市以县级市及地级市并列记录。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "山乘酿造 / Sheng Craft Beer",
+        "source_rows": [
+          "山乘酿造"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "山雀",
+      "canonical_name": "山雀",
+      "canonical_name_en": "Mountain Finch",
+      "display_name": "山雀",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "上海",
+      "raw_country_values": [
+        "上海",
+        "上海嘉定",
+        "China"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "仅能由原始酒款与本地信息确认中文品牌和城市；未找到足够可靠的公开英文名，Mountain Finch 不写入验证值。 | partially_verified | english_unverified",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "山雀",
+        "source_rows": [
+          "山雀"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "闪电萨拉玛",
+      "canonical_name": "闪电萨拉玛",
+      "canonical_name_en": null,
+      "display_name": "闪电萨拉玛",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "闪电萨拉玛",
+        "source_rows": [
+          "闪电萨拉玛"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "善良胡夫",
+      "canonical_name": "善良胡夫",
+      "canonical_name_en": "Humble Forager Brewery",
+      "display_name": "善良胡夫",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Waunakee, Wisconsin",
+      "raw_country_values": [
+        "美国",
+        "Waunakee, Wisconsin",
+        "United States"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://www.humbleforagerbrewery.com/",
+      "source_note": "中文名为中国市场常用译名。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "善良胡夫",
+        "source_rows": [
+          "善良胡夫"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "神话酒厂",
+      "canonical_name": "神话酒厂",
+      "canonical_name_en": "Epic Beer",
+      "display_name": "神话酒厂",
+      "entity_type": "brewery_brand",
+      "country": "New Zealand",
+      "country_code": "NZ",
+      "origin_region": "Onehunga, Auckland",
+      "raw_country_values": [
+        "Onehunga, Auckland"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "新西兰 Epic，不是美国同名 Epic Brewing。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "神话酒厂",
+        "source_rows": [
+          "神话"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "生命长河",
+      "canonical_name": "生命长河",
+      "canonical_name_en": "Long Live Beerworks",
+      "display_name": "生命长河",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Providence, Rhode Island",
+      "raw_country_values": [
+        "美国",
+        "Providence, Rhode Island",
+        "United States"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://longlivebeerworks.com/",
+      "source_note": "由 All Seeing Eye 等样例酒款确认。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "生命长河",
+        "source_rows": [
+          "生命长河"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "树屋酒厂 / tree house",
+      "canonical_name": "树屋酒厂",
+      "canonical_name_en": "Tree House Brewing Company",
+      "display_name": "树屋酒厂",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Charlton, Massachusetts",
+      "raw_country_values": [
+        "Charlton, Massachusetts"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://treehousebrew.com/",
+      "source_note": "按主要酒厂 Charlton 填写；多地点运营。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "树屋酒厂 / Tree House",
+        "source_rows": [
+          "Tree House"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "双尾酿造",
+      "canonical_name": "双尾酿造",
+      "canonical_name_en": "Twin Tails Brewing",
+      "display_name": "双尾酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "苏州",
+      "raw_country_values": [
+        "苏州"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://twintailsbrewing.com/ | https://untappd.com/Twin_Tails_",
+      "source_note": "官网及 Untappd 官方页面均确认英文名与苏州所在地。",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "双尾酿造",
+        "source_rows": [
+          "双尾酿造 / Twin Tails"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "水猴子",
+      "canonical_name": "水猴子",
+      "canonical_name_en": "Myth Monkey Beer",
+      "display_name": "水猴子",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "水猴子",
+        "source_rows": [
+          "水猴子"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "私人印社",
+      "canonical_name": "私人印社",
+      "canonical_name_en": "Private Press",
+      "display_name": "私人印社",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [
+        "美国"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "桶陈世涛/大麦酒；城市暂空。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "私人印社",
+        "source_rows": [
+          "私人印社"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "斯莫吉",
+      "canonical_name": "斯莫吉",
+      "canonical_name_en": "Smooj",
+      "display_name": "斯莫吉",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Ann Arbor, Michigan",
+      "raw_country_values": [
+        "Ann Arbor, Michigan"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://www.drinksmooj.com/ | https://untappd.com/troobado/beer",
+      "source_note": "“斯莫及/斯莫吉”均为音译；英文 Smooj 最可靠。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "斯莫吉",
+        "source_rows": [
+          "斯莫及",
+          "SMOOJ"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "酸羽精酿",
+      "canonical_name": "酸羽精酿",
+      "canonical_name_en": "Drinker Brewing",
+      "display_name": "酸羽精酿",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": null,
+      "raw_country_values": [
+        "中国"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "合并酸羽/酸羽酿造；城市不填。 | city_unverified | audit_2026-07-23_approved || 与酸羽精酿同组。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "酸羽精酿",
+        "source_rows": [
+          "酸羽酿造",
+          "酸羽"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "虽吾酿造",
+      "canonical_name": "虽吾酿造",
+      "canonical_name_en": "SUIWU BREWING",
+      "display_name": "虽吾酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "扬州",
+      "raw_country_values": [
+        "苏州",
+        "扬州",
+        "China"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/Suiwu_jennifer",
+      "source_note": "公开官方页面明确写明来自江苏扬州；“虽吴”为错别字。 || 公开官方页面明确写明来自江苏扬州；“虽吴”为错别字。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 4,
+      "meta": {
+        "group_label": "虽吾酿造",
+        "source_rows": [
+          "虽吾",
+          "虽吴",
+          "虽吴酿造"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "索拉里斯",
+      "canonical_name": "索拉里斯",
+      "canonical_name_en": "Solaris Beer & Blending",
+      "display_name": "索拉里斯",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Murrieta, California",
+      "raw_country_values": [
+        "美国",
+        "Murrieta, California",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://solarisbeer.com/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "索拉里斯",
+        "source_rows": [
+          "索拉里斯"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "特纳亚溪",
+      "canonical_name": "特纳亚溪",
+      "canonical_name_en": "Tenaya Creek Brewery",
+      "display_name": "特纳亚溪",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Las Vegas, Nevada",
+      "raw_country_values": [
+        "Las Vegas, Nevada"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://tenayacreek.com/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "特纳亚溪",
+        "source_rows": [
+          "特纳亚溪"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "天使之翼",
+      "canonical_name": "天使之翼",
+      "canonical_name_en": "Wax Wings Brewing Co.",
+      "display_name": "天使之翼",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Kalamazoo, Michigan",
+      "raw_country_values": [
+        "美国",
+        "Kalamazoo, Michigan",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://waxwingsbrewingco.square.site/ | https://www.beermenus.com/breweries/26904-wax-wings-brewing-company",
+      "source_note": "Double Nazareth 等样例与 Wax Wings 对应。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "天使之翼",
+        "source_rows": [
+          "天使之翼"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "田园酿造",
+      "canonical_name": "田园酿造",
+      "canonical_name_en": "FARMentation",
+      "display_name": "田园酿造",
+      "entity_type": "other",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "云南",
+      "raw_country_values": [
+        "云南",
+        "China"
+      ],
+      "confidence": "medium",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "云南农业发酵项目；具体城市待确认。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "田园酿造",
+        "source_rows": [
+          "田园酿造"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "头脑冷静",
+      "canonical_name": "头脑冷静",
+      "canonical_name_en": "CoolHead Brew",
+      "display_name": "头脑冷静",
+      "entity_type": "brewery_brand",
+      "country": "芬兰",
+      "country_code": "FI",
+      "origin_region": "Helsinki",
+      "raw_country_values": [
+        "Helsinki"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://coolhead.fi/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "头脑冷静",
+        "source_rows": [
+          "头脑冷静"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "图乐",
+      "canonical_name": "图乐",
+      "canonical_name_en": "To Øl",
+      "display_name": "图乐",
+      "entity_type": "brewery_brand",
+      "country": "Denmark",
+      "country_code": "DK",
+      "origin_region": null,
+      "raw_country_values": [
+        "丹麦"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "图乐",
+        "source_rows": [
+          "图乐"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "退界",
+      "canonical_name": "退界",
+      "canonical_name_en": "Tuijie",
+      "display_name": "退界",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "成都",
+      "raw_country_values": [
+        "成都",
+        "China"
+      ],
+      "confidence": "medium",
+      "review_status": "pending",
+      "source": "https://www.460.net.cn/news/show-119016.html",
+      "source_note": "中文品牌与城市可确认；未找到足够可靠的官方英文名，因此英文留空。 | partially_verified | english_unverified",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "退界",
+        "source_rows": [
+          "退界"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "托克索沃",
+      "canonical_name": "托克索沃",
+      "canonical_name_en": null,
+      "display_name": "托克索沃",
+      "entity_type": "cidery",
+      "country": "Russia",
+      "country_code": "RU",
+      "origin_region": "圣彼得堡",
+      "raw_country_values": [
+        "圣彼得堡"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "审核：英文暂空；自然发酵西打。 | english_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "托克索沃",
+        "source_rows": [
+          "托克索沃"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "望月者",
+      "canonical_name": "望月者",
+      "canonical_name_en": null,
+      "display_name": "望月者",
+      "entity_type": "brewery_brand",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "origin_region": null,
+      "raw_country_values": [
+        "英国"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "审核：英文暂空；文案称英国 Moonraker，待酒标确认后再填。 | english_unverified | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "望月者",
+        "source_rows": [
+          "望月者"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "weihenstephan",
+      "canonical_name": "唯森",
+      "canonical_name_en": "Bayerische Staatsbrauerei Weihenstephan",
+      "display_name": "唯森",
+      "entity_type": "brewery_brand",
+      "country": "Germany",
+      "country_code": "DE",
+      "origin_region": "Freising",
+      "raw_country_values": [
+        "Freising"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.weihenstephaner.de/en/",
+      "source_note": "中文市场也常见“维森/唯森”，英文官方名称最可靠。",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "Weihenstephan",
+        "source_rows": [
+          "Weihenstephan"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "维诺拉第啤酒厂",
+      "canonical_name": "维诺拉第啤酒厂",
+      "canonical_name_en": "Vinohradský Pivovar",
+      "display_name": "维诺拉第啤酒厂",
+      "entity_type": "brewery_brand",
+      "country": "Czech Republic",
+      "country_code": "CZ",
+      "origin_region": "Prague / Káraný",
+      "raw_country_values": [
+        "Prague / Káraný"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "捷克维诺为中国市场简称。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "维诺拉第啤酒厂",
+        "source_rows": [
+          "捷克维诺"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "未索之境酿造",
+      "canonical_name": "未索之境酿造",
+      "canonical_name_en": "Unexplored Brewing",
+      "display_name": "未索之境酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": null,
+      "raw_country_values": [
+        "中国"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "中国 nano；城市未核实。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "未索之境酿造",
+        "source_rows": [
+          "未索之境"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "稳态",
+      "canonical_name": "稳态酒厂",
+      "canonical_name_en": "Equilibrium Brewery",
+      "display_name": "稳态酒厂",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Middletown, New York",
+      "raw_country_values": [
+        "Middletown, New York"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.eqbrew.com/",
+      "source_note": "审核确认：稳态=Equilibrium；与矛盾体/Halfway Crooks 分列。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "稳态",
+        "source_rows": [
+          "稳态"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "乌托邦",
+      "canonical_name": "乌托邦",
+      "canonical_name_en": "Utopian Brewing",
+      "display_name": "乌托邦",
+      "entity_type": "brewery_brand",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "origin_region": null,
+      "raw_country_values": [
+        "英国"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "英国独立酒厂；拉格赛事表现突出。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "乌托邦",
+        "source_rows": [
+          "乌托邦"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "无毛用",
+      "canonical_name": "无毛用",
+      "canonical_name_en": null,
+      "display_name": "无毛用",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [
+        "广州",
+        "China"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "无毛用",
+        "source_rows": [
+          "无毛用"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "无邪精酿",
+      "canonical_name": "无邪精酿",
+      "canonical_name_en": "Wuxie",
+      "display_name": "无邪精酿",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": null,
+      "raw_country_values": [
+        "中国"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "主英文 Wuxie；Innocence Craft 为别名。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "无邪精酿",
+        "source_rows": [
+          "无邪酿造"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "五岔街",
+      "canonical_name": "五岔街",
+      "canonical_name_en": "The Five Points Brewing Company",
+      "display_name": "五岔街",
+      "entity_type": "brewery_brand",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "origin_region": "London",
+      "raw_country_values": [
+        "英国",
+        "London",
+        "United Kingdom"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://fivepointsbrewing.co.uk/",
+      "source_note": "中文为市场译名。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "五岔街",
+        "source_rows": [
+          "五岔街"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "勿幕精酿",
+      "canonical_name": "勿幕精酿",
+      "canonical_name_en": "WUMU Brewery",
+      "display_name": "勿幕精酿",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "西安",
+      "raw_country_values": [
+        "西安",
+        "China"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/w/wumu-craft-beer/383025/beer",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "勿幕精酿",
+        "source_rows": [
+          "勿幕"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "西澳山脊",
+      "canonical_name": "西澳山脊",
+      "canonical_name_en": "Rocky Ridge Brewing",
+      "display_name": "西澳山脊",
+      "entity_type": "brewery_brand",
+      "country": "Australia",
+      "country_code": "AU",
+      "origin_region": "Jindong, Western Australia",
+      "raw_country_values": [
+        "澳大利亚",
+        "Jindong, Western Australia",
+        "Australia"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://rockyridgebrewing.com.au/",
+      "source_note": "由样例酒款与官方产品对应确认。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "西澳山脊",
+        "source_rows": [
+          "西澳山脊"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "希亚",
+      "canonical_name": "希亚",
+      "canonical_name_en": "Heater Allen",
+      "display_name": "希亚",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [
+        "美国"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "德式/捷克式拉格；与金点同体系分列。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "希亚",
+        "source_rows": [
+          "希亚"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "犀首田园",
+      "canonical_name": "犀首田园",
+      "canonical_name_en": null,
+      "display_name": "犀首田园",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "犀首田园",
+        "source_rows": [
+          "犀首田园"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "香港啤酒公司",
+      "canonical_name": "香港啤酒公司",
+      "canonical_name_en": "Hong Kong Beer Co.",
+      "display_name": "香港啤酒公司",
+      "entity_type": "brewery_brand",
+      "country": "Hong Kong",
+      "country_code": "HK",
+      "origin_region": "Hong Kong",
+      "raw_country_values": [
+        "香港",
+        "中国香港",
+        "Hong Kong"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://hkbeerco.com/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "香港啤酒公司",
+        "source_rows": [
+          "香港啤酒公司"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "小荷酿造",
+      "canonical_name": "小荷酿造",
+      "canonical_name_en": "Lotus Brewing",
+      "display_name": "小荷酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "合肥肥东",
+      "raw_country_values": [
+        "合肥肥东"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.bjbrew.com/exDetail.aspx?exid=285",
+      "source_note": "合肥小荷啤酒酿造有限公司；Xiaohe 为搜索别名。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "小荷酿造",
+        "source_rows": [
+          "小荷"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "小回酿造",
+      "canonical_name": "小回酿造",
+      "canonical_name_en": "Turn Right Brewing",
+      "display_name": "小回酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "长春",
+      "raw_country_values": [
+        "长春"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/b/turn-right/6249390",
+      "source_note": "公开酒款页面确认 Turn Right（小回酿造）；所在地结合公开页面与原始所在地信息填写长春。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "小回酿造",
+        "source_rows": [
+          "小回酿造"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "小樽啤酒",
+      "canonical_name": "小樽啤酒",
+      "canonical_name_en": "Otaru Beer",
+      "display_name": "小樽啤酒",
+      "entity_type": "brewery_brand",
+      "country": "Japan",
+      "country_code": "JP",
+      "origin_region": "北海道小樽市",
+      "raw_country_values": [
+        "北海道小樽市"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "小樽仓库 No.1；现场酿造啤酒馆。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 3,
+      "meta": {
+        "group_label": "小樽啤酒",
+        "source_rows": [
+          "小樽酿造"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "邪恶双子",
+      "canonical_name": "邪恶双子",
+      "canonical_name_en": "Evil Twin Brewing NYC",
+      "display_name": "邪恶双子",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "New York City",
+      "raw_country_values": [
+        "美国",
+        "New York City",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://eviltwin.nyc/",
+      "source_note": "城市按其纽约酒厂/品牌运营地填写。",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "邪恶双子",
+        "source_rows": [
+          "邪恶双子"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "行匠 / trip smith",
+      "canonical_name": "行匠",
+      "canonical_name_en": "TripSmith",
+      "display_name": "行匠",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "贵阳",
+      "raw_country_values": [
+        "贵阳"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://news.qq.com/rain/a/20250714A08L2E00 | https://www.douyin.com/user/MS4wLjABAAAASfrREJGZlgn0f01pYrNcT-yEBP3RbfA4Le7DxbVSq9b62WaumCz-71Ac2kzMljYE",
+      "source_note": "官方账号及贵阳官方媒体使用品牌拼写 TripSmith；原候选 Trip Smith 已纠正。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "行匠 / Trip Smith",
+        "source_rows": [
+          "行匠"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "行空酒造",
+      "canonical_name": "行空酒造",
+      "canonical_name_en": "Xing Kong Artisan Ale",
+      "display_name": "行空酒造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "青岛",
+      "raw_country_values": [
+        "青岛"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "公开中文名为行空酒造；「行空酿造」为别名。 | audit_2026-07-23_approved || 行空酿造→行空酒造 alias row。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "行空酒造",
+        "source_rows": [
+          "行空",
+          "行空酿造"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "兴业",
+      "canonical_name": "兴业",
+      "canonical_name_en": "Industrial Arts Brewing Company",
+      "display_name": "兴业",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Garnerville, New York",
+      "raw_country_values": [
+        "美国",
+        "Garnerville, New York",
+        "United States"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://industrialartsbrewing.com/",
+      "source_note": "由品牌中文译名及样例酒款匹配。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "兴业",
+        "source_rows": [
+          "兴业"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "修订",
+      "canonical_name": "修订",
+      "canonical_name_en": "Revision Brewing Company",
+      "display_name": "修订",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Sparks, Nevada",
+      "raw_country_values": [
+        "Sparks, Nevada"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://revisionbrewing.com/locations/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "修订",
+        "source_rows": [
+          "修订"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "玄水屋",
+      "canonical_name": "玄水屋",
+      "canonical_name_en": "SENSEVOL",
+      "display_name": "玄水屋",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "西安",
+      "raw_country_values": [
+        "西安",
+        "China"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/w/sensevol/568713",
+      "source_note": "Untappd 页面显示 SENSEVOL 玄水屋及西安所在地。",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "玄水屋",
+        "source_rows": [
+          "玄水屋"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "鸭池",
+      "canonical_name": "鸭池",
+      "canonical_name_en": "Duckpond Brewing",
+      "display_name": "鸭池",
+      "entity_type": "brewery_brand",
+      "country": "Sweden",
+      "country_code": "SE",
+      "origin_region": "Gothenburg",
+      "raw_country_values": [
+        "美国",
+        "瑞典",
+        "Gothenburg"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.instagram.com/duckpondbrewing/ | https://untappd.com/DuckpondBrewing",
+      "source_note": "原数据同时出现美国/瑞典；公开资料支持瑞典哥德堡。",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "鸭池",
+        "source_rows": [
+          "鸭池"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "clag / 亚洲小霸王",
+      "canonical_name": "亚洲小霸王",
+      "canonical_name_en": "CLAG Brewing Company",
+      "display_name": "亚洲小霸王",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Sandusky, Ohio",
+      "raw_country_values": [
+        "美国",
+        "Sandusky, Ohio",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.clagbrewingco.com/",
+      "source_note": "CLAG Brewing；中文市场名亚洲小霸王。 | audit_2026-07-23_approved || 与 CLAG 同组；source alias。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "CLAG / 亚洲小霸王",
+        "source_rows": [
+          "CLAG",
+          "亚洲小霸王"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "野鹅微醺",
+      "canonical_name": "野鹅微醺",
+      "canonical_name_en": "YE BREWING",
+      "display_name": "野鹅微醺",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "石家庄",
+      "raw_country_values": [
+        "石家庄"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.yebrewing.com/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "野鹅微醺",
+        "source_rows": [
+          "野鹅微醺",
+          "野鹅"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "野风筝啤酒",
+      "canonical_name": "野风筝啤酒",
+      "canonical_name_en": "Wild Kite Brewing",
+      "display_name": "野风筝啤酒",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "北京",
+      "raw_country_values": [
+        "北京"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "野风筝啤酒",
+        "source_rows": [
+          "野风筝"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "一滴",
+      "canonical_name": "一滴",
+      "canonical_name_en": "One Drop Brewing Co.",
+      "display_name": "一滴",
+      "entity_type": "brewery_brand",
+      "country": "Australia",
+      "country_code": "AU",
+      "origin_region": "Botany, New South Wales",
+      "raw_country_values": [
+        "新西兰",
+        "Botany, New South Wales",
+        "New Zealand"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.onedropbrewingco.com.au/",
+      "source_note": "原表新西兰不正确；One Drop Brewing Co. 位于澳大利亚新南威尔士州。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "一滴",
+        "source_rows": [
+          "一滴"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "伊势角屋麦酒",
+      "canonical_name": "伊势角屋麦酒",
+      "canonical_name_en": "ISEKADO",
+      "display_name": "伊势角屋麦酒",
+      "entity_type": "brewery_brand",
+      "country": "Japan",
+      "country_code": "JP",
+      "origin_region": "三重县伊势市",
+      "raw_country_values": [
+        "三重县伊势市"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.isekadoyabeer.com/",
+      "source_note": "品牌产地日本；越南合作生产不改 country。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "伊势角屋麦酒",
+        "source_rows": [
+          "伊势角屋"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "硬糖西打酒",
+      "canonical_name": "硬糖西打酒",
+      "canonical_name_en": "Hard Candy Cider",
+      "display_name": "硬糖西打酒",
+      "entity_type": "cidery",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "南京",
+      "raw_country_values": [
+        "南京"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "西打品牌，非传统啤酒厂。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "硬糖西打酒",
+        "source_rows": [
+          "硬糖"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "幽灵镇",
+      "canonical_name": "幽灵镇",
+      "canonical_name_en": "Ghost Town Brewing",
+      "display_name": "幽灵镇",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Oakland, California",
+      "raw_country_values": [
+        "Oakland, California"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "幽灵镇",
+        "source_rows": [
+          "幽灵镇"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "悠航鲜啤",
+      "canonical_name": "悠航鲜啤",
+      "canonical_name_en": "Slow Boat Brewery",
+      "display_name": "悠航鲜啤",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "北京",
+      "raw_country_values": [
+        "北京"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "标准英文 Slow Boat Brewery。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "悠航鲜啤",
+        "source_rows": [
+          "悠航"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "有什酿造",
+      "canonical_name": "有什酿造",
+      "canonical_name_en": "UTIME BREWING",
+      "display_name": "有什酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": null,
+      "raw_country_values": [
+        "中国"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "英文已确认；城市未核实，勿用消费城市推断。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "有什酿造",
+        "source_rows": [
+          "有什酿造"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "远山啤酒",
+      "canonical_name": "远山啤酒",
+      "canonical_name_en": "Far Mont Beer",
+      "display_name": "远山啤酒",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "medium",
+      "review_status": "pending",
+      "source": "https://untappd.com/w/far-mont-beer-e-a-a-e/599657",
+      "source_note": "中文、英文及国家可确认；城市没有可靠公开来源，留空。 | partially_verified | city_unverified | English name not found safely; fill from checked mapping or official source || 中文、英文及国家可确认；城市没有可靠公开来源，留空。 | partially_verified | city_unverified",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "远山啤酒",
+        "source_rows": [
+          "远山",
+          "远山啤酒",
+          "远山啤酒"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "云酊",
+      "canonical_name": "云酊",
+      "canonical_name_en": null,
+      "display_name": "云酊",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [
+        "云南",
+        "China"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "云酊",
+        "source_rows": [
+          "云酊"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "云泥酿造",
+      "canonical_name": "云泥酿造",
+      "canonical_name_en": null,
+      "display_name": "云泥酿造",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": null,
+      "raw_country_values": [
+        "中国"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "英文留空；禁止自译 Cloud & Mud。 | english_unverified | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "云泥酿造",
+        "source_rows": [
+          "云泥"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "云朴精酿",
+      "canonical_name": "云朴精酿",
+      "canonical_name_en": "YunPure Brewing",
+      "display_name": "云朴精酿",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "昆明",
+      "raw_country_values": [
+        "昆明",
+        "China",
+        "云南"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.gokunming.com/cn/listings/item/34312/yunpure-brewery",
+      "source_note": "“云朵”为疑似录入/OCR 错误。",
+      "status": "active",
+      "alias_count": 3,
+      "meta": {
+        "group_label": "云朴精酿",
+        "source_rows": [
+          "云朴精酿",
+          "云朴"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "长青工匠",
+      "canonical_name": "长青工匠",
+      "canonical_name_en": "Perennial Artisan Ales",
+      "display_name": "长青工匠",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "St. Louis, Missouri",
+      "raw_country_values": [
+        "St. Louis, Missouri"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "审核确认 Perennial Artisan Ales，圣路易斯。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "长青工匠",
+        "source_rows": [
+          "长青工匠"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "纸飞机",
+      "canonical_name": "纸飞机",
+      "canonical_name_en": null,
+      "display_name": "纸飞机",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "纸飞机",
+        "source_rows": [
+          "纸飞机"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "智美 / chimay",
+      "canonical_name": "智美",
+      "canonical_name_en": "Chimay",
+      "display_name": "智美",
+      "entity_type": "brewery_brand",
+      "country": "Belgium",
+      "country_code": "BE",
+      "origin_region": "Baileux (Chimay)",
+      "raw_country_values": [
+        "Baileux (Chimay)"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://chimay.com/",
+      "source_note": "English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "智美 / Chimay",
+        "source_rows": [
+          "智美",
+          "Chimay"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "种子",
+      "canonical_name": "种子",
+      "canonical_name_en": "The Seed",
+      "display_name": "种子",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "审核确认英文 The Seed；城市暂空（新泽西相关奖项见文案）。 | city_unverified | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "种子",
+        "source_rows": [
+          "种子"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "众人之酒",
+      "canonical_name": "众人之酒",
+      "canonical_name_en": "Human People Beer",
+      "display_name": "众人之酒",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Seattle",
+      "raw_country_values": [
+        "Seattle"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "西雅图；主创曾供职 Modern Times。 | audit_2026-07-23_approved",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "众人之酒",
+        "source_rows": [
+          "众人之酒"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "左手巨人",
+      "canonical_name": "左手巨人",
+      "canonical_name_en": "Left Handed Giant",
+      "display_name": "左手巨人",
+      "entity_type": "brewery_brand",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "origin_region": "Bristol",
+      "raw_country_values": [
+        "英国",
+        "Bristol",
+        "United Kingdom"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://lefthandedgiant.com/",
+      "source_note": "不得与美国 Left Hand Brewing 混为一体。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "左手巨人",
+        "source_rows": [
+          "左手巨人"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "左手酿造 / left hand brewing",
+      "canonical_name": "左手酿造",
+      "canonical_name_en": "Left Hand Brewing Company",
+      "display_name": "左手酿造",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Longmont, Colorado",
+      "raw_country_values": [
+        "Longmont, Colorado"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://lefthandbrewing.com/",
+      "source_note": "与英国 Left Handed Giant 不同。",
+      "status": "active",
+      "alias_count": 2,
+      "meta": {
+        "group_label": "左手酿造 / Left Hand Brewing",
+        "source_rows": [
+          "Left Hand"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "allagash brewing company",
+      "canonical_name": "Allagash",
+      "canonical_name_en": "Allagash Brewing Company",
+      "display_name": "Allagash",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Portland, Maine",
+      "raw_country_values": [
+        "Portland, Maine"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.allagash.com/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Allagash Brewing Company",
+        "source_rows": [
+          "Allagash"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "alus",
+      "canonical_name": "Alus",
+      "canonical_name_en": "Alus Brew Co.",
+      "display_name": "Alus",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "深圳",
+      "raw_country_values": [
+        "深圳",
+        "China"
+      ],
+      "confidence": "medium",
+      "review_status": "pending",
+      "source": "https://untappd.com/w/alus-brew-co/581964",
+      "source_note": "英文名与国家已确认；未找到足够可靠的城市来源，城市留空。 | partially_verified | city_unverified",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Alus",
+        "source_rows": [
+          "Alus"
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "bell's brewery",
+      "canonical_name": "Bell's",
+      "canonical_name_en": "Bell's Brewery",
+      "display_name": "Bell's",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Comstock, Michigan",
+      "raw_country_values": [
+        "Comstock, Michigan"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://bellsbeer.com/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Bell's Brewery",
+        "source_rows": [
+          "Bell's"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "brasserie cantillon",
+      "canonical_name": "Cantillon",
+      "canonical_name_en": "Brasserie Cantillon",
+      "display_name": "Cantillon",
+      "entity_type": "brewery_brand",
+      "country": "Belgium",
+      "country_code": "BE",
+      "origin_region": "Brussels",
+      "raw_country_values": [
+        "Brussels"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.cantillon.be/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Brasserie Cantillon",
+        "source_rows": [
+          "Cantillon"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "cascade brewing",
+      "canonical_name": "Cascade",
+      "canonical_name_en": "Cascade Brewing",
+      "display_name": "Cascade",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Portland, Oregon",
+      "raw_country_values": [
+        "Portland, Oregon"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://pdx.eater.com/2024/6/24/24185063/cascade-brewing-closes-portland-oregon-brewery",
+      "source_note": "已于 2024 年停止运营；名称与原所在地仍可确认。 | operational_status: closed",
+      "status": "archived",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Cascade Brewing",
+        "source_rows": [
+          "Cascade"
+        ],
+        "verification_status": "verified_historical"
+      }
+    },
+    {
+      "normalized_key": "deadman",
+      "canonical_name": "Deadman",
+      "canonical_name_en": "Deadman Brewery",
+      "display_name": "Deadman",
+      "entity_type": "brewery_brand",
+      "country": "Hong Kong",
+      "country_code": "HK",
+      "origin_region": "Hong Kong",
+      "raw_country_values": [
+        "香港",
+        "Hong Kong"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/DeadManBrewery",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Deadman",
+        "source_rows": [
+          "Deadman"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "derive brewery",
+      "canonical_name": "Derive Brewery",
+      "canonical_name_en": "Derive Brewing Company",
+      "display_name": "Derive Brewery",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Columbus, Ohio",
+      "raw_country_values": [
+        "Columbus, Ohio"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.derivebeer.com/",
+      "source_note": "该英文行按样例 LIMA 归入美国 Derive Brewing Company；不要与武汉蔓延酿造混并。",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Derive Brewery",
+        "source_rows": [
+          "Derive Brewery"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "e.t. brewery",
+      "canonical_name": "E.T.",
+      "canonical_name_en": "E.T. Brewery",
+      "display_name": "E.T.",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "深圳",
+      "raw_country_values": [
+        "深圳"
+      ],
+      "confidence": "medium",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "可确认中国深圳活动/品牌关联；未找到稳定官方主页。 | partially_verified",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "E.T. Brewery",
+        "source_rows": [
+          "E.T."
+        ],
+        "verification_status": "partially_verified"
+      }
+    },
+    {
+      "normalized_key": "fever",
+      "canonical_name": "FEVER",
+      "canonical_name_en": "Fever Ales",
+      "display_name": "FEVER",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "西安",
+      "raw_country_values": [
+        "西安",
+        "China"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://untappd.com/FeverAles | https://www.tengnian.com/brewery/50",
+      "source_note": "“想象中的雨”是其酒款，不是酒厂名。 || “想象中的雨”是其酒款，不是酒厂名。 | English name not found safely; fill from checked mapping or official source",
+      "status": "active",
+      "alias_count": 1,
+      "meta": {
+        "group_label": "FEVER",
+        "source_rows": [
+          "Fever",
+          "想象中的雨"
+        ],
+        "verification_status": "corrected"
+      }
+    },
+    {
+      "normalized_key": "firestone walker brewing company",
+      "canonical_name": "Firestone Walker",
+      "canonical_name_en": "Firestone Walker Brewing Company",
+      "display_name": "Firestone Walker",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Paso Robles, California",
+      "raw_country_values": [
+        "Paso Robles, California"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.firestonewalker.com/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Firestone Walker Brewing Company",
+        "source_rows": [
+          "Firestone Walker"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "founders brewing co.",
+      "canonical_name": "Founders",
+      "canonical_name_en": "Founders Brewing Co.",
+      "display_name": "Founders",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Grand Rapids, Michigan",
+      "raw_country_values": [
+        "Grand Rapids, Michigan"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://foundersbrewing.com/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Founders Brewing Co.",
+        "source_rows": [
+          "Founders"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "hesper",
+      "canonical_name": "HESPER",
+      "canonical_name_en": "HESPER",
+      "display_name": "HESPER",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [
+        "东莞",
+        "China"
+      ],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "HESPER",
+        "source_rows": [
+          "HESPER"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "ism brewing",
+      "canonical_name": "ISM Brewing",
+      "canonical_name_en": "ISM Brewing",
+      "display_name": "ISM Brewing",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Long Beach, California",
+      "raw_country_values": [
+        "Long Beach, California"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://ism.beer/ | https://www.thewinecountry.com/ism-brewing-chepedelic-west-coast-ipa-16oz-can-lon.html",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "ISM Brewing",
+        "source_rows": [
+          "ISM Brewing"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "jester king brewery",
+      "canonical_name": "Jester King",
+      "canonical_name_en": "Jester King Brewery",
+      "display_name": "Jester King",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Austin, Texas",
+      "raw_country_values": [
+        "Austin, Texas"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://jesterkingbrewery.com/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Jester King Brewery",
+        "source_rows": [
+          "Jester King"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "mojo",
+      "canonical_name": "MOJO",
+      "canonical_name_en": "MOJO",
+      "display_name": "MOJO",
+      "entity_type": "brewery_brand",
+      "country": null,
+      "country_code": null,
+      "origin_region": null,
+      "raw_country_values": [],
+      "confidence": "low",
+      "review_status": "pending",
+      "source": "brewery_brand_web_verified.csv",
+      "source_note": "已进行名称及样例酒款检索，但未找到足以可靠确认中文名、英文名和城市/国家的公开来源；验证字段留空。 | unverified | english_unverified | city_unverified | country_unverified",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "MOJO",
+        "source_rows": [
+          "MOJO"
+        ],
+        "verification_status": "unverified"
+      }
+    },
+    {
+      "normalized_key": "oskar blues brewery",
+      "canonical_name": "Oskar Blues",
+      "canonical_name_en": "Oskar Blues Brewery",
+      "display_name": "Oskar Blues",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Longmont, Colorado",
+      "raw_country_values": [
+        "Longmont, Colorado"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://www.oskarblues.com/",
+      "source_note": "品牌起源于 Lyons，主要酒厂/总部按 Longmont 填写。",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Oskar Blues Brewery",
+        "source_rows": [
+          "Oskar Blues"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "shred",
+      "canonical_name": "SHRED",
+      "canonical_name_en": "Shred Beer Company",
+      "display_name": "SHRED",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Rocklin, California",
+      "raw_country_values": [
+        "美国",
+        "Rocklin, California",
+        "United States"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://shredbeercompany.com/ | https://www.beeradvocate.com/beer/profile/65793/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "SHRED",
+        "source_rows": [
+          "SHRED"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "sierra nevada brewing co.",
+      "canonical_name": "Sierra Nevada",
+      "canonical_name_en": "Sierra Nevada Brewing Co.",
+      "display_name": "Sierra Nevada",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Chico, California",
+      "raw_country_values": [
+        "Chico, California"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://sierranevada.com/",
+      "source_note": null,
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Sierra Nevada Brewing Co.",
+        "source_rows": [
+          "Sierra Nevada"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "tapstar",
+      "canonical_name": "TAPSTAR",
+      "canonical_name_en": "TAPSTAR",
+      "display_name": "TAPSTAR",
+      "entity_type": "brewery_brand",
+      "country": "China",
+      "country_code": "CN",
+      "origin_region": "贵阳",
+      "raw_country_values": [
+        "贵阳"
+      ],
+      "confidence": "medium",
+      "review_status": "reviewed",
+      "source": "https://m.36kr.com/p/3739743839879433 | https://www.xiaoyuzhoufm.com/episode/6684d2a953526fced0316cc3",
+      "source_note": "公开资料确认贵阳自酿品牌/酒吧；未发现稳定的正式中文名。",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "TAPSTAR",
+        "source_rows": [
+          "TAPSTAR"
+        ],
+        "verification_status": "verified"
+      }
+    },
+    {
+      "normalized_key": "trillium brewing company",
+      "canonical_name": "Trillium",
+      "canonical_name_en": "Trillium Brewing Company",
+      "display_name": "Trillium",
+      "entity_type": "brewery_brand",
+      "country": "United States",
+      "country_code": "US",
+      "origin_region": "Canton, Massachusetts",
+      "raw_country_values": [
+        "Canton, Massachusetts"
+      ],
+      "confidence": "high",
+      "review_status": "reviewed",
+      "source": "https://trilliumbrewing.com/",
+      "source_note": "按主要生产酒厂填写。",
+      "status": "active",
+      "alias_count": 0,
+      "meta": {
+        "group_label": "Trillium Brewing Company",
+        "source_rows": [
+          "Trillium"
+        ],
+        "verification_status": "verified"
+      }
+    }
+  ]
+}

@@ -50,12 +50,21 @@ function emptyProfile(drinkId: string): TaplistBeerProfile {
   return {
     drink_id: drinkId,
     brewery: null,
+    collab_breweries: [],
     beer_style: null,
     abv: null,
     ibu: null,
     country: null,
     description: null,
   }
+}
+
+function normalizeCollabBreweries(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((x) => (typeof x === 'string' ? x.trim() : ''))
+    .filter(Boolean)
+    .slice(0, 3)
 }
 
 // ---------------------------------------------------------------------------
@@ -87,13 +96,19 @@ export function buildDraft(payload: OwnerTaplistPayload): TaplistDraft {
     servingsByDrink.set(s.drink_id, list)
   }
 
-  const drinks: DraftDrink[] = (payload.drinks ?? []).map((d) => ({
-    ...d,
-    profile: profileByDrink.get(d.id) ?? emptyProfile(d.id),
-    servings: (servingsByDrink.get(d.id) ?? []).sort(
-      (a, b) => a.public_sort_order - b.public_sort_order,
-    ),
-  }))
+  const drinks: DraftDrink[] = (payload.drinks ?? []).map((d) => {
+    const profile = profileByDrink.get(d.id) ?? emptyProfile(d.id)
+    return {
+      ...d,
+      profile: {
+        ...profile,
+        collab_breweries: normalizeCollabBreweries(profile.collab_breweries),
+      },
+      servings: (servingsByDrink.get(d.id) ?? []).sort(
+        (a, b) => a.public_sort_order - b.public_sort_order,
+      ),
+    }
+  })
 
   return {
     tenant: payload.tenant,
@@ -122,6 +137,9 @@ export function validateDraftDrink(d: DraftDrink): string[] {
   if (d.profile.abv != null && (!Number.isFinite(d.profile.abv) || d.profile.abv < 0 || d.profile.abv > 100)) {
     issues.push('酒精度无效')
   }
+  if (normalizeCollabBreweries(d.profile.collab_breweries).length > 3) {
+    issues.push('合酿酒厂最多 3 个')
+  }
   return Array.from(new Set(issues))
 }
 
@@ -149,16 +167,19 @@ function serializeDraftDrink(d: DraftDrink): Record<string, unknown> {
     servings.push(row)
   })
 
+  const brewery = nn(d.profile.brewery)
   return {
     id: d.id || undefined,
     category_id: d.category_id || undefined,
     name: d.name.trim(),
-    brand_name: nn(d.brand_name),
+    // brand_name tracks primary brewery only
+    brand_name: brewery,
     image_url: nn(d.image_url),
     is_public_visible: d.is_public_visible,
     public_status: d.public_status,
     profile: {
-      brewery: nn(d.profile.brewery),
+      brewery,
+      collab_breweries: normalizeCollabBreweries(d.profile.collab_breweries),
       beer_style: nn(d.profile.beer_style),
       abv: d.profile.abv,
       ibu: d.profile.ibu,
@@ -240,6 +261,25 @@ export async function saveDrinkWithIntent(
 ): Promise<DrinkUpsertResult> {
   const product = await upsertDrinkProduct(tenantId, drink)
   if (!product.ok || !product.drink_id) return product
+
+  // Pool pick: upsert does not write product_id — link after we have drink_id.
+  if (drink.product_id) {
+    try {
+      await linkDrinkToProduct(product.drink_id, drink.product_id)
+    } catch (e) {
+      return {
+        ok: false,
+        drink_id: product.drink_id,
+        created: product.created,
+        errors: [
+          {
+            field: 'product_id',
+            message: e instanceof Error ? e.message : '关联商品池失败',
+          },
+        ],
+      }
+    }
+  }
 
   if (intent === 'product_only') return product
 
@@ -493,10 +533,12 @@ export async function searchDrinkProducts(query: string): Promise<ProductSearchR
   return res?.results ?? []
 }
 
-/** Apply a product-pool row onto a draft drink's profile + image (no product_id link). */
+/** Apply a product-pool row onto a draft (profile/image + product_id for persist on save). */
 export function applyProductToDraftDrink(drink: DraftDrink, product: ProductSearchResult): DraftDrink {
   return {
     ...drink,
+    product_id: product.id,
+    brand_name: product.brand_name || drink.brand_name,
     image_url: drink.image_url || product.image_url || null,
     profile: {
       ...drink.profile,
@@ -506,6 +548,17 @@ export function applyProductToDraftDrink(drink: DraftDrink, product: ProductSear
       country: product.country || drink.profile.country,
     },
   }
+}
+
+/** Persist drinks.product_id via existing RPC (active products only). */
+export async function linkDrinkToProduct(drinkId: string, productId: string): Promise<void> {
+  const { data, error } = await supabase.rpc('link_drink_to_product', {
+    p_drink_id: drinkId,
+    p_product_id: productId,
+  })
+  if (error) throw new Error(translateError(error.message))
+  const res = data as { ok?: boolean }
+  if (res && res.ok === false) throw new Error('关联商品池失败')
 }
 
 // ---------------------------------------------------------------------------
@@ -560,6 +613,9 @@ export function isOnTonight(drink: { public_sort_order?: number | null }): boole
 function translateError(message: string): string {
   const m = message || ''
   if (m.includes('Invalid tap number')) return '枪号无效（请选择 1–99）'
+  if (m.includes('Product not found') || m.includes('not active')) {
+    return '商品池条目不存在或已停用'
+  }
   if (m.includes('Forbidden')) return '没有权限执行该操作'
   if (m.includes('Not authenticated')) return '登录状态已失效，请重新登录'
   if (m.includes('disabled drink public')) return '未上架的酒款不能公开到酒单'

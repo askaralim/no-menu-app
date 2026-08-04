@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import { Redirect } from 'expo-router'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/authProvider'
 import { orderStatusLabel } from '../../lib/constants'
@@ -42,7 +43,7 @@ function priceHint(drink: Drink): string {
   return `从 ¥${min}`
 }
 
-export default function OrderingScreen() {
+function OrderingScreen() {
   const { tenantId } = useAuth()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [activeOrders, setActiveOrders] = useState<Order[]>([])
@@ -54,6 +55,7 @@ export default function OrderingScreen() {
   const [currentBusinessDayId, setCurrentBusinessDayId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [checkoutUpdatingId, setCheckoutUpdatingId] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [drinkSearch, setDrinkSearch] = useState('')
   const [pickDrink, setPickDrink] = useState<Drink | null>(null)
@@ -214,21 +216,25 @@ export default function OrderingScreen() {
     setViewMode('form')
   }
 
-  const handleCheckout = (orderId: string) => {
-    Alert.alert('确认结账', '确定要结账吗？', [
+  const handleCheckout = (order: Order) => {
+    Alert.alert('确认结账', `确认将「${order.customer_name}」标记为已结账？`, [
       { text: '取消', style: 'cancel' },
       {
-        text: '确定',
+        text: '确认结账',
         onPress: async () => {
+          if (checkoutUpdatingId) return
+          setCheckoutUpdatingId(order.id)
           try {
             const { error } = await supabase
               .from('orders')
               .update({ status: 'checked_out', checked_out_at: new Date().toISOString() })
-              .eq('id', orderId)
+              .eq('id', order.id)
             if (error) throw error
             await fetchActiveOrders()
           } catch (e) {
             Alert.alert('错误', '结账失败')
+          } finally {
+            setCheckoutUpdatingId(null)
           }
         },
       },
@@ -439,10 +445,15 @@ export default function OrderingScreen() {
                 </View>
                 {item.status === 'active' && (
                   <TouchableOpacity
-                    style={styles.checkoutBtn}
-                    onPress={() => handleCheckout(item.id)}
+                    style={[styles.checkoutBtn, checkoutUpdatingId === item.id && { opacity: 0.55 }]}
+                    disabled={checkoutUpdatingId !== null}
+                    onPress={() => handleCheckout(item)}
                   >
-                    <Text style={styles.checkoutBtnText}>结账</Text>
+                    {checkoutUpdatingId === item.id ? (
+                      <ActivityIndicator size="small" color={T.background} />
+                    ) : (
+                      <Text style={styles.checkoutBtnText}>结账</Text>
+                    )}
                   </TouchableOpacity>
                 )}
               </TouchableOpacity>
@@ -636,6 +647,19 @@ export default function OrderingScreen() {
     </Modal>
     </SafeAreaView>
   )
+}
+
+export default function OrderingRoute() {
+  const { orderingEnabled, isLoading } = useAuth()
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={T.gold} />
+      </View>
+    )
+  }
+  if (!orderingEnabled) return <Redirect href="/(tabs)/taplist" />
+  return <OrderingScreen />
 }
 
 function Stat({ label, value }: { label: string; value: number | string }) {

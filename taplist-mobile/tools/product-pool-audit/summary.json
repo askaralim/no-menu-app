@@ -1,0 +1,33 @@
+{
+  "project": "agtujigvxxdppngirqtu.supabase.co",
+  "generated_at": "2026-06-30T12:18:12.501Z",
+  "direct_drinks_count": 773,
+  "product_pool_existing_count": 0,
+  "public_bars_count": 25,
+  "public_rpc_drinks_count": 299,
+  "categories_readable_count": 45,
+  "candidate_product_count_conservative_exact_key": 692,
+  "duplicate_exact_key_candidate_count": 69,
+  "same_name_review_group_count": 79,
+  "brand_or_brewery_count": 288,
+  "already_linked_drinks_count": 0,
+  "public_visible_drinks_count": 320,
+  "enabled_drinks_count": 650,
+  "drinks_with_image_count": 482,
+  "drinks_missing_brand_count": 114,
+  "generated_files": [
+    "production-drinks-review.csv",
+    "candidate-drink-products-conservative.csv",
+    "duplicate-review-exact-key.csv",
+    "same-name-different-brand-review.csv",
+    "brand-brewery-review.csv",
+    "summary.json",
+    "recommendations.md",
+    "candidate-drink-products-first-pass-public.csv",
+    "candidate-drink-products-second-pass-enabled-private.csv",
+    "candidate-drink-products-hold-disabled-or-test.csv"
+  ],
+  "first_pass_public_candidate_count": 307,
+  "second_pass_enabled_private_candidate_count": 271,
+  "hold_disabled_or_test_candidate_count": 114
+}

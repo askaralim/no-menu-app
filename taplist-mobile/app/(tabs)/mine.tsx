@@ -79,10 +79,10 @@ export default function MineScreen() {
     setSaving(true)
     try {
       await saveImageUriToPhotoLibrary(previewUri)
-      Alert.alert('保存成功', '酒迹图片已保存到相册')
+      Alert.alert('保存成功', '记录分享图已保存到相册')
     } catch (error) {
       Alert.alert(
-        error instanceof PhotoLibraryPermissionError ? '无法保存图片' : '保存失败',
+        error instanceof PhotoLibraryPermissionError ? '无法保存分享图' : '保存失败',
         error instanceof PhotoLibraryPermissionError ? '请在系统设置中允许 No Menu 添加照片。' : '暂时无法保存到相册，请稍后重试。',
       )
     } finally {
@@ -105,7 +105,7 @@ export default function MineScreen() {
 
   const deleteAccount = () => Alert.alert(
     '删除账号与全部记录？',
-    '所有点亮酒款和酒吧记录都会永久删除，且无法恢复。',
+    '所有喝过酒款和酒吧记录都会永久删除，且无法恢复。',
     [
       { text: '取消', style: 'cancel' },
       {
@@ -131,22 +131,22 @@ export default function MineScreen() {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>酒迹</Text>
+          <Text style={styles.title}>我喝过的</Text>
           {summary && summary.drink_count > 0 ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="分享酒迹"
+              accessibilityLabel="分享记录图"
               hitSlop={4}
               disabled={busy || historyQuery.isLoading}
               onPress={() => void generateShare()}
               style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}>
               {busy ? <ActivityIndicator size="small" color={palette.amber} /> : <FontAwesome name="share-square-o" size={13} color={palette.amber} />}
-              <Text style={styles.shareText}>分享酒迹</Text>
+              <Text style={styles.shareText}>分享记录图</Text>
             </Pressable>
           ) : null}
         </View>
         {summary ? (
-          <Text style={styles.summary}>{summary.drink_count} 款酒 · {summary.bar_count} 家酒吧{summary.started_at ? ` · 始于 ${formatDate(summary.started_at)}` : ''}</Text>
+          <Text style={styles.summary}>{summary.drink_count} 款酒 · {summary.bar_count} 家酒吧{summary.started_at ? ` · ${formatDate(summary.started_at)} 第一杯` : ''}</Text>
         ) : null}
 
         {protection !== 'unavailable' && hasSession ? (
@@ -160,8 +160,8 @@ export default function MineScreen() {
           <ActivityIndicator color={palette.amber} style={styles.loading} />
         ) : groups.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>还没有酒迹</Text>
-            <Text style={styles.emptyBody}>看到喝过的酒，点一下“点亮”，它就会留在这里。</Text>
+            <Text style={styles.emptyTitle}>还没有记录</Text>
+            <Text style={styles.emptyBody}>看到喝过的酒，点一下“喝过”，它就会留在这里。</Text>
             <Link href="/search" asChild><Pressable style={styles.emptyButton}><Text style={styles.emptyButtonText}>去搜索酒款</Text></Pressable></Link>
           </View>
         ) : (
@@ -169,14 +169,19 @@ export default function MineScreen() {
             {groups.map((group) => (
               <View key={group.key} style={styles.month}>
                 <Text style={styles.monthLabel}>{group.label}</Text>
-                <View style={styles.grid}>
-                  {chunkIntoRows(group.items, 3).map((row, rowIndex) => (
-                    <View key={`${group.key}-${rowIndex}`} style={styles.gridRow}>
-                      {row.map((item) => <DrinkGridItem key={item.light_id} item={item} />)}
-                      {Array.from({ length: 3 - row.length }, (_, index) => <View key={`empty-${index}`} style={styles.gridItem} />)}
+                {group.days.map((day) => (
+                  <View key={day.key} style={styles.day}>
+                    <Text style={styles.dayLabel}>{day.label}</Text>
+                    <View style={styles.grid}>
+                      {chunkIntoRows(day.items, 3).map((row, rowIndex) => (
+                        <View key={`${day.key}-${rowIndex}`} style={styles.gridRow}>
+                          {row.map((item) => <DrinkGridItem key={item.light_id} item={item} />)}
+                          {Array.from({ length: 3 - row.length }, (_, index) => <View key={`empty-${index}`} style={styles.gridItem} />)}
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
+                  </View>
+                ))}
               </View>
             ))}
           </View>
@@ -194,7 +199,7 @@ export default function MineScreen() {
           <View style={styles.previewHeader}><Text style={styles.previewTitle}>分享图预览</Text><Pressable onPress={() => setPreviewUri(null)}><Text style={styles.close}>关闭</Text></Pressable></View>
           {previewUri ? <Image source={{ uri: previewUri }} resizeMode="contain" style={styles.previewImage} /> : null}
           <View style={styles.actions}>
-            <Pressable style={styles.primaryAction} onPress={() => previewUri && void Sharing.shareAsync(previewUri)}><Text style={styles.primaryActionText}>分享图片</Text></Pressable>
+            <Pressable style={styles.primaryAction} onPress={() => previewUri && void Sharing.shareAsync(previewUri)}><Text style={styles.primaryActionText}>分享记录图</Text></Pressable>
             <Pressable disabled={saving} style={styles.secondaryAction} onPress={() => void savePreview()}>
               {saving ? <ActivityIndicator size="small" color={palette.text} /> : <Text style={styles.secondaryActionText}>保存到相册</Text>}
             </Pressable>
@@ -212,22 +217,32 @@ function DrinkGridItem({ item }: { item: MyDrinkHistoryRow }) {
       <View style={styles.artSlot}>{item.image_url ? <CachedImage source={item.image_url} style={styles.art} /> : null}</View>
       <Text numberOfLines={2} style={styles.drinkName}>{item.name}</Text>
       <Text numberOfLines={1} style={styles.drinkMeta}>{item.brewery || item.beer_style || '精酿啤酒'}</Text>
-      <Text style={styles.drinkDate}>{formatMonthDay(item.last_activity_at)}</Text>
     </Pressable></Link>
   </View>
 }
 
 function groupByMonth(items: MyDrinkHistoryRow[]) {
-  const map = new Map<string, MyDrinkHistoryRow[]>()
+  const map = new Map<string, Map<string, MyDrinkHistoryRow[]>>()
   items.forEach((item) => {
     const date = new Date(item.last_activity_at)
-    const key = `${date.getFullYear()}-${date.getMonth()}`
-    map.set(key, [...(map.get(key) ?? []), item])
+    const monthKey = `${date.getFullYear()}-${date.getMonth()}`
+    const dayKey = `${monthKey}-${date.getDate()}`
+    const month = map.get(monthKey) ?? new Map<string, MyDrinkHistoryRow[]>()
+    month.set(dayKey, [...(month.get(dayKey) ?? []), item])
+    map.set(monthKey, month)
   })
-  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-  return [...map.entries()].map(([key, grouped]) => {
-    const date = new Date(grouped[0].last_activity_at)
-    return { key, label: `${date.getFullYear()} ${months[date.getMonth()]}`, items: grouped }
+  return [...map.entries()].map(([key, month]) => {
+    const firstDay = month.values().next().value as MyDrinkHistoryRow[]
+    const monthDate = new Date(firstDay[0].last_activity_at)
+    return {
+      key,
+      label: `${monthDate.getFullYear()}年${monthDate.getMonth() + 1}月`,
+      days: [...month.entries()].map(([dayKey, grouped]) => ({
+        key: dayKey,
+        label: formatMonthDay(grouped[0].last_activity_at),
+        items: grouped,
+      })),
+    }
   })
 }
 function chunkIntoRows<T>(items: T[], size: number) {
@@ -245,7 +260,7 @@ const styles = StyleSheet.create({
   protectionText: { ...typography.caption, color: palette.muted },
   shareButton: { height: 36, flexShrink: 0, borderWidth: 1, borderColor: palette.goldMuted, borderRadius: 18, paddingHorizontal: spacing.sm, flexDirection: 'row', gap: spacing.xs, alignItems: 'center', justifyContent: 'center' },
   shareText: { ...typography.caption, color: palette.amber }, pressed: { opacity: 0.75 }, loading: { marginTop: spacing.xxl },
-  history: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: palette.line }, month: { marginBottom: spacing.xl }, monthLabel: { ...typography.label, color: palette.amber, fontSize: 11, lineHeight: 14, borderLeftWidth: 2, borderLeftColor: palette.amber, paddingLeft: spacing.xs, marginBottom: spacing.md }, grid: { rowGap: spacing.lg }, gridRow: { flexDirection: 'row', gap: spacing.sm }, gridItem: { flex: 1, minWidth: 0 }, gridPressable: { width: '100%' }, artSlot: { width: '100%', aspectRatio: 4 / 5, alignItems: 'center', justifyContent: 'flex-end' }, art: { width: '100%', height: '100%', borderRadius: 7 }, drinkName: { ...typography.caption, color: palette.text, textAlign: 'left', marginTop: spacing.xs }, drinkMeta: { ...typography.micro, color: palette.faint, textAlign: 'left', marginTop: 2 }, drinkDate: { ...typography.micro, color: palette.tungsten, textAlign: 'left', marginTop: 2 },
+  history: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: palette.line }, month: { marginBottom: spacing.lg }, monthLabel: { ...typography.label, color: palette.amber, fontSize: 11, lineHeight: 14, borderLeftWidth: 2, borderLeftColor: palette.amber, paddingLeft: spacing.xs, marginBottom: spacing.md }, day: { marginBottom: spacing.lg }, dayLabel: { ...typography.micro, color: palette.muted, marginBottom: spacing.sm }, grid: { rowGap: spacing.lg }, gridRow: { flexDirection: 'row', gap: spacing.sm }, gridItem: { flex: 1, minWidth: 0 }, gridPressable: { width: '100%' }, artSlot: { width: '100%', aspectRatio: 4 / 5, alignItems: 'center', justifyContent: 'flex-end' }, art: { width: '100%', height: '100%', borderRadius: 7 }, drinkName: { ...typography.caption, color: palette.text, textAlign: 'left', marginTop: spacing.xs }, drinkMeta: { ...typography.micro, color: palette.faint, textAlign: 'left', marginTop: 2 },
   empty: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: palette.line }, emptyTitle: { ...typography.headline, color: palette.text }, emptyBody: { ...typography.body, color: palette.muted, marginTop: spacing.sm }, emptyButton: { marginTop: spacing.lg, alignSelf: 'flex-start', borderBottomWidth: 1, borderBottomColor: palette.amber, paddingBottom: spacing.xxs }, emptyButtonText: { ...typography.title, color: palette.amber },
   deleteAccount: { marginTop: spacing.xxl, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: palette.line, alignItems: 'center' }, deleteAccountText: { ...typography.caption, color: palette.copper },
   hiddenCanvas: { position: 'absolute', left: -10000, top: 0 }, preview: { flex: 1, backgroundColor: palette.background, paddingHorizontal: spacing.lg }, previewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, previewTitle: { ...typography.title, color: palette.text }, close: { ...typography.caption, color: palette.amber }, previewImage: { flex: 1, width: '100%', marginVertical: spacing.md }, actions: { gap: spacing.sm }, primaryAction: { minHeight: 50, borderRadius: 8, backgroundColor: palette.amber, alignItems: 'center', justifyContent: 'center' }, primaryActionText: { ...typography.title, color: palette.background }, secondaryAction: { minHeight: 50, borderRadius: 8, borderWidth: 1, borderColor: palette.line, alignItems: 'center', justifyContent: 'center' }, secondaryActionText: { ...typography.title, color: palette.text },

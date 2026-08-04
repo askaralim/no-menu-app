@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NO MENU Image Tool</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d0d0d;
+      --panel: #151515;
+      --panel-soft: #1b1a17;
+      --line: #2b2822;
+      --text: #f5f5f5;
+      --muted: #b8b0a2;
+      --faint: #756f65;
+      --bronze: #8a6a3a;
+      --amber: #ffb44c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Helvetica Neue", Arial, "PingFang SC", sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: #101010;
+      padding: 28px;
+    }
+
+    .brand {
+      margin-bottom: 32px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 0.92;
+      letter-spacing: 3px;
+    }
+
+    .brand .rule {
+      width: 112px;
+      height: 2px;
+      margin: 15px 0 12px;
+      background: var(--bronze);
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .group {
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .group-title {
+      margin: 0 0 12px;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .drop {
+      min-height: 148px;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      border: 1px dashed #464036;
+      background: var(--panel);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .drop.dragging {
+      border-color: var(--amber);
+      background: #19150e;
+    }
+
+    .drop strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .drop span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 12px;
+      outline: none;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+    }
+
+    .segmented button {
+      height: 44px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .segmented button:last-child {
+      border-right: 0;
+    }
+
+    .segmented button.active {
+      background: var(--text);
+      color: #0d0d0d;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .action {
+      height: 44px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .action.primary {
+      border-color: var(--bronze);
+      background: var(--text);
+      color: #0d0d0d;
+      font-weight: 700;
+    }
+
+    .action:disabled {
+      cursor: not-allowed;
+      opacity: 0.38;
+    }
+
+    .stage {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-width: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(rgba(245, 245, 245, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245, 245, 245, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+    }
+
+    .preview-wrap {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 36px;
+    }
+
+    .preview-frame {
+      width: min(920px, 100%);
+      display: grid;
+      place-items: center;
+      background: #080808;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .preview-frame.bar {
+      aspect-ratio: 4 / 3;
+    }
+
+    .preview-frame.beer {
+      aspect-ratio: 1;
+      max-width: min(720px, 100%);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .empty {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      color: var(--faint);
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      background: #101010;
+    }
+
+    .metric {
+      min-height: 76px;
+      padding: 16px 20px;
+      border-right: 1px solid var(--line);
+    }
+
+    .metric:last-child {
+      border-right: 0;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 860px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .stage {
+        min-height: 64vh;
+      }
+
+      .meta {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>NO<br>MENU</h1>
+        <div class="rule"></div>
+        <p>Image export tool for bar covers, beer artwork, and event images.</p>
+      </div>
+
+      <section class="group">
+        <h2 class="group-title">Source</h2>
+        <label class="drop" id="dropZone">
+          <input id="fileInput" type="file" accept="image/*" hidden>
+          <span>
+            <strong>Drop image or click to choose</strong>
+            JPG, PNG, WebP, HEIC if supported by the browser
+          </span>
+        </label>
+      </section>
+
+      <section class="group">
+        <h2 class="group-title">Preset</h2>
+        <div class="segmented" role="group" aria-label="Preset">
+          <button id="barPreset" class="active" type="button">Bar 4:3</button>
+          <button id="beerPreset" type="button">Beer 1:1</button>
+          <button id="eventPreset" type="button">Event 1:1</button>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="widthInput">Width</label>
+            <input id="widthInput" type="number" min="1" step="1" value="1600">
+          </div>
+          <div class="field">
+            <label for="heightInput">Height</label>
+            <input id="heightInput" type="number" min="1" step="1" value="1200">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="positionInput">Crop focus</label>
+            <select id="positionInput">
+              <option value="center">Center</option>
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="qualityInput">JPEG quality</label>
+            <input id="qualityInput" type="number" min="1" max="100" step="1" value="82">
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group-title">Export</h2>
+        <div class="field">
+          <label for="nameInput">Filename</label>
+          <input id="nameInput" type="text" value="no-menu-bar-cover">
+        </div>
+        <div class="field">
+          <label for="formatInput">Format</label>
+          <select id="formatInput">
+            <option value="image/jpeg">JPG</option>
+            <option value="image/png">PNG</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button id="resetButton" class="action" type="button">Reset</button>
+          <button id="downloadButton" class="action primary" type="button" disabled>Download</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <div class="preview-wrap">
+        <div id="previewFrame" class="preview-frame bar">
+          <canvas id="canvas" hidden></canvas>
+          <div id="emptyState" class="empty">NO IMAGE LOADED</div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="metric">
+          <span>Source</span>
+          <strong id="sourceMetric">-</strong>
+        </div>
+        <div class="metric">
+          <span>Crop</span>
+          <strong id="cropMetric">-</strong>
+        </div>
+        <div class="metric">
+          <span>Output</span>
+          <strong id="outputMetric">1600 x 1200</strong>
+        </div>
+        <div class="metric">
+          <span>Preset</span>
+          <strong id="presetMetric">Bar cover</strong>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const presets = {
+      bar: { width: 1600, height: 1200, quality: 82, name: 'no-menu-bar-cover', label: 'Bar cover' },
+      beer: { width: 1200, height: 1200, quality: 86, name: 'no-menu-beer-artwork', label: 'Beer artwork' },
+      event: { width: 1200, height: 1200, quality: 84, name: 'no-menu-event-image', label: 'Event image' },
+    }
+
+    const state = {
+      preset: 'bar',
+      image: null,
+      fileName: '',
+    }
+
+    const fileInput = document.getElementById('fileInput')
+    const dropZone = document.getElementById('dropZone')
+    const barPreset = document.getElementById('barPreset')
+    const beerPreset = document.getElementById('beerPreset')
+    const eventPreset = document.getElementById('eventPreset')
+    const widthInput = document.getElementById('widthInput')
+    const heightInput = document.getElementById('heightInput')
+    const positionInput = document.getElementById('positionInput')
+    const qualityInput = document.getElementById('qualityInput')
+    const nameInput = document.getElementById('nameInput')
+    const formatInput = document.getElementById('formatInput')
+    const resetButton = document.getElementById('resetButton')
+    const downloadButton = document.getElementById('downloadButton')
+    const previewFrame = document.getElementById('previewFrame')
+    const canvas = document.getElementById('canvas')
+    const emptyState = document.getElementById('emptyState')
+    const sourceMetric = document.getElementById('sourceMetric')
+    const cropMetric = document.getElementById('cropMetric')
+    const outputMetric = document.getElementById('outputMetric')
+    const presetMetric = document.getElementById('presetMetric')
+
+    function setPreset(presetName) {
+      state.preset = presetName
+      const preset = presets[presetName]
+      widthInput.value = preset.width
+      heightInput.value = preset.height
+      qualityInput.value = preset.quality
+      nameInput.value = preset.name
+      barPreset.classList.toggle('active', presetName === 'bar')
+      beerPreset.classList.toggle('active', presetName === 'beer')
+      eventPreset.classList.toggle('active', presetName === 'event')
+      previewFrame.classList.toggle('bar', presetName === 'bar')
+      previewFrame.classList.toggle('beer', presetName === 'beer' || presetName === 'event')
+      render()
+    }
+
+    function cropBox(sourceWidth, sourceHeight, outputWidth, outputHeight, position) {
+      const targetRatio = outputWidth / outputHeight
+      const sourceRatio = sourceWidth / sourceHeight
+      let cropWidth = sourceWidth
+      let cropHeight = sourceHeight
+
+      if (sourceRatio > targetRatio) {
+        cropWidth = Math.round(sourceHeight * targetRatio)
+      } else if (sourceRatio < targetRatio) {
+        cropHeight = Math.round(sourceWidth / targetRatio)
+      }
+
+      const horizontalSpace = sourceWidth - cropWidth
+      const verticalSpace = sourceHeight - cropHeight
+      let x = Math.round(horizontalSpace / 2)
+      let y = Math.round(verticalSpace / 2)
+
+      if (position === 'left') x = 0
+      if (position === 'right') x = horizontalSpace
+      if (position === 'top') y = 0
+      if (position === 'bottom') y = verticalSpace
+
+      return { x, y, width: cropWidth, height: cropHeight }
+    }
+
+    function values() {
+      const width = Math.max(1, Number(widthInput.value) || presets[state.preset].width)
+      const height = Math.max(1, Number(heightInput.value) || presets[state.preset].height)
+      const quality = Math.min(100, Math.max(1, Number(qualityInput.value) || presets[state.preset].quality))
+      return {
+        width,
+        height,
+        quality,
+        position: positionInput.value,
+        format: formatInput.value,
+        name: nameInput.value.trim() || presets[state.preset].name,
+      }
+    }
+
+    function render() {
+      const config = values()
+      outputMetric.textContent = `${config.width} x ${config.height}`
+      presetMetric.textContent = presets[state.preset].label
+      downloadButton.disabled = !state.image
+
+      if (!state.image) {
+        canvas.hidden = true
+        emptyState.hidden = false
+        sourceMetric.textContent = '-'
+        cropMetric.textContent = '-'
+        return
+      }
+
+      const crop = cropBox(
+        state.image.naturalWidth,
+        state.image.naturalHeight,
+        config.width,
+        config.height,
+        config.position,
+      )
+
+      canvas.hidden = false
+      emptyState.hidden = true
+      canvas.width = config.width
+      canvas.height = config.height
+      const context = canvas.getContext('2d')
+      context.clearRect(0, 0, config.width, config.height)
+      context.imageSmoothingEnabled = true
+      context.imageSmoothingQuality = 'high'
+      context.drawImage(
+        state.image,
+        crop.x,
+        crop.y,
+        crop.width,
+        crop.height,
+        0,
+        0,
+        config.width,
+        config.height,
+      )
+
+      sourceMetric.textContent = `${state.fileName} · ${state.image.naturalWidth} x ${state.image.naturalHeight}`
+      cropMetric.textContent = `${crop.width} x ${crop.height} +${crop.x} +${crop.y}`
+    }
+
+    function loadFile(file) {
+      if (!file || !file.type.startsWith('image/')) return
+      const url = URL.createObjectURL(file)
+      const image = new Image()
+      image.onload = () => {
+        if (state.image?.src?.startsWith('blob:')) URL.revokeObjectURL(state.image.src)
+        state.image = image
+        state.fileName = file.name
+        render()
+      }
+      image.src = url
+    }
+
+    function download() {
+      if (!state.image) return
+      const config = values()
+      render()
+      const extension = config.format === 'image/png' ? 'png' : 'jpg'
+      const quality = config.format === 'image/jpeg' ? config.quality / 100 : undefined
+      const link = document.createElement('a')
+      link.download = `${config.name}.${extension}`
+      link.href = canvas.toDataURL(config.format, quality)
+      link.click()
+    }
+
+    function reset() {
+      state.image = null
+      state.fileName = ''
+      fileInput.value = ''
+      render()
+    }
+
+    fileInput.addEventListener('change', (event) => loadFile(event.target.files[0]))
+    barPreset.addEventListener('click', () => setPreset('bar'))
+    beerPreset.addEventListener('click', () => setPreset('beer'))
+    eventPreset.addEventListener('click', () => setPreset('event'))
+    resetButton.addEventListener('click', reset)
+    downloadButton.addEventListener('click', download)
+
+    for (const input of [widthInput, heightInput, positionInput, qualityInput, nameInput, formatInput]) {
+      input.addEventListener('input', render)
+      input.addEventListener('change', render)
+    }
+
+    for (const eventName of ['dragenter', 'dragover']) {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault()
+        dropZone.classList.add('dragging')
+      })
+    }
+
+    for (const eventName of ['dragleave', 'drop']) {
+      dropZone.addEventListener(eventName, (event) => {
+        event.preventDefault()
+        dropZone.classList.remove('dragging')
+      })
+    }
+
+    dropZone.addEventListener('drop', (event) => {
+      loadFile(event.dataTransfer.files[0])
+    })
+
+    setPreset('bar')
+  </script>
+</body>
+</html>

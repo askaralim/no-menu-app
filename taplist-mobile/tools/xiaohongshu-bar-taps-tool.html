@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>No Menu 小红书酒吧分组页工具</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d0d0d;
+      --panel: #151515;
+      --line: #2b2822;
+      --text: #f5f1e8;
+      --muted: #b8b0a2;
+      --faint: #756f65;
+      --gold: #c6a875;
+      --bronze: #7c5638;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(360px, 480px) minmax(0, 1fr);
+    }
+
+    .sidebar {
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: #101010;
+      padding: 28px;
+    }
+
+    .brand {
+      margin-bottom: 28px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+    }
+
+    .brand .rule {
+      width: 112px;
+      height: 2px;
+      margin: 15px 0 12px;
+      background: var(--bronze);
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .group {
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .group-title {
+      margin: 0 0 12px;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 12px;
+      outline: none;
+    }
+
+    .field input,
+    .field select {
+      height: 42px;
+    }
+
+    .field textarea {
+      min-height: 260px;
+      padding-top: 10px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: rgba(198, 168, 117, 0.72);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .action {
+      height: 44px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .action.primary {
+      border-color: var(--bronze);
+      background: var(--text);
+      color: #0d0d0d;
+      font-weight: 700;
+    }
+
+    .action:hover {
+      border-color: rgba(198, 168, 117, 0.5);
+    }
+
+    .hint {
+      margin: 10px 0 0;
+      color: var(--faint);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .stage {
+      min-width: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      background:
+        linear-gradient(rgba(245, 241, 232, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245, 241, 232, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+    }
+
+    .preview-wrap {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 36px;
+    }
+
+    .preview-frame {
+      width: min(520px, 100%);
+      aspect-ratio: 3 / 4;
+      display: grid;
+      place-items: center;
+      background: #080808;
+      border: 1px solid var(--line);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      background: #101010;
+    }
+
+    .metric {
+      min-height: 76px;
+      padding: 16px 20px;
+      border-right: 1px solid var(--line);
+    }
+
+    .metric:last-child {
+      border-right: 0;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 920px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .meta {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>NO MENU<br>酒吧分组页</h1>
+        <div class="rule"></div>
+        <p>第三张及后续图片使用：只按酒吧分 section 展示新上 Tap，不加额外标题。</p>
+      </div>
+
+      <section class="group">
+        <h2 class="group-title">Source</h2>
+        <div class="field">
+          <label for="dateInput">日期（仅用于文件名，可自动识别）</label>
+          <input id="dateInput" type="text" value="07.23">
+        </div>
+        <div class="field">
+          <label for="sourceInput">粘贴酒吧清单</label>
+          <textarea id="sourceInput">问·ASK
+① 生命长河 · 穿透之眼 · 新英格兰帝国 IPA · 8.2%
+
+2062
+① TERRY 酿造 · 海妖 · 酒花皮尔森 · 5.2%
+
+Much Beer
+① 彼岸酿造 · 南部之星 · 慕尼黑清亮拉格 · 4.8%
+② 香港啤酒公司 · 港岛径 · DDH 浑浊双倍 IPA · 8%
+
+夜游
+① Alus · 扳手 · 英式社交深色艾尔 · 3.8%</textarea>
+        </div>
+        <p class="hint">支持“酒吧名换行 + ① 酒厂 · 酒名 · 风格 · ABV”的格式。没有 ABV 时会自动省略。</p>
+        <div class="actions">
+          <button id="parseButton" class="action primary" type="button">生成页面</button>
+          <button id="resetButton" class="action" type="button">恢复示例</button>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group-title">Export</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="formatInput">版式</label>
+            <select id="formatInput">
+              <option value="portrait" selected>小红书 3:4 · 1080×1440</option>
+              <option value="square">方图 1:1 · 1080×1080</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pageInput">页面</label>
+            <select id="pageInput"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="filenameInput">文件名前缀</label>
+          <input id="filenameInput" type="text" value="no-menu-xhs-0723-bar-taps">
+        </div>
+        <p class="hint">下载全部会按当前分页逐张导出 PNG。若浏览器拦截多文件下载，可改为逐页下载。</p>
+        <div class="actions">
+          <button id="downloadButton" class="action primary" type="button">下载当前页</button>
+          <button id="downloadAllButton" class="action" type="button">下载全部页</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <div class="preview-wrap">
+        <div class="preview-frame" id="previewFrame">
+          <canvas id="canvas" width="1080" height="1440"></canvas>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="metric">
+          <span>Output</span>
+          <strong id="outputMetric">1080 × 1440</strong>
+        </div>
+        <div class="metric">
+          <span>Bars</span>
+          <strong id="barMetric">0</strong>
+        </div>
+        <div class="metric">
+          <span>Taps</span>
+          <strong id="tapMetric">0</strong>
+        </div>
+        <div class="metric">
+          <span>Pages</span>
+          <strong id="pageMetric">0</strong>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const colors = {
+      bg: '#090908',
+      panel: '#11100e',
+      line: '#2b2822',
+      text: '#f5f1e8',
+      muted: '#b8b0a2',
+      faint: '#756f65',
+      gold: '#c6a875',
+      bronze: '#7c5638',
+    }
+
+    const state = {
+      bars: [],
+      pages: [],
+    }
+
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    const previewFrame = document.getElementById('previewFrame')
+    const outputMetric = document.getElementById('outputMetric')
+    const barMetric = document.getElementById('barMetric')
+    const tapMetric = document.getElementById('tapMetric')
+    const pageMetric = document.getElementById('pageMetric')
+
+    const controls = {
+      date: document.getElementById('dateInput'),
+      source: document.getElementById('sourceInput'),
+      parse: document.getElementById('parseButton'),
+      reset: document.getElementById('resetButton'),
+      format: document.getElementById('formatInput'),
+      page: document.getElementById('pageInput'),
+      filename: document.getElementById('filenameInput'),
+      download: document.getElementById('downloadButton'),
+      downloadAll: document.getElementById('downloadAllButton'),
+    }
+
+    function setCanvasSize() {
+      const square = controls.format.value === 'square'
+      canvas.width = 1080
+      canvas.height = square ? 1080 : 1440
+      previewFrame.style.aspectRatio = square ? '1 / 1' : '3 / 4'
+      outputMetric.textContent = square ? '1080 × 1080' : '1080 × 1440'
+    }
+
+    function font(size, weight = 400, mono = false) {
+      const family = mono
+        ? '"SFMono-Regular", "SF Mono", Menlo, Consolas, monospace'
+        : '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif'
+      return `${weight} ${size}px ${family}`
+    }
+
+    function drawText(text, x, y, options = {}) {
+      ctx.save()
+      ctx.fillStyle = options.color || colors.text
+      ctx.font = font(options.size || 32, options.weight || 400, options.mono || false)
+      ctx.textBaseline = 'top'
+      if (options.letterSpacing) {
+        let currentX = x
+        for (const char of text) {
+          ctx.fillText(char, currentX, y)
+          currentX += ctx.measureText(char).width + options.letterSpacing
+        }
+      } else {
+        ctx.fillText(text, x, y)
+      }
+      ctx.restore()
+    }
+
+    function fitText(text, x, y, maxWidth, size, minSize, options = {}) {
+      let currentSize = size
+      ctx.font = font(currentSize, options.weight || 400, options.mono || false)
+      while (ctx.measureText(text).width > maxWidth && currentSize > minSize) {
+        currentSize -= 2
+        ctx.font = font(currentSize, options.weight || 400, options.mono || false)
+      }
+      drawText(text, x, y, { ...options, size: currentSize })
+      return currentSize
+    }
+
+    function roundRect(x, y, width, height, radius, fill, stroke, lineWidth = 1) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.roundRect(x, y, width, height, radius)
+      if (fill) {
+        ctx.fillStyle = fill
+        ctx.fill()
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke
+        ctx.lineWidth = lineWidth
+        ctx.stroke()
+      }
+      ctx.restore()
+    }
+
+    function drawBackground(width, height) {
+      ctx.fillStyle = colors.bg
+      ctx.fillRect(0, 0, width, height)
+      const gradient = ctx.createRadialGradient(120, 0, 20, 120, 0, 780)
+      gradient.addColorStop(0, 'rgba(80, 55, 24, 0.32)')
+      gradient.addColorStop(0.48, 'rgba(26, 22, 14, 0.18)')
+      gradient.addColorStop(1, 'rgba(9, 9, 8, 0)')
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, width, height)
+
+      ctx.save()
+      ctx.globalAlpha = 0.04
+      ctx.fillStyle = colors.text
+      for (let index = 0; index < 420; index += 1) {
+        ctx.fillRect((index * 211) % width, (index * 397) % height, 1, 1)
+      }
+      ctx.restore()
+    }
+
+    function cleanLine(line) {
+      return line
+        .replace(/^[📍•\-–—\s]+/, '')
+        .replace(/^(?:[①②③④⑤⑥⑦⑧⑨⑩]\s*|\d{1,2}(?:[).、]\s*|\s+))/, '')
+        .trim()
+    }
+
+    function parseTapLine(line) {
+      const text = cleanLine(line)
+      const parts = text.split(/[·・]/).map((part) => part.trim()).filter(Boolean)
+      const abvIndex = parts.findIndex((part) => /%$/.test(part) || /^ABV/i.test(part))
+      let abv = ''
+      if (abvIndex >= 0) {
+        abv = parts.splice(abvIndex, 1)[0].replace(/^ABV\s*/i, '')
+      }
+      if (!abv) {
+        const abvMatch = text.match(/(?:ABV\s*)?(\d+(?:\.\d+)?%)/i)
+        if (abvMatch) abv = abvMatch[1]
+      }
+      const brewery = parts[0] || ''
+      const name = parts[1] || parts[0] || text
+      const style = parts.slice(2).join(' · ')
+      return { brewery, name, style, abv, raw: text }
+    }
+
+    function isTapLine(line) {
+      return /^(?:[①②③④⑤⑥⑦⑧⑨⑩]|\d{1,2}(?:[).、]|\s+))/.test(line.trim()) || /%|ABV/i.test(line)
+    }
+
+    function parseBars(text) {
+      const bars = []
+      let current = null
+      for (const rawLine of text.split(/\n+/)) {
+        const line = rawLine.trim()
+        if (!line) continue
+        if (isTapLine(line)) {
+          if (!current) {
+            current = { name: '未分组酒吧', taps: [] }
+            bars.push(current)
+          }
+          current.taps.push(parseTapLine(line))
+        } else {
+          current = { name: cleanLine(line), taps: [] }
+          bars.push(current)
+        }
+      }
+      return bars.filter((bar) => bar.name && bar.taps.length)
+    }
+
+    function barHeight(bar, square) {
+      const itemHeight = square ? 68 : 84
+      const headerHeight = square ? 62 : 76
+      const paddingBottom = square ? 28 : 36
+      return headerHeight + bar.taps.length * itemHeight + paddingBottom
+    }
+
+    function paginateBars() {
+      const square = controls.format.value === 'square'
+      const top = square ? 154 : 188
+      const bottom = square ? 70 : 96
+      const gap = square ? 28 : 36
+      const maxBottom = canvas.height - bottom
+      const pages = []
+      let page = []
+      let y = top
+      for (const bar of state.bars) {
+        const height = barHeight(bar, square)
+        if (page.length && y + height > maxBottom) {
+          pages.push(page)
+          page = []
+          y = top
+        }
+        page.push(bar)
+        y += height + gap
+      }
+      if (page.length) pages.push(page)
+      state.pages = pages.length ? pages : [[]]
+      syncPageOptions()
+    }
+
+    function syncPageOptions() {
+      const previous = Number(controls.page.value || 0)
+      controls.page.innerHTML = ''
+      state.pages.forEach((_, index) => {
+        const option = document.createElement('option')
+        option.value = String(index)
+        option.textContent = `第 ${index + 1} 页 / 共 ${state.pages.length} 页`
+        controls.page.appendChild(option)
+      })
+      controls.page.value = String(Math.min(previous, state.pages.length - 1))
+    }
+
+    function drawHeader(width, square, pageIndex) {
+      const top = square ? 54 : 70
+      drawText('NO MENU', 64, top, {
+        size: square ? 24 : 27,
+        mono: true,
+        color: colors.gold,
+        letterSpacing: 8,
+      })
+      ctx.strokeStyle = colors.line
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      const lineY = top + (square ? 62 : 70)
+      ctx.moveTo(64, lineY)
+      ctx.lineTo(width - 64, lineY)
+      ctx.stroke()
+
+      drawText(`${pageIndex + 1}/${state.pages.length}`, width - 142, top + 14, {
+        size: square ? 24 : 28,
+        mono: true,
+        color: colors.faint,
+        letterSpacing: 1,
+      })
+    }
+
+    function drawBar(bar, x, y, width, square) {
+      const itemHeight = square ? 68 : 84
+      const headerHeight = square ? 62 : 76
+      const height = barHeight(bar, square)
+      ctx.save()
+      ctx.strokeStyle = colors.line
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(x, y)
+      ctx.lineTo(x + width, y)
+      ctx.stroke()
+      ctx.restore()
+
+      fitText(bar.name, x, y + (square ? 16 : 20), width - 110, square ? 34 : 44, 25, {
+        color: colors.gold,
+        weight: 600,
+      })
+      drawText(`${bar.taps.length} 款`, x + width - 64, y + (square ? 24 : 31), {
+        size: square ? 19 : 23,
+        color: colors.faint,
+      })
+
+      let itemY = y + headerHeight
+      bar.taps.forEach((tap, index) => {
+        drawText(String(index + 1).padStart(2, '0'), x, itemY + 3, {
+          size: square ? 18 : 22,
+          mono: true,
+          color: colors.faint,
+          letterSpacing: 1,
+        })
+        const textX = x + (square ? 50 : 62)
+        const title = tap.brewery && tap.name && tap.brewery !== tap.name
+          ? `${tap.brewery} · ${tap.name}`
+          : tap.name
+        fitText(title, textX, itemY, width - (square ? 92 : 112), square ? 27 : 34, 20, {
+          weight: 500,
+        })
+        const metaParts = []
+        if (tap.style) metaParts.push(tap.style)
+        if (tap.abv) metaParts.push(tap.abv)
+        fitText(metaParts.join(' · '), textX, itemY + (square ? 32 : 40), width - (square ? 92 : 112), square ? 18 : 22, 14, {
+          color: colors.muted,
+        })
+        itemY += itemHeight
+      })
+      return height
+    }
+
+    function drawCover() {
+      setCanvasSize()
+      paginateBars()
+      const width = canvas.width
+      const height = canvas.height
+      const square = controls.format.value === 'square'
+      const pageIndex = Number(controls.page.value || 0)
+      drawBackground(width, height)
+      drawHeader(width, square, pageIndex)
+
+      const page = state.pages[pageIndex] || []
+      let y = square ? 154 : 188
+      const x = square ? 74 : 82
+      const cardWidth = width - x * 2
+      const gap = square ? 28 : 36
+      page.forEach((bar) => {
+        y += drawBar(bar, x, y, cardWidth, square) + gap
+      })
+
+      if (!page.length) {
+        roundRect(74, square ? 230 : 320, width - 148, 220, 18, colors.panel, colors.line, 2)
+        drawText('粘贴清单后生成页面', 112, square ? 286 : 386, {
+          size: square ? 34 : 42,
+          color: colors.gold,
+          weight: 600,
+        })
+        drawText('格式：酒吧名换行，下面写 ① 酒厂 · 酒名 · 风格 · ABV', 112, square ? 344 : 452, {
+          size: square ? 20 : 24,
+          color: colors.muted,
+        })
+      }
+
+      const tapCount = state.bars.reduce((sum, bar) => sum + bar.taps.length, 0)
+      barMetric.textContent = String(state.bars.length)
+      tapMetric.textContent = String(tapCount)
+      pageMetric.textContent = String(state.pages.length)
+    }
+
+    function parseSource() {
+      const dateMatch = controls.source.value.match(/(?:20\d{2}[./-])?(\d{1,2})[./-](\d{1,2})/)
+      if (dateMatch) {
+        controls.date.value = `${dateMatch[1]}.${dateMatch[2].padStart(2, '0')}`
+      }
+      state.bars = parseBars(controls.source.value)
+      const dateKey = (controls.date.value.trim() || '0723').replace('.', '')
+      controls.filename.value = `no-menu-xhs-${dateKey}-bar-taps`
+      drawCover()
+    }
+
+    function resetExample() {
+      controls.date.value = '07.23'
+      controls.source.value = `问·ASK
+① 生命长河 · 穿透之眼 · 新英格兰帝国 IPA · 8.2%
+
+2062
+① TERRY 酿造 · 海妖 · 酒花皮尔森 · 5.2%
+
+Much Beer
+① 彼岸酿造 · 南部之星 · 慕尼黑清亮拉格 · 4.8%
+② 香港啤酒公司 · 港岛径 · DDH 浑浊双倍 IPA · 8%
+
+夜游
+① Alus · 扳手 · 英式社交深色艾尔 · 3.8%`
+      parseSource()
+    }
+
+    function downloadPage(index) {
+      controls.page.value = String(index)
+      drawCover()
+      const link = document.createElement('a')
+      const name = controls.filename.value.trim() || 'no-menu-xhs-bar-taps'
+      link.download = `${name}-${String(index + 1).padStart(2, '0')}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    }
+
+    function downloadCurrent() {
+      downloadPage(Number(controls.page.value || 0))
+    }
+
+    function downloadAll() {
+      state.pages.forEach((_, index) => {
+        window.setTimeout(() => downloadPage(index), index * 250)
+      })
+    }
+
+    controls.parse.addEventListener('click', parseSource)
+    controls.reset.addEventListener('click', resetExample)
+    controls.download.addEventListener('click', downloadCurrent)
+    controls.downloadAll.addEventListener('click', downloadAll)
+    controls.page.addEventListener('change', drawCover)
+
+    for (const input of [controls.date, controls.format, controls.filename]) {
+      input.addEventListener('input', drawCover)
+      input.addEventListener('change', drawCover)
+    }
+
+    parseSource()
+  </script>
+</body>
+</html>

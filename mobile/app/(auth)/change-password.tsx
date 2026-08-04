@@ -14,7 +14,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/authProvider'
-import { getMyTenants } from '../../lib/membershipApi'
+import { acceptTenantInvite, getMyTenants } from '../../lib/membershipApi'
+import { takePendingInviteCode } from '../../lib/pendingInvite'
 import { THEME, LAYOUT, SPACING, RADIUS } from '../../lib/theme'
 
 export default function ChangePasswordScreen() {
@@ -30,10 +31,35 @@ export default function ChangePasswordScreen() {
   }
 
   async function routeAfterForcedChange() {
+    const pendingCode = await takePendingInviteCode()
+    if (pendingCode) {
+      try {
+        const res = await acceptTenantInvite(pendingCode)
+        if (res.ok && res.tenant_id) {
+          await refreshMembership()
+          await setActiveTenantId(res.tenant_id)
+          Alert.alert('已加入门店', res.tenant_name || '欢迎使用 No Menu', [
+            {
+              text: '进入',
+              onPress: () => {
+                const isOwner = res.role === 'owner' || res.role === 'super_admin'
+                router.replace(isOwner ? '/(tabs)/taplist' : '/(tabs)')
+              },
+            },
+          ])
+          return
+        }
+      } catch (e: any) {
+        Alert.alert('密码已更新，但邀请码无效', e?.message || '请重新输入邀请码', [
+          { text: '去输入', onPress: () => router.replace('/(auth)/accept-invite') },
+        ])
+        return
+      }
+    }
+
     await refreshMembership()
     const tenants = await getMyTenants()
     if (tenants.length === 0) {
-      // New staff accounts land here before accepting an invite.
       router.replace('/(auth)/accept-invite')
       return
     }

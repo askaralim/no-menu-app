@@ -17,7 +17,7 @@
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.nomenuapp.taplist",
-      "buildNumber": "32",
+      "buildNumber": "35",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "No Menu 需要访问相册权限以保存酒单图片。",

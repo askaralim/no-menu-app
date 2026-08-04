@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>无菜单酒单商店截图生成器</title>
+  <script src="../node_modules/html2canvas/dist/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --canvas-width: 1320px;
+      --canvas-height: 2868px;
+      --preview-scale: 0.25;
+      --bg: #0d0d0d;
+      --panel: #151515;
+      --line: rgba(245, 241, 232, 0.1);
+      --text: #f5f1e8;
+      --muted: #bbb2a1;
+      --faint: #7c7467;
+      --gold: #c6a875;
+      --bronze: #7c5638;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 40px;
+      background: #090909;
+      color: var(--text);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    .topbar {
+      max-width: 1160px;
+      margin: 0 auto 32px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    .intro {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    select,
+    button {
+      height: 38px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #151515;
+      color: var(--text);
+      font: inherit;
+      padding: 0 12px;
+    }
+
+    button {
+      cursor: pointer;
+      background: #2a251d;
+      color: var(--gold);
+    }
+
+    button:hover {
+      border-color: rgba(198, 168, 117, 0.42);
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.55;
+    }
+
+    .grid {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 36px;
+    }
+
+    .shot-tools {
+      width: calc(var(--canvas-width) * var(--preview-scale));
+      min-width: 330px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .shot-tools h2 {
+      margin: 0;
+      color: var(--gold);
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .shot-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .shot-status {
+      flex-shrink: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: var(--faint);
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .shot-status.ready {
+      border-color: rgba(198, 168, 117, 0.3);
+      color: var(--gold);
+    }
+
+    .preview-frame {
+      width: calc(var(--canvas-width) * var(--preview-scale));
+      height: calc(var(--canvas-height) * var(--preview-scale));
+      min-width: 330px;
+      min-height: 717px;
+      overflow: hidden;
+      border-radius: 14px;
+      background: #000;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.52);
+    }
+
+    .preview-scale {
+      width: var(--canvas-width);
+      height: var(--canvas-height);
+      transform: scale(var(--preview-scale));
+      transform-origin: top left;
+    }
+
+    .canvas {
+      width: var(--canvas-width);
+      height: var(--canvas-height);
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 8%, rgba(124, 86, 56, 0.36), transparent 34%),
+        radial-gradient(circle at 78% 28%, rgba(198, 168, 117, 0.16), transparent 30%),
+        linear-gradient(180deg, #151515 0%, #0d0d0d 42%, #050505 100%);
+    }
+
+    .canvas::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.13;
+      background:
+        linear-gradient(90deg, rgba(245, 241, 232, 0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(245, 241, 232, 0.025) 1px, transparent 1px);
+      background-size: 11px 13px;
+      mix-blend-mode: screen;
+    }
+
+    .copy {
+      position: relative;
+      z-index: 2;
+      width: 1040px;
+      margin: 0 auto;
+      padding-top: 168px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin-bottom: 24px;
+      color: var(--gold);
+      font-size: 34px;
+      line-height: 1.3;
+      font-weight: 500;
+      letter-spacing: 7px;
+    }
+
+    .title {
+      margin: 0 auto;
+      color: var(--text);
+      font-size: 86px;
+      line-height: 1.12;
+      font-weight: 500;
+      letter-spacing: 0;
+      max-width: 1000px;
+    }
+
+    .subtitle {
+      margin: 32px auto 0;
+      max-width: 920px;
+      color: var(--muted);
+      font-size: 40px;
+      line-height: 1.42;
+      font-weight: 400;
+    }
+
+    .device {
+      position: absolute;
+      z-index: 2;
+      left: 50%;
+      bottom: -140px;
+      width: 1010px;
+      height: 2064px;
+      transform: translateX(-50%);
+      border-radius: 86px;
+      padding: 26px;
+      background: linear-gradient(145deg, #353029, #090909 48%, #282018);
+      box-shadow:
+        0 36px 92px rgba(0, 0, 0, 0.72),
+        inset 0 0 0 2px rgba(245, 241, 232, 0.09);
+    }
+
+    .screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 62px;
+      background:
+        linear-gradient(180deg, rgba(13, 13, 13, 0.9), rgba(5, 5, 5, 1)),
+        #0d0d0d;
+    }
+
+    .notch {
+      position: absolute;
+      z-index: 4;
+      top: 18px;
+      left: 50%;
+      width: 310px;
+      height: 78px;
+      transform: translateX(-50%);
+      border-radius: 0 0 38px 38px;
+      background: #050505;
+    }
+
+    .upload-label {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(245, 241, 232, 0.72);
+      text-align: center;
+      font-size: 34px;
+      line-height: 1.5;
+      padding: 120px;
+      cursor: pointer;
+      background:
+        linear-gradient(180deg, rgba(13, 13, 13, 0.1), rgba(13, 13, 13, 0.42)),
+        repeating-linear-gradient(135deg, rgba(245, 241, 232, 0.04) 0 2px, transparent 2px 18px);
+    }
+
+    .upload-label strong {
+      display: block;
+      color: var(--gold);
+      font-weight: 500;
+      margin-bottom: 14px;
+    }
+
+    .file-input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 6;
+    }
+
+    .replace-input {
+      display: none;
+    }
+
+    .uploaded {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .screen.contain .uploaded {
+      object-fit: contain;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(198, 168, 117, 0.12), transparent 34%),
+        #050505;
+      padding: 44px;
+    }
+
+    .screen.loaded .upload-label {
+      display: none;
+    }
+
+    .screen.loaded .uploaded {
+      display: block;
+    }
+
+    .screen.loaded .replace-input {
+      display: block;
+    }
+
+    @media (max-width: 920px) {
+      body {
+        padding: 24px;
+      }
+
+      .topbar,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div>
+      <h1>无菜单酒单商店截图生成器</h1>
+      <p class="intro">
+        默认导出 6.9 英寸竖屏 PNG。当前故事对应 1.2.4：今晚酒单、搜索发现、喝过与分享酒迹；点击手机区域可替换为最终真实设备截图。
+      </p>
+    </div>
+    <div class="controls">
+      <label>
+        尺寸
+        <select id="sizeSelect" onchange="setCanvasSize(this.value)">
+          <option value="1320x2868" selected>6.9 英寸竖屏：1320 × 2868</option>
+          <option value="1290x2796">6.7 英寸竖屏：1290 × 2796</option>
+          <option value="1242x2688">6.5 英寸竖屏：1242 × 2688</option>
+        </select>
+      </label>
+      <button onclick="downloadAll(this)">全部下载</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>01 今晚首页</h2>
+          <span class="shot-status">待新截图</span>
+        </div>
+        <button onclick="downloadImage('ss1', '01_今晚去哪喝.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss1">
+            <div class="copy">
+              <div class="eyebrow">今晚去哪喝</div>
+              <h3 class="title">公开酒吧与上新酒款，一页看清</h3>
+              <p class="subtitle">打开 No Menu，快速浏览今晚可去的精酿酒吧</p>
+            </div>
+            <phone-frame
+              label="待上传：首页 TONIGHT 城市标题与发现内容"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>02 搜索发现</h2>
+          <span class="shot-status">待高清截图</span>
+        </div>
+        <button onclick="downloadImage('ss2', '02_搜索发现.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss2">
+            <div class="copy">
+              <div class="eyebrow">搜索发现</div>
+              <h3 class="title">不知道喝什么，从风格开始</h3>
+              <p class="subtitle">IPA、酸、世涛、拉格与小麦，点一下就能找</p>
+            </div>
+            <phone-frame
+              label="待上传高清：搜索首页，包含风格、上新与酒厂"
+              src="file:///private/var/folders/jv/fmrvl4sd0md1qfdbzwx3dqpm0000gn/T/codex-clipboard-ef03300b-69cf-474b-8933-4dcd5dc12781.png"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>03 今晚上新</h2>
+          <span class="shot-status">待高清截图</span>
+        </div>
+        <button onclick="downloadImage('ss3', '03_今晚上新.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss3">
+            <div class="copy">
+              <div class="eyebrow">今晚上新</div>
+              <h3 class="title">先看酒标，再决定去哪喝</h3>
+              <p class="subtitle">浏览新上酒款，也能从供应较多的酒厂继续探索</p>
+            </div>
+            <phone-frame
+              label="待上传高清：搜索页上新与酒厂区域"
+              src="file:///private/var/folders/jv/fmrvl4sd0md1qfdbzwx3dqpm0000gn/T/codex-clipboard-60ac1f75-b899-4d4f-893b-864be9a32311.png"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>04 酒吧实时酒单</h2>
+          <span class="shot-status">待重拍</span>
+        </div>
+        <button onclick="downloadImage('ss4', '04_今晚在售酒单.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss4">
+            <div class="copy">
+              <div class="eyebrow">实时酒单</div>
+              <h3 class="title">每家酒吧，今晚在售一眼看清</h3>
+              <p class="subtitle">酒名、风格、ABV 与杯型价格清楚呈现</p>
+            </div>
+            <phone-frame
+              label="酒吧详情：标签与胶囊酒单（修正营业时间后重拍）"
+              src="file:///Users/askar/Downloads/beer%20list%201.PNG"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>05 我的酒迹</h2>
+          <span class="shot-status ready">可用</span>
+        </div>
+        <button onclick="downloadImage('ss5', '05_喝过的酒.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss5">
+            <div class="copy">
+              <div class="eyebrow">喝过</div>
+              <h3 class="title">喝过的酒，都留在自己的酒迹里</h3>
+              <p class="subtitle">按时间回看酒款与酒吧，也能用 Apple 保护记录</p>
+            </div>
+            <phone-frame
+              label="我的：喝过的酒款与月份时间流"
+              src="file:///var/folders/jv/fmrvl4sd0md1qfdbzwx3dqpm0000gn/T/codex-clipboard-b61675c9-4bc5-49e3-8561-7b49a320a821.png"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>06 分享酒迹</h2>
+          <span class="shot-status ready">可用</span>
+        </div>
+        <button onclick="downloadImage('ss6', '06_分享我的酒迹.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss6">
+            <div class="copy">
+              <div class="eyebrow">分享酒迹</div>
+              <h3 class="title">把最近喝过的，变成一张图</h3>
+              <p class="subtitle">酒款、酒吧与第一杯，生成图片保存或分享</p>
+            </div>
+            <phone-frame
+              label="分享酒迹：最多展示最近九款"
+              fit="contain"
+              src="file:///var/folders/jv/fmrvl4sd0md1qfdbzwx3dqpm0000gn/T/codex-clipboard-ddefd433-7c50-460d-98c3-37a703ed9716.png"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>07 酒款详情</h2>
+          <span class="shot-status ready">可用</span>
+        </div>
+        <button onclick="downloadImage('ss7', '07_酒款详情.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss7">
+            <div class="copy">
+              <div class="eyebrow">酒款详情</div>
+              <h3 class="title">单款信息，一页读清</h3>
+              <p class="subtitle">酒厂、风格、ABV、价格与供应酒吧</p>
+            </div>
+            <phone-frame
+              label="酒款详情：有真实酒标图片"
+              src="file:///Users/askar/Downloads/beer%20detail.PNG"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>08 近期活动</h2>
+          <span class="shot-status">待重拍</span>
+        </div>
+        <button onclick="downloadImage('ss8', '08_今晚近期活动.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss8">
+            <div class="copy">
+              <div class="eyebrow">近期活动</div>
+              <h3 class="title">今晚喝什么，也看看哪里有活动</h3>
+              <p class="subtitle">Happy Hour、主题活动与近期安排</p>
+            </div>
+            <phone-frame
+              label="活动列表：清理重复内容后重拍"
+              src="file:///Users/askar/Downloads/events%20list%201.PNG"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>09 城市切换</h2>
+          <span class="shot-status">可选</span>
+        </div>
+        <button onclick="downloadImage('ss9', '09_城市切换.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss9">
+            <div class="copy">
+              <div class="eyebrow">城市切换</div>
+              <h3 class="title">手动选择城市，不需要定位权限</h3>
+              <p class="subtitle">只显示已公开的真实酒吧与实时酒单</p>
+            </div>
+            <phone-frame
+              label="可选上传：首页城市选择弹层"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <template id="phoneTemplate">
+    <div class="device">
+      <div class="screen">
+        <div class="notch"></div>
+        <label class="upload-label">
+          <span>
+            <strong>点击上传真实截图</strong>
+            建议使用对应页面的手机模拟器截图
+          </span>
+          <input type="file" class="file-input" accept="image/png,image/jpeg,image/webp" onchange="loadImage(event)">
+        </label>
+        <img class="uploaded" alt="">
+        <input
+          type="file"
+          class="file-input replace-input"
+          aria-label="替换当前截图"
+          accept="image/png,image/jpeg,image/webp"
+          onchange="loadImage(event)">
+      </div>
+    </div>
+  </template>
+
+  <script>
+    customElements.define('phone-frame', class extends HTMLElement {
+      connectedCallback() {
+        const template = document.getElementById('phoneTemplate');
+        const node = template.content.cloneNode(true);
+        const label = this.getAttribute('label');
+        const src = this.getAttribute('src');
+        const fit = this.getAttribute('fit');
+        const screen = node.querySelector('.screen');
+        const img = node.querySelector('.uploaded');
+        if (label) {
+          node.querySelector('.upload-label span').append(document.createElement('br'), label);
+        }
+        if (fit === 'contain') {
+          screen.classList.add('contain');
+        }
+        if (src) {
+          img.src = src;
+          screen.classList.add('loaded');
+        }
+        this.replaceWith(node);
+      }
+    });
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function waitForImage(img) {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('上传的截图图片无法读取，请重新导出 PNG 后再试。'));
+      });
+    }
+
+    async function loadImage(event) {
+      const input = event.target;
+      const screen = input.closest('.screen');
+      const img = screen.querySelector('.uploaded');
+      if (!input.files || !input.files[0]) return;
+      screen.classList.remove('loaded');
+      try {
+        img.removeAttribute('src');
+        img.src = await readFileAsDataUrl(input.files[0]);
+        await waitForImage(img);
+        if (img.decode) await img.decode();
+        screen.classList.add('loaded');
+      } catch (error) {
+        console.error(error);
+        alert('上传的截图图片无法读取，请重新导出 PNG 后再试。');
+      }
+    }
+
+    function setCanvasSize(value) {
+      const [width, height] = value.split('x').map(Number);
+      document.documentElement.style.setProperty('--canvas-width', `${width}px`);
+      document.documentElement.style.setProperty('--canvas-height', `${height}px`);
+      document.documentElement.style.setProperty('--preview-scale', width >= 1320 ? '0.25' : '0.2666667');
+    }
+
+    async function downloadImage(containerId, filename, button) {
+      const container = document.getElementById(containerId);
+      const scaler = container.parentElement;
+      const originalTransform = scaler.style.transform;
+      const originalText = button.innerText;
+
+      button.innerText = '生成中...';
+      button.disabled = true;
+
+      try {
+        const uploadedScreen = container.querySelector('.screen.loaded');
+        if (!uploadedScreen) {
+          const ok = confirm('这个截图还没有上传真实页面截图。仍然下载占位版吗？');
+          if (!ok) return;
+        } else {
+          const uploadedImage = uploadedScreen.querySelector('.uploaded');
+          await waitForImage(uploadedImage);
+          if (uploadedImage.decode) await uploadedImage.decode();
+        }
+
+        scaler.style.transform = 'scale(1)';
+        await new Promise((resolve) => setTimeout(resolve, 80));
+
+        const width = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--canvas-width'), 10);
+        const height = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--canvas-height'), 10);
+        if (typeof html2canvas !== 'function') {
+          throw new Error('截图生成组件未加载，请确认已在 taplist-mobile 运行 npm install。');
+        }
+
+        const outputCanvas = await html2canvas(container, {
+          width,
+          height,
+          scale: 1,
+          backgroundColor: '#0d0d0d',
+          logging: false,
+          useCORS: true,
+        });
+        const dataUrl = outputCanvas.toDataURL('image/png');
+
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error(error);
+        alert('生成失败，请打开浏览器控制台查看错误。');
+      } finally {
+        scaler.style.transform = originalTransform;
+        button.innerText = originalText;
+        button.disabled = false;
+      }
+    }
+
+    async function downloadAll(button) {
+      const originalText = button.innerText;
+      button.disabled = true;
+      button.innerText = '批量生成中...';
+      const jobs = [
+        ['ss1', '01_今晚去哪喝.png'],
+        ['ss2', '02_搜索发现.png'],
+        ['ss3', '03_今晚上新.png'],
+        ['ss4', '04_今晚在售酒单.png'],
+        ['ss5', '05_喝过的酒.png'],
+        ['ss6', '06_分享我的酒迹.png'],
+        ['ss7', '07_酒款详情.png'],
+        ['ss8', '08_今晚近期活动.png'],
+        ['ss9', '09_城市切换.png'],
+      ];
+      try {
+        for (const [id, filename] of jobs) {
+          await downloadImage(id, filename, button);
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
+      } finally {
+        button.innerText = originalText;
+        button.disabled = false;
+      }
+    }
+  </script>
+</body>
+
+</html>

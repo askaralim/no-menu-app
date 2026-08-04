@@ -58,6 +58,7 @@ export default function AdminLayout({
     navItems.push({ href: '/admin/platform/cities', label: '城市管理' })
     navItems.push({ href: '/admin/platform/companies', label: '品牌/酒厂' })
     navItems.push({ href: '/admin/platform/products', label: '产品池' })
+    navItems.push({ href: '/admin/platform/support', label: '支持请求' })
   }
 
   const currentLabel =
@@ -68,6 +69,8 @@ export default function AdminLayout({
         ? '品牌/酒厂'
         : pathname.startsWith('/admin/platform/products')
           ? '产品池'
+          : pathname.startsWith('/admin/platform/support')
+            ? '支持请求'
           : '管理后台')
 
   const handleLogout = async () => {

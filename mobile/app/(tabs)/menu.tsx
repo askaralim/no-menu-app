@@ -56,7 +56,14 @@ function servingsLine(drink: DraftDrink): string | null {
   const servings = drink.servings.filter((s) => !s._deleted && s.is_active)
   if (!servings.length) return null
   return servings
-    .map((s) => `${s.label?.trim() || '规格'} ¥${s.price}`)
+    .map((s) => {
+      const parts = [
+        s.label?.trim() || null,
+        s.volume_ml ? `${s.volume_ml}ml` : null,
+        `¥${s.price}`,
+      ].filter(Boolean)
+      return parts.join(' ')
+    })
     .join(' · ')
 }
 
@@ -292,9 +299,14 @@ export default function MenuScreen() {
         : '搜索全部商品'
 
   const catalogCategories = draft?.categories ?? []
-  const categorizedIds = useMemo(
-    () => new Set(catalogCategories.map((c) => c.id)),
+  /** Drink filter rail: only enabled categories (disabled ones stay in 分类管理). */
+  const enabledCatalogCategories = useMemo(
+    () => catalogCategories.filter((c) => c.enabled),
     [catalogCategories],
+  )
+  const categorizedIds = useMemo(
+    () => new Set(enabledCatalogCategories.map((c) => c.id)),
+    [enabledCatalogCategories],
   )
   const orphanCount = useMemo(
     () => drinksMatched.filter((d) => !d.category_id || !categorizedIds.has(d.category_id)).length,
@@ -303,7 +315,7 @@ export default function MenuScreen() {
 
   const categoryRailItems = useMemo(() => {
     const items: { key: CategoryRailKey; label: string; count: number }[] = []
-    for (const cat of catalogCategories) {
+    for (const cat of enabledCatalogCategories) {
       const count = drinksMatched.filter((d) => d.category_id === cat.id).length
       items.push({ key: cat.id, label: cat.name, count })
     }
@@ -311,15 +323,15 @@ export default function MenuScreen() {
       items.push({ key: 'uncategorized', label: '未分类', count: orphanCount })
     }
     return items
-  }, [catalogCategories, drinksMatched, orphanCount, categoryRail])
+  }, [enabledCatalogCategories, drinksMatched, orphanCount, categoryRail])
 
   useEffect(() => {
-    const defaultKey = pickDefaultCategoryKey(catalogCategories)
+    const defaultKey = pickDefaultCategoryKey(enabledCatalogCategories)
     const currentOk =
       categoryRail != null &&
       (categoryRail === 'uncategorized'
-        ? orphanCount > 0 || catalogCategories.length === 0
-        : catalogCategories.some((c) => c.id === categoryRail))
+        ? orphanCount > 0 || enabledCatalogCategories.length === 0
+        : enabledCatalogCategories.some((c) => c.id === categoryRail))
 
     if (currentOk) return
 
@@ -327,10 +339,10 @@ export default function MenuScreen() {
       setCategoryRail(defaultKey)
       return
     }
-    if (orphanCount > 0 || catalogCategories.length === 0) {
+    if (orphanCount > 0 || enabledCatalogCategories.length === 0) {
       setCategoryRail('uncategorized')
     }
-  }, [catalogCategories, categoryRail, orphanCount])
+  }, [enabledCatalogCategories, categoryRail, orphanCount])
 
   const drinksForList = useMemo(() => {
     if (!categoryRail) return []
@@ -388,7 +400,7 @@ export default function MenuScreen() {
           ListHeaderComponent={
             categories.length === 0 ? null : (
               <Text style={styles.categoryPolicyHint}>
-                关闭分类后，No Menu 酒单与点单都不会显示该分类下的商品；商品仍保留在商品库。请用开关管理，不支持删除分类（避免误删其下商品）。
+                关闭分类后，公开酒单不会显示该分类下的商品；商品仍保留在商品库。请用开关管理，不支持删除分类（避免误删其下商品）。
               </Text>
             )
           }

@@ -20,13 +20,13 @@ type AuthContextType = {
   setActiveTenantId: (tenantId: string) => Promise<void>
 }
 
-// Missing flag (older backend) is treated as enabled so bars keep POS until
-// the opt-in column ships; once present, only true shows 点单/订单.
+// Ordering is opt-in. Missing flags fail closed so stale membership payloads
+// never expose ordering surfaces for ordinary menu-management tenants.
 function resolveOrdering(row: MyTenant | null | undefined): boolean {
   if (row && 'ordering_enabled' in row && row.ordering_enabled !== undefined) {
     return row.ordering_enabled === true
   }
-  return true
+  return false
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -34,7 +34,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   tenantId: null,
   role: null,
-  orderingEnabled: true,
+  orderingEnabled: false,
   memberships: [],
   needsTenantSelection: false,
   isLoading: true,
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [role, setRole] = useState<UserRole | null>(null)
-  const [orderingEnabled, setOrderingEnabled] = useState(true)
+  const [orderingEnabled, setOrderingEnabled] = useState(false)
   const [memberships, setMemberships] = useState<MyTenant[]>([])
   const [needsTenantSelection, setNeedsTenantSelection] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -81,10 +81,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else if (rows.length > 1) {
       setTenantId(null)
       setRole(null)
+      setOrderingEnabled(false)
       setNeedsTenantSelection(true)
     } else {
       setTenantId(null)
       setRole(null)
+      setOrderingEnabled(false)
       setNeedsTenantSelection(false)
       await AsyncStorage.removeItem(ACTIVE_TENANT_KEY)
     }
@@ -100,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setMemberships([])
       setTenantId(null)
       setRole(null)
+      setOrderingEnabled(false)
       setNeedsTenantSelection(false)
     } finally {
       setIsLoading(false)
@@ -174,6 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setMemberships([])
           setTenantId(null)
           setRole(null)
+          setOrderingEnabled(false)
           setNeedsTenantSelection(false)
           setIsLoading(false)
           void AsyncStorage.removeItem(ACTIVE_TENANT_KEY)

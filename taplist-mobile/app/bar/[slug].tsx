@@ -209,7 +209,7 @@ export default function BarDetailScreen() {
                     </TapListSection>
                   ) : null}
                   {comingSoon.length > 0 ? (
-                    <TapListSection title={`即将上枪 ${comingSoon.length}`}>
+                    <TapListSection title={`即将上新 ${comingSoon.length}`}>
                       {comingSoon.map((drink) => (
                         <BeerListCard
                           key={drink.id}

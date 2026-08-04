@@ -1,0 +1,291 @@
+source_name,normalized_key,canonical_zh,canonical_en,display_name,english_mapping_source,entity_type,suggested_country,suggested_country_code,country_confidence,raw_country_values,drink_count,public_visible_count,sample_drink_names,review_note
+蔓延,manyan brewing,蔓延,MANYAN Brewing,蔓延 / MANYAN Brewing,manual_known_mapping,brewery_brand,China,CN,medium,武汉:8,20,8,拐点|北地显影|像蔓越莓|立方|博卡|短相思|长相思|大师的疯狂|乱语|中途乐园,
+Fever,fever,,Fever,Fever,source_ascii,brewery_brand,China,CN,medium,西安:3,20,5,谷仓铜|全明|另一个吻·香草|Fever|搜魂者|折射|谷仓金|想象中的雨|金星的日落|星空领航员,
+Alus,alus,,Alus,Alus,source_ascii,brewery_brand,China,CN,medium,深圳:6,17,6,喵醺|南方|泡泡浴|饼干|沙滩|喵熏|醉狗Vol.03,
+艾尔复兴,ale renaissance,艾尔复兴,Ale Renaissance,艾尔复兴 / Ale Renaissance,manual_known_mapping,brewery_brand,United States,US,high,美国:8,14,8,一起漂浮|无序：汪汪惊喜|无序冰壶|单板滑雪|双板滑雪|瑞瓦卡酒花|米兰日落|干就完了|哈瓦那辣椒|机器罢工嘴巴别停,
+邪恶双子,evil twin brewing,邪恶双子,Evil Twin Brewing,邪恶双子 / Evil Twin Brewing,manual_known_mapping,brewery_brand,United States,US,high,美国:11,13,11,此店需要更多更大的啤酒|秋日酸艾|蜜桃奶油|酸IPA万岁|更多老熊先生|更多更朦胧的窗户|更多愚蠢果汁梦|白葡桑格利亚|芒果拉达城市酸饮|地狱烟火,
+明日酿造,mingri brewing,明日酿造,Mingri Brewing,明日酿造 / Mingri Brewing,manual_known_mapping,brewery_brand,China,CN,medium,上海:5,12,5,长相思|全村的希望 大米拉格|老板的最爱 双倍IPA|超级西楚 双倍浑浊IPA|明日繁华Lite DDH浑浊IPA|恐怖如斯 帝国IPA|风景这边独好|Come Back to 2016|多莉塔 冽光|太平洋四重奏,
+退界,tuijie,退界,Tuijie,退界 / Tuijie,manual_known_mapping,brewery_brand,China,CN,medium,成都:4,11,4,下快攻|小夫|晓夫|爸爸 papa|狄俄尼索斯的眼泪|爸爸papà,
+赤屿谷盗,chiyu gudao,赤屿谷盗,Chiyu Gudao,赤屿谷盗 / Chiyu Gudao,manual_known_mapping,brewery_brand,China,CN,medium,海南:3,10,6,一丛殊花|依帕|米贼|凌晨四点|盐而盗柠|长夏有风,
+彼岸酿造,bian brewing,彼岸酿造,Bian Brewing,彼岸酿造 / Bian Brewing,manual_known_mapping,brewery_brand,,,low,乐山:1,9,1,望梅止渴|月光宝盒|寒鸦与钟声|南部之星|黑尔戈蓝岛日落|春日来信|夜曲,
+勿幕,wumue brewery,勿幕,WUMUE Brewery,勿幕 / WUMUE Brewery,manual_known_mapping,brewery_brand,China,CN,medium,西安:3,9,5,暗椰|烟熏乌梅|冰川|战斧之力|盐洞·柑橘风暴眼|解构|山核桃覆盆子|丛林浓汁|小青瓜有机农甜米泥,
+玄水屋,xuan shui wu,玄水屋,Xuan Shui Wu,玄水屋 / Xuan Shui Wu,manual_known_mapping,brewery_brand,China,CN,medium,西安:4,9,4,白天使|星际物质|黑武士|奖励关卡|卡里斯马,
+哈德逊河谷,hudson valley brewery,哈德逊河谷,Hudson Valley Brewery,哈德逊河谷 / Hudson Valley Brewery,manual_known_mapping,brewery_brand,United States,US,high,美国:2,8,2,游隼|河谷2024|杂散光|河谷|动物气球|剪影桃|巴比伦|潜行故障,
+TAPSTAR,tapstar,,TAPSTAR,TAPSTAR,source_ascii,brewery_brand,,,low,贵阳:1,8,3,有限社交|北极星|有限社交 美式淡色艾尔|北极星 浑浊IPA|老伙计 西海岸IPA|凉拖拖 青柠皮尔斯|鸵鸟的牙,
+凯西,casey brewing & blending,凯西,Casey Brewing & Blending,凯西 / Casey Brewing & Blending,manual_known_mapping,brewery_brand,United States,US,high,美国:4,7,5,精明强干|幸运|焦点二号|原始灵魂示意|范尼拉瑰红1号,
+洛莱,洛莱,洛莱,,洛莱,needs_manual_en,brewery_brand,United States,US,high,美国:2,7,2,鬣狗|美洲豹|阿尔克斯|解药|阿尔科莱|卢比孔3|雄鹰,English name not found safely; fill from checked mapping or official source
+山雀,mountain finch,山雀,Mountain Finch,山雀 / Mountain Finch,manual_known_mapping,brewery_brand,China,CN,medium,上海:4|上海嘉定:3,7,7,旋转木马|攀石|不误正夜|重逢|老炮|复仇之怒|祁门晨雾,
+虽吾,suiwu,虽吾,Suiwu,虽吾 / Suiwu,manual_known_mapping,brewery_brand,China,CN,medium,苏州:2|扬州:2,7,4,小花冠|飞越云海|金狼之舞|日出茶山|果浪澳游,
+疯熊,crazy bear,疯熊,Crazy Bear,疯熊 / Crazy Bear,manual_known_mapping,brewery_brand,China,CN,medium,广州:1,6,1,啤酒实习生2603|实习生2603|流动|梦|轻硫醇皮尔森,
+狐朋酿造,hupeng brewing,狐朋酿造,Hupeng Brewing,狐朋酿造 / Hupeng Brewing,manual_known_mapping,brewery_brand,,,none,,6,0,鸡有鸡味|莓好前程|海边驿站|马上有桔|酒花英雄|后花园的混合黄皮,
+辉光,glow brewing,辉光,Glow Brewing,辉光 / Glow Brewing,manual_known_mapping,brewery_brand,United States,US,high,美国:2,6,2,醉佳|白日梦|全场最佳|古龙水|白板,
+回头客,returning guest,回头客,Returning Guest,回头客 / Returning Guest,manual_known_mapping,brewery_brand,United States,US,high,美国:2,6,2,果味满满19号|果味满满|卡南代瓜优质拉格|新英格兰99号|德式皮尔森,
+撬啤酿造,qiao beer brewing,撬啤酿造,Qiao Beer Brewing,撬啤酿造 / Qiao Beer Brewing,manual_known_mapping,brewery_brand,,,none,,6,6,内个周五十一点半有个哥们进来就吐两个小时，吐了四次吐得很准非常感谢|水库浪子 桔柚π|卡拉斯科|Naive|水库浪子|风戏水,
+僧侣,monk brewing,僧侣,Monk Brewing,僧侣 / Monk Brewing,manual_known_mapping,brewery_brand,United States,US,high,美国:2,6,3,Kid Casino|笔触|洛城之花|依旧交通粘性|背包|雾窗,
+野鹅微醺,wild goose tipsy,野鹅微醺,Wild Goose Tipsy,野鹅微醺 / Wild Goose Tipsy,manual_known_mapping,brewery_brand,,,none,,6,0,富贵榴|朝花三倍干头浑浊IPA|陈皮的旅行|南境之花NZ-105|无限螺旋|南境之花,
+本末·特伦,本末·特伦,本末·特伦,,本末·特伦,needs_manual_en,brewery_brand,United States,US,high,美国:2,5,2,劫尽|业劫|历史学会|本劫,English name not found safely; fill from checked mapping or official source
+赤耳,赤耳,赤耳,,赤耳,needs_manual_en,brewery_brand,China,CN,medium,北京:1,5,2,黄米拉格|西瓜商店|阳光洒肩头|普通的一天|青芒果芭乐,English name not found safely; fill from checked mapping or official source
+另一半,另一半,另一半,,另一半,needs_manual_en,brewery_brand,United States,US,high,美国:3,5,3,番茄工厂|另一半12周年|速溶绿色|旋涡3号|小小4周年,English name not found safely; fill from checked mapping or official source
+矛盾体,矛盾体,矛盾体,,矛盾体,needs_manual_en,brewery_brand,United States,US,high,美国:1,5,1,亚特兰大出口|基数|法里纳|命令行编译|弧度,English name not found safely; fill from checked mapping or official source
+欧米尼珀罗,omnipollo,欧米尼珀罗,Omnipollo,欧米尼珀罗 / Omnipollo,manual_known_mapping,brewery_brand,Sweden,SE,high,瑞典:2,5,2,史蒂夫之斧|3乘3七号|笑脸|不二之选,
+虽吴,虽吴,虽吴,,虽吴,needs_manual_en,brewery_brand,China,CN,medium,苏州:1,5,1,小花冠|凤尾果香|金狼之舞,English name not found safely; fill from checked mapping or official source
+野鹅,野鹅,野鹅,,野鹅,needs_manual_en,brewery_brand,,,low,石家庄:1,5,2,夜莺|无限螺旋|南境之花|桃林漫步,English name not found safely; fill from checked mapping or official source
+远山,远山,远山,,远山,needs_manual_en,brewery_brand,,,none,,5,1,瓦哈卡日出|阿尔派恩淡影|阿尔卑斯|布里斯班淡影,English name not found safely; fill from checked mapping or official source
+半颠,半颠,半颠,,半颠,needs_manual_en,brewery_brand,,,none,,4,2,余光未尽 皮尔森|暮光犹存|生龙活虎|伦敦啸叫,English name not found safely; fill from checked mapping or official source
+彼岸,彼岸,彼岸,,彼岸,needs_manual_en,brewery_brand,,,none,,4,1,老城琥珀|望梅止渴|夜曲|爱因斯坦的数数学成绩单,English name not found safely; fill from checked mapping or official source
+费登斯,费登斯,费登斯,,费登斯,needs_manual_en,brewery_brand,United States,US,high,美国:2,4,2,精益求精|元素的艺术|海冬|桃桃农夫,English name not found safely; fill from checked mapping or official source
+疯熊工业,疯熊工业,疯熊工业,,疯熊工业,needs_manual_en,brewery_brand,China,CN,medium,广州:1,4,1,东分影|梦|像风,English name not found safely; fill from checked mapping or official source
+裂变酿造,裂变酿造,裂变酿造,,裂变酿造,needs_manual_en,brewery_brand,China,CN,medium,佛山:1,4,1,星云甘露|Nebula Nectar|春季拉格|眩目,English name not found safely; fill from checked mapping or official source
+蔓延酿造,蔓延酿造,蔓延酿造,,蔓延酿造,needs_manual_en,brewery_brand,China,CN,medium,武汉:2,4,2,辛香农舍|辛青农舍|北地显影|立方,English name not found safely; fill from checked mapping or official source
+闪电萨拉玛,闪电萨拉玛,闪电萨拉玛,,闪电萨拉玛,needs_manual_en,brewery_brand,,,none,,4,0,低档狂飙|头脑风暴|幻境拉拉|芭比之殇,English name not found safely; fill from checked mapping or official source
+生命长河,生命长河,生命长河,,生命长河,needs_manual_en,brewery_brand,United States,US,high,美国:2,4,2,全视之眼|纪念日10|双重黑喵,English name not found safely; fill from checked mapping or official source
+无毛用,无毛用,无毛用,,无毛用,needs_manual_en,brewery_brand,China,CN,medium,广州:2,4,3,岁寒 柏木酒酸|岁寒|阿佳|空行母,English name not found safely; fill from checked mapping or official source
+云朴精酿,yunpu craft,云朴精酿,Yunpu Craft,云朴精酿 / Yunpu Craft,manual_known_mapping,brewery_brand,China,CN,medium,昆明:1,4,1,风暴中心 金桔芒果酸|今日与春风相会,
+百威,百威,百威,,百威,needs_manual_en,brewery_brand,,,none,,3,0,测试|测试2|测试99,English name not found safely; fill from checked mapping or official source
+凡人,凡人,凡人,,凡人,needs_manual_en,brewery_brand,United States,US,high,美国:1,3,1,飞履|配瑟芬|苍穹之神,English name not found safely; fill from checked mapping or official source
+风土,风土,风土,,风土,needs_manual_en,brewery_brand,,,none,,3,0,雪峰|第一个纪念日,English name not found safely; fill from checked mapping or official source
+风土酿造,风土酿造,风土酿造,,风土酿造,needs_manual_en,brewery_brand,,,none,,3,2,岩上|第一个纪念日|布拉格金色愿望,English name not found safely; fill from checked mapping or official source
+风味屋,风味屋,风味屋,,风味屋,needs_manual_en,brewery_brand,China,CN,medium,西安:1,3,1,万万岁|长安|胡啊柚,English name not found safely; fill from checked mapping or official source
+火碳,火碳,火碳,,火碳,needs_manual_en,brewery_brand,Hong Kong,HK,high,香港:1,3,3,少甜少冰|港式冻柠茶,English name not found safely; fill from checked mapping or official source
+酒花僵尸,酒花僵尸,酒花僵尸,,酒花僵尸,needs_manual_en,brewery_brand,United States,US,high,美国:1,3,1,僵尸猎鸭人|冰冰乐6号|墨西哥勇士,English name not found safely; fill from checked mapping or official source
+酒花民族,酒花民族,酒花民族,,酒花民族,needs_manual_en,brewery_brand,Australia,AU,high,澳大利亚:2,3,2,灰猎犬|大红蜂|Fresh Hop,English name not found safely; fill from checked mapping or official source
+郡区,郡区,郡区,,郡区,needs_manual_en,brewery_brand,United States,US,high,美国:1,3,1,酒花倾慕 美式淡色艾尔|梦想Rêve Coffee Stout|梦想,English name not found safely; fill from checked mapping or official source
+狸造,狸造,狸造,,狸造,needs_manual_en,brewery_brand,China,CN,medium,北京:3,3,3,玄骥|加州海风,English name not found safely; fill from checked mapping or official source
+美西,美西,美西,,美西,needs_manual_en,brewery_brand,China,CN,medium,成都:3,3,3,金雀花|玉米诱惑,English name not found safely; fill from checked mapping or official source
+葡月圣树,葡月圣树,葡月圣树,,葡月圣树,needs_manual_en,brewery_brand,United States,US,high,美国:2,3,2,图尔帕|朝曦|禅宗科学家,English name not found safely; fill from checked mapping or official source
+浦江半岛,浦江半岛,浦江半岛,,浦江半岛,needs_manual_en,brewery_brand,,,none,,3,1,副本|月光,English name not found safely; fill from checked mapping or official source
+三子,三子,三子,,三子,needs_manual_en,brewery_brand,United States,US,high,美国:2,3,2,维京征服|松脆博伊斯|海洋公园,English name not found safely; fill from checked mapping or official source
+善良胡夫,善良胡夫,善良胡夫,,善良胡夫,needs_manual_en,brewery_brand,United States,US,high,美国:1,3,1,120美元2号|流连忘返3号|呆瓜再见,English name not found safely; fill from checked mapping or official source
+索拉里斯,索拉里斯,索拉里斯,,索拉里斯,needs_manual_en,brewery_brand,United States,US,high,美国:1,3,1,永恒之注|永恒之涯|异岛,English name not found safely; fill from checked mapping or official source
+田园酿造,田园酿造,田园酿造,,田园酿造,needs_manual_en,brewery_brand,China,CN,medium,云南:1,3,1,火把梨|水蜜桃|哈巴苹果,English name not found safely; fill from checked mapping or official source
+西澳山脊,西澳山脊,西澳山脊,,西澳山脊,needs_manual_en,brewery_brand,Australia,AU,high,澳大利亚:3,3,3,混世魔王|松果天梯|鬼源物语,English name not found safely; fill from checked mapping or official source
+小荷,小荷,小荷,,小荷,needs_manual_en,brewery_brand,China,CN,medium,合肥:2,3,2,黑羽|蜜瓜龙2.0|蜜瓜龙,English name not found safely; fill from checked mapping or official source
+小熊贝莲,小熊贝莲,小熊贝莲,,小熊贝莲,needs_manual_en,brewery_brand,Japan,JP,high,日本:3,3,3,金标|拉格,English name not found safely; fill from checked mapping or official source
+鸭池,duckpond,鸭池,Duckpond,鸭池 / Duckpond,manual_known_mapping,brewery_brand,,,conflict,美国:1|瑞典:1,3,2,孤注一掷|黑暗之翼|奢华冰冻池塘,
+云泥,yunni,云泥,Yunni,云泥 / Yunni,manual_known_mapping,brewery_brand,China,CN,medium,昆明:1|云南:1,3,2,浮柚|翠屿,
+云朴,yunpu,云朴,Yunpu,云朴 / Yunpu,manual_known_mapping,brewery_brand,China,CN,medium,昆明:1|云南:1,3,2,南半球漂流|融雪之前|风暴中心,
+云石,云石,云石,,云石,needs_manual_en,brewery_brand,United Kingdom,GB,high,英国:3,3,3,伯爵茶|曼彻斯特|此即大海,English name not found safely; fill from checked mapping or official source
+制乐厂,制乐厂,制乐厂,,制乐厂,needs_manual_en,brewery_brand,China,CN,medium,南京:2,3,2,青年养老院|小青龙|归,English name not found safely; fill from checked mapping or official source
+Deadman,deadman,,Deadman,Deadman,source_ascii,brewery_brand,Hong Kong,HK,high,香港:2,3,2,酒花大盗,
+Dr.Lab,dr.lab,,Dr.Lab,Dr.Lab,source_ascii,brewery_brand,,,none,,3,1,一路发达4周年|Fredrick's Violin V26|DR 凉茶,
+2062&独墨,2062&独墨,2062&独墨,,2062&独墨,needs_manual_en,brewery_brand,,,low,上海&石家庄:1,2,1,Nippori 日暮里|日暮里/Nippori,English name not found safely; fill from checked mapping or official source
+艾尔复兴*布鲁乔司,艾尔复兴*布鲁乔司,艾尔复兴*布鲁乔司,,艾尔复兴*布鲁乔司,needs_manual_en,brewery_brand,United States,US,high,美国:2,2,2,中古小丑|暗夜医者,English name not found safely; fill from checked mapping or official source
+艾薇儿,艾薇儿,艾薇儿,,艾薇儿,needs_manual_en,brewery_brand,,,none,,2,0,松弛,English name not found safely; fill from checked mapping or official source
+百得福,百得福,百得福,,百得福,needs_manual_en,brewery_brand,Czech Republic,CZ,high,捷克:1,2,1,皮尔森生啤|窑臧皮尔森,English name not found safely; fill from checked mapping or official source
+班克斯,班克斯,班克斯,,班克斯,needs_manual_en,brewery_brand,Australia,AU,high,澳大利亚:2,2,2,班克斯先生|西岸浮光,English name not found safely; fill from checked mapping or official source
+本末特伦,本末特伦,本末特伦,,本末特伦,needs_manual_en,brewery_brand,United States,US,high,美国:1,2,1,劫尽|本劫,English name not found safely; fill from checked mapping or official source
+鼻行兽,鼻行兽,鼻行兽,,鼻行兽,needs_manual_en,brewery_brand,China,CN,medium,西安:1,2,2,凯库拉的鲸|燧石与板岩,English name not found safely; fill from checked mapping or official source
+比尔斯兄弟,比尔斯兄弟,比尔斯兄弟,,比尔斯兄弟,needs_manual_en,brewery_brand,United States,US,high,美国:2,2,2,勒克斯|为生活干杯,English name not found safely; fill from checked mapping or official source
+朝日,朝日,朝日,,朝日,needs_manual_en,brewery_brand,Japan,JP,high,日本:2,2,2,黑生|复活生啤,English name not found safely; fill from checked mapping or official source
+齿轮精酿,齿轮精酿,齿轮精酿,,齿轮精酿,needs_manual_en,brewery_brand,,,none,,2,1,幸运鹅|怒饮酒花儿,English name not found safely; fill from checked mapping or official source
+分野酿造,分野酿造,分野酿造,,分野酿造,needs_manual_en,brewery_brand,China,CN,medium,山东:1,2,1,绕了地球|沧龙,English name not found safely; fill from checked mapping or official source
+风险酿造,风险酿造,风险酿造,,风险酿造,needs_manual_en,brewery_brand,,,none,,2,2,奇卡诺|蜜瓜梦,English name not found safely; fill from checked mapping or official source
+疯熊工业 / Crazy Bear Industry,crazy bear industry,疯熊工业 / Crazy Bear Industry,Crazy Bear Industry,疯熊工业 / Crazy Bear Industry / Crazy Bear Industry,source_mixed_latin_chunk,brewery_brand,,,none,,2,0,啤酒实习生2603|东分影,
+佛里蒙,佛里蒙,佛里蒙,,佛里蒙,needs_manual_en,brewery_brand,United States,US,high,美国:1,2,1,锈钉 2024|黑星波本,English name not found safely; fill from checked mapping or official source
+谷语者,谷语者,谷语者,,谷语者,needs_manual_en,brewery_brand,,,none,,2,0,突袭面包店,English name not found safely; fill from checked mapping or official source
+航标酿造,航标酿造,航标酿造,,航标酿造,needs_manual_en,brewery_brand,,,none,,2,0,山野拾荒者|极光觅月,English name not found safely; fill from checked mapping or official source
+和弦,和弦,和弦,,和弦,needs_manual_en,brewery_brand,,,none,,2,1,蓝莓快车 世涛|冰镇大西瓜绿茶,English name not found safely; fill from checked mapping or official source
+红男爵,红男爵,红男爵,,红男爵,needs_manual_en,brewery_brand,,,none,,2,0,杏杏点灯,English name not found safely; fill from checked mapping or official source
+洄游,洄游,洄游,,洄游,needs_manual_en,brewery_brand,,,none,,2,1,幽澜|紫露,English name not found safely; fill from checked mapping or official source
+洄游造物,洄游造物,洄游造物,,洄游造物,needs_manual_en,brewery_brand,,,none,,2,0,紫露,English name not found safely; fill from checked mapping or official source
+会饮,会饮,会饮,,会饮,needs_manual_en,brewery_brand,,,none,,2,0,山麓,English name not found safely; fill from checked mapping or official source
+会饮酿造,会饮酿造,会饮酿造,,会饮酿造,needs_manual_en,brewery_brand,China,CN,medium,北京:1,2,1,食野之苹|涌现,English name not found safely; fill from checked mapping or official source
+或不凡,或不凡,或不凡,,或不凡,needs_manual_en,brewery_brand,,,none,,2,0,黄河之水,English name not found safely; fill from checked mapping or official source
+佳卡哈,佳卡哈,佳卡哈,,佳卡哈,needs_manual_en,brewery_brand,,,none,,2,0,阿罗哈POG西打,English name not found safely; fill from checked mapping or official source
+酒花农场,酒花农场,酒花农场,,酒花农场,needs_manual_en,brewery_brand,,,none,,2,1,山间酸,English name not found safely; fill from checked mapping or official source
+卡布拉多,卡布拉多,卡布拉多,,卡布拉多,needs_manual_en,brewery_brand,,,none,,2,0,西普西普,English name not found safely; fill from checked mapping or official source
+科隆巴赫,科隆巴赫,科隆巴赫,,科隆巴赫,needs_manual_en,brewery_brand,Germany,DE,high,德国:1,2,1,科墨堡皮尔森|科隆巴赫皮尔森,English name not found safely; fill from checked mapping or official source
+农舍山,农舍山,农舍山,,农舍山,needs_manual_en,brewery_brand,United States,US,high,美国:2,2,2,弗洛伦萨|安娜,English name not found safely; fill from checked mapping or official source
+澎湃家族,澎湃家族,澎湃家族,,澎湃家族,needs_manual_en,brewery_brand,Belgium,BE,high,比利时:1,2,1,树莓兰比克|樱桃兰比克,English name not found safely; fill from checked mapping or official source
+秦人造,秦人造,秦人造,,秦人造,needs_manual_en,brewery_brand,,,none,,2,1,西安Summer|柑橘起源,English name not found safely; fill from checked mapping or official source
+山丘,山丘,山丘,,山丘,needs_manual_en,brewery_brand,,,none,,2,1,萨兹公爵,English name not found safely; fill from checked mapping or official source
+斯莫及,斯莫及,斯莫及,,斯莫及,needs_manual_en,brewery_brand,,,none,,2,0,皮纳科达拉|芒果,English name not found safely; fill from checked mapping or official source
+虽吴酿造,虽吴酿造,虽吴酿造,,虽吴酿造,needs_manual_en,brewery_brand,,,none,,2,0,小花冠 墨西哥拉格|小花冠,English name not found safely; fill from checked mapping or official source
+天使之翼,天使之翼,天使之翼,,天使之翼,needs_manual_en,brewery_brand,United States,US,high,美国:2,2,2,双倍拿撒勒|摩卡,English name not found safely; fill from checked mapping or official source
+未索之境,未索之境,未索之境,,未索之境,needs_manual_en,brewery_brand,China,CN,medium,成都:2,2,2,西西里橙|琥珀,English name not found safely; fill from checked mapping or official source
+稳态,稳态,稳态,,稳态,needs_manual_en,brewery_brand,,,none,,2,0,螺旋|生化梦境,English name not found safely; fill from checked mapping or official source
+乌苏,乌苏,乌苏,,乌苏,needs_manual_en,brewery_brand,,,none,,2,0,乌苏威士忌风味|乌苏楼兰秘酿,English name not found safely; fill from checked mapping or official source
+犀首田园,犀首田园,犀首田园,,犀首田园,needs_manual_en,brewery_brand,,,none,,2,1,送你一朵小红花|云边有座小卖部,English name not found safely; fill from checked mapping or official source
+香港啤酒公司,hong kong beer co.,香港啤酒公司,Hong Kong Beer Co.,香港啤酒公司 / Hong Kong Beer Co.,manual_known_mapping,brewery_brand,Hong Kong,HK,high,香港:1|中国香港:1,2,2,大浪湾|冷萃马赛克,
+想象中的雨,想象中的雨,想象中的雨,,想象中的雨,needs_manual_en,brewery_brand,,,none,,2,1,Fever,English name not found safely; fill from checked mapping or official source
+小回,小回,小回,,小回,needs_manual_en,brewery_brand,,,none,,2,1,爆裂引擎|电气涡轮,English name not found safely; fill from checked mapping or official source
+修订,修订,修订,,修订,needs_manual_en,brewery_brand,,,none,,2,0,三重未知|翡翠湾,English name not found safely; fill from checked mapping or official source
+以及,以及,以及,,以及,needs_manual_en,brewery_brand,,,none,,2,0,潮汐热吻,English name not found safely; fill from checked mapping or official source
+以及酿造,以及酿造,以及酿造,,以及酿造,needs_manual_en,brewery_brand,China,CN,medium,西安:1,2,1,打个大西瓜|狗头枣,English name not found safely; fill from checked mapping or official source
+悠航,悠航,悠航,,悠航,needs_manual_en,brewery_brand,,,none,,2,1,此刻是吾|猴拳,English name not found safely; fill from checked mapping or official source
+远山啤酒,远山啤酒,远山啤酒,,远山啤酒,needs_manual_en,brewery_brand,,,none,,2,1,云雾之峰|莱茵淡影,English name not found safely; fill from checked mapping or official source
+纸飞机,纸飞机,纸飞机,,纸飞机,needs_manual_en,brewery_brand,,,none,,2,1,洋流上下 TDH帝国浑浊IPA|临界,English name not found safely; fill from checked mapping or official source
+左手巨人,左手巨人,左手巨人,,左手巨人,needs_manual_en,brewery_brand,United Kingdom,GB,high,英国:2,2,2,双城记|自在跑,English name not found safely; fill from checked mapping or official source
+Guinness,guinness,,Guinness,Guinness,source_ascii,brewery_brand,,,none,,2,2,世涛|健力士 Guinness,
+HES PER,hes per,,HES PER,HES PER,source_ascii,brewery_brand,China,CN,medium,东莞:2,2,2,松荫|夏沁,
+HESPER,hesper,,HESPER,HESPER,source_ascii,brewery_brand,China,CN,medium,东莞:1,2,1,夏沁,
+Liquid's Tag,liquid's tag,,Liquid's Tag,Liquid's Tag,source_ascii,brewery_brand,China,CN,medium,上海:1,2,1,从我的吧台滚出去,
+OOO:,ooo:,,OOO:,OOO:,source_ascii,brewery_brand,,,none,,2,0,Powder Hound无序双板滑雪|Sweep Broom Peel无序冰壶,
+SMOOJ,smooj,,SMOOJ,SMOOJ,source_ascii,brewery_brand,,,none,,2,1,粉红色的夏天|椰林飘香,
+Waldhaus,waldhaus,,Waldhaus,Waldhaus,source_ascii,brewery_brand,,,none,,2,0,黑森林古法窖藏啤酒|黑森林金牌皮尔森啤酒,
+2062,2062,2062,,2062,needs_manual_en,brewery_brand,,,none,,1,0,阿温,English name not found safely; fill from checked mapping or official source
+阿彭策尔,阿彭策尔,阿彭策尔,,阿彭策尔,needs_manual_en,brewery_brand,,,low,瑞士:1,1,1,水晶拉格（第五批）,English name not found safely; fill from checked mapping or official source
+艾尔复兴*HAAS,haas,艾尔复兴*HAAS,HAAS,艾尔复兴*HAAS / HAAS,source_mixed_latin_chunk,brewery_brand,United States,US,high,美国:1,1,1,凌镜之外,
+艾根伯格,艾根伯格,艾根伯格,,艾根伯格,needs_manual_en,brewery_brand,,,low,奥地利:1,1,1,窑藏博克,English name not found safely; fill from checked mapping or official source
+艾英格,艾英格,艾英格,,艾英格,needs_manual_en,brewery_brand,Germany,DE,high,德国:1,1,1,春季博克,English name not found safely; fill from checked mapping or official source
+巴伐利亚武僧,巴伐利亚武僧,巴伐利亚武僧,,巴伐利亚武僧,needs_manual_en,brewery_brand,,,none,,1,1,双料小麦博克,English name not found safely; fill from checked mapping or official source
+半吨,半吨,半吨,,半吨,needs_manual_en,brewery_brand,,,none,,1,1,潮汕黄金,English name not found safely; fill from checked mapping or official source
+碧特博格,碧特博格,碧特博格,,碧特博格,needs_manual_en,brewery_brand,,,none,,1,0,碧堡,English name not found safely; fill from checked mapping or official source
+勃艮第女公爵,勃艮第女公爵,勃艮第女公爵,,勃艮第女公爵,needs_manual_en,brewery_brand,Belgium,BE,high,比利时:1,1,1,橡木桶酸,English name not found safely; fill from checked mapping or official source
+布鲁瑞,布鲁瑞,布鲁瑞,,布鲁瑞,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,安布拉纳闪耀,English name not found safely; fill from checked mapping or official source
+沉降酿造,沉降酿造,沉降酿造,,沉降酿造,needs_manual_en,brewery_brand,China,CN,medium,佛山:1,1,1,你喝了没,English name not found safely; fill from checked mapping or official source
+诚实啤酒,诚实啤酒,诚实啤酒,,诚实啤酒,needs_manual_en,brewery_brand,,,none,,1,0,浪裹,English name not found safely; fill from checked mapping or official source
+城市酿造,城市酿造,城市酿造,,城市酿造,needs_manual_en,brewery_brand,,,none,,1,1,十月革命,English name not found safely; fill from checked mapping or official source
+齿轮酿造,齿轮酿造,齿轮酿造,,齿轮酿造,needs_manual_en,brewery_brand,,,none,,1,1,爆榨苹果,English name not found safely; fill from checked mapping or official source
+赤耳*药厂,赤耳*药厂,赤耳*药厂,,赤耳*药厂,needs_manual_en,brewery_brand,,,none,,1,1,雨落松间,English name not found safely; fill from checked mapping or official source
+赤耳酿造,赤耳酿造,赤耳酿造,,赤耳酿造,needs_manual_en,brewery_brand,,,none,,1,0,涌,English name not found safely; fill from checked mapping or official source
+赤峪谷盈,赤峪谷盈,赤峪谷盈,,赤峪谷盈,needs_manual_en,brewery_brand,,,none,,1,1,依帕,English name not found safely; fill from checked mapping or official source
+打嗝海狸,打嗝海狸,打嗝海狸,,打嗝海狸,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,海狸万岁,English name not found safely; fill from checked mapping or official source
+大九,大九,大九,,大九,needs_manual_en,brewery_brand,,,none,,1,0,降临,English name not found safely; fill from checked mapping or official source
+大米拉格,大米拉格,大米拉格,,大米拉格,needs_manual_en,brewery_brand,,,none,,1,0,大米拉格,English name not found safely; fill from checked mapping or official source
+大师杯,大师杯,大师杯,,大师杯,needs_manual_en,brewery_brand,,,none,,1,1,拾伍,English name not found safely; fill from checked mapping or official source
+第三阶段,第三阶段,第三阶段,,第三阶段,needs_manual_en,brewery_brand,,,none,,1,0,波兰皮尔森,English name not found safely; fill from checked mapping or official source
+独墨,独墨,独墨,,独墨,needs_manual_en,brewery_brand,,,none,,1,0,芭适,English name not found safely; fill from checked mapping or official source
+仿猩会,仿猩会,仿猩会,,仿猩会,needs_manual_en,brewery_brand,,,none,,1,0,爆猩饼,English name not found safely; fill from checked mapping or official source
+霏然,霏然,霏然,,霏然,needs_manual_en,brewery_brand,China,CN,medium,苏州:1,1,1,白玉,English name not found safely; fill from checked mapping or official source
+费尔岛,费尔岛,费尔岛,,费尔岛,needs_manual_en,brewery_brand,,,none,,1,0,埃尔登,English name not found safely; fill from checked mapping or official source
+分野,分野,分野,,分野,needs_manual_en,brewery_brand,,,none,,1,0,柚子大米拉格,English name not found safely; fill from checked mapping or official source
+分野&谷语者,分野&谷语者,分野&谷语者,,分野&谷语者,needs_manual_en,brewery_brand,,,none,,1,1,美洲豹,English name not found safely; fill from checked mapping or official source
+分野酿造 / Quadrant Brewing,quadrant brewing,分野酿造 / Quadrant Brewing,Quadrant Brewing,分野酿造 / Quadrant Brewing / Quadrant Brewing,source_mixed_latin_chunk,brewery_brand,,,none,,1,0,饶了地球,
+分支,分支,分支,,分支,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,妲己,English name not found safely; fill from checked mapping or official source
+疯熊酿造,疯熊酿造,疯熊酿造,,疯熊酿造,needs_manual_en,brewery_brand,,,none,,1,0,流动,English name not found safely; fill from checked mapping or official source
+隔壁老李,隔壁老李,隔壁老李,,隔壁老李,needs_manual_en,brewery_brand,,,none,,1,0,琥珀艾尔,English name not found safely; fill from checked mapping or official source
+锅炉,锅炉,锅炉,,锅炉,needs_manual_en,brewery_brand,,,none,,1,1,毒蛇之握,English name not found safely; fill from checked mapping or official source
+焊接工厂,焊接工厂,焊接工厂,,焊接工厂,needs_manual_en,brewery_brand,,,none,,1,0,双倍爆汁,English name not found safely; fill from checked mapping or official source
+航标,航标,航标,,航标,needs_manual_en,brewery_brand,,,low,大连:1,1,1,极光觅月,English name not found safely; fill from checked mapping or official source
+航标精酿,航标精酿,航标精酿,,航标精酿,needs_manual_en,brewery_brand,,,none,,1,1,山野拾荒者,English name not found safely; fill from checked mapping or official source
+航朴精酿,航朴精酿,航朴精酿,,航朴精酿,needs_manual_en,brewery_brand,,,none,,1,1,山野拾荒者,English name not found safely; fill from checked mapping or official source
+黑森林,黑森林,黑森林,,黑森林,needs_manual_en,brewery_brand,Germany,DE,high,德国:1,1,1,古法窖藏,English name not found safely; fill from checked mapping or official source
+黑烟囱,黑烟囱,黑烟囱,,黑烟囱,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,文艺历史,English name not found safely; fill from checked mapping or official source
+蝴蝶结,蝴蝶结,蝴蝶结,,蝴蝶结,needs_manual_en,brewery_brand,,,none,,1,0,米芯,English name not found safely; fill from checked mapping or official source
+花雅酿造,花雅酿造,花雅酿造,,花雅酿造,needs_manual_en,brewery_brand,,,none,,1,0,志气,English name not found safely; fill from checked mapping or official source
+花雅酿造 / HARMO BREW,harmo brew,花雅酿造 / HARMO BREW,HARMO BREW,花雅酿造 / HARMO BREW / HARMO BREW,source_mixed_latin_chunk,brewery_brand,China,CN,medium,烟台:1,1,1,实验款,
+坏骨头,坏骨头,坏骨头,,坏骨头,needs_manual_en,brewery_brand,Canada,CA,high,加拿大:1,1,1,事故报告,English name not found safely; fill from checked mapping or official source
+幻果实验,幻果实验,幻果实验,,幻果实验,needs_manual_en,brewery_brand,,,none,,1,0,分形,English name not found safely; fill from checked mapping or official source
+幻果实验室,幻果实验室,幻果实验室,,幻果实验室,needs_manual_en,brewery_brand,,,none,,1,0,分形,English name not found safely; fill from checked mapping or official source
+洄游造物 / WayfarerLab,wayfarerlab,洄游造物 / WayfarerLab,WayfarerLab,洄游造物 / WayfarerLab / WayfarerLab,source_mixed_latin_chunk,brewery_brand,China,CN,medium,广州:1,1,1,清涧,
+健力士,健力士,健力士,,健力士,needs_manual_en,brewery_brand,,,low,爱尔兰:1,1,1,氮气世涛,English name not found safely; fill from checked mapping or official source
+涧溪,涧溪,涧溪,,涧溪,needs_manual_en,brewery_brand,,,none,,1,1,窑臧拉格,English name not found safely; fill from checked mapping or official source
+捷克维诺,捷克维诺,捷克维诺,,捷克维诺,needs_manual_en,brewery_brand,Czech Republic,CZ,high,捷克:1,1,1,炫猫,English name not found safely; fill from checked mapping or official source
+鲸一,鲸一,鲸一,,鲸一,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,云中翻滚,English name not found safely; fill from checked mapping or official source
+酒花名族,酒花名族,酒花名族,,酒花名族,needs_manual_en,brewery_brand,Australia,AU,high,澳大利亚:1,1,1,Fresh Hop,English name not found safely; fill from checked mapping or official source
+酒窖师,酒窖师,酒窖师,,酒窖师,needs_manual_en,brewery_brand,,,none,,1,0,久别重逢,English name not found safely; fill from checked mapping or official source
+科慕堡,科慕堡,科慕堡,,科慕堡,needs_manual_en,brewery_brand,,,none,,1,0,科慕堡皮尔森,English name not found safely; fill from checked mapping or official source
+麳麰,麳麰,麳麰,,麳麰,needs_manual_en,brewery_brand,China,CN,medium,烟台:1,1,1,文财神,English name not found safely; fill from checked mapping or official source
+朗客,朗客,朗客,,朗客,needs_manual_en,brewery_brand,Germany,DE,high,德国:1,1,1,烟熏啤,English name not found safely; fill from checked mapping or official source
+裂变,裂变,裂变,,裂变,needs_manual_en,brewery_brand,China,CN,medium,佛山:1,1,1,西楚超临界,English name not found safely; fill from checked mapping or official source
+麻马麻,麻马麻,麻马麻,,麻马麻,needs_manual_en,brewery_brand,,,none,,1,0,古盾,English name not found safely; fill from checked mapping or official source
+猫宁,猫宁,猫宁,,猫宁,needs_manual_en,brewery_brand,,,none,,1,0,玫红草莓,English name not found safely; fill from checked mapping or official source
+明日,明日,明日,,明日,needs_manual_en,brewery_brand,,,none,,1,1,Come back to 2016,English name not found safely; fill from checked mapping or official source
+酿造方程式,酿造方程式,酿造方程式,,酿造方程式,needs_manual_en,brewery_brand,,,none,,1,1,断肠草,English name not found safely; fill from checked mapping or official source
+酿造哲学,酿造哲学,酿造哲学,,酿造哲学,needs_manual_en,brewery_brand,China,CN,medium,上海:1,1,1,肖邦,English name not found safely; fill from checked mapping or official source
+牛皮堂,牛皮堂,牛皮堂,,牛皮堂,needs_manual_en,brewery_brand,China,CN,medium,北京:1,1,1,菠萝包,English name not found safely; fill from checked mapping or official source
+欧米尼珀罗 × 电厂,欧米尼珀罗 × 电厂,欧米尼珀罗 × 电厂,,欧米尼珀罗 × 电厂,needs_manual_en,brewery_brand,Sweden,SE,high,瑞典:1,1,1,炼金术大师,English name not found safely; fill from checked mapping or official source
+欧米尼珀罗 × 僧侣,欧米尼珀罗 × 僧侣,欧米尼珀罗 × 僧侣,,欧米尼珀罗 × 僧侣,needs_manual_en,brewery_brand,Sweden,SE,high,瑞典:1,1,1,太空之旅,English name not found safely; fill from checked mapping or official source
+欧米尼珀罗x布鲁乔斯,欧米尼珀罗x布鲁乔斯,欧米尼珀罗x布鲁乔斯,,欧米尼珀罗x布鲁乔斯,needs_manual_en,brewery_brand,Sweden,SE,high,瑞典:1,1,1,异端礼拜堂,English name not found safely; fill from checked mapping or official source
+欧米尼珀罗X深酥,欧米尼珀罗x深酥,欧米尼珀罗X深酥,,欧米尼珀罗X深酥,needs_manual_en,brewery_brand,Sweden,SE,high,瑞典:1,1,1,Steal This Beer,English name not found safely; fill from checked mapping or official source
+欧米尼珀罗X特伦,欧米尼珀罗x特伦,欧米尼珀罗X特伦,,欧米尼珀罗X特伦,needs_manual_en,brewery_brand,Sweden,SE,high,瑞典:1,1,1,王座的呼唤,English name not found safely; fill from checked mapping or official source
+啤脑酿造 / Beer Head,beer head,啤脑酿造 / Beer Head,Beer Head,啤脑酿造 / Beer Head / Beer Head,source_mixed_latin_chunk,brewery_brand,,,none,,1,0,银苹果,
+奇逸,奇逸,奇逸,,奇逸,needs_manual_en,brewery_brand,,,none,,1,1,香草的天空,English name not found safely; fill from checked mapping or official source
+气泡实验室,气泡实验室,气泡实验室,,气泡实验室,needs_manual_en,brewery_brand,,,none,,1,0,酒花伞兵,English name not found safely; fill from checked mapping or official source
+倾斜谷仓,倾斜谷仓,倾斜谷仓,,倾斜谷仓,needs_manual_en,brewery_brand,,,none,,1,0,天选之子,English name not found safely; fill from checked mapping or official source
+撒切尔,撒切尔,撒切尔,,撒切尔,needs_manual_en,brewery_brand,United Kingdom,GB,high,英国:1,1,1,金苹果,English name not found safely; fill from checked mapping or official source
+塞拉多艾尔,塞拉多艾尔,塞拉多艾尔,,塞拉多艾尔,needs_manual_en,brewery_brand,,,none,,1,0,豪华赛松,English name not found safely; fill from checked mapping or official source
+三宝乐,三宝乐,三宝乐,,三宝乐,needs_manual_en,brewery_brand,,,none,,1,0,惠比寿全麦,English name not found safely; fill from checked mapping or official source
+三得利,三得利,三得利,,三得利,needs_manual_en,brewery_brand,,,none,,1,0,万志,English name not found safely; fill from checked mapping or official source
+三子酿造,三子酿造,三子酿造,,三子酿造,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,维京征服,English name not found safely; fill from checked mapping or official source
+叁酉,叁酉,叁酉,,叁酉,needs_manual_en,brewery_brand,,,none,,1,1,最佳状态,English name not found safely; fill from checked mapping or official source
+山乘,山乘,山乘,,山乘,needs_manual_en,brewery_brand,,,none,,1,0,自然呼唤,English name not found safely; fill from checked mapping or official source
+山乘酿造,山乘酿造,山乘酿造,,山乘酿造,needs_manual_en,brewery_brand,,,none,,1,0,辅助奶两口,English name not found safely; fill from checked mapping or official source
+山雀 x Bob x ORIGIN4,x bob x origin4,山雀 x Bob x ORIGIN4,x Bob x ORIGIN4,山雀 x Bob x ORIGIN4 / x Bob x ORIGIN4,source_mixed_latin_chunk,brewery_brand,China,CN,medium,上海:1,1,1,海德公园,
+山雀 x Good Good,x good good,山雀 x Good Good,x Good Good,山雀 x Good Good / x Good Good,source_mixed_latin_chunk,brewery_brand,China,CN,medium,上海:1,1,1,扭扭舞,
+山雀 x ORIGIN4,x origin4,山雀 x ORIGIN4,x ORIGIN4,山雀 x ORIGIN4 / x ORIGIN4,source_mixed_latin_chunk,brewery_brand,China,CN,medium,上海:1,1,1,乳酸阈值,
+十八酿造,十八酿造,十八酿造,,十八酿造,needs_manual_en,brewery_brand,,,none,,1,0,双倍跳东湖,English name not found safely; fill from checked mapping or official source
+拾捌精酿,拾捌精酿,拾捌精酿,,拾捌精酿,needs_manual_en,brewery_brand,,,none,,1,0,布蓝泥 思慕雪果酒,English name not found safely; fill from checked mapping or official source
+拾伍,拾伍,拾伍,,拾伍,needs_manual_en,brewery_brand,,,none,,1,0,大师杯（十五周年限定）,English name not found safely; fill from checked mapping or official source
+双尾酿造 / Twin Tails,twin tails,双尾酿造 / Twin Tails,Twin Tails,双尾酿造 / Twin Tails / Twin Tails,source_mixed_latin_chunk,brewery_brand,,,none,,1,0,朦胧之吻,
+双尾酿造/Twin Tails,twin tails,双尾酿造/Twin Tails,Twin Tails,双尾酿造/Twin Tails / Twin Tails,source_mixed_latin_chunk,brewery_brand,China,CN,medium,苏州:1,1,1,失重-鲜酒花,
+水猴子,水猴子,水猴子,,水猴子,needs_manual_en,brewery_brand,,,none,,1,1,胡椒蛮缠,English name not found safely; fill from checked mapping or official source
+斯莫吉,斯莫吉,斯莫吉,,斯莫吉,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,粉红夏日,English name not found safely; fill from checked mapping or official source
+酸羽,酸羽,酸羽,,酸羽,needs_manual_en,brewery_brand,,,none,,1,0,机械神明,English name not found safely; fill from checked mapping or official source
+酸羽酿造,酸羽酿造,酸羽酿造,,酸羽酿造,needs_manual_en,brewery_brand,,,low,无锡:1,1,1,原始恩赐,English name not found safely; fill from checked mapping or official source
+虽吾酿造,虽吾酿造,虽吾酿造,,虽吾酿造,needs_manual_en,brewery_brand,,,none,,1,0,飞越云海,English name not found safely; fill from checked mapping or official source
+虽吾酿造 / SUIWU,suiwu,虽吾酿造 / SUIWU,SUIWU,虽吾酿造 / SUIWU / SUIWU,source_mixed_latin_chunk,brewery_brand,,,none,,1,0,凤尾果香,
+碎片,碎片,碎片,,碎片,needs_manual_en,brewery_brand,,,none,,1,0,惊魂记,English name not found safely; fill from checked mapping or official source
+索拉里斯 × 北方公园,索拉里斯 × 北方公园,索拉里斯 × 北方公园,,索拉里斯 × 北方公园,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,云端一线,English name not found safely; fill from checked mapping or official source
+特纳亚溪,特纳亚溪,特纳亚溪,,特纳亚溪,needs_manual_en,brewery_brand,,,none,,1,0,胡夫水坝,English name not found safely; fill from checked mapping or official source
+头脑冷静,头脑冷静,头脑冷静,,头脑冷静,needs_manual_en,brewery_brand,,,none,,1,0,和平奏鸣曲,English name not found safely; fill from checked mapping or official source
+头脑冷静&敌意&凡人,头脑冷静&敌意&凡人,头脑冷静&敌意&凡人,,头脑冷静&敌意&凡人,needs_manual_en,brewery_brand,,,none,,1,0,计划四个秘密,English name not found safely; fill from checked mapping or official source
+蜕变,蜕变,蜕变,,蜕变,needs_manual_en,brewery_brand,,,none,,1,0,路特斯运行原理,English name not found safely; fill from checked mapping or official source
+旺达Wondrous,wondrous,旺达Wondrous,Wondrous,旺达Wondrous / Wondrous,source_mixed_latin_chunk,brewery_brand,,,none,,1,1,Raveyard,
+旺达Wondrous•Raveyard,wondrous / raveyard,旺达Wondrous•Raveyard,Wondrous / Raveyard,旺达Wondrous•Raveyard / Wondrous / Raveyard,source_mixed_latin_chunk,brewery_brand,,,none,,1,1,Raveyard,
+五岔街,五岔街,五岔街,,五岔街,needs_manual_en,brewery_brand,United Kingdom,GB,high,英国:1,1,1,皮尔森,English name not found safely; fill from checked mapping or official source
+勿幕酿造 / WUMU Brewery,wumu brewery,勿幕酿造 / WUMU Brewery,WUMU Brewery,勿幕酿造 / WUMU Brewery / WUMU Brewery,source_mixed_latin_chunk,brewery_brand,,,none,,1,0,冰川,
+小发发,小发发,小发发,,小发发,needs_manual_en,brewery_brand,,,none,,1,1,溺海之柚,English name not found safely; fill from checked mapping or official source
+小回酿造,小回酿造,小回酿造,,小回酿造,needs_manual_en,brewery_brand,,,low,长春:1,1,1,施坦格,English name not found safely; fill from checked mapping or official source
+小回酿造 / Turn Right Brewing,turn right brewing,小回酿造 / Turn Right Brewing,Turn Right Brewing,小回酿造 / Turn Right Brewing / Turn Right Brewing,source_mixed_latin_chunk,brewery_brand,,,none,,1,0,阿努尔夫街52号,
+小樽酿造,小樽酿造,小樽酿造,,小樽酿造,needs_manual_en,brewery_brand,,,none,,1,0,北海道哈密瓜,English name not found safely; fill from checked mapping or official source
+行匠,行匠,行匠,,行匠,needs_manual_en,brewery_brand,,,none,,1,0,月球旅行箱 皮尔森,English name not found safely; fill from checked mapping or official source
+行空,行空,行空,,行空,needs_manual_en,brewery_brand,,,low,青岛:1,1,1,早春,English name not found safely; fill from checked mapping or official source
+兴业,兴业,兴业,,兴业,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,拳击手,English name not found safely; fill from checked mapping or official source
+漩涡酿造,漩涡酿造,漩涡酿造,,漩涡酿造,needs_manual_en,brewery_brand,,,low,中山:1,1,1,月桂,English name not found safely; fill from checked mapping or official source
+薛定谔,薛定谔,薛定谔,,薛定谔,needs_manual_en,brewery_brand,,,none,,1,0,苔痕,English name not found safely; fill from checked mapping or official source
+薛定谔的酒,薛定谔的酒,薛定谔的酒,,薛定谔的酒,needs_manual_en,brewery_brand,,,none,,1,0,代号猫,English name not found safely; fill from checked mapping or official source
+薛定谔的酒 x Kyoto Beer Lab,x kyoto beer lab,薛定谔的酒 x Kyoto Beer Lab,x Kyoto Beer Lab,薛定谔的酒 x Kyoto Beer Lab / x Kyoto Beer Lab,source_mixed_latin_chunk,brewery_brand,,,low,佛山x京都:1,1,1,玉響,
+寻路者,寻路者,寻路者,,寻路者,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,守望者,English name not found safely; fill from checked mapping or official source
+寻蜜酿造,寻蜜酿造,寻蜜酿造,,寻蜜酿造,needs_manual_en,brewery_brand,,,none,,1,0,春日色卡,English name not found safely; fill from checked mapping or official source
+亚洲小霸王,亚洲小霸王,亚洲小霸王,,亚洲小霸王,needs_manual_en,brewery_brand,United States,US,high,美国:1,1,1,轲斯拉大战金刚,English name not found safely; fill from checked mapping or official source
+药厂*拾捌精酿,药厂*拾捌精酿,药厂*拾捌精酿,,药厂*拾捌精酿,needs_manual_en,brewery_brand,,,none,,1,1,两端 摩登西海岸IPA,English name not found safely; fill from checked mapping or official source
+野鹅微醺 x 佳卡哈,野鹅微醺 x 佳卡哈,野鹅微醺 x 佳卡哈,,野鹅微醺 x 佳卡哈,needs_manual_en,brewery_brand,,,none,,1,0,无限螺旋,English name not found safely; fill from checked mapping or official source
+一滴,一滴,一滴,,一滴,needs_manual_en,brewery_brand,New Zealand,NZ,high,新西兰:1,1,1,浆化星球,English name not found safely; fill from checked mapping or official source
+依帕,依帕,依帕,,依帕,needs_manual_en,brewery_brand,,,none,,1,0,赤屿谷道,English name not found safely; fill from checked mapping or official source
+英雄啤酒,英雄啤酒,英雄啤酒,,英雄啤酒,needs_manual_en,brewery_brand,,,none,,1,0,童年回忆,English name not found safely; fill from checked mapping or official source
+硬糖,硬糖,硬糖,,硬糖,needs_manual_en,brewery_brand,,,none,,1,1,桑葚葡萄,English name not found safely; fill from checked mapping or official source
+有什酿造,有什酿造,有什酿造,,有什酿造,needs_manual_en,brewery_brand,,,none,,1,1,酸味主义,English name not found safely; fill from checked mapping or official source
+与众严选,与众严选,与众严选,,与众严选,needs_manual_en,brewery_brand,,,none,,1,1,德式小麦,English name not found safely; fill from checked mapping or official source
+元醴,元醴,元醴,,元醴,needs_manual_en,brewery_brand,,,none,,1,0,飞向山,English name not found safely; fill from checked mapping or official source
+远山啤酒 / Far Mont Beer,far mont beer,远山啤酒 / Far Mont Beer,Far Mont Beer,远山啤酒 / Far Mont Beer / Far Mont Beer,source_mixed_latin_chunk,brewery_brand,,,none,,1,0,布里斯班淡影,
+云酊,云酊,云酊,,云酊,needs_manual_en,brewery_brand,China,CN,medium,云南:1,1,1,阿诗玛的莓果园,English name not found safely; fill from checked mapping or official source
+云朵,云朵,云朵,,云朵,needs_manual_en,brewery_brand,,,none,,1,0,融雪之前,English name not found safely; fill from checked mapping or official source
+长青工匠,长青工匠,长青工匠,,长青工匠,needs_manual_en,brewery_brand,,,none,,1,1,范尼拉符文,English name not found safely; fill from checked mapping or official source
+智美,智美,智美,,智美,needs_manual_en,brewery_brand,,,none,,1,0,智美银帽,English name not found safely; fill from checked mapping or official source
+种子,种子,种子,,种子,needs_manual_en,brewery_brand,,,none,,1,0,起始之日,English name not found safely; fill from checked mapping or official source
+左手巨人 x 绿颊鹦鹉,左手巨人 x 绿颊鹦鹉,左手巨人 x 绿颊鹦鹉,,左手巨人 x 绿颊鹦鹉,needs_manual_en,brewery_brand,,,low,英国x美国:1,1,1,橘郡,English name not found safely; fill from checked mapping or official source
+左手巨人 x Dos Kiwis,x dos kiwis,左手巨人 x Dos Kiwis,x Dos Kiwis,左手巨人 x Dos Kiwis / x Dos Kiwis,source_mixed_latin_chunk,brewery_brand,,,low,英国x西班牙:1,1,1,偏爱未知,
+Allagash,allagash,,Allagash,Allagash,source_ascii,brewery_brand,,,none,,1,1,Saison,
+Beerhead,beerhead,,Beerhead,Beerhead,source_ascii,brewery_brand,,,none,,1,0,艾斯高巴,
+Bell's,bell's,,Bell's,Bell's,source_ascii,brewery_brand,,,none,,1,1,Two Hearted IPA,
+Bissell Brothers Brewing,bissell brothers brewing,,Bissell Brothers Brewing,Bissell Brothers Brewing,source_ascii,brewery_brand,,,none,,1,0,Lux,
+Cantillon,cantillon,,Cantillon,Cantillon,source_ascii,brewery_brand,,,none,,1,1,兰比克,
+Cascade,cascade,,Cascade,Cascade,source_ascii,brewery_brand,,,none,,1,1,古斯酸啤,
+Chimay,chimay,,Chimay,Chimay,source_ascii,brewery_brand,,,none,,1,1,修道院三料,
+CLAG,clag,,CLAG,CLAG,source_ascii,brewery_brand,United States,US,high,美国:1,1,1,轲斯拉大战金刚,
+Clag Brewing Company,clag brewing company,,Clag Brewing Company,Clag Brewing Company,source_ascii,brewery_brand,United States,US,high,美国:1,1,1,Absolutely Nothing,
+Derive Brewery,derive brewery,,Derive Brewery,Derive Brewery,source_ascii,brewery_brand,,,none,,1,0,LIMA,
+E.T.,e.t.,,E.T.,E.T.,source_ascii,brewery_brand,,,none,,1,1,迷离万象,
+E.T. x 和弦,e.t. x,E.T. x 和弦,E.T. x,E.T. x 和弦 / E.T. x,source_mixed_latin_chunk,brewery_brand,,,none,,1,1,好得意,
+Everywhere,everywhere,,Everywhere,Everywhere,source_ascii,brewery_brand,United States,US,high,美国:1,1,1,Little Egg,
+Firestone Walker,firestone walker,,Firestone Walker,Firestone Walker,source_ascii,brewery_brand,,,none,,1,1,805 Blonde,
+Founders,founders,,Founders,Founders,source_ascii,brewery_brand,,,none,,1,1,波特,
+Hoegaarden,hoegaarden,,Hoegaarden,Hoegaarden,source_ascii,brewery_brand,,,none,,1,1,比利时小麦,
+ISM Brewing,ism brewing,,ISM Brewing,ISM Brewing,source_ascii,brewery_brand,,,none,,1,0,Chepedelic,
+Jester King,jester king,,Jester King,Jester King,source_ascii,brewery_brand,,,none,,1,1,农舍艾尔,
+Left Hand,left hand,,Left Hand,Left Hand,source_ascii,brewery_brand,,,none,,1,1,牛奶世涛,
+MOJO,mojo,,MOJO,MOJO,source_ascii,brewery_brand,,,none,,1,0,沙滩小麦,
+Monkish,monkish,,Monkish,Monkish,source_ascii,brewery_brand,,,none,,1,1,DIPA,
+Origin 4,origin 4,,Origin 4,Origin 4,source_ascii,brewery_brand,,,none,,1,0,Motu-Moment,
+Origin4,origin4,,Origin4,Origin4,source_ascii,brewery_brand,China,CN,medium,上海:1,1,1,Motu-Moment,
+Oskar Blues,oskar blues,,Oskar Blues,Oskar Blues,source_ascii,brewery_brand,,,none,,1,1,Dale's Pale Ale,
+Other Half,other half,,Other Half,Other Half,source_ascii,brewery_brand,,,none,,1,1,浑浊 IPA,
+SHRED,shred,,SHRED,SHRED,source_ascii,brewery_brand,United States,US,high,美国:1,1,1,CINCO,
+Sierra Nevada,sierra nevada,,Sierra Nevada,Sierra Nevada,source_ascii,brewery_brand,,,none,,1,1,Pale Ale,
+Stone Brewing,stone brewing,,Stone Brewing,Stone Brewing,source_ascii,brewery_brand,,,none,,1,1,西海岸 IPA,
+The Bruery,the bruery,,The Bruery,The Bruery,source_ascii,brewery_brand,,,none,,1,1,水果酸啤,
+Tree House,tree house,,Tree House,Tree House,source_ascii,brewery_brand,,,none,,1,1,双倍浑浊,
+Trillium,trillium,,Trillium,Trillium,source_ascii,brewery_brand,,,none,,1,1,新英格兰 IPA,
+Weihenstephan,weihenstephan,,Weihenstephan,Weihenstephan,source_ascii,brewery_brand,,,none,,1,1,德式小麦,

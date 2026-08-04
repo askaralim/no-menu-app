@@ -177,6 +177,8 @@ export interface TaplistDrink {
 export interface TaplistBeerProfile {
   drink_id: string
   brewery: string | null
+  /** Secondary breweries for collabs; max 3 in POS. */
+  collab_breweries?: string[] | null
   beer_style: string | null
   abv: number | null
   ibu: number | null

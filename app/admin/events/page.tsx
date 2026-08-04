@@ -229,14 +229,14 @@ function EventsAdminPageInner() {
       return false
     }
     if (form.is_public_visible) {
+      const hasBound =
+        Boolean(form.start_at) || Boolean(form.end_at) || Boolean(form.visible_until_at)
+      // Evergreen: no time bounds — public toggle only (POS long-running board).
+      if (!hasBound) return true
+
       const hasDisplayTime = form.start_at || form.date_label.trim() || form.time_label.trim()
       if (!hasDisplayTime) {
-        alert('公开活动需要填写结构化时间，或至少填写日期/时间展示文案')
-        return false
-      }
-      const hasExpiry = form.visible_until_at || form.end_at || form.start_at
-      if (!hasExpiry) {
-        alert('公开活动需要结束时间、可见截止时间，或结构化开始时间，避免过期内容长期展示')
+        alert('有时间边界的公开活动需要填写结构化时间，或至少填写日期/时间展示文案')
         return false
       }
     }
@@ -387,7 +387,7 @@ function EventsAdminPageInner() {
         <h2>{events.some((event) => event.id === form.id) ? '编辑活动' : '新建活动'}</h2>
         <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
           活动用于消费者 App 的 TONIGHT EVENTS，不包含报名、订票、预约或评论。
-          循环活动（如 Happy Hour）可只填日期/时间展示文案和可见截止；单次活动优先填写开始/结束时间。
+          不填开始/结束/可见截止时视为长期挂牌：仅靠「对消费者公开」开关；有时间边界的活动仍按结束/可见截止下架。循环文案（如 Happy Hour）也可只填展示文案。单次活动优先填写开始/结束日期。
         </p>
         <form onSubmit={saveEvent} className="admin-form">
           <div className="taplist-panel-grid">

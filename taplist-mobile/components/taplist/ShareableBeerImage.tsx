@@ -44,7 +44,7 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
           {litAt ? (
             <>
               <View style={styles.personalHeader}>
-                <Text style={styles.personalKicker}>酒迹</Text>
+                <Text style={styles.personalKicker}>我在这里喝过 · {formatShortDate(litAt)}</Text>
                 <Text numberOfLines={2} style={styles.personalVenue}>{title}</Text>
                 {personalLocation ? (
                   <View style={styles.personalLocationRow}>
@@ -52,7 +52,6 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
                     <Text numberOfLines={1} style={styles.personalLocation}>{personalLocation}</Text>
                   </View>
                 ) : null}
-                <Text style={styles.litLabel}>我在这里喝了 · {formatShortDate(litAt)}</Text>
               </View>
 
               <View style={[styles.personalPanel, !drink.image_url && styles.personalPanelWithoutArt]}>
@@ -235,11 +234,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 14,
     marginBottom: spacing.xs,
-  },
-  litLabel: {
-    ...typography.caption,
-    color: palette.amber,
-    marginTop: spacing.sm,
   },
   personalBeerName: {
     ...typography.displayL,

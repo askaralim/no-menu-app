@@ -4,7 +4,8 @@
 
 This is the Expo / React Native consumer app **No Menu** (tap list; display name in `app.json`).
 
-The product is a minimal real-time craft beer bar list for supported city craft beer bars.
+The product is a Chinese-first real-time craft beer discovery app for supported cities. It
+combines public bar tap lists with a private personal drink history called **酒迹**.
 
 ## Commands
 
@@ -25,20 +26,27 @@ Note: `npm run web` may fail on some local Node / Expo CLI combinations with por
 
 - `app/(tabs)/index.tsx` - Tonight home feed
 - `app/(tabs)/search.tsx` - Search (drinks + bars where supported)
+- `app/(tabs)/mine.tsx` - Private drink history / 酒迹
 - `app/(tabs)/about.tsx` - About / compliance
 - `app/bar/[slug].tsx` - Bar detail and live tap list
 - `app/bar/[slug]/beer/[drinkId].tsx` - Beer detail
+- `app/drink-log/[lightId].tsx` - One drink's private venue history
 - `components/taplist/` - Tap List-specific UI components
+- `components/taplist/DrinkLightSection.tsx` - Drink-lighting state and action
+- `components/taplist/ShareableDrinkLogImage.tsx` - Personal history share image
 - `components/taplist/FirstLaunchLegalGate.tsx` - First-launch age and compliance gate
 - `constants/design.ts` - Visual system
 - `constants/compliance.ts` - Legal / compliance copy
 - `lib/api/taplist.ts` - Supabase RPC API calls
+- `lib/api/drinkLog.ts` - Authenticated drink-history RPC wrappers
+- `lib/drinkLogAuth.ts` - Anonymous auth, Apple protection, and account deletion
+- `lib/analytics.ts` - Consent-gated PostHog events
 - `lib/formatTaplist.ts` - Display formatting helpers
 - `tools/app-store-screenshots.html` - App Store screenshot composition helper
 
 ## Product Constraints
 
-MVP should only include:
+Current approved consumer surfaces include:
 
 - Tonight bar feed
 - Search
@@ -47,21 +55,56 @@ MVP should only include:
 - Beer detail
 - Public tap list
 - Serving options
+- Events and new-tap discovery
+- Private 酒迹 history
+- Anonymous identity created on first record
+- Sign in with Apple protection and recovery on iOS
+- Drink-history and single-drink share images
+- Per-venue removal, unlight, and account deletion
 
 Do not add:
 
 - Map
 - GPS / nearby sorting
 - Ratings
-- Check-ins
-- User profile
 - Collections
 - Social feed
+- Friends or followers
+- Public profiles
+- Public check-ins
+- Badges, levels, or leaderboards
+- User photos, reviews, or tasting notes
 - Ordering
 - Payments
 - Delivery
 - Reservations
-- Multi-bar beer identity
+
+Do not treat 酒迹 as proof of purchase, sales data, or a public social check-in. It is a
+private user-authored record that may reference the same canonical product across bars.
+
+## Drink History / 酒迹
+
+- The user-facing noun is `酒迹`. Actions may use natural copy such as `喝过` or `已喝过`.
+- Do not reintroduce `DRINK LOG` in user-facing UI or share images.
+- First record may create a Supabase anonymous session; public browsing must remain usable
+  without authentication.
+- A canonical product counts once, while distinct bar experiences may accumulate.
+- Drinks without `product_id` use a provisional source drink identity and must remain
+  reconcilable after product linking.
+- Same drink at the same bar is idempotent; do not add repeat-drink counters in v1.
+- Apple sign-in protects or restores the current history. Preserve the anonymous record
+  during linking and merge before removing the temporary account.
+- iOS may show Apple protection. Android and web must not show an unavailable Apple action.
+- Personal reads and writes require an authenticated session and RLS isolation by
+  `auth.uid() = user_id`.
+- A delisted drink remains in history. Hide `查看并分享` unless its source bar, category,
+  and drink are still public and enabled.
+- The history grid remains three columns, grouped by month and ordered by recent activity.
+- History summary images are fixed 3:4 and include at most the latest nine drinks.
+- Do not display bar names in the main history grid. Venue history belongs on the detail.
+- Missing beer images keep layout spacing where required but never render fake artwork.
+- Account deletion must remove private history and revoke the Apple token when applicable.
+- Personal feature failures must not break Tonight, Search, bar, or beer public screens.
 
 ### Post-MVP exception: Tonight's Beer Route
 
@@ -154,6 +197,26 @@ Share/download images are product-facing assets and should feel like premium edi
 - Tenant-specific bespoke exports are allowed only for concrete partner needs.
 - Tenant-specific export logic should be narrowly gated by tenant id and should not affect the default template.
 - The bespoke paper menu export for tenant `4d1da7d9-8b21-4706-b535-355b9ff79388` should keep its paper-menu style unless explicitly asked to revise it.
+- 酒迹 summary and personal drink shares use fixed `390 × 520` output.
+- 酒迹 summary shares show at most nine recent drinks and must keep the footer visible.
+- A personal single-drink share is only generated after the drink-state query confirms the
+  user has recorded it. Do not silently fall back to the public template on query failure.
+- Personal share locations should prefer Chinese district/address labels and must not expose
+  unnecessary full-location data.
+
+## Analytics and Merchant Insights
+
+- PostHog is opt-in only. Analytics failures must remain soft and never block the app.
+- Keep GeoIP, session replay, surveys, remote config, and automatic error capture disabled
+  unless privacy and product requirements are explicitly revisited.
+- Drink-history events may describe actions and booleans, but must not include beer names,
+  search text, Apple email, full history, exact address, or other personal content.
+- Existing event names are part of the reporting contract; rename them only with an explicit
+  analytics migration plan.
+- Do not expose PostHog user-level data to bars.
+- Future POS insights must come from tenant-scoped, privacy-safe Supabase aggregates such as
+  distinct users who recorded a drink at that bar. Label these as No Menu user records, not
+  sales or purchases, and use a minimum-count threshold before showing exact values.
 
 ## Verification
 
@@ -170,6 +233,13 @@ For App Store release readiness, also run a real-device or TestFlight smoke test
 - Beer detail opens from home, search, and bar detail links.
 - Save/share beer image works for beers with and without images.
 - Save/share bar taplist image works for mixed image/no-image lists.
+- First drink record creates/restores an anonymous session and updates the 酒迹 screen.
+- Same product at another bar adds a venue without increasing the unique drink count.
+- Apple protection, reinstall/restore, and existing-account merge preserve records.
+- 酒迹 summary and personal drink share/save flows work with one through nine drinks.
+- Removing one venue, unlighting a drink, and deleting the account require confirmation and
+  update history consistently.
+- A delisted source drink remains in history but does not expose an invalid share link.
 
 ## Supabase
 
@@ -186,12 +256,18 @@ Supabase reads should go through public RPCs in `lib/api/taplist.ts`.
 The Supabase client must remain safe for static export / SSR. Do not remove the no-op storage fallback for server-side rendering.
 
 Public consumer features should use public RPCs rather than direct table reads from screens.
+Private 酒迹 features should use authenticated RPCs in `lib/api/drinkLog.ts`.
 
 - Add matching TypeScript DTOs in `lib/types.ts`.
 - Add API helpers in `lib/api/taplist.ts`.
 - Keep RPC failures soft when the feature is optional and the main screen can still function.
 - Deploy required Supabase migrations before shipping App Store builds that depend on them.
 - For public home sections, return only public-visible, enabled tenant/category/drink data.
+- Keep anonymous users on the authenticated role and rely on RLS for private row isolation.
+- Do not silently create a replacement anonymous account when refreshing an existing session
+  fails; that can orphan the user's history.
+- Production migrations and Edge Functions live in the repository-level `supabase/`
+  directory and must be deployed before a dependent App Store build.
 
 ## App Store Release Workflow
 
@@ -201,6 +277,9 @@ Use semantic versioning for user-visible releases.
 - Minor versions, such as `1.1.0`, are for user-visible features such as `NEW ON TAP`, new share templates, or new public RPC-backed surfaces.
 - Increment `ios.buildNumber` for every App Store submission.
 - Before submission, confirm `app.json` version/build number, run `npm run preflight`, deploy required Supabase migrations, and smoke-test an iOS production/TestFlight build.
+- For releases containing Apple account protection, confirm Anonymous Sign-Ins, Manual
+  Identity Linking, the Apple Auth provider, Apple App ID capability, Edge Function secrets,
+  `merge-apple-account`, and `delete-my-account` in the target Supabase project.
 - Do not include unrelated seed files, scratch scripts, or generated local artifacts in a release commit unless intentionally requested.
 
 ## App Store Screenshots

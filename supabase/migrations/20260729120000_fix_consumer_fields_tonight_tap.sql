@@ -1,7 +1,9 @@
 -- Harden legacy set_drink_taplist_consumer_fields: never write public_sort_order 0
 -- (tonight = 1–99, not on tonight = NULL). Prefer set_drink_taplist_listing /
--- remove_drink_from_tonight from clients; this keeps old callers from hitting
--- drinks_tenant_public_sort_order_unique with duplicate zeros.
+-- remove_drink_from_tonight from clients.
+--
+-- NOTE: Swap-safe update lives in 20260729130000_consumer_fields_tap_swap.sql
+-- (supersedes the naive UPDATE below for production). Kept here for history.
 
 CREATE OR REPLACE FUNCTION public.set_drink_taplist_consumer_fields(
   p_drink_id uuid,

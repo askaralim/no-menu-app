@@ -1,0 +1,22 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .brand {
+      fill: #FFFFFF;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 204px;
+      font-weight: 700;
+      letter-spacing: 14px;
+    }
+    .subbrand {
+      fill: #FFFFFF;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 60px;
+      font-weight: 600;
+      letter-spacing: 18px;
+    }
+  </style>
+  <text class="brand" x="512" y="420" text-anchor="middle">NO</text>
+  <line x1="330" y1="458" x2="694" y2="458" stroke="#FFFFFF" stroke-width="6"/>
+  <text class="brand" x="512" y="615" text-anchor="middle">MENU</text>
+  <text class="subbrand" x="512" y="722" text-anchor="middle">TONIGHT</text>
+</svg>

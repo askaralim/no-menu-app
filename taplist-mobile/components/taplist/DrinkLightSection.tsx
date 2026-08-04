@@ -74,7 +74,7 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
     ? '已喝过'
     : state?.is_lit
       ? '记录这里'
-      : '点亮'
+      : '喝过'
   return {
     state,
     buttonLabel,
@@ -113,7 +113,7 @@ export function DrinkLightAction({ controller }: { controller: Controller }) {
           <Text style={[styles.buttonText, styles.completeText]}>已喝过</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="撤销刚才的点亮"
+            accessibilityLabel="撤销刚才的喝过"
             disabled={undoMutation.isPending}
             hitSlop={10}
             onPress={() => undoMutation.mutate()}

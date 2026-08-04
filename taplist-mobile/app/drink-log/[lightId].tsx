@@ -70,7 +70,7 @@ export default function DrinkLogDetailScreen() {
                 ) : null}
               </View>
             </View>
-            <View style={styles.metaRow}><Text style={styles.metaLabel}>首次点亮</Text><Text style={styles.metaValue}>{formatDate(item.first_lit_at)}</Text></View>
+            <View style={styles.metaRow}><Text style={styles.metaLabel}>首次喝过</Text><Text style={styles.metaValue}>{formatDate(item.first_lit_at)}</Text></View>
             <View style={styles.metaRow}><Text style={styles.metaLabel}>记录酒吧</Text><Text style={styles.metaValue}>{item.venue_count} 家</Text></View>
 
             <Text style={styles.sectionTitle}>酒吧记录</Text>

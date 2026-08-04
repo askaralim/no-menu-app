@@ -70,12 +70,18 @@ export default function TaplistPreview({ visible, draft, onClose }: Props) {
             <View style={styles.servingRow}>
               {servings
                 .filter((s) => Number(s.price) > 0)
-                .map((s) => (
-                  <Text key={s.id || s.client_id} style={styles.serving}>
-                    {s.label}
-                    {s.volume_ml ? ` ${s.volume_ml}ml` : ''} ¥{s.price}
-                  </Text>
-                ))}
+                .map((s) => {
+                  const parts = [
+                    s.label?.trim() || null,
+                    s.volume_ml ? `${s.volume_ml}ml` : null,
+                    `¥${s.price}`,
+                  ].filter(Boolean)
+                  return (
+                    <Text key={s.id || s.client_id} style={styles.serving}>
+                      {parts.join(' ')}
+                    </Text>
+                  )
+                })}
             </View>
           ) : null}
         </View>
@@ -114,7 +120,7 @@ export default function TaplistPreview({ visible, draft, onClose }: Props) {
               {mainDrinks.map((d) => renderDrink(d))}
               {comingSoon.length > 0 ? (
                 <>
-                  <Text style={styles.sectionTitle}>即将上枪 {comingSoon.length}</Text>
+                  <Text style={styles.sectionTitle}>即将上新 {comingSoon.length}</Text>
                   {comingSoon.map((d) => renderDrink(d))}
                 </>
               ) : null}

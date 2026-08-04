@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>No Menu 今晚三站小红书图</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d0d0d;
+      --panel: #151515;
+      --line: #2b2822;
+      --text: #f5f1e8;
+      --muted: #b8b0a2;
+      --faint: #756f65;
+      --gold: #c6a875;
+      --amber: #e1a94f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      background: #090909;
+      color: var(--text);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    aside {
+      padding: 28px;
+      border-right: 1px solid var(--line);
+      background: #101010;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--gold);
+      font-size: 28px;
+      line-height: 1.08;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    p {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    select,
+    button {
+      height: 42px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 12px;
+      font: inherit;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 14px;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: var(--amber);
+      background: var(--text);
+      color: var(--bg);
+      font-weight: 700;
+    }
+
+    main {
+      display: grid;
+      place-items: center;
+      padding: 36px;
+      background:
+        linear-gradient(rgba(245, 241, 232, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245, 241, 232, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+    }
+
+    .frame {
+      width: min(520px, 100%);
+      aspect-ratio: 3 / 4;
+      border: 1px solid var(--line);
+      background: #080808;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>NO MENU<br>今晚三站发布图</h1>
+    <p>用于小红书 Beer Route 新功能发布。只做产品说明，不展示地图路线、不承诺最近/最快/最优。</p>
+
+    <label>
+      图片类型
+      <select id="variant">
+        <option value="cover">封面：TONIGHT'S BEER ROUTE</option>
+        <option value="cta">结尾：App Store 搜 No Menu</option>
+      </select>
+    </label>
+
+    <button id="download" class="primary" type="button">下载 PNG</button>
+  </aside>
+
+  <main>
+    <div class="frame">
+      <canvas id="canvas" width="1080" height="1440"></canvas>
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    const variant = document.getElementById('variant')
+    const download = document.getElementById('download')
+
+    const colors = {
+      bg: '#090908',
+      panel: '#11100e',
+      line: '#2b2822',
+      text: '#f5f1e8',
+      muted: '#b8b0a2',
+      faint: '#756f65',
+      gold: '#c6a875',
+      amber: '#e1a94f',
+      dark: '#0d0d0d',
+    }
+
+    function font(size, weight = 400, mono = false) {
+      const family = mono
+        ? '"SFMono-Regular", "SF Mono", Menlo, Consolas, monospace'
+        : '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif'
+      return `${weight} ${size}px ${family}`
+    }
+
+    function drawText(text, x, y, options = {}) {
+      ctx.save()
+      ctx.fillStyle = options.color || colors.text
+      ctx.font = font(options.size || 32, options.weight || 400, options.mono || false)
+      ctx.textBaseline = 'top'
+      if (options.align) ctx.textAlign = options.align
+      if (options.letterSpacing) {
+        let currentX = x
+        for (const char of text) {
+          ctx.fillText(char, currentX, y)
+          currentX += ctx.measureText(char).width + options.letterSpacing
+        }
+      } else {
+        ctx.fillText(text, x, y)
+      }
+      ctx.restore()
+    }
+
+    function drawWrappedText(text, x, y, maxWidth, lineHeight, options = {}) {
+      ctx.save()
+      ctx.fillStyle = options.color || colors.text
+      ctx.font = font(options.size || 32, options.weight || 400)
+      ctx.textBaseline = 'top'
+      let line = ''
+      let currentY = y
+      for (const char of text) {
+        const testLine = line + char
+        if (ctx.measureText(testLine).width > maxWidth && line) {
+          ctx.fillText(line, x, currentY)
+          line = char
+          currentY += lineHeight
+        } else {
+          line = testLine
+        }
+      }
+      if (line) ctx.fillText(line, x, currentY)
+      ctx.restore()
+    }
+
+    function roundRect(x, y, width, height, radius, fill, stroke, lineWidth = 1) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.roundRect(x, y, width, height, radius)
+      if (fill) {
+        ctx.fillStyle = fill
+        ctx.fill()
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke
+        ctx.lineWidth = lineWidth
+        ctx.stroke()
+      }
+      ctx.restore()
+    }
+
+    function drawBackground() {
+      ctx.fillStyle = colors.bg
+      ctx.fillRect(0, 0, 1080, 1440)
+      const gradient = ctx.createRadialGradient(90, 0, 20, 90, 0, 880)
+      gradient.addColorStop(0, 'rgba(124, 86, 56, 0.42)')
+      gradient.addColorStop(0.5, 'rgba(26, 22, 14, 0.22)')
+      gradient.addColorStop(1, 'rgba(9, 9, 8, 0)')
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, 1080, 1440)
+
+      ctx.strokeStyle = 'rgba(245, 241, 232, 0.035)'
+      ctx.lineWidth = 1
+      for (let x = 0; x < 1080; x += 28) {
+        ctx.beginPath()
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, 1440)
+        ctx.stroke()
+      }
+      for (let y = 0; y < 1440; y += 28) {
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(1080, y)
+        ctx.stroke()
+      }
+    }
+
+    function drawBrand() {
+      drawText('NO MENU', 72, 72, {
+        size: 28,
+        mono: true,
+        color: colors.gold,
+        letterSpacing: 8,
+      })
+      ctx.strokeStyle = colors.line
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(72, 142)
+      ctx.lineTo(1008, 142)
+      ctx.stroke()
+    }
+
+    function drawRoutePreview() {
+      const x = 108
+      const y = 780
+      const numberX = 108
+      const cardX = 232
+      const stops = ['正在浏览的酒吧', '附近酒吧 02', '附近酒吧 03']
+
+      stops.forEach((stop, index) => {
+        const top = y + index * 162
+        drawText(String(index + 1).padStart(2, '0'), numberX, top + 16, {
+          size: 42,
+          mono: true,
+          color: colors.amber,
+        })
+        if (index < stops.length - 1) {
+          ctx.strokeStyle = 'rgba(198, 168, 117, 0.25)'
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.moveTo(numberX + 22, top + 78)
+          ctx.lineTo(numberX + 22, top + 148)
+          ctx.stroke()
+        }
+        roundRect(cardX, top, 720, 116, 18, 'rgba(21, 21, 21, 0.72)', 'rgba(245, 241, 232, 0.1)', 2)
+        drawText(stop, cardX + 40, top + 35, {
+          size: 34,
+          weight: 500,
+          color: colors.text,
+        })
+      })
+    }
+
+    function drawCover() {
+      drawBackground()
+      drawBrand()
+      drawText("TONIGHT'S", 72, 246, {
+        size: 96,
+        mono: true,
+        color: colors.gold,
+        letterSpacing: 2,
+      })
+      drawText('BEER ROUTE', 72, 350, {
+        size: 96,
+        mono: true,
+        color: colors.gold,
+        letterSpacing: 2,
+      })
+      drawText('今晚三站', 72, 500, {
+        size: 82,
+        weight: 600,
+        color: colors.text,
+      })
+      drawWrappedText('从一家酒吧开始，看看附近两家', 72, 620, 840, 58, {
+        size: 42,
+        color: colors.muted,
+      })
+      drawRoutePreview()
+      drawText('不请求定位 · 不内嵌地图 · 需要导航时打开 Apple Maps', 72, 1324, {
+        size: 28,
+        color: colors.faint,
+      })
+    }
+
+    function drawCta() {
+      drawBackground()
+      drawBrand()
+      drawText('上海精酿实时酒单', 72, 260, {
+        size: 58,
+        weight: 600,
+        color: colors.text,
+      })
+      drawWrappedText('看今晚在售酒单、近期上新，也可以从当前酒吧发现附近两站。', 72, 370, 880, 56, {
+        size: 38,
+        color: colors.muted,
+      })
+
+      const bullets = [
+        '实时 tap list',
+        '酒吧详情与酒款搜索',
+        'TONIGHT’S BEER ROUTE / 今晚三站',
+      ]
+      bullets.forEach((bullet, index) => {
+        const top = 650 + index * 112
+        roundRect(72, top, 936, 76, 38, 'rgba(21, 21, 21, 0.72)', 'rgba(198, 168, 117, 0.18)', 2)
+        drawText(bullet, 118, top + 20, {
+          size: 30,
+          weight: 500,
+          color: colors.text,
+        })
+      })
+
+      roundRect(72, 1138, 936, 130, 28, colors.text, null)
+      drawText('App Store 搜', 128, 1170, {
+        size: 30,
+        color: colors.dark,
+      })
+      drawText('No Menu', 128, 1206, {
+        size: 54,
+        weight: 700,
+        color: colors.dark,
+      })
+      drawText('酒单、价格与库存请以门店实际供应为准', 72, 1330, {
+        size: 26,
+        color: colors.faint,
+      })
+    }
+
+    function draw() {
+      if (variant.value === 'cta') {
+        drawCta()
+      } else {
+        drawCover()
+      }
+    }
+
+    function downloadPng() {
+      const link = document.createElement('a')
+      link.href = canvas.toDataURL('image/png')
+      link.download = variant.value === 'cta'
+        ? 'no-menu-beer-route-cta.png'
+        : 'no-menu-beer-route-cover.png'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+
+    variant.addEventListener('change', draw)
+    download.addEventListener('click', downloadPng)
+    draw()
+  </script>
+</body>
+</html>

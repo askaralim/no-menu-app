@@ -15,12 +15,13 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.taklip.nomenuapp",
-      "buildNumber": "10",
+      "buildNumber": "13",
       "infoPlist": {
+        "CFBundleDisplayName": "NM Tonight",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "zh-Hans",
         "NSPhotoLibraryUsageDescription": "No Menu Tonight 需要访问相册，以便你为酒款选择并上传图片到今晚酒单。",
-        "NSPhotoLibraryAddUsageDescription": "No Menu Tonight 需要访问相册，以便保存酒款图片。"
+        "NSPhotoLibraryAddUsageDescription": "No Menu Tonight 需要访问相册，以便保存酒款图片和门店二维码。"
       }
     },
     "android": {
@@ -45,6 +46,14 @@
           "photosPermission": "No Menu Tonight 需要访问相册，以便你为酒款选择并上传图片到今晚酒单。",
           "cameraPermission": false,
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "No Menu Tonight 需要访问相册，以便保存门店二维码。",
+          "savePhotosPermission": "No Menu Tonight 需要访问相册，以便保存门店二维码。",
+          "isAccessMediaLocationEnabled": false
         }
       ]
     ],

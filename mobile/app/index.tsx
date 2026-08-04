@@ -23,8 +23,7 @@ export default function IndexRedirect() {
   }
 
   if (session && tenantId && role) {
-    const isOwnerOrAdmin = role === 'owner' || role === 'super_admin'
-    return <Redirect href={isOwnerOrAdmin ? '/(tabs)/taplist' : '/(tabs)'} />
+    return <Redirect href="/(tabs)/taplist" />
   }
 
   if (session && memberships.length === 0) {

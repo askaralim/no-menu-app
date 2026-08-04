@@ -8,6 +8,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      initialRouteName="taplist"
       screenOptions={{
         // Pages own their hero titles; native header duplicated "商品库/门店" etc.
         headerShown: false,
@@ -71,6 +72,20 @@ export default function TabLayout() {
           // Hidden from tab bar — open from 门店 → 经营数据. Account actions live on 门店.
           href: null,
           title: '经营数据',
+        }}
+      />
+      <Tabs.Screen
+        name="events"
+        options={{
+          href: null,
+          title: '活动',
+        }}
+      />
+      <Tabs.Screen
+        name="event-edit"
+        options={{
+          href: null,
+          title: '编辑活动',
         }}
       />
     </Tabs>

@@ -1,0 +1,80 @@
+name,row_count,tenant_count,brand_or_brewery_values,drink_ids,note
+泡泡浴,5,4,Alus,bf585bd3-9a78-4c17-ad7e-327340cd6abd|cb23ecc2-dce3-4519-a6ad-83848d69b15a|8a4db5ad-ea3e-487e-8254-f098879b2343|c463fc75-47bd-44ed-a011-fb120867de0e|7198042c-626d-4fa5-ad6c-eb883a6165e5,Same name appears across multiple tenants. Review manually.
+小花冠,5,5,虽吴|虽吾|虽吴酿造,3d6cb427-a8c3-4583-a7c4-5a3ad9f5f505|d8368ac1-8dd5-40b8-b4bf-61e915e55372|25ba7d64-f634-4fc1-8957-78c0df84dff5|02771aa7-ffd4-470a-805f-ce520696e2ff|b5be827e-be9a-4016-a1bf-4bc82e264bd6,Same drink name with different brand/brewery values. Do not auto-merge.
+北地显影,3,3,蔓延|蔓延酿造,4d1da7d9-8b21-4706-b535-355b9ff70102|60161074-2410-42f8-b5a4-8a3c65593fab|6081a221-2ac9-49ef-adac-e4582c3b081c,Same drink name with different brand/brewery values. Do not auto-merge.
+饼干,3,3,Alus,fabc796c-cd3e-4bdd-9e2a-d408081d5323|af551b53-d9e8-47c4-ac8f-9da701f9fbbb|541585e6-4440-479f-a306-ee145de58a17,Same name appears across multiple tenants. Review manually.
+狄俄尼索斯的眼泪,3,3,退界,9c6dd799-7f8c-44ce-b912-95fb85e0f35d|d681ca8e-2f25-46fe-9e70-bc4bdd78f531|624eb27a-c715-4e04-bb2a-46b839cb7111,Same name appears across multiple tenants. Review manually.
+黑武士,3,3,玄水屋,6735f156-12dd-48b6-9b99-ef372bf0a8e4|7dd63e93-6d77-406d-94f3-b878b3e265da|b9f80a82-f1e8-4c6f-8ff2-703c5dbdaa16,Same name appears across multiple tenants. Review manually.
+金狼之舞,3,3,虽吴|虽吾,f157c23d-c2ee-4bcc-b6bf-20330d3af0da|7616db18-01b7-45fb-81ee-54275952855c|572775af-27fb-4422-9669-8c29631e007b,Same drink name with different brand/brewery values. Do not auto-merge.
+酒花大盗,3,2,Deadman,e4fb40f2-af9b-423f-a95a-94c728a3cdb8|699e8493-a68c-4d21-b68f-1bd6ba2b5146|acea536b-e527-460f-a436-e74b73e9fd1c,Same name appears across multiple tenants. Review manually.
+梦,3,3,疯熊工业|疯熊,23fe2e86-210b-4689-b8fc-5d4add727c93|f9bba99c-b740-4bc1-a1ca-4eed250ab178|2a8ce81b-08fd-4506-9947-44239d56b481,Same drink name with different brand/brewery values. Do not auto-merge.
+喵醺,3,2,Alus,493f723f-4886-47cb-ad52-9bf7348163b5|a21803a7-2d2b-47ee-8bf0-e794e10744e3|2bebe397-2f85-48a5-8799-5250ff20b541,Same name appears across multiple tenants. Review manually.
+南方,3,2,Alus,ece461ac-2c0b-4c6d-bd91-0cac5bb7d8a4|e7dde07b-11d6-4310-86fb-91d8ad0eac28|7771ff07-fcdc-427c-a354-335051e917ca,Same name appears across multiple tenants. Review manually.
+无限螺旋,3,3,野鹅微醺 x 佳卡哈|野鹅微醺|野鹅,d5898f73-3a45-4793-b701-9a0ced4b716c|4bc1f11c-d51d-4795-b6f5-450480e22706|d4412873-2f76-414a-a202-d7ff26ba2681,Same drink name with different brand/brewery values. Do not auto-merge.
+夏沁,3,3,HES PER|HESPER,20c134e8-2f7e-4d56-9a48-90566ab5571c|200d3537-5b05-490c-8d6f-6c59774efec0|b0175d6a-18a6-467a-a6c8-d4132ba461c5,Same drink name with different brand/brewery values. Do not auto-merge.
+想象中的雨,3,3,Fever|FEVER,94d157cd-cad5-4db7-9c0f-52f510ef694d|6ac05b76-0976-4939-b37a-bddbc85b7a03|945ed276-5436-4b11-b570-ba7c45bf2377,Same name appears across multiple tenants. Review manually.
+晓夫,3,3,退界,88d10062-8afb-4c24-a230-4a913d041493|7ecf0b7c-ddb3-42a9-a9bc-5c5b3a1edf39|13a3b7e5-1dd9-4b66-8284-920b0e8ac946,Same name appears across multiple tenants. Review manually.
+依帕,3,3,赤屿谷盗,4d1da7d9-8b21-4706-b535-355b9ff70103|8ddeccdf-1951-4563-a48a-d313efba1523|fb7b89d5-a7b5-4813-86ee-9286275cabd6,Same name appears across multiple tenants. Review manually.
+紫露,3,2,洄游造物|洄游,68f9656e-427d-4757-9fed-b8f48b38a808|aa28c24b-2738-4724-992d-bdc4b92c8387|a85e5c3c-fc3c-40ba-8e34-6c59dcda43f3,Same drink name with different brand/brewery values. Do not auto-merge.
+阿罗哈POG西打,2,2,佳卡哈,558647b4-cdd4-43e1-b137-6de18c2019f8|b73ea8ab-168d-4857-b2ca-0c88c65d27ba,Same name appears across multiple tenants. Review manually.
+白拉格2026,2,2,Fever,a734c1a9-99c4-4060-a901-b410cd9cdccf|b43a966c-5c24-4602-8073-d6cee91bec59,Same name appears across multiple tenants. Review manually.
+白日梦,2,2,辉光,545fd669-0d8c-4aac-b24c-6a3cde97ff52|720a7dcc-769f-43d3-b427-7b18dc9401c8,Same name appears across multiple tenants. Review manually.
+白天使,2,2,玄水屋,2408feaa-3bca-4eb8-8036-90c30ee5b25b|78f27fb8-ffcc-4ced-8f13-c98cd3cb3034,Same name appears across multiple tenants. Review manually.
+本劫,2,2,本末·特伦|本末特伦,03d988a3-4833-4266-8b4f-93a679701c52|0a83c634-fa20-48a8-957b-708ad3141659,Same drink name with different brand/brewery values. Do not auto-merge.
+冰川,2,2,勿幕酿造 / WUMU Brewery|勿幕,ad0e8fab-748a-4ef3-af0d-cfcc1a4ae90c|d379fd2e-3a86-4621-9e51-bce5a6d438c6,Same drink name with different brand/brewery values. Do not auto-merge.
+布里斯班淡影,2,2,远山啤酒 / Far Mont Beer|远山,08cde394-e1d2-4097-a6b0-c4dc1a8c740c|430b26a2-9824-49a9-b696-4a93540ceeca,Same drink name with different brand/brewery values. Do not auto-merge.
+从我的吧台滚出去,2,2,Liquid's Tag,816640be-c4d6-4579-98b7-93cbe3036852|0f5ddbd1-a1d8-485d-a08b-1bd59fc8afd8,Same name appears across multiple tenants. Review manually.
+大师的疯狂,2,2,蔓延,b42fb32a-927e-44de-af61-ad668be63819|5cd36ffd-0d89-40c1-b503-8430d4a74f96,Same name appears across multiple tenants. Review manually.
+德式小麦,2,2,Weihenstephan|与众严选,d1000001-0001-4001-8001-000000000304|b9912349-6010-4a3f-9ffd-5d8d3c24d5c1,Same drink name with different brand/brewery values. Do not auto-merge.
+第一个纪念日,2,2,风土|风土酿造,1e933cb1-25da-4b81-8f0d-33515120e727|b624af36-17bd-4780-bfe5-bde19e6d2ab9,Same drink name with different brand/brewery values. Do not auto-merge.
+东分影,2,2,疯熊工业 / Crazy Bear Industry|疯熊工业,03ef756e-2c94-488c-83bc-f474ea756577|9549329d-528b-4f32-84e5-9155a6a7977c,Same drink name with different brand/brewery values. Do not auto-merge.
+飞越云海,2,2,虽吾酿造|虽吾,44a4429c-fb70-47a5-923b-370fce8f0111|7a1a41aa-181f-4a4d-85b9-79bc9d40ab96,Same drink name with different brand/brewery values. Do not auto-merge.
+分形,2,2,幻果实验室|幻果实验,4f93a1b6-cf77-49ac-89f1-d2f9a1d6884d|549ad378-946c-4f76-906d-1e76d2655f8c,Same drink name with different brand/brewery values. Do not auto-merge.
+风暴中心 金桔芒果酸,2,2,云朴精酿,3ba6d6d9-3265-486c-81bb-968519bbe479|59e6b7d7-e251-4a9a-ad99-bbcb908732b7,Same name appears across multiple tenants. Review manually.
+凤尾果香,2,2,虽吴|虽吾酿造 / SUIWU,3d6cb427-a8c3-4583-a7c4-5a3ad9f5f504|452f6f22-12ea-4d3c-a14d-60027fdc4cec,Same drink name with different brand/brewery values. Do not auto-merge.
+浮柚,2,2,云泥,cf260c55-1df1-4b31-b071-d54709c396c2|11d1c95f-1951-4d54-83ed-6c52c5d06777,Same name appears across multiple tenants. Review manually.
+副本,2,2,浦江半岛,4d1da7d9-8b21-4706-b535-355b9ff70105|41a7c973-03e8-423a-9829-16ccc1ddb9d1,Same name appears across multiple tenants. Review manually.
+谷仓金,2,2,Fever|FEVER,0fcfe276-265d-423d-b0a6-f4786621e491|cf0db959-5861-404d-b2c4-b2267093eced,Same name appears across multiple tenants. Review manually.
+谷仓铜,2,2,Fever|FEVER,04045c1e-642a-467f-be0c-3cf1031f1b70|6fc0f737-7b31-416f-b5aa-f197d20a416e,Same name appears across multiple tenants. Review manually.
+果味满满,2,2,回头客,d07741c4-3943-426c-af05-6908d7c4f63a|7dce1b6f-0f72-4a76-804b-29b514410ee0,Same name appears across multiple tenants. Review manually.
+寒鸦与钟声,2,2,彼岸酿造,883c61a5-dac8-454b-b97a-e5296016faab|d06d6219-2e87-4fb3-adf6-a1247f953050,Same name appears across multiple tenants. Review manually.
+黄河之水,2,2,或不凡,44a4429c-fb70-47a5-923b-370fce8f0108|b03bd279-f7e0-42f4-9692-b35ac88e408d,Same name appears across multiple tenants. Review manually.
+极光觅月,2,2,航标酿造|航标,44a4429c-fb70-47a5-923b-370fce8f0107|a5fed519-87b9-4138-8245-d3fa90ed2874,Same drink name with different brand/brewery values. Do not auto-merge.
+今日与春风相会,2,2,云朴精酿,8edee3c4-0a93-4a56-ac1e-c036738d24da|380ff1b2-db96-4791-a407-5d7b75bf0edf,Same name appears across multiple tenants. Review manually.
+金标,2,2,小熊贝莲,1daf6154-31c6-47a6-8a66-91d9aa9563a3|9230ff47-4dac-4a8a-9bf6-bb86642d694d,Same name appears across multiple tenants. Review manually.
+金星的日落,2,2,Fever|FEVER,c4d0361b-be49-4d06-abd3-39bf809cfe89|c00abd44-577a-4af3-903a-6b2751cf7eeb,Same name appears across multiple tenants. Review manually.
+酒花构建,2,2,蔓延,b9d23b15-9628-4f05-9a93-b5d15364f4d8|a3739ffb-d7d6-4975-b6ea-eb21520bc75d,Same name appears across multiple tenants. Review manually.
+卡里斯马,2,2,玄水屋,8bb09053-199d-4aff-9d8e-734f384c1be0|ab5380d2-9520-4b56-9ac2-eb0d257373bc,Same name appears across multiple tenants. Review manually.
+立方,2,2,蔓延|蔓延酿造,7921f0c5-819e-4f7f-ac1a-d3029f9a7422|62d54d8b-4886-4876-bf52-1dddf4295438,Same drink name with different brand/brewery values. Do not auto-merge.
+流动,2,2,疯熊酿造|疯熊,af4e1c2f-a723-49ec-83d2-3f84f95fc243|674e3afb-6cd8-4852-b531-1b74522c560a,Same drink name with different brand/brewery values. Do not auto-merge.
+乱语,2,2,蔓延,538efcb1-34be-46b4-b670-f44920808c21|a6c15c93-04a9-4e82-8ec9-e2b269b25955,Same name appears across multiple tenants. Review manually.
+美洲豹,2,2,洛莱|分野&谷语者,b7cad690-f65f-44ed-9a80-8280a8eeaa34|5b71ded6-560e-45b0-b330-6704e67a65d7,Same drink name with different brand/brewery values. Do not auto-merge.
+蜜桃奶油,2,2,邪恶双子,b35a74b6-d7d0-4a78-acce-1fd838d9a59c|7d71b097-40dc-448b-a323-8e5f6d193261,Same name appears across multiple tenants. Review manually.
+南部之星,2,2,彼岸酿造,6f6b7d63-7da0-4a77-a210-dc104843b43f|a013ee16-127e-428e-8123-246fd8f2dc7b,Same name appears across multiple tenants. Review manually.
+南境之花,2,2,野鹅|野鹅微醺,d06d5125-18ae-4eb4-aee5-1b13fcb1a6e7|687f9f00-4f93-4e2a-9f9e-17ce717fdc24,Same drink name with different brand/brewery values. Do not auto-merge.
+啤酒实习生2603,2,2,疯熊工业 / Crazy Bear Industry|疯熊,a03ee8e0-400a-4dfd-9a64-3a7e87f71301|2a267414-7ee8-4d9b-bed0-3c3706fcdedd,Same drink name with different brand/brewery values. Do not auto-merge.
+轻硫醇皮尔森,2,2,疯熊,d0813363-3501-46ab-9207-e2cef2ce63d2|01efc528-8874-4dcc-a4d2-1c5aba6774f6,Same name appears across multiple tenants. Review manually.
+全明,2,2,Fever,4d1da7d9-8b21-4706-b535-355b9ff70106|4e8264e2-5521-4906-b387-478327c0f370,Same name appears across multiple tenants. Review manually.
+融雪之前,2,1,云朵|云朴,f8af5260-7214-4bbe-a773-04d446396fcc|46ca2285-bca3-4b28-89ad-7b608145cf15,Same drink name with different brand/brewery values. Do not auto-merge.
+萨兹公爵,2,2,山丘,4c9ba575-a325-4bd1-b997-96e8af07c35c|543ccea4-600d-4859-972f-4f8b224475e6,Same name appears across multiple tenants. Review manually.
+山野拾荒者,2,2,航标酿造|航标精酿,44a4429c-fb70-47a5-923b-370fce8f0112|4ad1d6f5-eceb-4f4e-bed2-da8db3d9f0c2,Same drink name with different brand/brewery values. Do not auto-merge.
+少甜少冰,2,2,火碳,1f372356-505a-40c4-9928-34ffeb8f3366|a6bc8029-0967-4973-9d80-f94636e015c5,Same name appears across multiple tenants. Review manually.
+太平洋四重奏,2,2,明日酿造,df10fd51-8f25-4354-a6f0-aac4956abb95|f5fce418-7a79-46db-9043-0e296f9d4e93,Same name appears across multiple tenants. Review manually.
+望梅止渴,2,2,彼岸|彼岸酿造,4d1da7d9-8b21-4706-b535-355b9ff70108|4d5d1a4d-e272-43c1-ab8b-1d2cd3dbe369,Same drink name with different brand/brewery values. Do not auto-merge.
+维京征服,2,2,三子|三子酿造,c663bc60-f535-4cf2-bba1-6154a941a7f3|c91c58f2-d6eb-4b64-8e58-d7153cfb1165,Same drink name with different brand/brewery values. Do not auto-merge.
+下快攻,2,2,退界,c09f46e2-52b0-4892-aca2-46125657b75c|fd72100b-c9bf-478b-af09-0c7de8bc7714,Same name appears across multiple tenants. Review manually.
+笑脸,2,2,欧米尼珀罗,b300865d-4265-4f48-bf2a-1328062371b2|da570bb8-80cb-4653-aa39-24f02bfb7685,Same name appears across multiple tenants. Review manually.
+幸运,2,2,凯西,625c7605-6190-4ad8-b1c7-d815cc246a76|0a93a6c0-dcf5-4c27-8a7b-51337de9d0fe,Same name appears across multiple tenants. Review manually.
+玄骥,2,2,狸造,cbe7c458-88f3-44f3-94b8-2e4a64fa48f5|4e208591-004f-4b8c-8ac0-d26731ba67e0,Same name appears across multiple tenants. Review manually.
+业劫,2,2,本末·特伦,c8eb822f-58e9-4d1d-bcfd-eab18fb972ae|c72e93d8-ec7f-44a8-b69d-9492605e232e,Same name appears across multiple tenants. Review manually.
+夜曲,2,2,彼岸|彼岸酿造,4a1649f8-1455-4337-94ac-dcc763350001|7944990f-d7e7-4889-879b-748f859e8c15,Same drink name with different brand/brewery values. Do not auto-merge.
+一丛殊花,2,2,赤屿谷盗,4d1da7d9-8b21-4706-b535-355b9ff70107|d293b32a-da03-42f3-a99b-23dd828b82ad,Same name appears across multiple tenants. Review manually.
+有限社交,2,2,TAPSTAR,058d1c8e-4117-4caf-8dd5-a42a972d154c|826fac7c-6a10-4ff9-8b72-8798099efc22,Same name appears across multiple tenants. Review manually.
+玉米诱惑,2,2,美西,9a21a89d-58b1-4bdf-a347-a2eda08f0ac1|713f0c24-1fe7-48ed-b5a0-e0d704e473d9,Same name appears across multiple tenants. Review manually.
+原始灵魂示意,2,2,凯西,fc162277-39d3-40ed-aa12-2bb52bcf44b7|84d83ea6-eabf-4db2-8ed6-daad85be0413,Same name appears across multiple tenants. Review manually.
+长夏有风,2,2,赤屿谷盗,91439df4-d1b5-405c-b0d4-a879c5e8fa99|569be77d-646b-49a0-95e3-edc31914d3d6,Same name appears across multiple tenants. Review manually.
+长相思,2,2,明日酿造|蔓延,44a4429c-fb70-47a5-923b-370fce8f0110|05debf0a-72c5-4ecb-a9f6-916ceb596893,Same drink name with different brand/brewery values. Do not auto-merge.
+折射,2,2,Fever,cb6a4ae3-e071-44de-8fc8-0610ea588f19|ccefb5a0-df8c-4f8a-8354-26c6cd40fcb7,Same name appears across multiple tenants. Review manually.
+中途乐园,2,2,蔓延,3367c327-a397-4548-b63f-95fa7033cbdb|a61d54c8-a639-476e-824f-f59a21c6874e,Same name appears across multiple tenants. Review manually.
+Come back to 2016,2,2,明日|明日酿造,02f7db50-c0c8-4f0a-92e6-9c56901cc619|a211483d-b5ca-494d-9a5a-52c1ae24e46c,Same drink name with different brand/brewery values. Do not auto-merge.
+Motu-Moment,2,1,Origin 4|Origin4,40a211f9-fe18-45c8-b651-1514d4078577|30cb5100-a304-4731-92ff-2fa280e53551,Same drink name with different brand/brewery values. Do not auto-merge.

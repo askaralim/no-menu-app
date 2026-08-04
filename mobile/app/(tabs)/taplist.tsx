@@ -30,6 +30,8 @@ import {
 import type { PublicStatus } from '../../lib/types'
 import TaplistPreview from '../../components/taplist/TaplistPreview'
 import TapNumberSheet from '../../components/taplist/TapNumberSheet'
+import DrinkStatusHistorySheet from '../../components/taplist/DrinkStatusHistorySheet'
+import AnchorMenu, { type AnchorRect } from '../../components/ui/AnchorMenu'
 
 const SOLD_OUT_UNDO_MS = 7000
 
@@ -39,16 +41,13 @@ type SoldOutUndo = {
   previousStatus: PublicStatus
 }
 
-type Filter = 'all' | 'public' | 'new' | 'available' | 'coming_soon' | 'sold_out' | 'hidden'
+type Filter = 'all' | 'new' | 'sold_out' | 'hidden'
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: 'all', label: '全部' },
-  { key: 'public', label: '公开中' },
   { key: 'new', label: '上新' },
-  { key: 'available', label: '在售' },
-  { key: 'coming_soon', label: '即将上枪' },
   { key: 'sold_out', label: '售罄' },
-  { key: 'hidden', label: '隐藏' },
+  { key: 'hidden', label: '酒单隐藏' },
 ]
 
 export default function TaplistScreen() {
@@ -63,6 +62,8 @@ export default function TaplistScreen() {
   const [tapDrink, setTapDrink] = useState<DraftDrink | null>(null)
   const [tapBusy, setTapBusy] = useState(false)
   const [soldOutUndo, setSoldOutUndo] = useState<SoldOutUndo | null>(null)
+  const [historyDrink, setHistoryDrink] = useState<DraftDrink | null>(null)
+  const [moreMenu, setMoreMenu] = useState<{ drink: DraftDrink; anchor: AnchorRect } | null>(null)
   const soldOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const clearSoldOutUndo = useCallback(() => {
@@ -103,9 +104,9 @@ export default function TaplistScreen() {
   const counts = useMemo(() => {
     return {
       total: tonightDrinks.length,
-      public: tonightDrinks.filter((d) => d.is_public_visible).length,
-      new: tonightDrinks.filter((d) => d.is_public_visible && d.public_status === 'new').length,
+      new: tonightDrinks.filter((d) => d.public_status === 'new').length,
       sold: tonightDrinks.filter((d) => d.public_status === 'sold_out').length,
+      hidden: tonightDrinks.filter((d) => !d.is_public_visible).length,
     }
   }, [tonightDrinks])
 
@@ -113,13 +114,9 @@ export default function TaplistScreen() {
     return tonightDrinks
       .filter((d) => {
         switch (filter) {
-          case 'public':
-            return d.is_public_visible
           case 'hidden':
             return !d.is_public_visible
           case 'new':
-          case 'available':
-          case 'coming_soon':
           case 'sold_out':
             return d.public_status === filter
           default:
@@ -225,6 +222,20 @@ export default function TaplistScreen() {
     } catch {
       /* already alerted */
     }
+  }
+
+  const markComingSoon = async (d: DraftDrink) => {
+    if (d.public_status === 'coming_soon') return
+    clearSoldOutUndo()
+    try {
+      await applyImmediate(d, { public_status: 'coming_soon' })
+    } catch {
+      /* already alerted */
+    }
+  }
+
+  const openMoreMenu = (d: DraftDrink, anchor: AnchorRect) => {
+    setMoreMenu({ drink: d, anchor })
   }
 
   const handleRemoveFromTonight = (d: DraftDrink) => {
@@ -352,10 +363,10 @@ export default function TaplistScreen() {
               <Text style={styles.eyebrow}>酒单</Text>
 
               <View style={styles.countsRow}>
-                <Stat label="公开中" value={counts.public} />
+                <Stat label="总计" value={counts.total} />
                 <Stat label="上新" value={counts.new} />
                 <Stat label="售罄" value={counts.sold} />
-                <Stat label="总计" value={counts.total} />
+                <Stat label="隐藏" value={counts.hidden} />
               </View>
 
               <View style={styles.metaRow}>
@@ -391,7 +402,7 @@ export default function TaplistScreen() {
             onRestoreOnSale={() => void restoreOnSale(item)}
             onMarkAsNew={() => void markAsNew(item)}
             onMarkAsAvailable={() => void markAsAvailable(item)}
-            onToggleVisible={(v) => void applyImmediate(item, { is_public_visible: v }).catch(() => {})}
+            onMore={(anchor) => openMoreMenu(item, anchor)}
             onTapNumber={() => setTapDrink(item)}
             onRemoveFromTonight={() => handleRemoveFromTonight(item)}
           />
@@ -421,7 +432,44 @@ export default function TaplistScreen() {
         </View>
       ) : null}
 
+      <AnchorMenu
+        visible={!!moreMenu}
+        anchor={moreMenu?.anchor ?? null}
+        items={
+          moreMenu
+            ? [
+                {
+                  key: 'visibility',
+                  label: moreMenu.drink.is_public_visible ? '酒单隐藏' : '设为公开',
+                  onPress: () => {
+                    const d = moreMenu.drink
+                    void applyImmediate(d, {
+                      is_public_visible: !d.is_public_visible,
+                    }).catch(() => {})
+                  },
+                },
+                {
+                  key: 'coming_soon',
+                  label: '即将上新',
+                  onPress: () => void markComingSoon(moreMenu.drink),
+                },
+                {
+                  key: 'history',
+                  label: '状态记录',
+                  onPress: () => setHistoryDrink(moreMenu.drink),
+                },
+              ]
+            : []
+        }
+        onClose={() => setMoreMenu(null)}
+      />
       <TaplistPreview visible={previewOpen} draft={draft} onClose={() => setPreviewOpen(false)} />
+      <DrinkStatusHistorySheet
+        visible={!!historyDrink}
+        drinkId={historyDrink?.id ?? null}
+        drinkName={historyDrink ? historyDrink.display_name || historyDrink.name : ''}
+        onClose={() => setHistoryDrink(null)}
+      />
       <TapNumberSheet
         visible={!!tapDrink}
         drink={tapDrink}
@@ -453,7 +501,7 @@ function DrinkRow({
   onRestoreOnSale,
   onMarkAsNew,
   onMarkAsAvailable,
-  onToggleVisible,
+  onMore,
   onTapNumber,
   onRemoveFromTonight,
 }: {
@@ -463,10 +511,11 @@ function DrinkRow({
   onRestoreOnSale: () => void
   onMarkAsNew: () => void
   onMarkAsAvailable: () => void
-  onToggleVisible: (v: boolean) => void
+  onMore: (anchor: AnchorRect) => void
   onTapNumber: () => void
   onRemoveFromTonight: () => void
 }) {
+  const moreRef = useRef<View>(null)
   const tapNo =
     typeof drink.public_sort_order === 'number' && drink.public_sort_order > 0
       ? drink.public_sort_order
@@ -479,96 +528,118 @@ function DrinkRow({
 
   return (
     <View style={[styles.card, !isPublic && styles.cardHidden]}>
-      <TouchableOpacity
-        onPress={onTapNumber}
-        disabled={busy}
-        activeOpacity={0.8}
-        style={[styles.tapBadge, !tapNo && styles.tapBadgeEmpty]}
-        hitSlop={6}
-        accessibilityLabel={tapNo ? `枪号 ${tapNo}，点按换号` : '未设枪号，点按换号'}
-      >
-        <Text style={[styles.tapBadgeText, !tapNo && styles.tapBadgeTextEmpty]}>
-          {tapNo ? `#${tapNo}` : '#'}
-        </Text>
-      </TouchableOpacity>
-      {drink.image_url ? (
-        <Image source={{ uri: drink.image_url }} style={styles.cardImage} />
-      ) : (
-        <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
-          <Ionicons name="wine-outline" size={22} color={T.faint} />
-        </View>
-      )}
-
-      <View style={styles.cardBody}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.drinkName} numberOfLines={2}>
-            {drink.display_name || drink.name}
+      <View style={styles.cardTop}>
+        <TouchableOpacity
+          onPress={onTapNumber}
+          disabled={busy}
+          activeOpacity={0.8}
+          style={[styles.tapBadge, !tapNo && styles.tapBadgeEmpty]}
+          hitSlop={6}
+          accessibilityLabel={tapNo ? `枪号 ${tapNo}，点按换号` : '未设枪号，点按换号'}
+        >
+          <Text style={[styles.tapBadgeText, !tapNo && styles.tapBadgeTextEmpty]}>
+            {tapNo ? `#${tapNo}` : '#'}
           </Text>
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: statusVis.bg, borderColor: statusVis.border },
-            ]}
-          >
-            <Text style={[styles.statusBadgeText, { color: statusVis.fg }]}>{statusVis.label}</Text>
+        </TouchableOpacity>
+        {drink.image_url ? (
+          <Image source={{ uri: drink.image_url }} style={styles.cardImage} />
+        ) : (
+          <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
+            <Ionicons name="wine-outline" size={22} color={T.faint} />
           </View>
+        )}
+
+        <View style={styles.cardBody}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.drinkName} numberOfLines={2}>
+              {drink.display_name || drink.name}
+            </Text>
+            <View style={styles.statusBadges}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: statusVis.bg, borderColor: statusVis.border },
+                ]}
+              >
+                <Text style={[styles.statusBadgeText, { color: statusVis.fg }]}>{statusVis.label}</Text>
+              </View>
+              {!isPublic ? (
+                <View style={styles.visibilityBadge}>
+                  <Text style={styles.visibilityBadgeText}>酒单隐藏</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+
+          {meta ? (
+            <Text style={styles.meta} numberOfLines={1}>
+              {meta}
+            </Text>
+          ) : null}
         </View>
+      </View>
 
-        {meta ? (
-          <Text style={styles.meta} numberOfLines={1}>
-            {meta}
-          </Text>
-        ) : null}
-
-        <View style={styles.actionsRow}>
-          {isSoldOut ? (
-            <TouchableOpacity
-              disabled={busy}
-              onPress={onRestoreOnSale}
-              style={[styles.actionChip, styles.actionChipPrimary]}
-            >
-              <Text style={[styles.actionChipText, styles.actionChipTextPrimary]}>恢复在售</Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              {isNew ? (
-                <TouchableOpacity disabled={busy} onPress={onMarkAsAvailable} style={styles.actionChip}>
-                  <Text style={styles.actionChipText}>标为在售</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  disabled={busy}
-                  onPress={onMarkAsNew}
-                  style={[styles.actionChip, styles.actionChipPrimary]}
-                >
-                  <Text style={[styles.actionChipText, styles.actionChipTextPrimary]}>上新</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity disabled={busy} onPress={onSoldOut} style={styles.actionChip}>
-                <Text style={styles.actionChipText}>售罄</Text>
-              </TouchableOpacity>
-            </>
-          )}
+      <View style={styles.actionsRow}>
+        {isSoldOut ? (
           <TouchableOpacity
             disabled={busy}
-            onPress={() => onToggleVisible(!isPublic)}
-            style={[styles.actionChip, !isPublic && styles.actionChipPrimary]}
-            accessibilityLabel={isPublic ? '公开中，点按隐藏' : '已隐藏，点按公开'}
+            onPress={onRestoreOnSale}
+            style={[styles.actionChip, styles.actionChipPrimary]}
           >
-            <Text
-              style={[
-                styles.actionChipText,
-                !isPublic ? styles.actionChipTextPrimary : null,
-              ]}
-            >
-              {isPublic ? '隐藏' : '公开'}
+            <Text style={[styles.actionChipText, styles.actionChipTextPrimary]} numberOfLines={1}>
+              恢复在售
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity disabled={busy} onPress={onRemoveFromTonight} style={styles.actionChip}>
-            <Text style={[styles.actionChipText, styles.actionChipDanger]}>移出酒单</Text>
+        ) : (
+          <>
+            {isNew ? (
+              <TouchableOpacity
+                disabled={busy}
+                onPress={onMarkAsAvailable}
+                style={styles.actionChip}
+              >
+                <Text style={styles.actionChipText} numberOfLines={1}>
+                  标为在售
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                disabled={busy}
+                onPress={onMarkAsNew}
+                style={[styles.actionChip, styles.actionChipPrimary]}
+              >
+                <Text style={[styles.actionChipText, styles.actionChipTextPrimary]} numberOfLines={1}>
+                  上新
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity disabled={busy} onPress={onSoldOut} style={styles.actionChip}>
+              <Text style={styles.actionChipText} numberOfLines={1}>
+                售罄
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+        <TouchableOpacity disabled={busy} onPress={onRemoveFromTonight} style={styles.actionChip}>
+          <Text style={[styles.actionChipText, styles.actionChipDanger]} numberOfLines={1}>
+            移出
+          </Text>
+        </TouchableOpacity>
+        <View ref={moreRef} collapsable={false} style={styles.actionMoreWrap}>
+          <TouchableOpacity
+            disabled={busy}
+            onPress={() => {
+              moreRef.current?.measureInWindow((x, y, width, height) => {
+                onMore({ x, y, width, height })
+              })
+            }}
+            style={[styles.actionChip, styles.actionChipMore]}
+            accessibilityLabel="更多操作"
+          >
+            <Text style={styles.actionChipText}>⋯</Text>
           </TouchableOpacity>
-          {busy ? <ActivityIndicator size="small" color={T.gold} /> : null}
         </View>
+        {busy ? <ActivityIndicator size="small" color={T.gold} /> : null}
       </View>
     </View>
   )
@@ -625,20 +696,22 @@ const styles = StyleSheet.create({
   filterText: { color: T.muted, fontSize: 14 },
   filterTextActive: { color: T.text, fontWeight: '600' },
   card: {
-    flexDirection: 'row',
-    gap: 12,
     backgroundColor: T.surface,
     borderRadius: 14,
     paddingTop: 14,
     paddingHorizontal: 14,
-    paddingBottom: 16,
+    paddingBottom: 12,
     marginHorizontal: LAYOUT.pagePad,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: T.borderFaint,
-    alignItems: 'flex-start',
   },
   cardHidden: { opacity: 0.55 },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
   tapBadge: {
     minWidth: 40,
     height: 40,
@@ -661,6 +734,7 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1, minWidth: 0 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   drinkName: { color: T.text, fontSize: 16, fontWeight: '700', flex: 1 },
+  statusBadges: { alignItems: 'flex-end', gap: 4 },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -669,14 +743,45 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   statusBadgeText: { fontSize: 11, fontWeight: '700' },
-  meta: { color: T.muted, fontSize: 13, marginTop: 4 },
-  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 12 },
-  actionChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
+  visibilityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: T.border,
+    backgroundColor: T.surfaceMuted,
+  },
+  visibilityBadgePublic: { borderColor: T.goldBorder, backgroundColor: T.goldFill },
+  visibilityBadgeText: { color: T.muted, fontSize: 11, fontWeight: '700' },
+  visibilityBadgeTextPublic: { color: T.gold },
+  meta: { color: T.muted, fontSize: 13, marginTop: 4 },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: T.borderFaint,
+  },
+  actionChip: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionChipMore: {
+    flex: 0,
+    minWidth: 44,
+    paddingHorizontal: 10,
+  },
+  actionMoreWrap: {
+    flexGrow: 0,
   },
   actionChipPrimary: {
     borderColor: T.goldBorder,

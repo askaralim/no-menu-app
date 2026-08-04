@@ -18,13 +18,13 @@ export const ShareableDrinkLogImage = forwardRef<
   return (
     <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }}>
       <View collapsable={false} style={styles.card}>
-        <Text style={styles.title}>我的酒迹</Text>
+        <Text style={styles.title}>我喝过的</Text>
         <Text style={styles.summary}>
-          {summary.drink_count} 款酒 · {summary.bar_count} 家酒吧
-          {summary.started_at ? ` · 始于 ${formatDate(summary.started_at)}` : ''}
+          {summary.drink_count} 款酒 · {summary.bar_count} 家店
+          {summary.started_at ? ` · ${formatDate(summary.started_at)} 第一杯` : ''}
         </Text>
         <View style={styles.rule} />
-        <Text style={styles.sectionLabel}>近期酒迹</Text>
+        <Text style={styles.sectionLabel}>最近9杯</Text>
         <View style={styles.grid}>
           {summary.recent.slice(0, 9).map((drink) => (
             <View key={drink.light_id} style={styles.item}>
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   summary: { ...typography.micro, color: palette.muted, marginTop: 2 },
   rule: { height: 1, backgroundColor: palette.line, marginVertical: spacing.xs },
   sectionLabel: { ...typography.label, color: palette.tungsten, fontSize: 9, lineHeight: 12, marginBottom: spacing.xs },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm, rowGap: spacing.xxs },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm, rowGap: 20 },
   item: { width: 106 },
   artSlot: { height: 62, alignItems: 'center', justifyContent: 'flex-end' },
   art: { width: 54, height: 62, borderRadius: 5 },

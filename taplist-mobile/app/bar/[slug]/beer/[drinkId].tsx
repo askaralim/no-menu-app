@@ -67,7 +67,7 @@ export default function BeerDetailScreen() {
     if (!tenant || !drink || isSavingBeer) return
     if (drinkLogStateQuery.isLoading) return
     if (drinkLogStateQuery.isError) {
-      Alert.alert('暂时无法生成图片', '无法确认这款酒的酒迹状态，请稍后重试。')
+      Alert.alert('暂时无法生成图片', '无法确认这款酒的喝过状态，请稍后重试。')
       void drinkLogStateQuery.refetch()
       return
     }
@@ -94,7 +94,7 @@ export default function BeerDetailScreen() {
     if (isSavingBeer) return
     if (drinkLogStateQuery.isLoading) return
     if (drinkLogStateQuery.isError) {
-      Alert.alert('暂时无法生成图片', '无法确认这款酒的酒迹状态，请稍后重试。')
+      Alert.alert('暂时无法生成图片', '无法确认这款酒的喝过状态，请稍后重试。')
       void drinkLogStateQuery.refetch()
       return
     }
@@ -234,9 +234,11 @@ export default function BeerDetailScreen() {
                 <View style={styles.servingList}>
                   {servingGroups.map((group) => (
                     <View key={group.servingType} style={styles.primaryServing}>
-                      <Text style={styles.primaryServingLabel}>{group.label}</Text>
-                      <View style={styles.servingValues}>
-                        {group.options.map((option, index) => {
+                      {servingGroups.length > 1 ? (
+                        <Text style={styles.primaryServingLabel}>{group.label}</Text>
+                      ) : null}
+                      <View style={[styles.servingValues, servingGroups.length === 1 && styles.servingValuesSingle]}>
+                        {group.options.map((option) => {
                           const priceText =
                             typeof option.price === 'number' && option.price > 0
                               ? `¥${option.price}`
@@ -245,13 +247,12 @@ export default function BeerDetailScreen() {
                           const meta = [volumeText, priceText].filter(Boolean).join(' ')
                           if (!meta) return null
                           return (
-                            <Text key={option.id} style={styles.primaryServingMeta}>
-                              {index > 0 ? ' · ' : ''}
-                              {volumeText ? `${volumeText}${priceText ? ' ' : ''}` : ''}
+                            <View key={option.id} style={styles.servingOption}>
+                              {volumeText ? <Text style={styles.primaryServingMeta}>{volumeText}</Text> : null}
                               {priceText ? (
                                 <Text style={styles.primaryServingPrice}>{priceText}</Text>
                               ) : null}
-                            </Text>
+                            </View>
                           )
                         })}
                       </View>
@@ -514,22 +515,37 @@ const styles = StyleSheet.create({
     paddingRight: spacing.sm,
   },
   primaryServingMeta: {
-    ...typography.caption,
+    ...typography.body,
     color: palette.muted,
+    fontSize: 16,
+    lineHeight: 23,
   },
   primaryServingPrice: {
-    ...typography.caption,
+    ...typography.body,
     color: palette.tungsten,
+    fontSize: 16,
+    lineHeight: 23,
+  },
+  servingOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   servingValues: {
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
+    columnGap: spacing.lg,
+    rowGap: spacing.xs,
     borderLeftWidth: 1,
     borderLeftColor: palette.hairline,
     paddingVertical: spacing.sm,
     paddingLeft: spacing.md,
+  },
+  servingValuesSingle: {
+    borderLeftWidth: 0,
+    paddingLeft: 0,
   },
   servingList: {
     borderBottomWidth: 1,

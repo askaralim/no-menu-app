@@ -9,7 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Linking,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/authProvider'
@@ -54,8 +56,7 @@ export default function LoginScreen() {
     }
     const only = tenants[0]
     await setActiveTenantId(only.tenant_id)
-    const isOwnerOrAdmin = only.role === 'owner' || only.role === 'super_admin'
-    router.replace(isOwnerOrAdmin ? '/(tabs)/taplist' : '/(tabs)')
+    router.replace('/(tabs)/taplist')
   }
 
   async function signInWithPhonePassword() {
@@ -97,34 +98,58 @@ export default function LoginScreen() {
           resizeMode="contain"
           accessibilityLabel="No Menu Tonight"
         />
-        <Text style={styles.headerSubtitle}>酒吧今晚运营</Text>
+        <Text style={styles.headerSubtitle}>酒吧实时酒单管理与发布</Text>
       </View>
 
       <View style={styles.formContainer}>
         <Text style={styles.label}>手机号</Text>
         <View style={styles.phoneRow}>
           <Text style={styles.prefix}>+86</Text>
-          <TextInput
-            style={[styles.input, { flex: 1, marginBottom: 0 }]}
-            onChangeText={setPhone}
-            value={phone}
-            placeholder="请输入中国大陆手机号"
-            placeholderTextColor={COLORS.muted}
-            keyboardType="phone-pad"
-            maxLength={11}
-          />
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.inputField}
+              onChangeText={setPhone}
+              value={phone}
+              placeholder="11 位手机号"
+              placeholderTextColor={COLORS.muted}
+              keyboardType="phone-pad"
+              maxLength={11}
+            />
+            {phone.length > 0 ? (
+              <TouchableOpacity
+                style={styles.clearBtn}
+                onPress={() => setPhone('')}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="清空手机号"
+              >
+                <Ionicons name="close-circle" size={20} color={COLORS.muted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
 
         <Text style={[styles.label, { marginTop: 16 }]}>密码</Text>
-        <TextInput
-          style={styles.input}
-          onChangeText={setPassword}
-          value={password}
-          secureTextEntry
-          placeholder="由店主或 No Menu 提供的密码"
-          placeholderTextColor={COLORS.muted}
-          autoCapitalize="none"
-        />
+        <View style={[styles.inputWrap, { marginBottom: 16 }]}>
+          <TextInput
+            style={styles.inputField}
+            onChangeText={setPassword}
+            value={password}
+            secureTextEntry
+            placeholder="请输入密码"
+            placeholderTextColor={COLORS.muted}
+            autoCapitalize="none"
+          />
+          {password.length > 0 ? (
+            <TouchableOpacity
+              style={styles.clearBtn}
+              onPress={() => setPassword('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="清空密码"
+            >
+              <Ionicons name="close-circle" size={20} color={COLORS.muted} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
@@ -140,10 +165,16 @@ export default function LoginScreen() {
         >
           <Text style={styles.inviteLinkText}>我有邀请码</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.supportLink}
+          onPress={() => void Linking.openURL('https://nomenuapp.com/support?topic=bar_onboarding')}
+        >
+          <Text style={styles.supportLinkText}>申请门店开通 / 联系支持</Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.contactHint}>
-        店主账号由 No Menu 开通。员工用被邀请手机号与初始密码登录后，在「我有邀请码」中加入门店。
+        收到店主邀请？点「我有邀请码」，用手机号 + 初始密码 + 邀请码一次加入。密码在店主生成邀请时显示，可让店主点「复制」发给你。
       </Text>
     </KeyboardAvoidingView>
   )
@@ -181,6 +212,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    marginBottom: 0,
   },
   prefix: {
     color: COLORS.text,
@@ -191,13 +223,24 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 8,
   },
-  input: {
+  inputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.card,
-    color: COLORS.text,
     borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
+    paddingRight: 10,
+  },
+  inputField: {
+    flex: 1,
+    color: COLORS.text,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingRight: 8,
     fontSize: 16,
+  },
+  clearBtn: {
+    padding: 2,
   },
   button: {
     backgroundColor: COLORS.gold,
@@ -223,6 +266,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  supportLink: { marginTop: 14, alignItems: 'center' },
+  supportLinkText: { color: COLORS.muted, fontSize: 14, textDecorationLine: 'underline' },
   contactHint: {
     color: COLORS.muted,
     fontSize: 13,

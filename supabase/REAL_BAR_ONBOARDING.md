@@ -38,3 +38,9 @@ Password is normal Supabase email/password. SMS is not required.
 | `staff` | No | No | Yes |
 
 Staff invites remain available later; owner onboarding does not use them.
+
+## Venue QR (optional, after bar exists)
+
+Permanent venue QR codes are documented in **`TENANT_QR_LINKS.md`**. New codes must be written to
+both `tenant_qr_links` and `taplist-web/config/qr-links.json`, then verified with
+`supabase/tools/check-qr-links-sync.mjs`.

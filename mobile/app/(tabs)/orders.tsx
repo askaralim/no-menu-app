@@ -13,7 +13,9 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { Redirect } from 'expo-router'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../lib/authProvider'
 import { orderStatusLabel, isOrderSettled } from '../../lib/constants'
 import { THEME as T, orderStatusVisual, LAYOUT } from '../../lib/theme'
 import type { Order, OrderWithItems, OrderStatus, BusinessDay, Drink } from '../../lib/types'
@@ -25,14 +27,16 @@ interface BusinessDayWithOrders extends BusinessDay {
 
 type ViewMode = 'list' | 'detail'
 
-export default function OrdersScreen() {
+function OrdersScreen() {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [businessDays, setBusinessDays] = useState<BusinessDayWithOrders[]>([])
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
+  const [selectedBusinessDayClosedAt, setSelectedBusinessDayClosedAt] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'checked_out'>('all')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [statusUpdating, setStatusUpdating] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
   const fetchBusinessDays = useCallback(async () => {
@@ -85,6 +89,7 @@ export default function OrdersScreen() {
 
   const fetchOrderDetails = async (orderId: string) => {
     setDetailLoading(true)
+    setSelectedBusinessDayClosedAt(null)
     try {
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
@@ -102,10 +107,23 @@ export default function OrdersScreen() {
 
       if (itemsError) throw itemsError
 
+      let businessDayClosedAt: string | null = null
+      if (orderData.business_day_id) {
+        const { data: businessDayData, error: businessDayError } = await supabase
+          .from('business_days')
+          .select('closed_at')
+          .eq('id', orderData.business_day_id)
+          .single()
+
+        if (businessDayError) throw businessDayError
+        businessDayClosedAt = businessDayData.closed_at
+      }
+
       setSelectedOrder({
         ...orderData,
         items: (itemsData || []).map((item: any) => ({ ...item, drink: item.drinks })),
       })
+      setSelectedBusinessDayClosedAt(businessDayClosedAt)
       setViewMode('detail')
     } catch (e) {
       Alert.alert('错误', e instanceof Error ? e.message : '加载订单详情失败')
@@ -115,6 +133,8 @@ export default function OrdersScreen() {
   }
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    if (statusUpdating) return
+    setStatusUpdating(true)
     try {
       const updateData: any = { status: newStatus }
       if (newStatus === 'checked_out') updateData.checked_out_at = new Date().toISOString()
@@ -122,11 +142,39 @@ export default function OrdersScreen() {
       const { error } = await supabase.from('orders').update(updateData).eq('id', orderId)
       if (error) throw error
 
-      fetchBusinessDays()
-      if (selectedOrder?.id === orderId) fetchOrderDetails(orderId)
-    } catch (e) {
-      Alert.alert('错误', '操作失败')
+      await fetchBusinessDays()
+      if (selectedOrder?.id === orderId) await fetchOrderDetails(orderId)
+    } catch (e: any) {
+      const message = e?.message || ''
+      Alert.alert(
+        '操作失败',
+        message.includes('ORDER_RESTORE_CLOSED_BUSINESS_DAY')
+          ? '营业日已结束，不能恢复订单'
+          : message || '请重试',
+      )
+    } finally {
+      setStatusUpdating(false)
     }
+  }
+
+  const confirmCheckout = (order: Order) => {
+    Alert.alert('确认结账', `确认将「${order.customer_name}」标记为已结账？`, [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '确认结账',
+        onPress: () => void handleStatusChange(order.id, 'checked_out'),
+      },
+    ])
+  }
+
+  const confirmRestore = (order: Order) => {
+    Alert.alert('确认恢复订单', '恢复后订单将回到进行中，并清除原结账时间。', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '确认恢复',
+        onPress: () => void handleStatusChange(order.id, 'active'),
+      },
+    ])
   }
 
   const handleCloseBusinessDay = (bdId: string) => {
@@ -248,7 +296,14 @@ export default function OrdersScreen() {
     return (
       <SafeAreaView style={styles.detailRoot} edges={['top']}>
         <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-          <TouchableOpacity onPress={() => { setViewMode('list'); setSelectedOrder(null) }} style={styles.backBtn}>
+          <TouchableOpacity
+            onPress={() => {
+              setViewMode('list')
+              setSelectedOrder(null)
+              setSelectedBusinessDayClosedAt(null)
+            }}
+            style={styles.backBtn}
+          >
             <Ionicons name="chevron-back" size={20} color={T.gold} />
             <Text style={styles.backBtnText}>返回订单列表</Text>
           </TouchableOpacity>
@@ -315,19 +370,37 @@ export default function OrdersScreen() {
           <View style={styles.actionSection}>
             {selectedOrder.status === 'active' && (
               <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={() => handleStatusChange(selectedOrder.id, 'checked_out')}
+                style={[styles.primaryBtn, statusUpdating && styles.buttonDisabled]}
+                disabled={statusUpdating}
+                onPress={() => confirmCheckout(selectedOrder)}
               >
-                <Text style={styles.primaryBtnText}>标记为已结账</Text>
+                {statusUpdating ? (
+                  <ActivityIndicator size="small" color={T.background} />
+                ) : (
+                  <Text style={styles.primaryBtnText}>标记为已结账</Text>
+                )}
               </TouchableOpacity>
             )}
             {isOrderSettled(selectedOrder.status) && (
-              <TouchableOpacity
-                style={styles.secondaryBtn}
-                onPress={() => handleStatusChange(selectedOrder.id, 'active')}
-              >
-                <Text style={styles.secondaryBtnText}>恢复为进行中</Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.secondaryBtn,
+                    (statusUpdating || !!selectedBusinessDayClosedAt) && styles.buttonDisabled,
+                  ]}
+                  disabled={statusUpdating || !!selectedBusinessDayClosedAt}
+                  onPress={() => confirmRestore(selectedOrder)}
+                >
+                  {statusUpdating ? (
+                    <ActivityIndicator size="small" color={T.gold} />
+                  ) : (
+                    <Text style={styles.secondaryBtnText}>恢复订单</Text>
+                  )}
+                </TouchableOpacity>
+                {selectedBusinessDayClosedAt ? (
+                  <Text style={styles.disabledActionHint}>营业日已结束，不能恢复订单</Text>
+                ) : null}
+              </>
             )}
           </View>
         </ScrollView>
@@ -356,8 +429,8 @@ export default function OrdersScreen() {
         <Text style={styles.title}>订单记录</Text>
       </View>
 
-      {/* Status Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: LAYOUT.pagePad, gap: 8 }}>
+      {/* Status Filters — View row (not horizontal ScrollView) so chips keep full height */}
+      <View style={styles.filterRow}>
         {filterButtons.map((f) => (
           <TouchableOpacity
             key={f.key}
@@ -369,7 +442,7 @@ export default function OrdersScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
       <View style={styles.searchWrap}>
         <Ionicons name="search" size={18} color={T.muted} />
@@ -413,7 +486,7 @@ export default function OrdersScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.bdDate}>{formatDate(bd.business_date)}</Text>
                   <Text style={styles.bdMeta}>
-                    {bd.closed_at ? '已结束' : '进行中'} · {bd.orders.length} 单
+                    {bd.closed_at ? '营业日已结束' : '营业日进行中'} · {bd.orders.length} 单
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
@@ -459,6 +532,19 @@ export default function OrdersScreen() {
   )
 }
 
+export default function OrdersRoute() {
+  const { orderingEnabled, isLoading } = useAuth()
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={T.gold} />
+      </View>
+    )
+  }
+  if (!orderingEnabled) return <Redirect href="/(tabs)/taplist" />
+  return <OrdersScreen />
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: T.background },
   detailRoot: { flex: 1, backgroundColor: T.background },
@@ -469,16 +555,26 @@ const styles = StyleSheet.create({
     paddingBottom: LAYOUT.heroPadBottom,
   },
   title: { color: T.text, fontSize: 26, fontWeight: '800' },
-  filterRow: { flexGrow: 0, marginBottom: 12 },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: LAYOUT.pagePad,
+    marginBottom: 12,
+  },
   filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 40,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: T.border,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filterChipActive: { backgroundColor: T.goldFill, borderColor: T.goldBorder },
-  filterText: { color: T.muted, fontSize: 14 },
+  filterText: { color: T.muted, fontSize: 14, lineHeight: 20 },
   filterTextActive: { color: T.text, fontWeight: '600' },
   searchWrap: {
     flexDirection: 'row',
@@ -586,6 +682,8 @@ const styles = StyleSheet.create({
   grandTotalLabel: { fontSize: 16, fontWeight: '600', color: T.text },
   grandTotalValue: { fontSize: 24, fontWeight: '800', color: T.gold },
   actionSection: { gap: 10, marginHorizontal: 20 },
+  buttonDisabled: { opacity: 0.45 },
+  disabledActionHint: { color: T.muted, fontSize: 13, textAlign: 'center' },
   shareBtn: {
     flexDirection: 'row',
     justifyContent: 'center',

@@ -19,6 +19,13 @@ module.exports = ({ config } = {}) => {
         ...(config?.ios?.infoPlist || {}),
         ...(expo.ios?.infoPlist || {}),
         ITSAppUsesNonExemptEncryption: false,
+        CFBundleDevelopmentRegion: 'zh-Hans',
+        NSPhotoLibraryUsageDescription:
+          ios.infoPlist?.NSPhotoLibraryUsageDescription ||
+          'No Menu Tonight 需要访问相册，以便你为酒款选择并上传图片到今晚酒单。',
+        NSPhotoLibraryAddUsageDescription:
+          ios.infoPlist?.NSPhotoLibraryAddUsageDescription ||
+          'No Menu Tonight 需要访问相册，以便保存酒款图片和门店二维码。',
         // Allow HTTP to local Supabase API (127.0.0.1 / LAN) during dev
         NSAppTransportSecurity: {
           NSAllowsLocalNetworking: true,

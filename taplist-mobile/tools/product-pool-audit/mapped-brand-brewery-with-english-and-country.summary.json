@@ -1,0 +1,10 @@
+{
+  "output": "/Users/askar/Documents/code/demo/no-menu-app/taplist-mobile/tools/product-pool-audit/mapped-brand-brewery-with-english-and-country.csv",
+  "rows": 290,
+  "english_present": 89,
+  "english_manual_known": 26,
+  "english_from_ascii_source": 43,
+  "english_from_mixed_source": 20,
+  "english_missing": 201,
+  "with_country_code": 119
+}

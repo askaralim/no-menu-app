@@ -270,7 +270,7 @@ export default function PlatformAdminPage() {
       <div className="admin-section" style={{ marginBottom: '2rem' }}>
         <h2 style={{ marginBottom: '1rem' }}>创建酒吧并绑定店主</h2>
         <p style={{ color: '#6b7280', marginBottom: '1rem', fontSize: '0.95rem' }}>
-          填写店主手机号后会创建 POS 账号（手机号 + 临时密码），并直接绑定为该店 owner。
+          填写店主手机号后会创建 No Menu Tonight 账号（手机号 + 临时密码），并直接绑定为该店 owner。
           把账号发给微信即可，无需邀请码 / 短信验证码。密码留空则自动生成。
         </p>
         <form onSubmit={handleCreateBar} className="admin-form" style={{ maxWidth: 480 }}>
@@ -329,7 +329,7 @@ export default function PlatformAdminPage() {
               <code style={{ fontSize: '1.15rem', letterSpacing: 1 }}>{lastBound.temporaryPassword}</code>
               <br />
               <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
-                POS 用手机号 + 密码登录；首次登录会要求改密码。
+                No Menu Tonight 使用手机号 + 密码登录；首次登录会要求改密码。
               </span>
             </p>
             <button
@@ -337,7 +337,7 @@ export default function PlatformAdminPage() {
               className="admin-button admin-button-secondary"
               style={{ marginTop: 12 }}
               onClick={() => {
-                const text = `【No Menu】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n临时密码：${lastBound.temporaryPassword}\n请用 POS App 登录后修改密码。`
+                const text = `【No Menu Tonight】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n临时密码：${lastBound.temporaryPassword}\n请打开 No Menu Tonight 登录后修改密码。`
                 void navigator.clipboard.writeText(text)
                 alert('已复制微信文案')
               }}
