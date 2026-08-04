@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native'
+import { useRouter } from 'expo-router'
 import { useAuth } from '../../../lib/authProvider'
 import { THEME, SPACING, RADIUS } from '../../../lib/theme'
 import { Screen, SectionLabel, Card, Button, Field } from '../../../components/ui'
@@ -39,6 +40,7 @@ function cityKeyEquals(a: string, b: string): boolean {
 }
 
 export default function HouseProfileScreen() {
+  const router = useRouter()
   const { tenantId, refreshMembership } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -128,7 +130,12 @@ export default function HouseProfileScreen() {
         tag_keys: selectedKeys,
       })
       await refreshMembership()
-      Alert.alert('已保存', '门店资料已更新')
+      Alert.alert('已保存', '门店资料已更新', [
+        {
+          text: '好的',
+          onPress: () => router.replace('/(tabs)/house'),
+        },
+      ])
     } catch (e: any) {
       Alert.alert('保存失败', e?.message || '请重试')
     } finally {

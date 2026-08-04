@@ -105,7 +105,7 @@ export default function LoginScreen() {
         <Text style={styles.label}>手机号</Text>
         <View style={styles.phoneRow}>
           <Text style={styles.prefix}>+86</Text>
-          <View style={styles.inputWrap}>
+          <View style={[styles.inputWrap, styles.phoneInputWrap]}>
             <TextInput
               style={styles.inputField}
               onChangeText={setPhone}
@@ -129,7 +129,7 @@ export default function LoginScreen() {
         </View>
 
         <Text style={[styles.label, { marginTop: 16 }]}>密码</Text>
-        <View style={[styles.inputWrap, { marginBottom: 16 }]}>
+        <View style={[styles.inputWrap, styles.passwordInputWrap]}>
           <TextInput
             style={styles.inputField}
             onChangeText={setPassword}
@@ -172,10 +172,6 @@ export default function LoginScreen() {
           <Text style={styles.supportLinkText}>申请门店开通 / 联系支持</Text>
         </TouchableOpacity>
       </View>
-
-      <Text style={styles.contactHint}>
-        收到店主邀请？点「我有邀请码」，用手机号 + 初始密码 + 邀请码一次加入。密码在店主生成邀请时显示，可让店主点「复制」发给你。
-      </Text>
     </KeyboardAvoidingView>
   )
 }
@@ -224,12 +220,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   inputWrap: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.card,
     borderRadius: 8,
     paddingRight: 10,
+  },
+  /** Only inside phoneRow — take remaining width next to +86. */
+  phoneInputWrap: {
+    flex: 1,
+  },
+  passwordInputWrap: {
+    width: '100%',
+    marginBottom: 16,
   },
   inputField: {
     flex: 1,
@@ -268,11 +271,4 @@ const styles = StyleSheet.create({
   },
   supportLink: { marginTop: 14, alignItems: 'center' },
   supportLinkText: { color: COLORS.muted, fontSize: 14, textDecorationLine: 'underline' },
-  contactHint: {
-    color: COLORS.muted,
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 28,
-    lineHeight: 18,
-  },
 })

@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, Alert, Linking } from 'react-native'
+import { View, Text, StyleSheet, Alert, Linking, TouchableOpacity } from 'react-native'
 import Constants from 'expo-constants'
+import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../lib/authProvider'
 import { THEME, SPACING } from '../../../lib/theme'
-import { Screen, Card, Button, SectionLabel } from '../../../components/ui'
+import { Screen, Card, SectionLabel } from '../../../components/ui'
 import { HouseSubheader } from '../../../components/house/HouseSubheader'
 
 function roleLabel(r: string): string {
@@ -41,6 +42,37 @@ function InfoRow({ label, value }: { label: string; value: string }) {
         {value}
       </Text>
     </View>
+  )
+}
+
+function ActionRow({
+  label,
+  icon,
+  onPress,
+  danger,
+  last,
+}: {
+  label: string
+  icon: keyof typeof Ionicons.glyphMap
+  onPress: () => void
+  danger?: boolean
+  last?: boolean
+}) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={onPress}
+      style={[styles.actionRow, !last && styles.actionRowBorder]}
+    >
+      <Ionicons
+        name={icon}
+        size={18}
+        color={danger ? THEME.danger : THEME.muted}
+        style={styles.actionIcon}
+      />
+      <Text style={[styles.actionLabel, danger && styles.actionLabelDanger]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={16} color={THEME.faint} />
+    </TouchableOpacity>
   )
 }
 
@@ -102,26 +134,44 @@ export default function HouseAccountScreen() {
       </Card>
 
       <SectionLabel>安全</SectionLabel>
-      <View style={{ gap: SPACING.md }}>
-        <Button
+      <Card style={styles.actionCard}>
+        <ActionRow
           label="修改密码"
-          variant="secondary"
           icon="key-outline"
           onPress={() => router.push('/(tabs)/house/change-password')}
         />
-        <Button label="退出登录" variant="danger" icon="log-out-outline" onPress={handleLogout} />
-      </View>
+        <ActionRow label="退出登录" icon="log-out-outline" onPress={handleLogout} danger last />
+      </Card>
 
       <SectionLabel>支持与法律</SectionLabel>
-      <View style={{ gap: SPACING.md }}>
-        <Button label="支持中心" variant="secondary" icon="help-circle-outline" onPress={() => void Linking.openURL('https://nomenuapp.com/support')} />
-        <Button label="隐私政策" variant="secondary" icon="shield-checkmark-outline" onPress={() => void Linking.openURL('https://nomenuapp.com/privacy')} />
-        <Button label="服务条款" variant="secondary" icon="document-text-outline" onPress={() => void Linking.openURL('https://nomenuapp.com/terms')} />
-        <Button label="申请删除账号" variant="danger" icon="trash-outline" onPress={() => router.push('/(tabs)/house/account-deletion')} />
-      </View>
+      <Card style={styles.actionCard}>
+        <ActionRow
+          label="支持中心"
+          icon="help-circle-outline"
+          onPress={() => void Linking.openURL('https://nomenuapp.com/support')}
+        />
+        <ActionRow
+          label="隐私政策"
+          icon="shield-checkmark-outline"
+          onPress={() => void Linking.openURL('https://nomenuapp.com/privacy')}
+        />
+        <ActionRow
+          label="服务条款"
+          icon="document-text-outline"
+          onPress={() => void Linking.openURL('https://nomenuapp.com/terms')}
+        />
+        <ActionRow
+          label="申请删除账号"
+          icon="trash-outline"
+          onPress={() => router.push('/(tabs)/house/account-deletion')}
+          danger
+          last
+        />
+      </Card>
 
       <Text style={styles.version}>
-        No Menu Tonight {Constants.expoConfig?.version || '1.0.0'} ({Constants.expoConfig?.ios?.buildNumber || '—'})
+        No Menu Tonight {Constants.expoConfig?.version || '1.0.0'} (
+        {Constants.expoConfig?.ios?.buildNumber || '—'})
       </Text>
     </Screen>
   )
@@ -142,5 +192,29 @@ const styles = StyleSheet.create({
     marginVertical: SPACING.md,
   },
   hint: { color: THEME.faint, fontSize: 13 },
-  version: { color: THEME.faint, fontSize: 12, textAlign: 'center', marginTop: SPACING.xl },
+  actionCard: {
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: 0,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 13,
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.md,
+  },
+  actionRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: THEME.borderFaint,
+  },
+  actionIcon: { width: 22 },
+  actionLabel: { flex: 1, color: THEME.text, fontSize: 15, fontWeight: '500' },
+  actionLabelDanger: { color: THEME.danger },
+  version: {
+    color: THEME.faint,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.md,
+  },
 })
