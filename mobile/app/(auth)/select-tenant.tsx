@@ -14,10 +14,9 @@ export default function SelectTenantScreen() {
   const router = useRouter()
   const { memberships, setActiveTenantId } = useAuth()
 
-  const choose = async (tenantId: string, role: string) => {
+  const choose = async (tenantId: string) => {
     await setActiveTenantId(tenantId)
-    const isOwner = role === 'owner' || role === 'super_admin'
-    router.replace(isOwner ? '/(tabs)/taplist' : '/(tabs)')
+    router.replace('/(tabs)/taplist')
   }
 
   return (
@@ -32,7 +31,7 @@ export default function SelectTenantScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.row}
-            onPress={() => void choose(item.tenant_id, item.role)}
+            onPress={() => void choose(item.tenant_id)}
           >
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.display_name || item.name}</Text>

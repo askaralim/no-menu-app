@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { Link, useLocalSearchParams } from 'expo-router'
 import { useRef, useState, type ReactNode } from 'react'
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
@@ -20,6 +20,7 @@ import {
 } from '@/components/taplist/ShareableBarTaplistImage'
 import { palette, spacing, typography } from '@/constants/design'
 import { formatOpeningHourLabel } from '@/lib/openingHour'
+import { buildAppleMapsPlaceUrl } from '@/lib/navigationLinks'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicDrinks, fetchPublicTenantBySlug, fetchPublicTenantEvents } from '@/lib/api/taplist'
 import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
@@ -68,6 +69,35 @@ export default function BarDetailScreen() {
   const hasAnyDrinks = shareDrinks.length > 0 || recentlySoldOut.length > 0
   const openingHoursLabel = tenant ? formatOpeningHourLabel(tenant.opening_hour) : null
   const canSaveTaplist = Boolean(tenant && shareDrinks.length > 0 && !isSavingTaplist)
+  const appleMapsUrl =
+    Platform.OS === 'ios' &&
+    tenant &&
+    typeof tenant.latitude === 'number' &&
+    Number.isFinite(tenant.latitude) &&
+    tenant.latitude >= -90 &&
+    tenant.latitude <= 90 &&
+    typeof tenant.longitude === 'number' &&
+    Number.isFinite(tenant.longitude) &&
+    tenant.longitude >= -180 &&
+    tenant.longitude <= 180
+      ? buildAppleMapsPlaceUrl({
+          latitude: tenant.latitude,
+          longitude: tenant.longitude,
+          label: tenant.display_name || tenant.name,
+        })
+      : null
+
+  const handleOpenAppleMaps = () => {
+    if (!appleMapsUrl || !tenant) return
+    trackEvent('apple_maps_opened', {
+      destination_tenant_id: tenant.id,
+      source: 'bar_address',
+    })
+    void Linking.openURL(appleMapsUrl).catch((error) => {
+      console.warn('Open Apple Maps place failed', error)
+      Alert.alert('暂时无法打开 Apple Maps', '请稍后重试')
+    })
+  }
 
   const handleSaveTaplistImage = async () => {
     if (!tenant || shareDrinks.length === 0) {
@@ -146,10 +176,25 @@ export default function BarDetailScreen() {
                 {(tenant.address || openingHoursLabel) ? (
                   <View style={[styles.heroMeta, styles.heroMetaAfterTitle]}>
                     {tenant.address ? (
-                      <View style={styles.heroMetaRow}>
+                      <Pressable
+                        accessibilityRole={appleMapsUrl ? 'link' : undefined}
+                        accessibilityLabel={appleMapsUrl ? `在 Apple Maps 中查看 ${tenant.display_name || tenant.name}` : undefined}
+                        disabled={!appleMapsUrl}
+                        hitSlop={8}
+                        onPress={handleOpenAppleMaps}
+                        style={({ pressed }) => [
+                          styles.heroMetaRow,
+                          appleMapsUrl && styles.heroAddressLink,
+                          pressed && appleMapsUrl && styles.heroAddressPressed,
+                        ]}>
                         <FontAwesome name="map-marker" size={13} color={palette.muted} />
-                        <Text style={styles.heroMetaText}>{tenant.address}</Text>
-                      </View>
+                        <Text style={[styles.heroMetaText, appleMapsUrl && styles.heroAddressText]}>{tenant.address}</Text>
+                        {appleMapsUrl ? (
+                          <View style={styles.heroMapHint}>
+                            <FontAwesome name="location-arrow" size={13} color={palette.amber} />
+                          </View>
+                        ) : null}
+                      </Pressable>
                     ) : null}
                     {openingHoursLabel ? (
                       <View style={styles.heroMetaRow}>
@@ -407,6 +452,28 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: palette.muted,
     flex: 1,
+  },
+  heroAddressLink: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  heroAddressText: {
+    flex: 0,
+    flexShrink: 1,
+    color: 'rgba(245,241,230,0.82)',
+  },
+  heroMapHint: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: 'rgba(211,154,69,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(211,154,69,0.28)',
+  },
+  heroAddressPressed: {
+    opacity: 0.62,
   },
   barDescriptionStrip: {
     borderBottomWidth: 1,

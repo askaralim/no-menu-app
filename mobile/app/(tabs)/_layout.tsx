@@ -3,6 +3,21 @@ import { Ionicons } from '@expo/vector-icons'
 import { THEME } from '../../lib/theme'
 import { useAuth } from '../../lib/authProvider'
 
+/** Nested stack tabs: tapping the tab always returns to that stack's root. */
+function popStackToRoot(
+  navigation: {
+    navigate: (name: string, params?: { screen: string }) => void
+  },
+  tabName: string,
+) {
+  return {
+    tabPress: (e: { preventDefault: () => void }) => {
+      e.preventDefault()
+      navigation.navigate(tabName, { screen: 'index' })
+    },
+  }
+}
+
 export default function TabLayout() {
   const { orderingEnabled } = useAuth()
 
@@ -56,6 +71,7 @@ export default function TabLayout() {
             <Ionicons name="receipt-outline" size={size} color={color} />
           ),
         }}
+        listeners={({ navigation }) => popStackToRoot(navigation, 'orders')}
       />
       <Tabs.Screen
         name="house"
@@ -65,6 +81,7 @@ export default function TabLayout() {
             <Ionicons name="storefront-outline" size={size} color={color} />
           ),
         }}
+        listeners={({ navigation }) => popStackToRoot(navigation, 'house')}
       />
       <Tabs.Screen
         name="more"

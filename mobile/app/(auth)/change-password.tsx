@@ -42,8 +42,7 @@ export default function ChangePasswordScreen() {
             {
               text: '进入',
               onPress: () => {
-                const isOwner = res.role === 'owner' || res.role === 'super_admin'
-                router.replace(isOwner ? '/(tabs)/taplist' : '/(tabs)')
+                router.replace('/(tabs)/taplist')
               },
             },
           ])
@@ -69,8 +68,7 @@ export default function ChangePasswordScreen() {
     }
     const only = tenants[0]
     await setActiveTenantId(only.tenant_id)
-    const isOwnerOrAdmin = only.role === 'owner' || only.role === 'super_admin'
-    router.replace(isOwnerOrAdmin ? '/(tabs)/taplist' : '/(tabs)')
+    router.replace('/(tabs)/taplist')
   }
 
   async function handleSave() {

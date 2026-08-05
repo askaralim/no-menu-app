@@ -14,6 +14,7 @@ export default function HouseStackLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="profile" />
+      <Stack.Screen name="cup-sizes" />
       <Stack.Screen name="qr" />
       <Stack.Screen name="events" />
       <Stack.Screen name="event-edit" />

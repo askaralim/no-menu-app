@@ -181,6 +181,12 @@ export default function HouseHubScreen() {
   const hubItems: HubItem[] = [
     { key: 'profile', label: '基本信息', icon: 'information-circle-outline', href: '/(tabs)/house/profile' },
     {
+      key: 'cup-sizes',
+      label: '常用杯型',
+      icon: 'beaker-outline',
+      href: '/(tabs)/house/cup-sizes',
+    },
+    {
       key: 'qr',
       label: '二维码 & 酒单链接',
       icon: 'qr-code-outline',

@@ -60,8 +60,7 @@ function RootLayoutNav() {
 
     if (session && inAuthGroup && !authAllowWhileAuthed) {
       if (tenantId && role) {
-        const isOwnerOrAdmin = role === 'owner' || role === 'super_admin'
-        router.replace(isOwnerOrAdmin ? '/(tabs)/taplist' : '/(tabs)')
+        router.replace('/(tabs)/taplist')
       }
     }
   }, [session, tenantId, role, memberships, needsTenantSelection, isLoading, segments])

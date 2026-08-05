@@ -23,6 +23,19 @@ function mustChangePassword(user: { user_metadata?: Record<string, unknown> } | 
   return user?.user_metadata?.must_change_password === true
 }
 
+function translateAuthError(message: string | undefined | null): string {
+  const m = (message || '').toLowerCase()
+  if (!m) return '登录失败，请重试'
+  if (m.includes('invalid login credentials') || m.includes('invalid_credentials')) {
+    return '手机号或密码不正确，请重试'
+  }
+  if (m.includes('email not confirmed')) return '账号尚未完成验证，请联系管理员'
+  if (m.includes('user not found')) return '账号不存在，请确认手机号或联系管理员开通'
+  if (m.includes('too many requests') || m.includes('rate limit')) return '尝试次数过多，请稍后再试'
+  if (m.includes('network') || m.includes('fetch')) return '网络异常，请检查网络后重试'
+  return message || '登录失败，请重试'
+}
+
 export default function LoginScreen() {
   const router = useRouter()
   const params = useLocalSearchParams<{ next?: string }>()
@@ -78,12 +91,12 @@ export default function LoginScreen() {
         password,
       })
       if (error) {
-        Alert.alert('登录失败', error.message)
+        Alert.alert('登录失败', translateAuthError(error.message))
         return
       }
       await routeAfterAuth()
     } catch (e: any) {
-      Alert.alert('登录失败', e?.message || '网络异常，请重试')
+      Alert.alert('登录失败', translateAuthError(e?.message) || '网络异常，请重试')
     } finally {
       setLoading(false)
     }

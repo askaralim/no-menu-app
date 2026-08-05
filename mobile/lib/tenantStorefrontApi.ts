@@ -116,3 +116,49 @@ export function groupTagsByCategory(tags: BarTagDefinition[]): Record<string, Ba
   }
   return out
 }
+
+/** Tenant「常用杯型」template row (no price). */
+export type DefaultCupSize = {
+  label: string | null
+  volume_ml: number | null
+  sort_order: number
+}
+
+export async function getTenantDefaultCupSizes(tenantId: string): Promise<DefaultCupSize[]> {
+  const { data, error } = await supabase.rpc('get_tenant_default_cup_sizes', {
+    p_tenant_id: tenantId,
+  })
+  if (error) throw new Error(error.message || '加载常用杯型失败')
+  const res = data as { ok?: boolean; items?: DefaultCupSize[] }
+  const items = Array.isArray(res?.items) ? res.items : []
+  return items
+    .map((it, i) => ({
+      label: it.label?.trim() ? it.label.trim() : null,
+      volume_ml:
+        typeof it.volume_ml === 'number' && Number.isFinite(it.volume_ml) && it.volume_ml > 0
+          ? Math.round(it.volume_ml)
+          : null,
+      sort_order: typeof it.sort_order === 'number' ? it.sort_order : i,
+    }))
+    .filter((it) => it.label != null || it.volume_ml != null)
+    .sort((a, b) => a.sort_order - b.sort_order)
+}
+
+export async function setTenantDefaultCupSizes(
+  tenantId: string,
+  items: { label: string | null; volume_ml: number | null }[],
+): Promise<DefaultCupSize[]> {
+  const payload = items.map((it, i) => ({
+    label: it.label,
+    volume_ml: it.volume_ml,
+    sort_order: i,
+  }))
+  const { data, error } = await supabase.rpc('set_tenant_default_cup_sizes', {
+    p_tenant_id: tenantId,
+    p_items: payload,
+  })
+  if (error) throw new Error(error.message || '保存常用杯型失败')
+  const res = data as { ok?: boolean; items?: DefaultCupSize[] }
+  if (!res?.ok) throw new Error('保存常用杯型失败')
+  return Array.isArray(res.items) ? res.items : []
+}

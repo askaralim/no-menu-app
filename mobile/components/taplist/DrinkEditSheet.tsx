@@ -36,6 +36,7 @@ import {
 } from '../../lib/taplistMedia'
 import type { DrinkSaveIntent, DrinkUpsertResult, ServingType, TaplistCategory } from '../../lib/types'
 import { useAuth } from '../../lib/authProvider'
+import { getTenantDefaultCupSizes } from '../../lib/tenantStorefrontApi'
 
 type ImagePickerModule = typeof import('expo-image-picker')
 
@@ -173,6 +174,35 @@ export default function DrinkEditSheet({
     setLocal((d) =>
       d ? { ...d, servings: [...d.servings, newDraftServing(d.id, d.servings.length)] } : d,
     )
+
+  const fillDefaultCupSizes = async () => {
+    if (!tenantId || !local) return
+    try {
+      const items = await getTenantDefaultCupSizes(tenantId)
+      if (items.length === 0) {
+        Alert.alert('未设置常用杯型', '请先在门店 → 常用杯型里设置，再一键填入。')
+        return
+      }
+      setLocal((d) => {
+        if (!d) return d
+        const markedDeleted: DraftServing[] = d.servings
+          .filter((s) => s.id && !s._new && !s._deleted)
+          .map((s) => ({ ...s, _deleted: true }))
+        const filled: DraftServing[] = items.map((it, i) => ({
+          ...newDraftServing(d.id, i),
+          label: it.label || '',
+          volume_ml: it.volume_ml,
+          price: 0,
+          serving_type: 'draft',
+          is_default: i === 0,
+          is_active: true,
+        }))
+        return { ...d, servings: [...markedDeleted, ...filled] }
+      })
+    } catch (e: any) {
+      Alert.alert('填入失败', e?.message || '请重试')
+    }
+  }
 
   const deleteServing = (idx: number) =>
     setLocal((d) => {
@@ -672,11 +702,18 @@ export default function DrinkEditSheet({
             {/* 7. Servings */}
             <View style={styles.rowBetween}>
               <Text style={styles.sectionLabel}>规格 / 价格</Text>
-              <TouchableOpacity style={styles.addServingBtn} onPress={addServing}>
-                <Ionicons name="add" size={16} color={T.gold} />
-                <Text style={styles.addServingText}>添加规格</Text>
-              </TouchableOpacity>
+              <View style={styles.servingActions}>
+                <TouchableOpacity style={styles.addServingBtn} onPress={() => void fillDefaultCupSizes()}>
+                  <Ionicons name="beaker-outline" size={16} color={T.gold} />
+                  <Text style={styles.addServingText}>填入常用杯型</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.addServingBtn} onPress={addServing}>
+                  <Ionicons name="add" size={16} color={T.gold} />
+                  <Text style={styles.addServingText}>添加规格</Text>
+                </TouchableOpacity>
+              </View>
             </View>
+            <Text style={styles.hint}>一键填入杯型，只需改价格。也可手填或删除多余规格。</Text>
             {activeServings.length === 0 ? (
               <Text style={styles.hint}>
                 {orderingEnabled
@@ -956,6 +993,7 @@ const styles = StyleSheet.create({
   resultName: { color: T.text, fontSize: 15, fontWeight: '600' },
   resultMeta: { color: T.muted, fontSize: 12, marginTop: 2 },
   hint: { color: T.faint, fontSize: 13, marginBottom: 8 },
+  servingActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 },
   addServingBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   addServingText: { color: T.gold, fontSize: 14, fontWeight: '600' },
   servingCard: {

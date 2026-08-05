@@ -95,9 +95,14 @@ export default function AcceptInviteScreen() {
         password,
       })
       if (error) {
+        const detail =
+          (error.message || '').toLowerCase().includes('invalid login credentials') ||
+          (error.message || '').toLowerCase().includes('invalid_credentials')
+            ? '手机号或初始密码不正确'
+            : error.message || '登录失败'
         Alert.alert(
           '登录失败',
-          `${error.message}\n\n请确认使用店主发给你的手机号和初始密码。若没有密码，请让店主重新生成邀请并复制发给你。`,
+          `${detail}\n\n请确认使用店主发给你的手机号和初始密码。若没有密码，请让店主重新生成邀请并复制发给你。`,
         )
         return
       }

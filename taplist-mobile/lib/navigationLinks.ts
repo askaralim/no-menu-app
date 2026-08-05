@@ -2,6 +2,20 @@ import type { BeerRoadmapLeg, BeerRoadmapStop } from '@/lib/types'
 
 const APPLE_MAPS_BASE = 'http://maps.apple.com/'
 
+export function buildAppleMapsPlaceUrl({
+  latitude,
+  longitude,
+  label,
+}: {
+  latitude: number
+  longitude: number
+  label: string
+}) {
+  const coordinate = `${formatCoordinate(latitude)},${formatCoordinate(longitude)}`
+  const params = new URLSearchParams({ ll: coordinate, q: label })
+  return `${APPLE_MAPS_BASE}?${params.toString()}`
+}
+
 export function buildAppleMapsWalkingUrl({
   from,
   to,

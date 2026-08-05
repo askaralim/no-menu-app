@@ -63,6 +63,8 @@ export type PublicTenantDetail = {
   cover_image_url: string | null
   city: string
   country: string
+  latitude?: number | null
+  longitude?: number | null
   last_menu_updated_at: string | null
   tags?: PublicBarTag[]
   brewing_type?: BrewingType | null
