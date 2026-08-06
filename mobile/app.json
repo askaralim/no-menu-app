@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.taklip.nomenuapp",
-      "buildNumber": "14",
+      "buildNumber": "16",
       "infoPlist": {
         "CFBundleDisplayName": "NM Tonight",
         "ITSAppUsesNonExemptEncryption": false,

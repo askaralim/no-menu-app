@@ -13,7 +13,7 @@ import { DrinkLightAction, DrinkLightFeedback, useDrinkLightController } from '@
 import { ShareableBeerImage, type ShareableBeerImageHandle } from '@/components/taplist/ShareableBeerImage'
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
-import { displayServingOptions, localizeServingLabel } from '@/lib/formatTaplist'
+import { displayServingOptions, formatBreweryWithCollab, localizeServingLabel } from '@/lib/formatTaplist'
 import { fetchPublicDrinks, fetchPublicTenantBySlug } from '@/lib/api/taplist'
 import { partitionPublicDrinks } from '@/lib/types'
 import { getMyDrinkState } from '@/lib/api/drinkLog'
@@ -47,6 +47,9 @@ export default function BeerDetailScreen() {
   const drinkResult = drinksQuery.data
   const drinks = drinkResult?.ok ? partitionPublicDrinks(drinkResult).allForLookup : []
   const drink = drinks.find((item) => item.id === drinkId) ?? null
+  const breweryLine = drink
+    ? formatBreweryWithCollab(drink.beer?.brewery, drink.beer?.collab_breweries, drink.brand_name)
+    : null
   const artworkUrl = drink?.image_url
   const servingOptions = drink ? displayServingOptions(drink.serving_options) : []
   const servingGroups = groupServingOptions(servingOptions)
@@ -204,9 +207,7 @@ export default function BeerDetailScreen() {
               <View style={styles.titleRow}>
                 <View style={styles.titleCopy}>
                   <Text style={styles.title}>{drink.name}</Text>
-                  {drink.beer?.brewery ?? drink.brand_name ? (
-                    <Text style={styles.brewery}>{drink.beer?.brewery ?? drink.brand_name}</Text>
-                  ) : null}
+                  {breweryLine ? <Text style={styles.brewery}>{breweryLine}</Text> : null}
                 </View>
                 <DrinkLightAction controller={drinkLightController} />
               </View>

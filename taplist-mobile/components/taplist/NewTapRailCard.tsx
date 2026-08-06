@@ -18,6 +18,7 @@ import {
   railCardScrimStyle,
 } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
+import { formatBreweryWithCollab } from '@/lib/formatTaplist'
 import { trackEvent, type AnalyticsSource } from '@/lib/analytics'
 import type { PublicNewTapRow } from '@/lib/types'
 
@@ -30,7 +31,7 @@ export function NewTapRailCard({
 }) {
   const router = useRouter()
   const typeLine = drink.beer_style ?? null
-  const brandLine = drink.brewery ?? drink.brand_name ?? null
+  const brandLine = formatBreweryWithCollab(drink.brewery, drink.collab_breweries, drink.brand_name)
   const accessibilityLabel = [drink.name, typeLine, brandLine, `@ ${drink.tenant_display_name}`]
     .filter(Boolean)
     .join('，')

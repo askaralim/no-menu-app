@@ -29,6 +29,7 @@ import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicNewTapRow, PublicTaplistBreweryDiscoveryRow, PublicTaplistSearchResult } from '@/lib/types'
 import { trackEvent } from '@/lib/analytics'
+import { formatBreweryWithCollab } from '@/lib/formatTaplist'
 
 const searchPresets = [
   { label: 'IPA', query: 'IPA' },
@@ -395,7 +396,7 @@ function SearchNewTapTile({
   height: number
 }) {
   const router = useRouter()
-  const breweryLine = drink.brewery ?? drink.brand_name ?? null
+  const breweryLine = formatBreweryWithCollab(drink.brewery, drink.collab_breweries, drink.brand_name)
   const hasImage = Boolean(drink.image_url)
   const copy = (
     <View style={styles.newTapTileCopy}>
@@ -511,7 +512,7 @@ function BreweryDiscovery({
 }
 
 function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
-  const brewery = drink.brewery ?? drink.brand_name
+  const brewery = formatBreweryWithCollab(drink.brewery, drink.collab_breweries, drink.brand_name)
   const styleLine = [drink.beer_style, typeof drink.abv === 'number' ? `${drink.abv}%` : null]
     .filter(Boolean)
     .join(' · ')

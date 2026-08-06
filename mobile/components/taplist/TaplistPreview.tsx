@@ -42,6 +42,14 @@ export default function TaplistPreview({ visible, draft, onClose }: Props) {
     const servings = d.servings
       .filter((s) => !s._deleted && s.is_active)
       .sort((a, b) => a.public_sort_order - b.public_sort_order)
+    const collabs = (d.profile.collab_breweries ?? [])
+      .map((x) => (typeof x === 'string' ? x.trim() : ''))
+      .filter(Boolean)
+    const primary = (d.profile.brewery || '').trim()
+    const breweryLine = [primary, ...collabs.filter((c) => c !== primary)].filter(Boolean).join(' × ')
+    const meta = [breweryLine || null, d.profile.beer_style, d.profile.abv ? `${d.profile.abv}%` : null]
+      .filter(Boolean)
+      .join(' · ')
     return (
       <View key={d.id} style={[styles.card, dimmed && { opacity: 0.55 }]}>
         {typeof d.public_sort_order === 'number' && d.public_sort_order > 0 ? (
@@ -59,11 +67,9 @@ export default function TaplistPreview({ visible, draft, onClose }: Props) {
               <Text style={[styles.statusChipText, { color: vis.fg }]}>{vis.label}</Text>
             </View>
           </View>
-          {d.profile.brewery || d.profile.beer_style ? (
+          {meta ? (
             <Text style={styles.meta} numberOfLines={1}>
-              {[d.profile.brewery, d.profile.beer_style, d.profile.abv ? `${d.profile.abv}%` : null]
-                .filter(Boolean)
-                .join(' · ')}
+              {meta}
             </Text>
           ) : null}
           {showPrices && servings.length > 0 ? (

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Redirect, useRouter } from 'expo-router'
+import { Redirect, useFocusEffect, useRouter } from 'expo-router'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../lib/authProvider'
 import { orderStatusLabel } from '../../../lib/constants'
@@ -30,6 +30,8 @@ function OrdersListScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [closingBdId, setClosingBdId] = useState<string | null>(null)
+  const closingRef = useRef(false)
 
   const fetchBusinessDays = useCallback(async () => {
     try {
@@ -78,28 +80,60 @@ function OrdersListScreen() {
     }
   }, [fetchBusinessDays])
 
-  const handleCloseBusinessDay = (bdId: string) => {
-    Alert.alert('确认', '确定要结束这个营业日吗？', [
+  const handleCloseBusinessDay = (bd: BusinessDayWithOrders) => {
+    if (closingRef.current) return
+    const activeCount = bd.orders.filter((o) => o.status === 'active').length
+    if (activeCount > 0) {
+      Alert.alert(
+        '无法结束营业日',
+        `仍有 ${activeCount} 单进行中。请先结账或处理完这些订单后再结束营业日。`,
+      )
+      return
+    }
+    const summary = `今日 ${bd.orders.length} 单，合计 ¥${bd.totalAmount.toFixed(2)}。\n\n结束后将无法再改这些订单，确定结束？`
+
+    Alert.alert('结束营业日？', summary, [
       { text: '取消', style: 'cancel' },
       {
-        text: '确定',
-        onPress: async () => {
-          try {
-            const { data, error } = await supabase.rpc('close_business_day', { business_day_id: bdId })
-            if (error) throw error
-            if (!data) throw new Error('营业日可能已关闭')
-            void fetchBusinessDays()
-          } catch (e: any) {
-            Alert.alert('错误', e?.message || '关闭营业日失败')
-          }
+        text: '确认结束',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            if (closingRef.current) return
+            closingRef.current = true
+            setClosingBdId(bd.id)
+            try {
+              const { data, error } = await supabase.rpc('close_business_day', {
+                business_day_id: bd.id,
+              })
+              if (error) {
+                const msg = error.message || ''
+                if (msg.includes('BUSINESS_DAY_HAS_ACTIVE_ORDERS')) {
+                  throw new Error('仍有进行中订单，请先结账后再结束营业日')
+                }
+                throw error
+              }
+              if (!data) throw new Error('营业日可能已关闭')
+              await fetchBusinessDays()
+            } catch (e: any) {
+              Alert.alert('错误', e?.message || '关闭营业日失败')
+            } finally {
+              closingRef.current = false
+              setClosingBdId(null)
+            }
+          })()
         },
       },
     ])
   }
 
-  useEffect(() => {
-    void fetchBusinessDays()
+  useFocusEffect(
+    useCallback(() => {
+      void fetchBusinessDays()
+    }, [fetchBusinessDays]),
+  )
 
+  useEffect(() => {
     const ch1 = supabase
       .channel('orders-mgmt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
@@ -233,10 +267,15 @@ function OrdersListScreen() {
                   <Text style={styles.bdTotal}>¥{bd.totalAmount.toFixed(2)}</Text>
                   {!bd.closed_at && (
                     <TouchableOpacity
-                      onPress={() => handleCloseBusinessDay(bd.id)}
-                      style={styles.closeBdBtn}
+                      onPress={() => handleCloseBusinessDay(bd)}
+                      style={[styles.closeBdBtn, closingBdId === bd.id && styles.closeBdBtnBusy]}
+                      disabled={closingBdId != null}
                     >
-                      <Text style={styles.closeBdBtnText}>结束营业日</Text>
+                      {closingBdId === bd.id ? (
+                        <ActivityIndicator size="small" color={T.gold} />
+                      ) : (
+                        <Text style={styles.closeBdBtnText}>结束营业日</Text>
+                      )}
                     </TouchableOpacity>
                   )}
                 </View>
@@ -356,9 +395,16 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
+    minHeight: 34,
+    minWidth: 96,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,107,94,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeBdBtnBusy: {
+    opacity: 0.7,
   },
   closeBdBtnText: { color: T.danger, fontSize: 13, fontWeight: '600' },
   orderCard: {

@@ -32,6 +32,7 @@ import {
 import {
   type LocalImageAsset,
   TAPLIST_IMAGE_MAX_BYTES,
+  translateImageUploadError,
   uploadDrinkImageFromAsset,
 } from '../../lib/taplistMedia'
 import type { DrinkSaveIntent, DrinkUpsertResult, ServingType, TaplistCategory } from '../../lib/types'
@@ -98,9 +99,14 @@ export default function DrinkEditSheet({
   useEffect(() => {
     let next = drink
     // Create: default to first enabled category (never a disabled one).
-    if (drink && isCreate && !drink.category_id) {
-      const firstEnabled = categories.find((c) => c.enabled)
-      if (firstEnabled) next = { ...drink, category_id: firstEnabled.id }
+    if (drink && isCreate) {
+      const assigned = drink.category_id
+        ? categories.find((c) => c.id === drink.category_id)
+        : null
+      if (!assigned?.enabled) {
+        const firstEnabled = categories.find((c) => c.enabled)
+        if (firstEnabled) next = { ...(next || drink), category_id: firstEnabled.id }
+      }
     }
     setLocal(next)
     setQuery('')
@@ -185,9 +191,16 @@ export default function DrinkEditSheet({
       }
       setLocal((d) => {
         if (!d) return d
-        const markedDeleted: DraftServing[] = d.servings
-          .filter((s) => s.id && !s._new && !s._deleted)
-          .map((s) => ({ ...s, _deleted: true }))
+        // Keep tombstones for ANY persisted row we must remove on save — including
+        // ones already marked _deleted. Dropping them would leave orphans in DB.
+        const seenIds = new Set<string>()
+        const toRemove: DraftServing[] = []
+        for (const s of d.servings) {
+          if (!s.id || s._new) continue
+          if (seenIds.has(s.id)) continue
+          seenIds.add(s.id)
+          toRemove.push({ ...s, _deleted: true })
+        }
         const filled: DraftServing[] = items.map((it, i) => ({
           ...newDraftServing(d.id, i),
           label: it.label || '',
@@ -197,7 +210,7 @@ export default function DrinkEditSheet({
           is_default: i === 0,
           is_active: true,
         }))
-        return { ...d, servings: [...markedDeleted, ...filled] }
+        return { ...d, servings: [...toRemove, ...filled] }
       })
     } catch (e: any) {
       Alert.alert('填入失败', e?.message || '请重试')
@@ -208,9 +221,11 @@ export default function DrinkEditSheet({
     setLocal((d) => {
       if (!d) return d
       const s = d.servings[idx]
+      if (!s || s._deleted) return d
       if (s._new) {
         return { ...d, servings: d.servings.filter((_, i) => i !== idx) }
       }
+      // Tombstone so save sends delete:true (hard delete or archive-if-in-orders).
       const servings = d.servings.map((x, i) => (i === idx ? { ...x, _deleted: true } : x))
       return { ...d, servings }
     })
@@ -218,7 +233,12 @@ export default function DrinkEditSheet({
   const makeDefault = (idx: number) =>
     setLocal((d) => {
       if (!d) return d
-      const servings = d.servings.map((s, i) => ({ ...s, is_default: i === idx }))
+      const target = d.servings[idx]
+      if (!target || target._deleted) return d
+      const servings = d.servings.map((s, i) => ({
+        ...s,
+        is_default: !s._deleted && i === idx,
+      }))
       return { ...d, servings }
     })
 
@@ -321,7 +341,7 @@ export default function DrinkEditSheet({
         Alert.alert('图片已上传', '写入酒款失败，请再点保存。')
       }
     } catch (e: any) {
-      Alert.alert('图片上传失败', e?.message || '请重试')
+      Alert.alert('图片未上传成功', translateImageUploadError(e))
     } finally {
       setUploadingImage(false)
     }
@@ -391,7 +411,10 @@ export default function DrinkEditSheet({
             res = { ...res, ...imageSave, drink_id: res.drink_id }
           }
         } catch (e: any) {
-          Alert.alert('已保存酒款', e?.message || '图片上传失败，可稍后在编辑里重试。')
+          Alert.alert(
+            '已保存酒款',
+            `${translateImageUploadError(e)}\n酒款本身已保存，可稍后在编辑里再传图。`,
+          )
         } finally {
           setUploadingImage(false)
         }
@@ -786,7 +809,7 @@ export default function DrinkEditSheet({
                         size={18}
                         color={s.is_default ? T.gold : T.muted}
                       />
-                      <Text style={styles.defaultToggleText}>默认展示</Text>
+                      <Text style={styles.defaultToggleText}>主规格</Text>
                     </TouchableOpacity>
                     <View style={styles.defaultToggle}>
                       <Switch

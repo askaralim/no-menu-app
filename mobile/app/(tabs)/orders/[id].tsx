@@ -67,7 +67,7 @@ export default function OrderDetailScreen() {
   const orderId = typeof params.id === 'string' ? params.id : ''
 
   const [order, setOrder] = useState<OrderWithItems | null>(null)
-  const [businessDayClosedAt, setBusinessDayClosedAt] = useState<string | null>(null)
+  const [restoreLocked, setRestoreLocked] = useState(false)
   const [loading, setLoading] = useState(true)
   const [statusUpdating, setStatusUpdating] = useState(false)
 
@@ -92,22 +92,22 @@ export default function OrderDetailScreen() {
         .order('created_at', { ascending: true })
       if (itemsError) throw itemsError
 
-      let closedAt: string | null = null
+      let locked = false
       if (orderData.business_day_id) {
         const { data: businessDayData, error: businessDayError } = await supabase
           .from('business_days')
-          .select('closed_at')
+          .select('closed_at, ever_closed_at')
           .eq('id', orderData.business_day_id)
           .single()
         if (businessDayError) throw businessDayError
-        closedAt = businessDayData.closed_at
+        locked = Boolean(businessDayData.ever_closed_at || businessDayData.closed_at)
       }
 
       setOrder({
         ...orderData,
         items: (itemsData || []).map((item: any) => ({ ...item, drink: item.drinks })),
       })
-      setBusinessDayClosedAt(closedAt)
+      setRestoreLocked(locked)
     } catch (e) {
       Alert.alert('错误', e instanceof Error ? e.message : '加载订单详情失败')
       setOrder(null)
@@ -276,9 +276,9 @@ export default function OrderDetailScreen() {
               <TouchableOpacity
                 style={[
                   styles.secondaryBtn,
-                  (statusUpdating || !!businessDayClosedAt) && styles.buttonDisabled,
+                  (statusUpdating || restoreLocked) && styles.buttonDisabled,
                 ]}
-                disabled={statusUpdating || !!businessDayClosedAt}
+                disabled={statusUpdating || restoreLocked}
                 onPress={confirmRestore}
               >
                 {statusUpdating ? (
@@ -287,7 +287,7 @@ export default function OrderDetailScreen() {
                   <Text style={styles.secondaryBtnText}>恢复订单</Text>
                 )}
               </TouchableOpacity>
-              {businessDayClosedAt ? (
+              {restoreLocked ? (
                 <Text style={styles.disabledActionHint}>营业日已结束，不能恢复订单</Text>
               ) : null}
             </>

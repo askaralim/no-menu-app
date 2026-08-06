@@ -54,6 +54,37 @@ export function assertImageAsset(asset: LocalImageAsset, maxBytes = TAPLIST_IMAG
   return mime
 }
 
+/** Map storage/network failures to short Chinese copy for owners. */
+export function translateImageUploadError(raw: unknown): string {
+  const message = String(
+    (raw as { message?: unknown })?.message ?? raw ?? '',
+  ).trim()
+  const lower = message.toLowerCase()
+
+  if (
+    !message ||
+    lower.includes('network request failed') ||
+    lower.includes('failed to fetch') ||
+    lower.includes('network error') ||
+    lower.includes('timed out') ||
+    lower.includes('timeout') ||
+    lower.includes('the internet connection appears to be offline') ||
+    lower.includes('nsurlerrordomain') ||
+    lower.includes('fetch failed')
+  ) {
+    return '网络较慢或中断，图片没传上去。请稍后再试，或换个网络环境后重新选择图片。'
+  }
+
+  if (lower.includes('payload too large') || lower.includes('entity too large') || lower.includes('413')) {
+    return `图片不能超过 ${Math.round(TAPLIST_IMAGE_MAX_BYTES / 1024 / 1024)}MB，请换一张或压缩后再传`
+  }
+
+  // Already localized (assertImageAsset / our throws)
+  if (/[\u4e00-\u9fff]/.test(message)) return message
+
+  return '图片上传失败，请稍后再试。'
+}
+
 async function readAssetBytes(uri: string): Promise<ArrayBuffer> {
   const res = await fetch(uri)
   if (!res.ok) throw new Error('无法读取所选图片')
@@ -64,23 +95,27 @@ async function uploadTaplistImageFromAsset(
   path: string,
   asset: LocalImageAsset,
 ): Promise<string> {
-  const mime = assertImageAsset(asset)
-  const bytes = await readAssetBytes(asset.uri)
-  if (bytes.byteLength > TAPLIST_IMAGE_MAX_BYTES) {
-    throw new Error(
-      `图片不能超过 ${Math.round(TAPLIST_IMAGE_MAX_BYTES / 1024 / 1024)}MB，请换一张或压缩后再传`,
-    )
+  try {
+    const mime = assertImageAsset(asset)
+    const bytes = await readAssetBytes(asset.uri)
+    if (bytes.byteLength > TAPLIST_IMAGE_MAX_BYTES) {
+      throw new Error(
+        `图片不能超过 ${Math.round(TAPLIST_IMAGE_MAX_BYTES / 1024 / 1024)}MB，请换一张或压缩后再传`,
+      )
+    }
+
+    const { error } = await supabase.storage.from(TAPLIST_MEDIA_BUCKET).upload(path, bytes, {
+      upsert: true,
+      contentType: mime,
+    })
+    if (error) throw new Error(error.message || '图片上传失败')
+
+    const { data } = supabase.storage.from(TAPLIST_MEDIA_BUCKET).getPublicUrl(path)
+    if (!data?.publicUrl) throw new Error('无法生成图片公开 URL')
+    return data.publicUrl
+  } catch (e) {
+    throw new Error(translateImageUploadError(e))
   }
-
-  const { error } = await supabase.storage.from(TAPLIST_MEDIA_BUCKET).upload(path, bytes, {
-    upsert: true,
-    contentType: mime,
-  })
-  if (error) throw new Error(error.message || '图片上传失败')
-
-  const { data } = supabase.storage.from(TAPLIST_MEDIA_BUCKET).getPublicUrl(path)
-  if (!data?.publicUrl) throw new Error('无法生成图片公开 URL')
-  return data.publicUrl
 }
 
 /**

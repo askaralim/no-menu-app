@@ -163,12 +163,19 @@ export default function InsightsScreen() {
       let todayOrders = 0
       let todayRevenue = 0
       if (orderingEnabled) try {
-        const { data: bdId } = await supabase.rpc('get_or_create_open_business_day')
-        if (bdId) {
+        // Read today's business day without auto-reopening a closed day.
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' })
+        const { data: bd } = await supabase
+          .from('business_days')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .eq('business_date', today)
+          .maybeSingle()
+        if (bd?.id) {
           const { data: orders } = await supabase
             .from('orders')
             .select('total_amount')
-            .eq('business_day_id', bdId)
+            .eq('business_day_id', bd.id)
           todayOrders = orders?.length || 0
           todayRevenue = (orders || []).reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0)
         }

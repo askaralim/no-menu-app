@@ -25,6 +25,7 @@ import {
   maskYmdInput,
   type BarEventSaveInput,
 } from '../../../lib/barEventsApi'
+import { translateImageUploadError } from '../../../lib/taplistMedia'
 
 type ImagePickerModule = typeof import('expo-image-picker')
 
@@ -167,7 +168,7 @@ export default function EventEditScreen() {
       })
       setForm((prev) => ({ ...prev, image_url: url, id: prev.id || resolvedId }))
     } catch (e: any) {
-      Alert.alert('上传失败', e?.message || '请重试')
+      Alert.alert('图片未上传成功', translateImageUploadError(e))
     } finally {
       setUploading(false)
     }

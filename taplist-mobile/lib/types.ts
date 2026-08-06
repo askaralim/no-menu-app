@@ -73,6 +73,8 @@ export type PublicTenantDetail = {
 
 export type PublicBeerProfile = {
   brewery: string | null
+  /** Co-breweries (0–3), shown with primary as `主酒厂 × 合酿…`. */
+  collab_breweries?: string[] | null
   beer_style: string | null
   abv: number | null
   ibu: number | null
@@ -183,6 +185,8 @@ export type PublicTaplistSearchResult = {
   tenant_district: string | null
   tenant_address: string | null
   brewery: string | null
+  /** Co-breweries (0–3) from the bar drink profile. */
+  collab_breweries?: string[] | null
   beer_style: string | null
   abv: number | null
   default_serving: PublicSearchServingOption | null

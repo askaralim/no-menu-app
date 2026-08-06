@@ -14,7 +14,7 @@ import {
   BEER_CARD_PANEL_LOCATIONS,
 } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
-import { displayServingOptions, servingParts } from '@/lib/formatTaplist'
+import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/lib/formatTaplist'
 import { trackEvent } from '@/lib/analytics'
 import type { PublicDrinkRow } from '@/lib/types'
 
@@ -29,7 +29,11 @@ export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
   const publicStatus = drink.public_status || null
   const isSoldOut = publicStatus === '售罄'
   const isNew = publicStatus === '上新'
-  const brewery = drink.beer?.brewery ?? drink.brand_name
+  const brewery = formatBreweryWithCollab(
+    drink.beer?.brewery,
+    drink.beer?.collab_breweries,
+    drink.brand_name,
+  )
   const style = drink.beer?.beer_style ?? null
   const metaLine = [brewery, style].filter(Boolean).join(' · ')
   const abv = typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null

@@ -26,6 +26,11 @@ import type { Order, CategoryWithDrinks, Drink, DrinkServingOption, CartItem } f
 
 type ViewMode = 'list' | 'form'
 
+function isBusinessDayClosedError(err: unknown): boolean {
+  const msg = typeof err === 'string' ? err : (err as any)?.message || ''
+  return String(msg).includes('BUSINESS_DAY_CLOSED')
+}
+
 function activeServings(drink: Drink): DrinkServingOption[] {
   return (drink.drink_serving_options ?? []).filter((s) => s.is_active && Number(s.price) > 0)
 }
@@ -53,6 +58,8 @@ function OrderingScreen() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null)
   const [currentBusinessDayId, setCurrentBusinessDayId] = useState<string | null>(null)
+  const [businessDayClosed, setBusinessDayClosed] = useState(false)
+  const [reopeningDay, setReopeningDay] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [checkoutUpdatingId, setCheckoutUpdatingId] = useState<string | null>(null)
@@ -60,24 +67,26 @@ function OrderingScreen() {
   const [drinkSearch, setDrinkSearch] = useState('')
   const [pickDrink, setPickDrink] = useState<Drink | null>(null)
 
-  const getCurrentBusinessDay = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.rpc('get_or_create_open_business_day')
-      if (error) {
-        console.error('Business day RPC error:', error)
-        return null
+  const getCurrentBusinessDay = useCallback(async (): Promise<string | null> => {
+    const { data, error } = await supabase.rpc('get_or_create_open_business_day')
+    if (error) {
+      if (isBusinessDayClosedError(error)) {
+        setBusinessDayClosed(true)
+        setCurrentBusinessDayId(null)
+        throw Object.assign(new Error('BUSINESS_DAY_CLOSED'), { code: 'BUSINESS_DAY_CLOSED' })
       }
-      return data as string
-    } catch (e) {
-      console.error('Unexpected business day error:', e)
-      return null
+      console.error('Business day RPC error:', error)
+      throw error
     }
+    setBusinessDayClosed(false)
+    return data as string
   }, [])
 
   /** Load orders for a known business day (avoids re-calling RPC right after insert — fixes missing new row until pull-refresh). */
   const loadOrdersForBusinessDay = useCallback(async (bdId: string) => {
     try {
       setCurrentBusinessDayId(bdId)
+      setBusinessDayClosed(false)
       const { data, error } = await supabase
         .from('orders')
         .select('*')
@@ -97,14 +106,69 @@ function OrderingScreen() {
   }, [])
 
   const fetchActiveOrders = useCallback(async () => {
-    const bdId = await getCurrentBusinessDay()
-    if (!bdId) {
+    try {
+      const { data: openId, error: openError } = await supabase.rpc('get_current_open_business_day')
+      if (openError) throw openError
+      if (openId) {
+        await loadOrdersForBusinessDay(openId as string)
+        return
+      }
+
+      try {
+        const bdId = await getCurrentBusinessDay()
+        if (!bdId) {
+          Alert.alert('错误', '无法获取营业日')
+          setActiveOrders([])
+          setDayRevenue(0)
+          setLoading(false)
+          return
+        }
+        await loadOrdersForBusinessDay(bdId)
+      } catch (e) {
+        if (isBusinessDayClosedError(e)) {
+          setBusinessDayClosed(true)
+          setCurrentBusinessDayId(null)
+          setActiveOrders([])
+          setDayRevenue(0)
+          setLoading(false)
+          return
+        }
+        throw e
+      }
+    } catch (e) {
+      console.error('Error fetching active orders:', e)
       Alert.alert('错误', '无法获取营业日')
       setLoading(false)
-      return
     }
-    await loadOrdersForBusinessDay(bdId)
   }, [getCurrentBusinessDay, loadOrdersForBusinessDay])
+
+  const reopenTodaysBusinessDay = useCallback(async () => {
+    if (reopeningDay) return
+    setReopeningDay(true)
+    try {
+      const { data, error } = await supabase.rpc('reopen_todays_business_day')
+      if (error) throw error
+      if (!data) throw new Error('重新开始营业日失败')
+      setBusinessDayClosed(false)
+      await loadOrdersForBusinessDay(data as string)
+      Alert.alert('已重新开始', '可以开新单了。此前已结账的订单仍不可恢复。')
+    } catch (e: any) {
+      Alert.alert('错误', e?.message || '重新开始营业日失败')
+    } finally {
+      setReopeningDay(false)
+    }
+  }, [loadOrdersForBusinessDay, reopeningDay])
+
+  const promptReopenBusinessDay = useCallback(() => {
+    Alert.alert(
+      '今日营业日已结束',
+      '重新开始后可开新单；该营业日里已结账的订单仍不可恢复。',
+      [
+        { text: '取消', style: 'cancel' },
+        { text: '重新开始营业日', onPress: () => void reopenTodaysBusinessDay() },
+      ],
+    )
+  }, [reopenTodaysBusinessDay])
 
   const fetchDrinks = useCallback(async () => {
     if (!tenantId) {
@@ -154,24 +218,22 @@ function OrderingScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchDrinks()
-    }, [fetchDrinks])
+      void fetchActiveOrders()
+      void fetchDrinks()
+    }, [fetchActiveOrders, fetchDrinks]),
   )
 
   useEffect(() => {
-    fetchActiveOrders()
-    fetchDrinks()
-
     const channel = supabase
       .channel('mobile-ordering')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        fetchActiveOrders()
+        void fetchActiveOrders()
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
-        fetchDrinks()
+        void fetchDrinks()
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, () => {
-        fetchDrinks()
+        void fetchDrinks()
       })
       .subscribe()
 
@@ -181,6 +243,10 @@ function OrderingScreen() {
   }, [tenantId, fetchActiveOrders, fetchDrinks])
 
   const handleNewOrder = () => {
+    if (businessDayClosed) {
+      promptReopenBusinessDay()
+      return
+    }
     setEditingOrderId(null)
     setCustomerName('')
     setCart([])
@@ -329,7 +395,16 @@ function OrderingScreen() {
         if (error) throw error
         businessDayToRefresh = currentBusinessDayId
       } else {
-        const bdId = await getCurrentBusinessDay()
+        let bdId: string | null = null
+        try {
+          bdId = await getCurrentBusinessDay()
+        } catch (e) {
+          if (isBusinessDayClosedError(e)) {
+            promptReopenBusinessDay()
+            return
+          }
+          throw e
+        }
         if (!bdId) {
           Alert.alert('错误', '无法获取营业日')
           return
@@ -399,6 +474,22 @@ function OrderingScreen() {
           ListHeaderComponent={
             <View style={styles.hero}>
               <Text style={styles.title}>开台</Text>
+              {businessDayClosed ? (
+                <View style={styles.closedBanner}>
+                  <Text style={styles.closedBannerText}>今日营业日已结束</Text>
+                  <TouchableOpacity
+                    style={styles.reopenBtn}
+                    onPress={() => void reopenTodaysBusinessDay()}
+                    disabled={reopeningDay}
+                  >
+                    {reopeningDay ? (
+                      <ActivityIndicator size="small" color={T.background} />
+                    ) : (
+                      <Text style={styles.reopenBtnText}>重新开始营业日</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : null}
               <View style={styles.countsRow}>
                 <Stat label="进行中" value={activeOrders.length} />
                 <Stat label="营业额" value={`¥${dayRevenue.toFixed(0)}`} />
@@ -680,6 +771,26 @@ const styles = StyleSheet.create({
     paddingBottom: LAYOUT.heroPadBottom,
   },
   title: { color: T.text, fontSize: 26, fontWeight: '800' },
+  closedBanner: {
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldFill,
+    gap: 10,
+  },
+  closedBannerText: { color: T.textSoft, fontSize: 14, fontWeight: '600' },
+  reopenBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: T.gold,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  reopenBtnText: { color: T.background, fontSize: 13, fontWeight: '700' },
   countsRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
   stat: {
     flex: 1,

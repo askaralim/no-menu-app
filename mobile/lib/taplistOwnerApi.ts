@@ -642,5 +642,11 @@ function translateError(message: string): string {
   if (m.includes('Invalid public_price_mode')) {
     return '价格展示模式无效'
   }
+  if (
+    m.includes('order_items_serving_option_id_fkey') ||
+    (m.includes('drink_serving_options') && m.includes('foreign key'))
+  ) {
+    return '该规格已有点单记录，无法直接删除。请刷新后重试（系统会自动停用旧规格）。'
+  }
   return m
 }

@@ -5,7 +5,7 @@ import ViewShot from 'react-native-view-shot'
 
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
-import { displayServingOptions, servingParts } from '@/lib/formatTaplist'
+import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/lib/formatTaplist'
 import type { PublicDrinkRow, PublicTenantDetail } from '@/lib/types'
 
 export type ShareableBarTaplistImageHandle = {
@@ -123,7 +123,7 @@ function PaperMenuExport({
 }
 
 function PaperMenuRow({ drink, index }: { drink: PublicDrinkRow; index: number }) {
-  const brewery = drink.beer?.brewery ?? drink.brand_name
+  const brewery = formatBreweryWithCollab(drink.beer?.brewery, drink.beer?.collab_breweries, drink.brand_name)
   const style = drink.beer?.beer_style
   const abv = typeof drink.beer?.abv === 'number' ? `ABV:${drink.beer.abv}%` : null
   const price = paperPriceLine(drink)
@@ -225,7 +225,12 @@ function ExportBeerRow({ drink, isLast }: { drink: PublicDrinkRow; isLast: boole
 }
 
 function beerInfoLine(drink: PublicDrinkRow) {
-  return [drink.beer?.brewery ?? drink.brand_name, drink.beer?.beer_style].filter(Boolean).join(' · ')
+  return [
+    formatBreweryWithCollab(drink.beer?.brewery, drink.beer?.collab_breweries, drink.brand_name),
+    drink.beer?.beer_style,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 function beerStatsLine(drink: PublicDrinkRow) {

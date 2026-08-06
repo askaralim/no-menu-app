@@ -46,8 +46,9 @@ function pickDefaultCategoryKey(cats: { id: string; name: string }[]): CategoryR
   return (shengpi ?? cats[0]).id
 }
 
-function tonightLabel(drink: DraftDrink): string {
-  if (!isOnTonight(drink)) return '未加入酒单'
+/** Tap badge for drinks currently on tonight's list; null when not listed. */
+function tonightTapLabel(drink: DraftDrink): string | null {
+  if (!isOnTonight(drink)) return null
   const n = drink.public_sort_order!
   return drink.is_public_visible ? `酒单 #${n}` : `酒单 #${n} · 隐藏`
 }
@@ -179,7 +180,7 @@ export default function MenuScreen() {
   // --- Drink editor (unified) ---
   const openCreate = () => {
     const d = emptyDraftDrink({ entryPoint: 'catalog' })
-    d.category_id = categories[0]?.id ?? null
+    d.category_id = categories.find((c) => c.enabled)?.id ?? null
     setCreating(true)
     setEditing(d)
   }
@@ -537,7 +538,7 @@ export default function MenuScreen() {
             renderItem={({ item }) => {
               const onTonight = isOnTonight(item)
               const busy = togglingDrinkId === item.id
-              const listing = tonightLabel(item)
+              const tapLabel = tonightTapLabel(item)
               const servings = servingsLine(item)
               const breweryStyle = [item.profile?.brewery, item.profile?.beer_style]
                 .filter(Boolean)
@@ -557,12 +558,16 @@ export default function MenuScreen() {
                       activeOpacity={0.85}
                       onPress={() => openEdit(item)}
                     >
-                      <Text style={styles.rowTitle} numberOfLines={2}>
-                        {item.display_name || item.name}
-                      </Text>
-                      <Text style={styles.rowListing} numberOfLines={1}>
-                        {!item.enabled ? `已下架 · ${listing}` : listing}
-                      </Text>
+                      <View style={styles.rowTitleRow}>
+                        <Text style={styles.rowTitle} numberOfLines={1}>
+                          {item.display_name || item.name}
+                        </Text>
+                        {tapLabel ? (
+                          <Text style={styles.rowTapBadge} numberOfLines={1}>
+                            {tapLabel}
+                          </Text>
+                        ) : null}
+                      </View>
                       {breweryStyle ? (
                         <Text style={styles.rowMeta} numberOfLines={1}>
                           {breweryStyle}
@@ -816,8 +821,18 @@ const styles = StyleSheet.create({
   rowImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
   rowBody: { flex: 1, minWidth: 0 },
   rowMain: { gap: 3 },
-  rowTitle: { color: T.text, fontSize: 16, fontWeight: '700' },
-  rowListing: { color: T.goldSoft, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  rowTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rowTitle: { flex: 1, minWidth: 0, color: T.text, fontSize: 16, fontWeight: '700' },
+  rowTapBadge: {
+    flexShrink: 0,
+    color: T.goldSoft,
+    fontSize: 16,
+    fontWeight: '700',
+  },
   rowMeta: { color: T.muted, fontSize: 13, marginTop: 2 },
   rowServing: { color: T.muted, fontSize: 12, marginTop: 2 },
   rowActions: {

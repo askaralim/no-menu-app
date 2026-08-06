@@ -5,7 +5,7 @@ import ViewShot from 'react-native-view-shot'
 
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
-import { displayServingOptions, servingParts } from '@/lib/formatTaplist'
+import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/lib/formatTaplist'
 import type { PublicDrinkRow, PublicTenantDetail } from '@/lib/types'
 
 export type ShareableBeerImageHandle = {
@@ -26,6 +26,11 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
     const personalLocation = uniqueLocationParts([localizeCity(tenant.city), tenant.district, tenant.address]).join(' · ')
     const generatedAtLabel = formatGeneratedAt(new Date())
     const generatedDateLabel = formatShortDate(new Date().toISOString())
+    const breweryLine = formatBreweryWithCollab(
+      drink.beer?.brewery,
+      drink.beer?.collab_breweries,
+      drink.brand_name,
+    )
     const breweryStyle = beerInfoLine(drink)
     const stats = beerStatsLine(drink)
     const servingOptions = displayServingOptions(drink.serving_options)
@@ -58,8 +63,10 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
                 {drink.image_url ? <BeerArtwork name={drink.name} source={drink.image_url} size={154} /> : null}
                 <View style={styles.personalBeerCopy}>
                   <Text numberOfLines={2} style={styles.personalBeerName}>{drink.name}</Text>
-                  {drink.beer?.brewery ?? drink.brand_name ? (
-                    <Text numberOfLines={2} style={styles.personalMeta}>{drink.beer?.brewery ?? drink.brand_name}</Text>
+                  {breweryLine ? (
+                    <Text numberOfLines={2} style={styles.personalMeta}>
+                      {breweryLine}
+                    </Text>
                   ) : null}
                   {drink.beer?.beer_style ? <PersonalFact label="风格" value={drink.beer.beer_style} /> : null}
                   {drink.beer?.country ? <PersonalFact label="产地" value={drink.beer.country} /> : null}
@@ -142,7 +149,12 @@ function PersonalFact({ label, value }: { label: string; value: string }) {
 }
 
 function beerInfoLine(drink: PublicDrinkRow) {
-  return [drink.beer?.brewery ?? drink.brand_name, drink.beer?.beer_style].filter(Boolean).join(' · ')
+  return [
+    formatBreweryWithCollab(drink.beer?.brewery, drink.beer?.collab_breweries, drink.brand_name),
+    drink.beer?.beer_style,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 function beerStatsLine(drink: PublicDrinkRow) {

@@ -64,6 +64,8 @@ export interface BusinessDay {
   business_date: string
   opened_at: string
   closed_at: string | null
+  /** Set on first close; never cleared on reopen — blocks restoring settled orders. */
+  ever_closed_at?: string | null
   notes: string | null
   created_at: string
   updated_at: string

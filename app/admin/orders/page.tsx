@@ -134,7 +134,7 @@ function OrdersPageContent() {
   }
 
   const handleCloseBusinessDay = async (businessDayId: string) => {
-    if (!confirm('确定要结束这个营业日吗？结束后将无法再添加新订单到此营业日。')) {
+    if (!confirm('确定要结束这个营业日吗？结束后将无法再添加新订单到此营业日（需显式重新开始）。有进行中订单时无法结束。')) {
       return
     }
 
@@ -147,6 +147,11 @@ function OrdersPageContent() {
 
       if (error) {
         console.error('Supabase RPC error closing business day:', error)
+        const msg = error.message || ''
+        if (msg.includes('BUSINESS_DAY_HAS_ACTIVE_ORDERS')) {
+          alert('仍有进行中订单，请先结账后再结束营业日')
+          return
+        }
         throw error
       }
 

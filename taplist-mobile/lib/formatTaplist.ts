@@ -89,6 +89,24 @@ export function beerStyleLine(drink: PublicDrinkRow) {
     .join(' · ')
 }
 
+/** Primary brewery + collabs, e.g. `主酒厂 × 合酿A × 合酿B`. */
+export function formatBreweryWithCollab(
+  brewery?: string | null,
+  collabs?: string[] | null,
+  brandFallback?: string | null,
+): string | null {
+  const primary = (brewery || brandFallback || '').trim() || null
+  const extras = (collabs ?? [])
+    .map((x) => (typeof x === 'string' ? x.trim() : ''))
+    .filter(Boolean)
+    .filter((x) => !primary || x !== primary)
+    .slice(0, 3)
+  if (!primary && extras.length === 0) return null
+  if (!primary) return extras.join(' × ')
+  if (extras.length === 0) return primary
+  return [primary, ...extras].join(' × ')
+}
+
 export function menuUpdatedLabel(value?: string | null) {
   if (!value) return '酒单更新 · 待同步'
 
