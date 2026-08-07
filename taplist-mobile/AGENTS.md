@@ -7,6 +7,9 @@ This is the Expo / React Native consumer app **No Menu** (tap list; display name
 The product is a Chinese-first real-time craft beer discovery app for supported cities. It
 combines public bar tap lists with a private personal drink history called **酒迹**.
 
+Monorepo ops index: [`../docs/INDEX.md`](../docs/INDEX.md).  
+Sibling POS (**No Menu Tonight**, `mobile/`) App Store `1.0.0` is Waiting for Review as of 2026-08 — do not confuse ASC docs with this consumer app.
+
 ## Commands
 
 Run from `taplist-mobile/`:

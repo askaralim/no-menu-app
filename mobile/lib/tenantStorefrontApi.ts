@@ -18,6 +18,8 @@ export type TenantStorefront = {
   address: string | null
   description: string | null
   city: string | null
+  cover_image_url: string | null
+  brewing_type: string | null
   opening_hour: OpeningHourJson | null
   tag_keys: string[]
 }
@@ -48,7 +50,7 @@ export async function getBarTagCatalog(): Promise<BarTagDefinition[]> {
 export async function loadTenantStorefront(tenantId: string): Promise<TenantStorefront> {
   const { data: row, error } = await supabase
     .from('tenants')
-    .select('display_name,district,address,description,city,opening_hour')
+    .select('display_name,district,address,description,city,cover_image_url,brewing_type,opening_hour')
     .eq('id', tenantId)
     .maybeSingle()
   if (error) throw new Error(error.message || '加载门店资料失败')
@@ -74,6 +76,8 @@ export async function loadTenantStorefront(tenantId: string): Promise<TenantStor
     address: row?.address ?? null,
     description: row?.description ?? null,
     city: row?.city ?? null,
+    cover_image_url: row?.cover_image_url ?? null,
+    brewing_type: row?.brewing_type ?? null,
     opening_hour,
     tag_keys: (tags || []).map((t) => t.tag_key as string),
   }
@@ -89,20 +93,26 @@ export async function saveTenantStorefront(
     city: string
     opening_hour: OpeningHourJson | null
     tag_keys: string[]
+    /** Optional; omit to let RPC preserve existing cover (null arg = unchanged). */
+    cover_image_url?: string | null
+    /** Optional; omit / null preserves brewing_type when extras=true. */
+    brewing_type?: string | null
   },
 ): Promise<void> {
+  // Prefer explicit values; otherwise omit (SQL NULL) so RPC keeps current row values.
+  // Empty string still clears cover when passed intentionally (admin).
   const { error } = await supabase.rpc('set_tenant_taplist_storefront', {
     p_tenant_id: tenantId,
     p_display_name: input.display_name,
     p_district: input.district,
     p_address: input.address,
-    p_cover_image_url: null,
+    p_cover_image_url: input.cover_image_url !== undefined ? input.cover_image_url : null,
     p_city: input.city || 'Shanghai',
     p_opening_hour: input.opening_hour,
     p_description: input.description,
     p_update_storefront_extras: true,
     p_tag_keys: input.tag_keys,
-    p_brewing_type: null,
+    p_brewing_type: input.brewing_type !== undefined ? input.brewing_type : null,
   })
   if (error) throw new Error(error.message || '保存失败')
 }
