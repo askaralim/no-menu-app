@@ -77,6 +77,46 @@ Deno.serve(async (req) => {
     }
   }
 
+  const { data: oldFollows, error: followsError } = await admin
+    .from('user_bar_follows')
+    .select('tenant_id, notify_new_taps, created_at')
+    .eq('user_id', anonymous.id)
+  if (followsError) return response({ ok: false, code: 'MERGE_FAILED' }, 500)
+
+  for (const oldFollow of oldFollows ?? []) {
+    const { data: existingFollow, error: existingFollowError } = await admin
+      .from('user_bar_follows')
+      .select('notify_new_taps, created_at')
+      .eq('user_id', target.id)
+      .eq('tenant_id', oldFollow.tenant_id)
+      .maybeSingle()
+    if (existingFollowError) return response({ ok: false, code: 'MERGE_FAILED' }, 500)
+
+    const followWrite = existingFollow
+      ? admin.from('user_bar_follows').update({
+          notify_new_taps: existingFollow.notify_new_taps || oldFollow.notify_new_taps,
+          created_at: new Date(Math.min(
+            Date.parse(existingFollow.created_at),
+            Date.parse(oldFollow.created_at),
+          )).toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('user_id', target.id).eq('tenant_id', oldFollow.tenant_id)
+      : admin.from('user_bar_follows').insert({
+          user_id: target.id,
+          tenant_id: oldFollow.tenant_id,
+          notify_new_taps: oldFollow.notify_new_taps,
+          created_at: oldFollow.created_at,
+        })
+    const { error: followWriteError } = await followWrite
+    if (followWriteError) return response({ ok: false, code: 'MERGE_FAILED' }, 500)
+  }
+
+  const { error: deviceMoveError } = await admin
+    .from('user_push_devices')
+    .update({ user_id: target.id, updated_at: new Date().toISOString() })
+    .eq('user_id', anonymous.id)
+  if (deviceMoveError) return response({ ok: false, code: 'MERGE_FAILED' }, 500)
+
   const { error: deleteError } = await admin.auth.admin.deleteUser(anonymous.id)
   if (deleteError) return response({ ok: false, code: 'CLEANUP_FAILED' }, 500)
   return response({ ok: true })
