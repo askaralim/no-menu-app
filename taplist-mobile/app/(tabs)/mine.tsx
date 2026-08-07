@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, type Href, useFocusEffect } from 'expo-router'
 import * as Sharing from 'expo-sharing'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CachedImage } from '@/components/taplist/CachedImage'
@@ -105,7 +105,7 @@ export default function MineScreen() {
 
   const deleteAccount = () => Alert.alert(
     '删除账号与全部记录？',
-    '所有喝过酒款和酒吧记录都会永久删除，且无法恢复。',
+    '所有酒迹、关注的酒吧和通知设置都会永久删除，且无法恢复。',
     [
       { text: '取消', style: 'cancel' },
       {
@@ -154,6 +154,21 @@ export default function MineScreen() {
             <FontAwesome name={protection === 'apple' ? 'check-circle' : 'lock'} size={13} color={palette.tungsten} />
             <Text style={styles.protectionText}>{protection === 'apple' ? '记录已受 Apple 保护' : '使用 Apple 保护记录'}</Text>
           </Pressable>
+        ) : null}
+
+        {Platform.OS === 'ios' && hasSession ? (
+          <Link href={'/followed-bars' as Href} asChild>
+            <Pressable style={({ pressed }) => [styles.followedBarsLink, pressed && styles.pressed]}>
+              <View style={styles.followedBarsCopy}>
+                <FontAwesome name="bell-o" size={14} color={palette.amber} />
+                <View>
+                  <Text style={styles.followedBarsTitle}>关注的酒吧</Text>
+                  <Text style={styles.followedBarsBody}>管理关注和上新通知</Text>
+                </View>
+              </View>
+              <Text style={styles.followedBarsChevron}>›</Text>
+            </Pressable>
+          </Link>
         ) : null}
 
         {sessionQuery.isLoading || (hasSession && historyQuery.isLoading) ? (
@@ -258,6 +273,11 @@ const styles = StyleSheet.create({
   summary: { ...typography.body, color: palette.muted, marginTop: spacing.xs },
   protectionRow: { minHeight: 44, alignSelf: 'flex-start', marginTop: spacing.sm, flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
   protectionText: { ...typography.caption, color: palette.muted },
+  followedBarsLink: { minHeight: 62, marginTop: spacing.md, paddingVertical: spacing.sm, borderTopWidth: 1, borderBottomWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  followedBarsCopy: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  followedBarsTitle: { ...typography.title, color: palette.text },
+  followedBarsBody: { ...typography.micro, color: palette.muted, marginTop: 2 },
+  followedBarsChevron: { ...typography.title, color: palette.faint, fontSize: 22 },
   shareButton: { height: 36, flexShrink: 0, borderWidth: 1, borderColor: palette.goldMuted, borderRadius: 18, paddingHorizontal: spacing.sm, flexDirection: 'row', gap: spacing.xs, alignItems: 'center', justifyContent: 'center' },
   shareText: { ...typography.caption, color: palette.amber }, pressed: { opacity: 0.75 }, loading: { marginTop: spacing.xxl },
   history: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: palette.line }, month: { marginBottom: spacing.lg }, monthLabel: { ...typography.label, color: palette.amber, fontSize: 11, lineHeight: 14, borderLeftWidth: 2, borderLeftColor: palette.amber, paddingLeft: spacing.xs, marginBottom: spacing.md }, day: { marginBottom: spacing.lg }, dayLabel: { ...typography.micro, color: palette.muted, marginBottom: spacing.sm }, grid: { rowGap: spacing.lg }, gridRow: { flexDirection: 'row', gap: spacing.sm }, gridItem: { flex: 1, minWidth: 0 }, gridPressable: { width: '100%' }, artSlot: { width: '100%', aspectRatio: 4 / 5, alignItems: 'center', justifyContent: 'flex-end' }, art: { width: '100%', height: '100%', borderRadius: 7 }, drinkName: { ...typography.caption, color: palette.text, textAlign: 'left', marginTop: spacing.xs }, drinkMeta: { ...typography.micro, color: palette.faint, textAlign: 'left', marginTop: 2 },

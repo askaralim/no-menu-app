@@ -340,3 +340,20 @@ export type MyDrinkSummary = {
 }
 
 export type AccountProtectionState = 'anonymous' | 'apple' | 'unavailable'
+
+export type BarFollowState = {
+  ok: true
+  followed: boolean
+  notify_new_taps: boolean
+  followed_at: string | null
+}
+
+export type FollowedBarRow = {
+  tenant_id: string
+  tenant_slug: string
+  tenant_display_name: string
+  tenant_district: string | null
+  cover_image_url: string | null
+  notify_new_taps: boolean
+  followed_at: string
+}

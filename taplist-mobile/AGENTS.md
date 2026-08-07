@@ -79,6 +79,14 @@ Do not add:
 - Delivery
 - Reservations
 
+Allowed private subscription exception:
+
+- A user may privately follow a public bar and opt into iOS notifications for that bar's
+  newly published public drinks.
+- Never expose follower identities, follower counts, public follow activity, or a social graph.
+- Following and push-device data must remain private, RLS-isolated, removable, and included in
+  anonymous-to-Apple account merging and account deletion.
+
 Do not treat 酒迹 as proof of purchase, sales data, or a public social check-in. It is a
 private user-authored record that may reference the same canonical product across bars.
 
