@@ -1,6 +1,7 @@
 # 店主微信话术（试点）
 
-发给店主时用下面模板。App 名必须是 **No Menu Tonight**（店主 POS），不是消费者端 Tap List。
+发给店主时用下面模板。App 名必须是 **No Menu Tonight**（店主 POS），不是消费者端 Tap List。  
+Doc index: [`docs/INDEX.md`](../docs/INDEX.md).
 
 ## 开户消息（绑定店主后复制）
 
@@ -9,7 +10,7 @@
 手机号：{11位手机号}
 临时密码：{临时密码}
 
-请安装 TestFlight 里的「No Menu Tonight」，用手机号+临时密码登录，登录后立刻改密码。
+请安装 App Store 上的「No Menu Tonight」（审核中/TestFlight 试点期间用我们发的安装链接），用手机号+临时密码登录，登录后立刻改密码。
 先只维护「今晚酒单」（上酒、枪号、图片）。点单功能默认未开通。
 ```
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke-test Tap List public RPCs (anon). Run after applying taplist_mvp_patch.sql.
+# Smoke-test Tap List public RPCs (anon). Run after migrations/ (or GREENFIELD.md bootstrap).
 #
 # Usage:
 #   SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=eyJ... ./scripts/taplist_rpc_smoke.sh

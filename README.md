@@ -1,5 +1,8 @@
 # 酒吧实时酒单系统
 
+> **Partially stale.** Early single-app framing. Current surfaces: Tonight POS (`mobile/`), consumer No Menu (`taplist-mobile/`), admin (`app/`).  
+> Doc index: [`docs/INDEX.md`](./docs/INDEX.md).
+
 一个基于 Next.js 和 Supabase 的实时酒单展示和管理系统。
 
 ## 技术栈

@@ -103,6 +103,8 @@ supabase/.temp/
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
-# Documentation (internal use only)
-docs/
+# Design-era docs under /docs (internal). Keep the public ledger tracked.
+# Use /docs so mobile/docs/ (ASC listed v1) is not ignored.
+/docs/*
+!/docs/INDEX.md
 

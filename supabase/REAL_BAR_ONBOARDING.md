@@ -1,5 +1,7 @@
 # Real bar onboarding (concierge)
 
+Doc index: [`docs/INDEX.md`](../docs/INDEX.md). Owner WeChat copy: [`OWNER_WECHAT_GUIDE.md`](./OWNER_WECHAT_GUIDE.md).
+
 For ~30 bars: **you create the owner account, bind it to the bar, send login via WeChat.**
 No SMS OTP. No invite codes for owners.
 

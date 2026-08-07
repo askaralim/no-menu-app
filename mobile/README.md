@@ -1,7 +1,8 @@
 # No Menu Tonight
 
-Home-screen / App Store display name: **No Menu Tonight** (`expo.name` in `app.json`).
-Suggested App Store subtitle: **酒吧今晚运营** / **Tonight’s bar operations**.
+Home-screen / App Store display name: **No Menu Tonight** (`expo.name` in `app.json`).  
+App Store subtitle (listed v1): **酒吧实时酒单管理**.  
+ASC docs: [`docs/APP_STORE_LISTED_V1.md`](./docs/APP_STORE_LISTED_V1.md) · index: [`../docs/INDEX.md`](../docs/INDEX.md).
 
 ## iOS release
 

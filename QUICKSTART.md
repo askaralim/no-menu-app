@@ -1,5 +1,7 @@
 # 快速启动指南
 
+> **Partially stale.** Prefer [`docs/INDEX.md`](./docs/INDEX.md) and [`supabase/README.md`](./supabase/README.md) for DB truth (migrations vs install dump).
+
 ## 1. 安装依赖
 
 ```bash

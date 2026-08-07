@@ -59,7 +59,9 @@ schema_paths = []
 
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
-# Disabled: app schema is in install_all_in_one.sql (migrations may be empty). seed.sql needs public.categories.
+# Disabled by default: prefer applying migrations/ (78+ files) or GREENFIELD.md
+# (install_all_in_one.sql + remaining migrations), then seed.sql manually.
+# seed.sql needs public.categories.
 enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
