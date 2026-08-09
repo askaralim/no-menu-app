@@ -25,6 +25,10 @@ function chunks<T>(items: T[], size: number) {
   )
 }
 
+function compactDrinkName(value: string, maxLength = 18) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return response({ ok: false, code: 'METHOD_NOT_ALLOWED' }, 405)
 
@@ -134,10 +138,15 @@ async function createBatchDeliveries(admin: ReturnType<typeof createClient>, bat
 
   const barName = tenant.display_name?.trim() || tenant.name
   const singleDrink = validDrinks.length === 1 ? validDrinks[0] : null
+  const drinkNames = validDrinks.map((drink) => drink.display_name?.trim() || drink.name)
   const title = singleDrink
-    ? `${barName}上新｜${singleDrink.display_name?.trim() || singleDrink.name}`
-    : `${barName}刚上新 ${validDrinks.length} 款酒`
-  const body = '新的今晚酒单已经发布，点按查看。'
+    ? `${barName} 上新 · ${singleDrink.display_name?.trim() || singleDrink.name}`
+    : `${barName} 今晚上新 ${validDrinks.length} 款`
+  const body = singleDrink
+    ? '今晚酒单有了新选择，点按查看这款酒。'
+    : validDrinks.length === 2
+      ? `${drinkNames.map((name) => compactDrinkName(name)).join('、')} 已加入今晚酒单。`
+      : `${drinkNames.slice(0, 2).map((name) => compactDrinkName(name)).join('、')} 等新酒已加入今晚酒单，点按查看。`
   const payload = {
     type: 'new_tap',
     tenantSlug: tenant.slug,

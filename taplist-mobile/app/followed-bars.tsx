@@ -123,7 +123,13 @@ export default function FollowedBarsScreen() {
                     style={[styles.toggle, bar.notify_new_taps && styles.toggleOn]}>
                     {busy ? <ActivityIndicator size="small" color={palette.amber} /> : <View style={[styles.knob, bar.notify_new_taps && styles.knobOn]} />}
                   </Pressable>
-                  <Pressable accessibilityLabel={`取消关注 ${bar.tenant_display_name}`} onPress={() => removeFollow(bar)} style={styles.remove}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`取消关注 ${bar.tenant_display_name}`}
+                    accessibilityState={{ disabled: busy }}
+                    disabled={busy}
+                    onPress={() => removeFollow(bar)}
+                    style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>
                     <FontAwesome name="minus-circle" size={18} color={palette.copper} />
                   </Pressable>
                 </View>
@@ -155,7 +161,7 @@ const styles = StyleSheet.create({
   toggleOn: { backgroundColor: palette.amber },
   knob: { width: 18, height: 18, borderRadius: 9, backgroundColor: palette.muted },
   knobOn: { alignSelf: 'flex-end', backgroundColor: palette.background },
-  remove: { minWidth: 34, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  remove: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.72 },
   empty: { marginTop: spacing.xl, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: palette.line },
   emptyTitle: { ...typography.headline, color: palette.text },

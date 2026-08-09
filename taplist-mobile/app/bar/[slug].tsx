@@ -436,7 +436,7 @@ export default function BarDetailScreen() {
             </View>
             <Text style={styles.notificationPromptTitle}>不错过这家酒吧的上新</Text>
             <Text style={styles.notificationPromptBody}>
-              只在这家酒吧正式发布新酒时通知你。你可以随时在「酒迹」中关闭。
+              只在这家酒吧正式发布新酒时通知你。你可以随时在「我的－关注的酒吧」中关闭。
             </Text>
             <Pressable disabled={followBusy} onPress={() => void handleEnableNotifications()} style={styles.notificationPrimary}>
               <Text style={styles.notificationPrimaryText}>开启上新通知</Text>

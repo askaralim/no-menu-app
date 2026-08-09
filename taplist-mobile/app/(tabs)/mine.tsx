@@ -105,7 +105,7 @@ export default function MineScreen() {
 
   const deleteAccount = () => Alert.alert(
     '删除账号与全部记录？',
-    '所有酒迹、关注的酒吧和通知设置都会永久删除，且无法恢复。',
+    '所有喝过记录、关注的酒吧和通知设置都会永久删除，且无法恢复。',
     [
       { text: '取消', style: 'cancel' },
       {
@@ -130,21 +130,7 @@ export default function MineScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>我喝过的</Text>
-          {summary && summary.drink_count > 0 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="分享记录图"
-              hitSlop={4}
-              disabled={busy || historyQuery.isLoading}
-              onPress={() => void generateShare()}
-              style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}>
-              {busy ? <ActivityIndicator size="small" color={palette.amber} /> : <FontAwesome name="share-square-o" size={13} color={palette.amber} />}
-              <Text style={styles.shareText}>分享记录图</Text>
-            </Pressable>
-          ) : null}
-        </View>
+        <Text style={styles.title}>我的</Text>
         {summary ? (
           <Text style={styles.summary}>{summary.drink_count} 款酒 · {summary.bar_count} 家酒吧{summary.started_at ? ` · ${formatDate(summary.started_at)} 第一杯` : ''}</Text>
         ) : null}
@@ -161,8 +147,8 @@ export default function MineScreen() {
             <Pressable style={({ pressed }) => [styles.followedBarsLink, pressed && styles.pressed]}>
               <View style={styles.followedBarsCopy}>
                 <FontAwesome name="bell-o" size={14} color={palette.amber} />
-                <View>
-                  <Text style={styles.followedBarsTitle}>关注的酒吧</Text>
+                <View style={styles.followedBarsText}>
+                  <Text numberOfLines={2} style={styles.followedBarsTitle}>关注的酒吧</Text>
                   <Text style={styles.followedBarsBody}>管理关注和上新通知</Text>
                 </View>
               </View>
@@ -170,6 +156,22 @@ export default function MineScreen() {
             </Pressable>
           </Link>
         ) : null}
+
+        <View style={styles.historyHeader}>
+          <Text style={styles.historyTitle}>喝过记录</Text>
+          {summary && summary.drink_count > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="分享喝过记录图"
+              hitSlop={4}
+              disabled={busy || historyQuery.isLoading}
+              onPress={() => void generateShare()}
+              style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}>
+              {busy ? <ActivityIndicator size="small" color={palette.amber} /> : <FontAwesome name="share-square-o" size={13} color={palette.amber} />}
+              <Text style={styles.shareText}>分享记录图</Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         {sessionQuery.isLoading || (hasSession && historyQuery.isLoading) ? (
           <ActivityIndicator color={palette.amber} style={styles.loading} />
@@ -268,20 +270,22 @@ function formatMonthDay(value: string) { const d = new Date(value); return `${St
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.background }, content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  titleRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   title: { ...typography.displayL, color: palette.text, fontSize: 38, lineHeight: 44 },
   summary: { ...typography.body, color: palette.muted, marginTop: spacing.xs },
   protectionRow: { minHeight: 44, alignSelf: 'flex-start', marginTop: spacing.sm, flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
   protectionText: { ...typography.caption, color: palette.muted },
   followedBarsLink: { minHeight: 62, marginTop: spacing.md, paddingVertical: spacing.sm, borderTopWidth: 1, borderBottomWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  followedBarsCopy: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  followedBarsCopy: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  followedBarsText: { flex: 1, minWidth: 0 },
   followedBarsTitle: { ...typography.title, color: palette.text },
   followedBarsBody: { ...typography.micro, color: palette.muted, marginTop: 2 },
-  followedBarsChevron: { ...typography.title, color: palette.faint, fontSize: 22 },
+  followedBarsChevron: { ...typography.title, color: palette.faint, fontSize: 22, flexShrink: 0, marginLeft: spacing.sm },
+  historyHeader: { minHeight: 44, marginTop: spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  historyTitle: { ...typography.headline, color: palette.text, fontSize: 22, lineHeight: 30 },
   shareButton: { height: 36, flexShrink: 0, borderWidth: 1, borderColor: palette.goldMuted, borderRadius: 18, paddingHorizontal: spacing.sm, flexDirection: 'row', gap: spacing.xs, alignItems: 'center', justifyContent: 'center' },
   shareText: { ...typography.caption, color: palette.amber }, pressed: { opacity: 0.75 }, loading: { marginTop: spacing.xxl },
-  history: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: palette.line }, month: { marginBottom: spacing.lg }, monthLabel: { ...typography.label, color: palette.amber, fontSize: 11, lineHeight: 14, borderLeftWidth: 2, borderLeftColor: palette.amber, paddingLeft: spacing.xs, marginBottom: spacing.md }, day: { marginBottom: spacing.lg }, dayLabel: { ...typography.micro, color: palette.muted, marginBottom: spacing.sm }, grid: { rowGap: spacing.lg }, gridRow: { flexDirection: 'row', gap: spacing.sm }, gridItem: { flex: 1, minWidth: 0 }, gridPressable: { width: '100%' }, artSlot: { width: '100%', aspectRatio: 4 / 5, alignItems: 'center', justifyContent: 'flex-end' }, art: { width: '100%', height: '100%', borderRadius: 7 }, drinkName: { ...typography.caption, color: palette.text, textAlign: 'left', marginTop: spacing.xs }, drinkMeta: { ...typography.micro, color: palette.faint, textAlign: 'left', marginTop: 2 },
-  empty: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: palette.line }, emptyTitle: { ...typography.headline, color: palette.text }, emptyBody: { ...typography.body, color: palette.muted, marginTop: spacing.sm }, emptyButton: { marginTop: spacing.lg, alignSelf: 'flex-start', borderBottomWidth: 1, borderBottomColor: palette.amber, paddingBottom: spacing.xxs }, emptyButtonText: { ...typography.title, color: palette.amber },
+  history: { marginTop: spacing.lg }, month: { marginBottom: spacing.lg }, monthLabel: { ...typography.label, color: palette.amber, fontSize: 11, lineHeight: 14, borderLeftWidth: 2, borderLeftColor: palette.amber, paddingLeft: spacing.xs, marginBottom: spacing.md }, day: { marginBottom: spacing.lg }, dayLabel: { ...typography.micro, color: palette.muted, marginBottom: spacing.sm }, grid: { rowGap: spacing.lg }, gridRow: { flexDirection: 'row', gap: spacing.sm }, gridItem: { flex: 1, minWidth: 0 }, gridPressable: { width: '100%' }, artSlot: { width: '100%', aspectRatio: 4 / 5, alignItems: 'center', justifyContent: 'flex-end' }, art: { width: '100%', height: '100%', borderRadius: 7 }, drinkName: { ...typography.caption, color: palette.text, textAlign: 'left', marginTop: spacing.xs }, drinkMeta: { ...typography.micro, color: palette.faint, textAlign: 'left', marginTop: 2 },
+  empty: { marginTop: spacing.lg }, emptyTitle: { ...typography.headline, color: palette.text }, emptyBody: { ...typography.body, color: palette.muted, marginTop: spacing.sm }, emptyButton: { marginTop: spacing.lg, alignSelf: 'flex-start', borderBottomWidth: 1, borderBottomColor: palette.amber, paddingBottom: spacing.xxs }, emptyButtonText: { ...typography.title, color: palette.amber },
   deleteAccount: { marginTop: spacing.xxl, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: palette.line, alignItems: 'center' }, deleteAccountText: { ...typography.caption, color: palette.copper },
   hiddenCanvas: { position: 'absolute', left: -10000, top: 0 }, preview: { flex: 1, backgroundColor: palette.background, paddingHorizontal: spacing.lg }, previewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, previewTitle: { ...typography.title, color: palette.text }, close: { ...typography.caption, color: palette.amber }, previewImage: { flex: 1, width: '100%', marginVertical: spacing.md }, actions: { gap: spacing.sm }, primaryAction: { minHeight: 50, borderRadius: 8, backgroundColor: palette.amber, alignItems: 'center', justifyContent: 'center' }, primaryActionText: { ...typography.title, color: palette.background }, secondaryAction: { minHeight: 50, borderRadius: 8, borderWidth: 1, borderColor: palette.line, alignItems: 'center', justifyContent: 'center' }, secondaryActionText: { ...typography.title, color: palette.text },
 })
