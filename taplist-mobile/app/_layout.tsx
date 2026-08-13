@@ -14,6 +14,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { queryClient } from '@/lib/queryClient';
 import { setupTaplistQueryFocusManager } from '@/lib/setupQueryFocusManager';
 import { TaplistCityProvider } from '@/lib/taplistCity';
+import { usePushNotificationObserver } from '@/lib/pushNotifications';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -68,6 +69,7 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  usePushNotificationObserver();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -79,6 +81,8 @@ function RootLayoutNav() {
         <Stack.Screen name="bar/[slug]/event/[eventId]" options={{ headerShown: false }} />
         <Stack.Screen name="bar/[slug]/beer/[drinkId]" options={{ headerShown: false }} />
         <Stack.Screen name="drink-log/[lightId]" options={{ headerShown: false }} />
+        <Stack.Screen name="followed-bars" options={{ headerShown: false }} />
+        <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

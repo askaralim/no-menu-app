@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>No Menu Tonight App Store 截图生成器</title>
+  <script src="../node_modules/html2canvas/dist/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --canvas-width: 1290px;
+      --canvas-height: 2796px;
+      --preview-scale: 0.2558;
+      --night: #080808;
+      --panel: #121212;
+      --warm-white: #f5f1e8;
+      --muted: #b8b0a3;
+      --faint: #81796d;
+      --amber: #d39a45;
+      --line: rgba(245, 241, 232, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 40px;
+      background: #050505;
+      color: var(--warm-white);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    .topbar {
+      max-width: 1160px;
+      margin: 0 auto 32px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      font-weight: 500;
+    }
+
+    .intro {
+      max-width: 720px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    select,
+    button {
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 0 12px;
+      background: var(--panel);
+      color: var(--warm-white);
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      background: #2b2114;
+      color: var(--amber);
+    }
+
+    button:hover {
+      border-color: rgba(211, 154, 69, 0.52);
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.55;
+    }
+
+    .grid {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 36px;
+    }
+
+    .shot-tools {
+      width: calc(var(--canvas-width) * var(--preview-scale));
+      min-width: 330px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .shot-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .shot-tools h2 {
+      margin: 0;
+      color: var(--amber);
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .shot-status {
+      flex-shrink: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: var(--faint);
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    .shot-status.ready {
+      border-color: rgba(211, 154, 69, 0.34);
+      color: var(--amber);
+    }
+
+    .preview-frame {
+      width: calc(var(--canvas-width) * var(--preview-scale));
+      height: calc(var(--canvas-height) * var(--preview-scale));
+      min-width: 330px;
+      min-height: 715px;
+      overflow: hidden;
+      border-radius: 14px;
+      background: #000;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.56);
+    }
+
+    .preview-scale {
+      width: var(--canvas-width);
+      height: var(--canvas-height);
+      transform: scale(var(--preview-scale));
+      transform-origin: top left;
+    }
+
+    .canvas {
+      position: relative;
+      width: var(--canvas-width);
+      height: var(--canvas-height);
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 7%, rgba(211, 154, 69, 0.32), transparent 33%),
+        radial-gradient(circle at 86% 35%, rgba(138, 106, 58, 0.22), transparent 31%),
+        linear-gradient(180deg, #18130d 0%, #0c0b09 39%, var(--night) 100%);
+    }
+
+    .canvas::after {
+      content: "";
+      position: absolute;
+      z-index: 3;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.12;
+      background:
+        linear-gradient(90deg, rgba(245, 241, 232, 0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(245, 241, 232, 0.025) 1px, transparent 1px);
+      background-size: 11px 13px;
+      mix-blend-mode: screen;
+    }
+
+    .brand {
+      position: absolute;
+      z-index: 4;
+      top: 82px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: baseline;
+      gap: 17px;
+      color: var(--warm-white);
+      font-size: 25px;
+      font-weight: 600;
+      letter-spacing: 5px;
+      white-space: nowrap;
+    }
+
+    .brand span {
+      position: relative;
+      color: var(--amber);
+      letter-spacing: 4px;
+    }
+
+    .brand span::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 4px;
+      bottom: -10px;
+      height: 2px;
+      background: var(--amber);
+    }
+
+    .copy {
+      position: relative;
+      z-index: 2;
+      width: 1050px;
+      margin: 0 auto;
+      padding-top: 174px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin-bottom: 22px;
+      color: var(--amber);
+      font-size: 32px;
+      line-height: 1.3;
+      font-weight: 500;
+      letter-spacing: 7px;
+    }
+
+    .title {
+      max-width: 1040px;
+      margin: 0 auto;
+      color: var(--warm-white);
+      font-size: 82px;
+      line-height: 1.14;
+      font-weight: 550;
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      max-width: 940px;
+      margin: 30px auto 0;
+      color: var(--muted);
+      font-size: 38px;
+      line-height: 1.45;
+      font-weight: 400;
+    }
+
+    .device {
+      position: absolute;
+      z-index: 2;
+      left: 50%;
+      bottom: -118px;
+      width: 980px;
+      height: 2118px;
+      transform: translateX(-50%);
+      border-radius: 90px;
+      padding: 25px;
+      background: linear-gradient(145deg, #3a332a, #080808 48%, #2b2117);
+      box-shadow:
+        0 40px 100px rgba(0, 0, 0, 0.75),
+        inset 0 0 0 2px rgba(245, 241, 232, 0.1);
+    }
+
+    .screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 65px;
+      background: #0d0d0d;
+    }
+
+    .island {
+      position: absolute;
+      z-index: 4;
+      top: 25px;
+      left: 50%;
+      width: 275px;
+      height: 76px;
+      transform: translateX(-50%);
+      border-radius: 48px;
+      background: #030303;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.025);
+      pointer-events: none;
+    }
+
+    .upload-label {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 120px;
+      cursor: pointer;
+      color: rgba(245, 241, 232, 0.72);
+      text-align: center;
+      font-size: 33px;
+      line-height: 1.55;
+      background:
+        linear-gradient(180deg, rgba(8, 8, 8, 0.12), rgba(8, 8, 8, 0.5)),
+        repeating-linear-gradient(135deg, rgba(245, 241, 232, 0.04) 0 2px, transparent 2px 18px);
+    }
+
+    .upload-label strong {
+      display: block;
+      margin-bottom: 14px;
+      color: var(--amber);
+      font-weight: 500;
+    }
+
+    .file-input {
+      position: absolute;
+      z-index: 6;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .replace-input {
+      display: none;
+    }
+
+    .uploaded {
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: var(--night);
+    }
+
+    .screen.contain .uploaded {
+      object-fit: contain;
+      padding: 40px;
+    }
+
+    .screen.loaded .upload-label {
+      display: none;
+    }
+
+    .screen.loaded .uploaded,
+    .screen.loaded .replace-input {
+      display: block;
+    }
+
+    @media (max-width: 920px) {
+      body {
+        padding: 24px;
+      }
+
+      .topbar,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div>
+      <h1>No Menu Tonight App Store 截图生成器</h1>
+      <p class="intro">
+        为 listed 首版生成不含点单与订单能力的商店截图。点击每张图中的手机区域上传真实设备截图；默认导出 Apple 接受的 6.9 英寸竖屏 PNG。
+      </p>
+    </div>
+    <div class="controls">
+      <label>
+        尺寸
+        <select id="sizeSelect" onchange="setCanvasSize(this.value)">
+          <option value="1290x2796" selected>6.9 英寸：1290 × 2796</option>
+          <option value="1320x2868">6.9 英寸：1320 × 2868</option>
+          <option value="1242x2688">6.5 英寸：1242 × 2688</option>
+        </select>
+      </label>
+      <button onclick="downloadAll(this)">全部下载</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>01 今晚酒单</h2>
+          <span class="shot-status">待上传</span>
+        </div>
+        <button onclick="downloadImage('ss1', '01_今晚酒单.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss1">
+            <div class="brand">NO MENU <span>TONIGHT</span></div>
+            <div class="copy">
+              <div class="eyebrow">今晚酒单</div>
+              <h3 class="title">今晚有什么，随时更新</h3>
+              <p class="subtitle">调整酒头顺序、供应状态与公开内容</p>
+            </div>
+            <phone-frame label="上传酒单首页，建议展示完整且真实的今晚酒单"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>02 多渠道发布</h2>
+          <span class="shot-status">待上传</span>
+        </div>
+        <button onclick="downloadImage('ss2', '02_多渠道发布.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss2">
+            <div class="brand">NO MENU <span>TONIGHT</span></div>
+            <div class="copy">
+              <div class="eyebrow">多渠道发布</div>
+              <h3 class="title">一次发布，多处同步展示</h3>
+              <p class="subtitle">公开网页、门店二维码与 No Menu 实时同步</p>
+            </div>
+            <phone-frame label="上传门店的公开酒单、二维码与链接页面"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>03 商品状态</h2>
+          <span class="shot-status">待上传</span>
+        </div>
+        <button onclick="downloadImage('ss3', '03_商品状态.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss3">
+            <div class="brand">NO MENU <span>TONIGHT</span></div>
+            <div class="copy">
+              <div class="eyebrow">状态清晰</div>
+              <h3 class="title">上新、在售、售罄，一眼看清</h3>
+              <p class="subtitle">公开状态与供应阶段分别管理，更新更准确</p>
+            </div>
+            <phone-frame label="上传酒单筛选或商品列表，展示多种状态徽标"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>04 商品规格</h2>
+          <span class="shot-status">待上传</span>
+        </div>
+        <button onclick="downloadImage('ss4', '04_商品规格.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss4">
+            <div class="brand">NO MENU <span>TONIGHT</span></div>
+            <div class="copy">
+              <div class="eyebrow">商品资料</div>
+              <h3 class="title">商品、规格与价格，统一维护</h3>
+              <p class="subtitle">从酒款信息到杯型价格，都在一处管理</p>
+            </div>
+            <phone-frame label="上传商品编辑页，避免出现点单相关说明"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>05 门店与活动</h2>
+          <span class="shot-status">待上传</span>
+        </div>
+        <button onclick="downloadImage('ss5', '05_门店与活动.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss5">
+            <div class="brand">NO MENU <span>TONIGHT</span></div>
+            <div class="copy">
+              <div class="eyebrow">门店内容</div>
+              <h3 class="title">门店资料与活动，一处维护</h3>
+              <p class="subtitle">让公开酒单中的地址、营业信息与活动保持准确</p>
+            </div>
+            <phone-frame label="上传门店资料或活动列表，遮盖私人联系方式"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>06 团队协作</h2>
+          <span class="shot-status">待上传</span>
+        </div>
+        <button onclick="downloadImage('ss6', '06_团队协作.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss6">
+            <div class="brand">NO MENU <span>TONIGHT</span></div>
+            <div class="copy">
+              <div class="eyebrow">团队协作</div>
+              <h3 class="title">邀请团队，共同管理门店</h3>
+              <p class="subtitle">店主与员工协作维护酒单，信息始终一致</p>
+            </div>
+            <phone-frame label="上传团队成员页，使用审核数据并遮盖手机号"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <template id="phoneTemplate">
+    <div class="device">
+      <div class="screen">
+        <div class="island"></div>
+        <label class="upload-label">
+          <span>
+            <strong>点击上传真实截图</strong>
+            建议使用对应页面的 iPhone 设备截图
+          </span>
+          <input type="file" class="file-input" accept="image/png,image/jpeg,image/webp" onchange="loadImage(event)">
+        </label>
+        <img class="uploaded" alt="">
+        <input
+          type="file"
+          class="file-input replace-input"
+          aria-label="替换当前截图"
+          accept="image/png,image/jpeg,image/webp"
+          onchange="loadImage(event)">
+      </div>
+    </div>
+  </template>
+
+  <script>
+    customElements.define('phone-frame', class extends HTMLElement {
+      connectedCallback() {
+        const template = document.getElementById('phoneTemplate');
+        const node = template.content.cloneNode(true);
+        const label = this.getAttribute('label');
+        const fit = this.getAttribute('fit');
+        const screen = node.querySelector('.screen');
+        if (label) {
+          node.querySelector('.upload-label span').append(document.createElement('br'), label);
+        }
+        if (fit === 'contain') screen.classList.add('contain');
+        this.replaceWith(node);
+      }
+    });
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function waitForImage(img) {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('上传的图片无法读取，请重新导出后再试。'));
+      });
+    }
+
+    function setShotReady(screen) {
+      const shot = screen.closest('.shot');
+      const status = shot.querySelector('.shot-status');
+      status.textContent = '已就绪';
+      status.classList.add('ready');
+    }
+
+    async function loadImage(event) {
+      const input = event.target;
+      const screen = input.closest('.screen');
+      const img = screen.querySelector('.uploaded');
+      if (!input.files || !input.files[0]) return;
+      screen.classList.remove('loaded');
+      try {
+        img.removeAttribute('src');
+        img.src = await readFileAsDataUrl(input.files[0]);
+        await waitForImage(img);
+        if (img.decode) await img.decode();
+        screen.classList.add('loaded');
+        setShotReady(screen);
+      } catch (error) {
+        console.error(error);
+        alert('上传的截图无法读取，请重新导出 PNG 后再试。');
+      }
+    }
+
+    function setCanvasSize(value) {
+      const [width, height] = value.split('x').map(Number);
+      document.documentElement.style.setProperty('--canvas-width', `${width}px`);
+      document.documentElement.style.setProperty('--canvas-height', `${height}px`);
+      const previewScale = width >= 1320 ? '0.25' : width <= 1242 ? '0.266' : '0.2558';
+      document.documentElement.style.setProperty('--preview-scale', previewScale);
+    }
+
+    async function renderImage(containerId, filename, allowPlaceholder) {
+      const container = document.getElementById(containerId);
+      const scaler = container.parentElement;
+      const originalTransform = scaler.style.transform;
+      const uploadedScreen = container.querySelector('.screen.loaded');
+
+      if (!uploadedScreen && !allowPlaceholder) return false;
+      if (uploadedScreen) {
+        const uploadedImage = uploadedScreen.querySelector('.uploaded');
+        await waitForImage(uploadedImage);
+        if (uploadedImage.decode) await uploadedImage.decode();
+      }
+
+      scaler.style.transform = 'scale(1)';
+      await new Promise((resolve) => setTimeout(resolve, 80));
+
+      try {
+        const width = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--canvas-width'), 10);
+        const height = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--canvas-height'), 10);
+        if (typeof html2canvas !== 'function') {
+          throw new Error('截图组件未加载，请先在 mobile 目录运行 npm install。');
+        }
+        const outputCanvas = await html2canvas(container, {
+          width,
+          height,
+          scale: 1,
+          backgroundColor: varToHex('--night'),
+          logging: false,
+          useCORS: true,
+        });
+        const link = document.createElement('a');
+        link.href = outputCanvas.toDataURL('image/png');
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return true;
+      } finally {
+        scaler.style.transform = originalTransform;
+      }
+    }
+
+    function varToHex(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    async function downloadImage(containerId, filename, button) {
+      const container = document.getElementById(containerId);
+      const hasImage = Boolean(container.querySelector('.screen.loaded'));
+      if (!hasImage && !confirm('还没有上传真实页面截图。仍然下载占位版吗？')) return;
+
+      const originalText = button.innerText;
+      button.innerText = '生成中...';
+      button.disabled = true;
+      try {
+        await renderImage(containerId, filename, true);
+      } catch (error) {
+        console.error(error);
+        alert(`生成失败：${error.message}`);
+      } finally {
+        button.innerText = originalText;
+        button.disabled = false;
+      }
+    }
+
+    async function downloadAll(button) {
+      const jobs = [
+        ['ss1', '01_今晚酒单.png'],
+        ['ss2', '02_多渠道发布.png'],
+        ['ss3', '03_商品状态.png'],
+        ['ss4', '04_商品规格.png'],
+        ['ss5', '05_门店与活动.png'],
+        ['ss6', '06_团队协作.png'],
+      ];
+      const missing = jobs.filter(([id]) => !document.getElementById(id).querySelector('.screen.loaded'));
+      if (missing.length) {
+        alert(`还有 ${missing.length} 张未上传真实截图，请全部上传后再批量下载。`);
+        return;
+      }
+
+      const originalText = button.innerText;
+      button.disabled = true;
+      button.innerText = '批量生成中...';
+      try {
+        for (const [id, filename] of jobs) {
+          await renderImage(id, filename, false);
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
+      } catch (error) {
+        console.error(error);
+        alert(`批量生成失败：${error.message}`);
+      } finally {
+        button.innerText = originalText;
+        button.disabled = false;
+      }
+    }
+  </script>
+</body>
+
+</html>

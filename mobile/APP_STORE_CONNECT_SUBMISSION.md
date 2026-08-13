@@ -1,9 +1,10 @@
 # No Menu Tonight — App Store Connect v1.0.0
 
-Prepared: 2026-08-06
+Prepared: 2026-08-06 · **Status 2026-08-07: Waiting for Review**
 
 > **Canonical release doc:** [`docs/APP_STORE_LISTED_V1.md`](./docs/APP_STORE_LISTED_V1.md) (preflight + privacy).  
-> This file is the App Store Connect fill-in checklist. See also [`docs/INDEX.md`](../docs/INDEX.md).
+> This file is the App Store Connect fill-in checklist. See also [`docs/INDEX.md`](../docs/INDEX.md).  
+> While in review: do not replace the binary unless Apple asks; backend migrations are fine.
 
 ## Go / no-go
 

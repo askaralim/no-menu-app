@@ -8,8 +8,11 @@ Apple, and create share images.
 Home-screen and App Store display name: **No Menu** (`expo.name` in `app.json`).
 Bundle identifier: `com.nomenuapp.taplist`.
 
-This app is a sibling of the No Menu POS app. They share a Supabase project, but the
+This app is a sibling of the No Menu POS app (**No Menu Tonight** under `mobile/`). They share a Supabase project, but the
 consumer app must not depend on POS UI or mutate POS workflows.
+
+Monorepo doc index: [`../docs/INDEX.md`](../docs/INDEX.md).  
+Tonight POS App Store `1.0.0` is **Waiting for Review** (2026-08) — see `mobile/docs/APP_STORE_LISTED_V1.md`.
 
 ## Setup
 

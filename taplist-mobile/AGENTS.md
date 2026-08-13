@@ -7,6 +7,9 @@ This is the Expo / React Native consumer app **No Menu** (tap list; display name
 The product is a Chinese-first real-time craft beer discovery app for supported cities. It
 combines public bar tap lists with a private personal drink history called **酒迹**.
 
+Monorepo ops index: [`../docs/INDEX.md`](../docs/INDEX.md).  
+Sibling POS (**No Menu Tonight**, `mobile/`) App Store `1.0.0` is Waiting for Review as of 2026-08 — do not confuse ASC docs with this consumer app.
+
 ## Commands
 
 Run from `taplist-mobile/`:
@@ -78,6 +81,14 @@ Do not add:
 - Payments
 - Delivery
 - Reservations
+
+Allowed private subscription exception:
+
+- A user may privately follow a public bar and opt into iOS notifications for that bar's
+  newly published public drinks.
+- Never expose follower identities, follower counts, public follow activity, or a social graph.
+- Following and push-device data must remain private, RLS-isolated, removable, and included in
+  anonymous-to-Apple account merging and account deletion.
 
 Do not treat 酒迹 as proof of purchase, sales data, or a public social check-in. It is a
 private user-authored record that may reference the same canonical product across bars.
@@ -273,6 +284,7 @@ Private 酒迹 features should use authenticated RPCs in `lib/api/drinkLog.ts`.
 
 Use semantic versioning for user-visible releases.
 
+- Do not change `app.json` version or `ios.buildNumber` unless the user explicitly requests a release, App Store submission, or specific version/build-number update.
 - Patch versions, such as `1.0.3`, are for fixes and polish only.
 - Minor versions, such as `1.1.0`, are for user-visible features such as `NEW ON TAP`, new share templates, or new public RPC-backed surfaces.
 - Increment `ios.buildNumber` for every App Store submission.

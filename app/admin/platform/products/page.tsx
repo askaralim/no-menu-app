@@ -530,7 +530,7 @@ export default function PlatformProductsPage() {
                 <th style={thStyle}>ABV</th>
                 <th style={thStyle}>审核</th>
                 <th style={thStyle}>品牌关联</th>
-                <th style={thStyle}>关联酒品</th>
+                <th style={thStyle}>关联门店酒</th>
                 <th style={thStyle}>状态</th>
                 <th style={{ ...thStyle, width: 120 }}>操作</th>
               </tr>
@@ -577,7 +577,13 @@ export default function PlatformProductsPage() {
                         )}
                       </td>
                       <td style={{ ...tdStyle, textAlign: 'center', fontSize: '0.85rem' }}>
-                        {product.linked_drink_count}
+                        {product.linked_drink_count > 0 ? (
+                          <span title="已链接到门店酒款的数量">{product.linked_drink_count} 款门店酒</span>
+                        ) : (
+                          <span style={{ color: '#9ca3af' }} title="尚未被任何门店酒款链接">
+                            未链接
+                          </span>
+                        )}
                       </td>
                       <td style={tdStyle}>
                         <span
@@ -631,6 +637,16 @@ export default function PlatformProductsPage() {
                 {editingId && form.normalized_key ? (
                   <code style={{ ...codeStyle, display: 'inline-block', marginTop: 6 }}>{form.normalized_key}</code>
                 ) : null}
+                {editingId ? (
+                  <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#6b7280' }}>
+                    {(() => {
+                      const count = products.find((p) => p.id === editingId)?.linked_drink_count ?? 0
+                      return count > 0
+                        ? `已链接到 ${count} 款门店酒（在 Tap List 里通过产品池关联）`
+                        : '尚未链接到任何门店酒款'
+                    })()}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -662,7 +678,15 @@ export default function PlatformProductsPage() {
               </Field>
 
               <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12 }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 8 }}>品牌/酒厂关联</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4 }}>品牌/酒厂关联</div>
+                <p style={{ margin: '0 0 8px', fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.45 }}>
+                  建议关联正式品牌/酒厂，便于消费端展示与去重。列表可筛「无品牌关联」。
+                </p>
+                {!form.company_id ? (
+                  <p style={{ margin: '0 0 8px', fontSize: '0.78rem', color: '#b45309' }}>
+                    当前未关联品牌/酒厂。
+                  </p>
+                ) : null}
                 <input
                   className="admin-input"
                   placeholder="搜索品牌/酒厂…"

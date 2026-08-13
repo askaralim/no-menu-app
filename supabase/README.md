@@ -46,10 +46,13 @@ Root scripts call **`supabase`** on your **PATH** (not `npx`).
 
 ## Tonight 1.0.0 / ASC-related migrations (pointers only)
 
-Confirm these are applied on production before relying on listed-build behavior (see [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md)):
+Tonight **1.0.0 is Waiting for App Store review** (2026-08). Production should already include at least:
 
 - `20260806120000_support_requests.sql`
 - `20260807160000_business_day_close_restore_hardening.sql`  
   (**not** `20260807150000_…` — that file is We Cheers QR data)
+- `20260807170000_storefront_preserve_null_cover.sql` — POS null cover must not wipe `cover_image_url`
+- `20260807180000_consumer_bar_follows_and_new_tap_push.sql` — consumer follows / push outbox
 
+See [`docs/INDEX.md`](../docs/INDEX.md) and [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md).  
 Do not paste or rewrite these from this README; open the migration files in `migrations/`.

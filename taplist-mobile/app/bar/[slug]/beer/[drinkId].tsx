@@ -1,8 +1,8 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useLocalSearchParams } from 'expo-router'
+import { Link, router, useLocalSearchParams } from 'expo-router'
 import * as Sharing from 'expo-sharing'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -26,7 +26,7 @@ export default function BeerDetailScreen() {
   const insets = useSafeAreaInsets()
   const shareableRef = useRef<ShareableBeerImageHandle>(null)
   const [isSavingBeer, setIsSavingBeer] = useState(false)
-  const { slug, drinkId } = useLocalSearchParams<{ slug: string; drinkId: string }>()
+  const { slug, drinkId, fromPush } = useLocalSearchParams<{ slug: string; drinkId: string; fromPush?: string }>()
   const configured = useTaplistSupabaseReady()
 
   const tenantQuery = useQuery({
@@ -65,6 +65,15 @@ export default function BeerDetailScreen() {
     drinkId: drink?.id ?? '',
     tenantId: tenant?.id ?? '',
   })
+
+  useEffect(() => {
+    if (fromPush !== '1' || isResolvingDrink || !configured) return
+    if (tenantQuery.isError || tenantResult?.ok === false) {
+      router.replace('/')
+    } else if (!drink && !drinksQuery.isLoading) {
+      router.replace(`/bar/${slug}?fromPush=1`)
+    }
+  }, [configured, drink, drinksQuery.isLoading, fromPush, isResolvingDrink, slug, tenantQuery.isError, tenantResult])
 
   const handleShareBeerImage = async () => {
     if (!tenant || !drink || isSavingBeer) return

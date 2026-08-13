@@ -1,9 +1,9 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { Link, useLocalSearchParams } from 'expo-router'
-import { useRef, useState, type ReactNode } from 'react'
-import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Link, router, useLocalSearchParams } from 'expo-router'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { ActivityIndicator, Alert, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
@@ -23,16 +23,22 @@ import { formatOpeningHourLabel } from '@/lib/openingHour'
 import { buildAppleMapsPlaceUrl } from '@/lib/navigationLinks'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicDrinks, fetchPublicTenantBySlug, fetchPublicTenantEvents } from '@/lib/api/taplist'
+import { followBar, getMyBarFollowState, setBarNewTapNotifications, unfollowBar } from '@/lib/api/barFollows'
+import { ensureDrinkLogSession } from '@/lib/drinkLogAuth'
+import { enablePushNotifications, getPushPermissionState } from '@/lib/pushNotifications'
 import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import { trackEvent } from '@/lib/analytics'
-import { partitionPublicDrinks, type PublicEventRow } from '@/lib/types'
+import { partitionPublicDrinks, type FollowedBarRow, type PublicEventRow } from '@/lib/types'
 
 export default function BarDetailScreen() {
   const insets = useSafeAreaInsets()
+  const queryClient = useQueryClient()
   const shareableRef = useRef<ShareableBarTaplistImageHandle>(null)
   const [isSavingTaplist, setIsSavingTaplist] = useState(false)
-  const { slug } = useLocalSearchParams<{ slug: string }>()
+  const [followBusy, setFollowBusy] = useState(false)
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
+  const { slug, fromPush } = useLocalSearchParams<{ slug: string; fromPush?: string }>()
   const configured = useTaplistSupabaseReady()
 
   const tenantQuery = useQuery({
@@ -56,6 +62,17 @@ export default function BarDetailScreen() {
     enabled: configured && !!tenant?.id,
     refetchOnMount: 'always',
   })
+
+  const followQuery = useQuery({
+    queryKey: ['bar-follow', tenant?.id],
+    queryFn: () => getMyBarFollowState(tenant!.id),
+    enabled: Platform.OS === 'ios' && configured && !!tenant?.id,
+  })
+
+  useEffect(() => {
+    if (fromPush !== '1' || tenantQuery.isLoading || !configured) return
+    if (tenantQuery.isError || tenantResult?.ok === false) router.replace('/')
+  }, [configured, fromPush, tenantQuery.isError, tenantQuery.isLoading, tenantResult])
 
   const drinkResult = drinksQuery.data
   const partitions = drinkResult?.ok
@@ -138,6 +155,86 @@ export default function BarDetailScreen() {
     }
   }
 
+  const handleFollow = async () => {
+    if (!tenant || followBusy) return
+    setFollowBusy(true)
+    try {
+      await ensureDrinkLogSession()
+      const state = await followBar(tenant.id)
+      queryClient.setQueryData(['bar-follow', tenant.id], state)
+      await queryClient.invalidateQueries({ queryKey: ['bar-follows'] })
+      const permission = await getPushPermissionState()
+      if (permission === 'granted') {
+        await enablePushNotifications()
+        await setBarNewTapNotifications(tenant.id, true)
+        queryClient.setQueryData(['bar-follow', tenant.id], { ...state, notify_new_taps: true })
+      } else if (permission === 'undetermined') {
+        setShowNotificationPrompt(true)
+      }
+    } catch (error) {
+      console.warn('Follow bar failed', error)
+      Alert.alert('暂时无法关注', '请稍后重试')
+    } finally {
+      setFollowBusy(false)
+    }
+  }
+
+  const handleEnableNotifications = async () => {
+    if (!tenant || followBusy) return
+    setFollowBusy(true)
+    try {
+      const permission = await enablePushNotifications()
+      setShowNotificationPrompt(false)
+      if (permission === 'granted') {
+        await setBarNewTapNotifications(tenant.id, true)
+        queryClient.setQueryData(['bar-follow', tenant.id], {
+          ...(followQuery.data ?? { ok: true, followed_at: null }),
+          followed: true,
+          notify_new_taps: true,
+        })
+      } else {
+        Alert.alert('已关注，通知尚未开启', '你可以稍后在「关注的酒吧」或系统设置中开启。')
+      }
+    } catch (error) {
+      console.warn('Enable notifications failed', error)
+      Alert.alert('通知开启失败', '关注已经保存，请稍后在「关注的酒吧」中重试。')
+    } finally {
+      setFollowBusy(false)
+    }
+  }
+
+  const handleUnfollow = () => {
+    if (!tenant || followBusy) return
+    Alert.alert('取消关注这家酒吧？', '取消后将不再收到这家酒吧的上新通知。', [
+      { text: '保留关注', style: 'cancel' },
+      {
+        text: '取消关注',
+        style: 'destructive',
+        onPress: async () => {
+          setFollowBusy(true)
+          try {
+            await unfollowBar(tenant.id)
+            queryClient.setQueryData(['bar-follow', tenant.id], {
+              ok: true,
+              followed: false,
+              notify_new_taps: false,
+              followed_at: null,
+            })
+            queryClient.setQueryData<FollowedBarRow[]>(['bar-follows'], (current) => (
+              current?.filter((bar) => bar.tenant_id !== tenant.id)
+            ))
+            await queryClient.invalidateQueries({ queryKey: ['bar-follows'] })
+          } catch (error) {
+            console.warn('Unfollow bar failed', error)
+            Alert.alert('暂时无法取消关注', '请稍后重试')
+          } finally {
+            setFollowBusy(false)
+          }
+        },
+      },
+    ])
+  }
+
   return (
     <View style={styles.screen}>
       <BackButton />
@@ -167,40 +264,62 @@ export default function BarDetailScreen() {
           <>
             <AtmosphereImage source={tenant.cover_image_url} aspectRatio={4 / 3} overlayOpacity={0.54} borderRadius={0}>
               <View style={styles.heroCopy}>
-                <Text style={styles.title}>{tenant.display_name || tenant.name}</Text>
+                <Text style={styles.title} numberOfLines={2}>{tenant.display_name || tenant.name}</Text>
                 <BrewingBadgeFromType
                   brewingType={tenant.brewing_type}
                   brewingLabel={tenant.brewing_label}
                   variant="hero"
                 />
-                {(tenant.address || openingHoursLabel) ? (
-                  <View style={[styles.heroMeta, styles.heroMetaAfterTitle]}>
-                    {tenant.address ? (
+                {(tenant.address || openingHoursLabel || Platform.OS === 'ios') ? (
+                  <View style={[styles.heroMetaBar, styles.heroMetaAfterTitle]}>
+                    <View style={styles.heroMeta}>
+                      {tenant.address ? (
+                        <Pressable
+                          accessibilityRole={appleMapsUrl ? 'link' : undefined}
+                          accessibilityLabel={appleMapsUrl ? `在 Apple Maps 中查看 ${tenant.display_name || tenant.name}` : undefined}
+                          disabled={!appleMapsUrl}
+                          hitSlop={8}
+                          onPress={handleOpenAppleMaps}
+                          style={({ pressed }) => [
+                            styles.heroMetaRow,
+                            appleMapsUrl && styles.heroAddressLink,
+                            pressed && appleMapsUrl && styles.heroAddressPressed,
+                          ]}>
+                          <FontAwesome name="map-marker" size={13} color={palette.muted} />
+                          <Text style={[styles.heroMetaText, appleMapsUrl && styles.heroAddressText]}>{tenant.address}</Text>
+                          {appleMapsUrl ? (
+                            <View style={styles.heroMapHint}>
+                              <FontAwesome name="location-arrow" size={13} color={palette.amber} />
+                            </View>
+                          ) : null}
+                        </Pressable>
+                      ) : null}
+                      {openingHoursLabel ? (
+                        <View style={styles.heroMetaRow}>
+                          <FontAwesome name="clock-o" size={13} color={palette.muted} />
+                          <Text style={styles.heroMetaText}>{openingHoursLabel}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    {Platform.OS === 'ios' ? (
                       <Pressable
-                        accessibilityRole={appleMapsUrl ? 'link' : undefined}
-                        accessibilityLabel={appleMapsUrl ? `在 Apple Maps 中查看 ${tenant.display_name || tenant.name}` : undefined}
-                        disabled={!appleMapsUrl}
-                        hitSlop={8}
-                        onPress={handleOpenAppleMaps}
+                        accessibilityRole="button"
+                        accessibilityLabel={followQuery.data?.followed ? '取消关注这家酒吧' : '关注这家酒吧'}
+                        disabled={followBusy || followQuery.isLoading}
+                        onPress={followQuery.data?.followed ? handleUnfollow : () => void handleFollow()}
                         style={({ pressed }) => [
-                          styles.heroMetaRow,
-                          appleMapsUrl && styles.heroAddressLink,
-                          pressed && appleMapsUrl && styles.heroAddressPressed,
+                          styles.followButton,
+                          followQuery.data?.followed && styles.followButtonActive,
+                          pressed && styles.followButtonPressed,
                         ]}>
-                        <FontAwesome name="map-marker" size={13} color={palette.muted} />
-                        <Text style={[styles.heroMetaText, appleMapsUrl && styles.heroAddressText]}>{tenant.address}</Text>
-                        {appleMapsUrl ? (
-                          <View style={styles.heroMapHint}>
-                            <FontAwesome name="location-arrow" size={13} color={palette.amber} />
-                          </View>
-                        ) : null}
+                        {followBusy ? (
+                          <ActivityIndicator size="small" color={palette.amber} />
+                        ) : (
+                          <Text style={[styles.followButtonText, followQuery.data?.followed && styles.followButtonTextActive]}>
+                            {followQuery.data?.followed ? '✓ 已关注' : '＋ 关注'}
+                          </Text>
+                        )}
                       </Pressable>
-                    ) : null}
-                    {openingHoursLabel ? (
-                      <View style={styles.heroMetaRow}>
-                        <FontAwesome name="clock-o" size={13} color={palette.muted} />
-                        <Text style={styles.heroMetaText}>{openingHoursLabel}</Text>
-                      </View>
                     ) : null}
                   </View>
                 ) : null}
@@ -301,6 +420,29 @@ export default function BarDetailScreen() {
           </View>
         </View>
       ) : null}
+      <Modal
+        transparent
+        animationType="fade"
+        visible={showNotificationPrompt}
+        onRequestClose={() => setShowNotificationPrompt(false)}>
+        <View style={styles.notificationPromptBackdrop}>
+          <View style={[styles.notificationPrompt, { paddingBottom: insets.bottom + spacing.lg }]}>
+            <View style={styles.notificationBell}>
+              <FontAwesome name="bell-o" size={21} color={palette.amber} />
+            </View>
+            <Text style={styles.notificationPromptTitle}>不错过这家酒吧的上新</Text>
+            <Text style={styles.notificationPromptBody}>
+              只在这家酒吧正式发布新酒时通知你。你可以随时在「我的－关注的酒吧」中关闭。
+            </Text>
+            <Pressable disabled={followBusy} onPress={() => void handleEnableNotifications()} style={styles.notificationPrimary}>
+              <Text style={styles.notificationPrimaryText}>开启上新通知</Text>
+            </Pressable>
+            <Pressable disabled={followBusy} onPress={() => setShowNotificationPrompt(false)} style={styles.notificationSecondary}>
+              <Text style={styles.notificationSecondaryText}>暂不开启</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -437,7 +579,14 @@ const styles = StyleSheet.create({
     ...typography.displayL,
     color: palette.text,
   },
+  heroMetaBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   heroMeta: {
+    flex: 1,
+    minWidth: 0,
     gap: spacing.xxs,
   },
   heroMetaAfterTitle: {
@@ -484,6 +633,57 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: palette.faint,
   },
+  followButton: {
+    flexShrink: 0,
+    minWidth: 78,
+    minHeight: 34,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 17,
+    backgroundColor: palette.amber,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  followButtonActive: {
+    backgroundColor: 'rgba(13,13,13,0.55)',
+    borderWidth: 1,
+    borderColor: palette.goldMuted,
+  },
+  followButtonPressed: { opacity: 0.72 },
+  followButtonText: { ...typography.caption, color: palette.background, fontWeight: '600' },
+  followButtonTextActive: { color: palette.amber },
+  notificationPromptBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.58)',
+  },
+  notificationPrompt: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    backgroundColor: palette.panel,
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  notificationBell: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(211,154,69,0.10)',
+  },
+  notificationPromptTitle: { ...typography.headline, color: palette.text, marginTop: spacing.md },
+  notificationPromptBody: { ...typography.body, color: palette.muted, marginTop: spacing.sm },
+  notificationPrimary: {
+    minHeight: 50,
+    borderRadius: 8,
+    marginTop: spacing.lg,
+    backgroundColor: palette.amber,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationPrimaryText: { ...typography.title, color: palette.background },
+  notificationSecondary: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  notificationSecondaryText: { ...typography.caption, color: palette.muted },
   eventsSection: {
     paddingTop: spacing.lg,
     paddingBottom: spacing.xs,

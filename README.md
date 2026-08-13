@@ -1,30 +1,41 @@
-# 酒吧实时酒单系统
+# No Menu
 
-> **Partially stale.** Early single-app framing. Current surfaces: Tonight POS (`mobile/`), consumer No Menu (`taplist-mobile/`), admin (`app/`).  
-> Doc index: [`docs/INDEX.md`](./docs/INDEX.md).
+Craft beer tap list platform: owner POS, consumer app, admin, and public web.
 
-一个基于 Next.js 和 Supabase 的实时酒单展示和管理系统。
+**Doc index (source of truth):** [`docs/INDEX.md`](./docs/INDEX.md)
+
+### Surfaces
+
+| Surface | Path | Notes |
+|---------|------|--------|
+| **No Menu Tonight** (POS) | `mobile/` | App Store `1.0.0` — **Waiting for Review** (2026-08) |
+| **No Menu** (consumer) | `taplist-mobile/` | Listed separately |
+| Admin / platform | `app/` | Next static export |
+| Public web | `taplist-web/` | `/bar/{slug}`, `/tonight`, `/support` |
+| Database | `supabase/` | Production: `migrations/` only · greenfield: [`supabase/GREENFIELD.md`](./supabase/GREENFIELD.md) |
+
+### Tonight ASC (while in review)
+
+- Canonical: [`mobile/docs/APP_STORE_LISTED_V1.md`](./mobile/docs/APP_STORE_LISTED_V1.md)
+- Checklist: [`mobile/APP_STORE_CONNECT_SUBMISSION.md`](./mobile/APP_STORE_CONNECT_SUBMISSION.md)
+- Agent notes: [`mobile/AGENTS.md`](./mobile/AGENTS.md)
+
+---
 
 ## 技术栈
 
-- **前端**: Next.js 14 (App Router)
-- **后端**: Supabase (PostgreSQL + Realtime)
-- **部署**: Cloudflare Pages
+- **Web admin**: Next.js 14 (App Router)
+- **Mobile**: Expo / React Native (`mobile/`, `taplist-mobile/`)
+- **后端**: Supabase (PostgreSQL + Realtime + Auth)
+- **部署**: Cloudflare Pages (web) · EAS (iOS)
 
-## 功能特性
+## 功能特性（摘要）
 
-### 展示页面 (`/display`)
-- 📱 只读酒单展示
-- 🎨 3 套主题切换（深色夜店风 / 简约黑白 / 高端酒吧）
-- 🔄 实时同步更新（Supabase Realtime）
-- ⏰ 可配置自动刷新
+- 店主：今晚酒单、商品库、门店资料 / 二维码 / 活动（点单按门店 `ordering_enabled`）
+- 消费者：城市 Tonight、酒吧酒单、搜索、酒迹等
+- 平台：Concierce 建店绑店主、商品池、支持请求
 
-### 管理后台 (`/admin`)
-- 📂 分类管理（CRUD）
-- 🍷 酒品管理（CRUD）
-- ✅ 启用/禁用功能（卖完但不删除）
-- 📊 数据统计概览
-- ⚙️ 系统设置
+下文部分章节仍偏早期单 App 描述；**以 `docs/INDEX.md` 为准。**
 
 ## 快速开始
 
@@ -37,7 +48,7 @@ npm install
 ### 2. 配置 Supabase
 
 1. 在 [Supabase](https://supabase.com) 创建新项目
-2. 在 Supabase SQL Editor 中执行 `supabase/install_all_in_one.sql`（**仅新空库**；已部署的生产库不要整文件重跑）。数据库目录说明见 [`supabase/README.md`](supabase/README.md)。
+2. **新空库**：见 [`supabase/GREENFIELD.md`](./supabase/GREENFIELD.md)（`install_all_in_one.sql` + 后续 `migrations/`）。**生产库不要整文件重跑 install。** 说明见 [`supabase/README.md`](supabase/README.md)。
 3. 在 Supabase Dashboard 中启用 Realtime：
    - 进入 Database > Replication
    - 按需为 `categories`, `drinks`, `settings`, `orders` 等表启用 Realtime

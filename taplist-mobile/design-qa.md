@@ -26,7 +26,6 @@
 3. Re-captured and verified both legal links and both consent paths.
 
 final result: passed
-
 ---
 
 # Beer detail redesign QA
@@ -204,3 +203,34 @@ final result: blocked
 - Fresh-bundle iPhone capture: blocked pending manual Reload and resumed mirroring.
 
 final result: blocked
+
+---
+
+# NoMenuist profile header design QA
+
+## Reference
+
+- Selected design: `/Users/askar/.codex/generated_images/019fcb43-4027-7083-b85e-17a73014251e/exec-aa71eadc-a04c-433b-a183-d9db2be4f314.png`
+- Local implementation capture: `/tmp/no-menu-consumer-profile-header.png`
+- Local edit-screen capture: `/tmp/no-menu-consumer-profile-edit.png`
+
+## Visual comparison
+
+- Identity hierarchy matches the selected direction: fixed gold glass avatar, one-line username, private drinking summary, and a separate edit affordance.
+- The Apple protection action is grouped inside the identity section on iOS. Its protected state removes the chevron and disables interaction.
+- Existing follow and recent-history sections retain their established dark editorial hierarchy instead of becoming profile-dashboard cards.
+- The fixed avatar uses an original No Menu glass silhouette and does not depend on initials, uploaded media, or `avatar_url`.
+
+## Responsive and accessibility checks
+
+- Username is constrained to one line and truncates before the 44 x 44 pt edit target.
+- Edit and Apple protection actions have explicit accessibility roles and labels.
+- The edit form exposes a labelled single-line input, character count, validation feedback, and disabled submission states.
+- Browser validation covered the 390 x 844 viewport. Native dynamic type, VoiceOver, and the iOS-only Apple row still require the planned TestFlight pass.
+
+## Intentional differences
+
+- The browser capture has no drink records or iOS-only rows, so it validates the identity and empty-history states rather than duplicating the populated native reference.
+- The production avatar is visually simpler than the concept image to remain legible at 64 pt and clearly distinct from third-party beer icons.
+
+final result: passed
