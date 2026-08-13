@@ -374,10 +374,11 @@ function OrderingPageContent() {
             const { error: insertError } = await supabase.from('order_items').insert(toRows(newOrder.id))
             if (insertError) throw insertError
             alert('订单创建成功')
-            setViewMode('list')
-            setSelectedOrder(null)
-            setCart([])
             setCustomerName('')
+            setCart([])
+            setSelectedOrder(null)
+            setPickDrink(null)
+            router.push('/admin/ordering')
             fetchActiveOrders()
             return
           }
