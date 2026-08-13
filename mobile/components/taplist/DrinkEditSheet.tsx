@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Modal,
   View,
@@ -29,6 +29,7 @@ import {
   upsertDrinkProduct,
   validateDraftDrink,
 } from '../../lib/taplistOwnerApi'
+import { matchLocalDrinks } from '../../lib/taplistLocalDrinkMatch'
 import {
   type LocalImageAsset,
   TAPLIST_IMAGE_MAX_BYTES,
@@ -61,6 +62,10 @@ interface Props {
   saveIntent?: DrinkSaveIntent
   /** Suggested tap # when joining tonight (create / no existing tap). */
   suggestedTapNumber?: number | null
+  /** Tenant catalog for local-dedup suggestions (create mode). */
+  catalogDrinks?: DraftDrink[]
+  /** User picked an existing local drink from suggestions. */
+  onPickLocalDrink?: (drink: DraftDrink) => void
   onClose: () => void
   onSaved: (result?: DrinkUpsertResult) => void | Promise<void>
 }
@@ -74,6 +79,8 @@ export default function DrinkEditSheet({
   entryPoint = 'tonight',
   saveIntent: saveIntentProp,
   suggestedTapNumber,
+  catalogDrinks = [],
+  onPickLocalDrink,
   onClose,
   onSaved,
 }: Props) {
@@ -83,9 +90,9 @@ export default function DrinkEditSheet({
   const primaryIntent = saveIntentProp ?? defaultIntent
 
   const [local, setLocal] = useState<DraftDrink | null>(drink)
-  const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
-  const [results, setResults] = useState<ProductSearchResult[]>([])
+  const [poolResults, setPoolResults] = useState<ProductSearchResult[]>([])
+  const [poolSearchDone, setPoolSearchDone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [pendingImage, setPendingImage] = useState<LocalImageAsset | null>(null)
@@ -109,8 +116,8 @@ export default function DrinkEditSheet({
       }
     }
     setLocal(next)
-    setQuery('')
-    setResults([])
+    setPoolResults([])
+    setPoolSearchDone(false)
     setSaving(false)
     setSearching(false)
     setUploadingImage(false)
@@ -137,31 +144,47 @@ export default function DrinkEditSheet({
     }
   }, [visible, drink?.id, isCreate])
 
-  // Autocomplete: debounce product-pool search while typing
+  const nameQuery = (local?.name ?? '').trim()
+
+  const localMatches = useMemo(() => {
+    if (!isCreate || !visible || nameQuery.length < 1) return []
+    return matchLocalDrinks(catalogDrinks, nameQuery)
+  }, [isCreate, visible, nameQuery, catalogDrinks])
+
+  // Create mode: debounce product-pool search from 酒款名称.
   useEffect(() => {
-    if (!visible) return
-    const q = query.trim()
-    if (q.length < 1) {
-      setResults([])
+    if (!visible || !isCreate) {
+      setPoolResults([])
+      setPoolSearchDone(false)
+      setSearching(false)
+      return
+    }
+    if (nameQuery.length < 1) {
+      setPoolResults([])
+      setPoolSearchDone(false)
       setSearching(false)
       return
     }
     const seq = ++searchSeq.current
     setSearching(true)
+    setPoolSearchDone(false)
     const timer = setTimeout(() => {
-      void searchDrinkProducts(q)
+      void searchDrinkProducts(nameQuery)
         .then((rows) => {
-          if (searchSeq.current === seq) setResults(rows)
+          if (searchSeq.current === seq) setPoolResults(rows)
         })
         .catch(() => {
-          if (searchSeq.current === seq) setResults([])
+          if (searchSeq.current === seq) setPoolResults([])
         })
         .finally(() => {
-          if (searchSeq.current === seq) setSearching(false)
+          if (searchSeq.current === seq) {
+            setSearching(false)
+            setPoolSearchDone(true)
+          }
         })
     }, 250)
     return () => clearTimeout(timer)
-  }, [query, visible])
+  }, [nameQuery, visible, isCreate])
 
   if (!local) return null
 
@@ -246,14 +269,20 @@ export default function DrinkEditSheet({
     setLocal((d) => {
       if (!d) return d
       const applied = applyProductToDraftDrink(d, p)
-      return {
-        ...applied,
-        name: d.name.trim() ? d.name : p.name,
-      }
+      // Combobox search is the name field — always take the pool's full name.
+      return { ...applied, name: p.name }
     })
     if (p.abv != null) setAbvText(String(p.abv))
-    setResults([])
-    setQuery('')
+    setPoolResults([])
+    setPoolSearchDone(false)
+  }
+
+  const unlinkProduct = () => {
+    setLocal((d) => (d ? { ...d, product_id: null } : d))
+  }
+
+  const onChangeName = (t: string) => {
+    patch({ name: t })
   }
 
   const ensurePhotoLibraryPermission = (): Promise<boolean> =>
@@ -502,65 +531,108 @@ export default function DrinkEditSheet({
               </>
             ) : null}
 
-            {/* 2. Product pool autofill */}
-            <Text style={[styles.sectionLabel, categories.length === 0 && { marginTop: 0 }]}>
-              从酒库填充（可选）
+            {/* 2. Name combobox (create) / name field (edit) */}
+            <Text style={[styles.sectionLabel, selectableCategories.length === 0 && { marginTop: 0 }]}>
+              基本信息
             </Text>
-            <View style={styles.searchRow}>
-              <TextInput
-                style={[styles.input, { flex: 1, marginBottom: 0 }]}
-                value={query}
-                onChangeText={setQuery}
-                placeholder="输入啤酒名 / 酒厂，自动搜索"
-                placeholderTextColor={T.faint}
-                autoCapitalize="none"
-                returnKeyType="search"
-              />
-              {searching ? (
-                <ActivityIndicator size="small" color={T.gold} style={{ width: 28 }} />
-              ) : query.trim() ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    setQuery('')
-                    setResults([])
-                  }}
-                  hitSlop={8}
-                >
-                  <Ionicons name="close-circle" size={20} color={T.faint} />
-                </TouchableOpacity>
-              ) : (
-                <Ionicons name="search" size={18} color={T.faint} />
-              )}
-            </View>
-            {results.map((r) => (
-              <TouchableOpacity key={r.id} style={styles.resultRow} onPress={() => applyProduct(r)}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.resultName} numberOfLines={1}>
-                    {r.name}
-                  </Text>
-                  <Text style={styles.resultMeta} numberOfLines={1}>
-                    {[r.brewery || r.brand_name, r.beer_style, r.abv ? `${r.abv}%` : null]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Text>
+            {isCreate ? (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={styles.fieldLabel}>酒款名称</Text>
+                <View style={styles.searchRow}>
+                  <TextInput
+                    style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                    value={local.name}
+                    onChangeText={onChangeName}
+                    placeholder="输入酒名，可匹配已有或商品池"
+                    placeholderTextColor={T.faint}
+                    autoCapitalize="none"
+                    returnKeyType="search"
+                  />
+                  {searching ? (
+                    <ActivityIndicator size="small" color={T.gold} style={{ width: 28 }} />
+                  ) : null}
                 </View>
-                <Ionicons name="add-circle-outline" size={22} color={T.gold} />
-              </TouchableOpacity>
-            ))}
-            {local.product_id ? (
-              <Text style={styles.hintText}>已关联商品池，保存后将写入跨店识别。</Text>
-            ) : null}
-            {isCreate && !local.product_id ? (
-              <Text style={styles.hintText}>
-                后台会审核新建商品，可能会修改商品属性，请理解。
-              </Text>
-            ) : null}
 
-            {/* 3. Basic info */}
-            <Text style={styles.sectionLabel}>基本信息</Text>
-            <Field label="酒款名称" value={local.name} onChange={(t) => patch({ name: t })} />
+                {localMatches.length > 0 ? (
+                  <View style={styles.suggestGroup}>
+                    <Text style={styles.suggestGroupTitle}>本店已有</Text>
+                    {localMatches.map((d) => (
+                      <TouchableOpacity
+                        key={d.id}
+                        style={styles.resultRow}
+                        onPress={() => onPickLocalDrink?.(d)}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.resultName} numberOfLines={1}>
+                            {d.display_name || d.name}
+                          </Text>
+                          <Text style={styles.resultMeta} numberOfLines={1}>
+                            {[d.profile?.brewery || d.brand_name, d.profile?.beer_style]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </Text>
+                        </View>
+                        <Text style={styles.localBadge}>已有</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
 
-            {/* 4. Image */}
+                {/* Prefer local dedup; hide pool when this store already has hits. */}
+                {localMatches.length === 0 && poolResults.length > 0 ? (
+                  <View style={styles.suggestGroup}>
+                    <Text style={styles.suggestGroupTitle}>商品池</Text>
+                    {poolResults.map((r) => (
+                      <TouchableOpacity
+                        key={r.id}
+                        style={styles.resultRow}
+                        onPress={() => applyProduct(r)}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.resultName} numberOfLines={1}>
+                            {r.name}
+                          </Text>
+                          <Text style={styles.resultMeta} numberOfLines={1}>
+                            {[r.brewery || r.brand_name, r.beer_style, r.abv ? `${r.abv}%` : null]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </Text>
+                        </View>
+                        <Ionicons name="add-circle-outline" size={22} color={T.gold} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+
+                {nameQuery.length >= 1 &&
+                !local.product_id &&
+                poolSearchDone &&
+                !searching &&
+                localMatches.length === 0 &&
+                poolResults.length === 0 ? (
+                  <Text style={styles.hintText}>未找到匹配，保存后将新建</Text>
+                ) : null}
+
+                {local.product_id ? (
+                  <View style={styles.linkRow}>
+                    <Text style={[styles.hintText, { flex: 1, marginTop: 0, marginBottom: 0 }]}>
+                      已匹配商品池
+                    </Text>
+                    <TouchableOpacity onPress={unlinkProduct} hitSlop={8}>
+                      <Text style={styles.unlinkText}>取消关联</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <Text style={styles.hintText}>
+                    后台会审核新建商品，可能会修改商品属性，请理解。
+                  </Text>
+                )}
+              </View>
+            ) : (
+              <Field label="酒款名称" value={local.name} onChange={(t) => patch({ name: t })} />
+            )}
+
+            {/* 3. Image */}
             <Text style={styles.sectionLabel}>图片</Text>
             {previewImageUri ? (
               <View style={styles.imagePreviewRow}>
@@ -1002,6 +1074,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
+  suggestGroup: { marginTop: 4 },
+  suggestGroupTitle: {
+    color: T.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 10,
+    marginBottom: 2,
+    letterSpacing: 0.5,
+  },
   resultRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1015,6 +1096,15 @@ const styles = StyleSheet.create({
   },
   resultName: { color: T.text, fontSize: 15, fontWeight: '600' },
   resultMeta: { color: T.muted, fontSize: 12, marginTop: 2 },
+  localBadge: { color: T.gold, fontSize: 13, fontWeight: '700', marginLeft: 8 },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  unlinkText: { color: T.gold, fontSize: 13, fontWeight: '600' },
   hint: { color: T.faint, fontSize: 13, marginBottom: 8 },
   servingActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 },
   addServingBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },

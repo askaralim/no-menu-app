@@ -228,7 +228,6 @@ Share/download images are product-facing assets and should feel like premium edi
 - Default share exports should follow the app's dark premium style.
 - Tenant-specific bespoke exports are allowed only for concrete partner needs.
 - Tenant-specific export logic should be narrowly gated by tenant id and should not affect the default template.
-- The bespoke paper menu export for tenant `4d1da7d9-8b21-4706-b535-355b9ff79388` should keep its paper-menu style unless explicitly asked to revise it.
 - 酒迹 summary and personal drink shares use fixed `390 × 520` output.
 - 酒迹 summary shares show at most nine recent drinks and must keep the footer visible.
 - A personal single-drink share is only generated after the drink-state query confirms the

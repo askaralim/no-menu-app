@@ -195,6 +195,12 @@ export default function MenuScreen() {
     setCreating(false)
   }
 
+  const handlePickLocalDrink = (d: DraftDrink) => {
+    // catalog entry: open existing drink for edit (no duplicate create)
+    setCreating(false)
+    setEditing(d)
+  }
+
   const handleSaved = async (result?: DrinkUpsertResult) => {
     const wasCreate = creating
     closeEditor()
@@ -677,6 +683,8 @@ export default function MenuScreen() {
         categories={draft?.categories ?? []}
         isCreate={creating}
         entryPoint="catalog"
+        catalogDrinks={drinkList}
+        onPickLocalDrink={handlePickLocalDrink}
         onClose={closeEditor}
         onSaved={handleSaved}
       />
