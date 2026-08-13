@@ -14,6 +14,18 @@ type Filters = {
   public_only: boolean
 }
 
+type CatalogForm = {
+  name: string
+  brand_name: string
+  brewery: string
+  beer_style: string
+  abv: string
+  ibu: string
+  country: string
+  description: string
+  image_url: string
+}
+
 const DEFAULT_FILTERS: Filters = {
   query: '',
   tenant_id: '',
@@ -87,6 +99,27 @@ function formatMeta(row: AdminUnlinkedDrinkRow) {
   return parts.join(' · ') || '—'
 }
 
+function formFromRow(row: AdminUnlinkedDrinkRow): CatalogForm {
+  return {
+    name: row.name ?? '',
+    brand_name: row.brand_name ?? '',
+    brewery: row.brewery ?? '',
+    beer_style: row.beer_style ?? '',
+    abv: row.abv != null ? String(row.abv) : '',
+    ibu: row.ibu != null ? String(row.ibu) : '',
+    country: row.country ?? '',
+    description: row.description ?? '',
+    image_url: row.image_url ?? '',
+  }
+}
+
+function parseOptionalNumber(value: string, integer = false): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const n = integer ? Number.parseInt(trimmed, 10) : Number(trimmed)
+  return Number.isFinite(n) ? n : Number.NaN
+}
+
 function formatCreatedAt(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
@@ -111,6 +144,9 @@ export default function UnlinkedDrinksInboxPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [creatingId, setCreatingId] = useState<string | null>(null)
+  const [catalogForm, setCatalogForm] = useState<CatalogForm | null>(null)
+  const [savingCatalog, setSavingCatalog] = useState(false)
+  const [catalogMessage, setCatalogMessage] = useState<string | null>(null)
 
   const selected = useMemo(
     () => drinks.find((d) => d.id === selectedId) ?? null,
@@ -195,21 +231,105 @@ export default function UnlinkedDrinksInboxPage() {
     await Promise.all([loadDrinks(), loadStats()])
     setDrawerOpen(false)
     setSelectedId(null)
+    setCatalogForm(null)
+    setCatalogMessage(null)
   }, [loadDrinks, loadStats])
 
   const openDrawer = (row: AdminUnlinkedDrinkRow) => {
     setSelectedId(row.id)
+    setCatalogForm(formFromRow(row))
+    setCatalogMessage(null)
     setDrawerOpen(true)
   }
 
   const closeDrawer = () => {
     setDrawerOpen(false)
     setSelectedId(null)
+    setCatalogForm(null)
+    setCatalogMessage(null)
   }
 
-  const createFromDrink = async (row: AdminUnlinkedDrinkRow) => {
-    const label = `${tenantLabel(row)} · ${row.name}`
+  const catalogDirty = Boolean(
+    selected && catalogForm && JSON.stringify(catalogForm) !== JSON.stringify(formFromRow(selected)),
+  )
+
+  const saveCatalog = async (row: AdminUnlinkedDrinkRow, form: CatalogForm): Promise<boolean> => {
+    const name = form.name.trim()
+    if (!name) {
+      alert('请填写酒款名称')
+      return false
+    }
+    const abv = parseOptionalNumber(form.abv)
+    const ibu = parseOptionalNumber(form.ibu, true)
+    if (Number.isNaN(abv)) {
+      alert('ABV 需为数字')
+      return false
+    }
+    if (Number.isNaN(ibu)) {
+      alert('IBU 需为整数')
+      return false
+    }
+
+    const brewery = form.brewery.trim() || form.brand_name.trim()
+    setSavingCatalog(true)
+    setCatalogMessage(null)
+    try {
+      const { data, error: rpcError } = await supabase.rpc('upsert_drink_product', {
+        p_tenant_id: row.tenant_id,
+        p_drink: {
+          id: row.id,
+          category_id: row.category_id,
+          name,
+          brand_name: brewery || form.brand_name.trim() || null,
+          image_url: form.image_url.trim() || null,
+          profile: {
+            brewery: brewery || null,
+            collab_breweries: row.collab_breweries ?? [],
+            beer_style: form.beer_style.trim() || null,
+            abv,
+            ibu,
+            country: form.country.trim() || null,
+            description: form.description.trim() || null,
+          },
+        },
+      })
+      if (rpcError) throw rpcError
+      const payload = (data ?? {}) as { ok?: boolean; errors?: { message?: string }[] }
+      if (payload.ok === false) {
+        throw new Error(payload.errors?.[0]?.message || '保存失败')
+      }
+
+      const nextRow: AdminUnlinkedDrinkRow = {
+        ...row,
+        name,
+        brand_name: brewery || form.brand_name.trim() || null,
+        image_url: form.image_url.trim() || null,
+        brewery: brewery || null,
+        beer_style: form.beer_style.trim() || null,
+        abv,
+        ibu,
+        country: form.country.trim() || null,
+        description: form.description.trim() || null,
+      }
+      setDrinks((prev) => prev.map((d) => (d.id === row.id ? nextRow : d)))
+      setCatalogForm(formFromRow(nextRow))
+      setCatalogMessage('档案已保存，可继续关联或建池')
+      return true
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : '保存失败')
+      return false
+    } finally {
+      setSavingCatalog(false)
+    }
+  }
+
+  const createFromDrink = async (row: AdminUnlinkedDrinkRow, form?: CatalogForm | null) => {
+    const label = `${tenantLabel(row)} · ${(form?.name.trim() || row.name)}`
     if (!window.confirm(`从「${label}」创建商品池条目并自动关联？`)) return
+    if (form) {
+      const saved = await saveCatalog(row, form)
+      if (!saved) return
+    }
     setCreatingId(row.id)
     try {
       const { data, error: rpcError } = await supabase.rpc('admin_create_drink_product_from_drink', {
@@ -223,6 +343,8 @@ export default function UnlinkedDrinksInboxPage() {
       if (selectedId === row.id) {
         setDrawerOpen(false)
         setSelectedId(null)
+        setCatalogForm(null)
+        setCatalogMessage(null)
       }
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : '创建失败')
@@ -481,10 +603,12 @@ export default function UnlinkedDrinksInboxPage() {
           <aside style={drawerPanelStyle} aria-label="处理未关联酒款">
             <div style={drawerHeaderStyle}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <h2 style={{ margin: 0, fontSize: '1.15rem' }}>{selected.name}</h2>
+                <h2 style={{ margin: 0, fontSize: '1.15rem' }}>{catalogForm?.name.trim() || selected.name}</h2>
                 <p style={{ margin: '6px 0 0', color: '#6b7280', fontSize: '0.85rem' }}>
                   {tenantLabel(selected)}
-                  {selected.brand_name ? ` · ${selected.brand_name}` : ''}
+                  {(catalogForm?.brewery || catalogForm?.brand_name || selected.brand_name)
+                    ? ` · ${catalogForm?.brewery || catalogForm?.brand_name || selected.brand_name}`
+                    : ''}
                 </p>
               </div>
               <button type="button" style={drawerCloseStyle} onClick={closeDrawer} aria-label="关闭">
@@ -493,46 +617,156 @@ export default function UnlinkedDrinksInboxPage() {
             </div>
 
             <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: '#4b5563',
-                  background: '#f9fafb',
-                  borderRadius: 8,
-                  padding: '10px 12px',
-                }}>
-                <div>酒厂 / 风格：{formatMeta(selected)}</div>
-                {selected.country ? <div>国家：{selected.country}</div> : null}
-                {selected.description ? (
-                  <div style={{ marginTop: 6 }}>介绍：{selected.description}</div>
+              <section>
+                <h3 style={{ margin: '0 0 4px', fontSize: '0.95rem' }}>校正档案</h3>
+                <p style={{ margin: '0 0 12px', color: '#6b7280', fontSize: '0.82rem' }}>
+                  先改名称/酒厂/风格等，再关联或建池。价格、杯型和酒头请到门店 Tap List。
+                </p>
+                {catalogForm ? (
+                  <div className="taplist-panel-grid">
+                    <div className="taplist-field taplist-field-span-2">
+                      <label htmlFor="inbox-name">酒款名称</label>
+                      <input
+                        id="inbox-name"
+                        className="admin-input"
+                        value={catalogForm.name}
+                        onChange={(e) => setCatalogForm({ ...catalogForm, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="taplist-field">
+                      <label htmlFor="inbox-brand">品牌</label>
+                      <input
+                        id="inbox-brand"
+                        className="admin-input"
+                        value={catalogForm.brand_name}
+                        onChange={(e) => setCatalogForm({ ...catalogForm, brand_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="taplist-field">
+                      <label htmlFor="inbox-brewery">酒厂</label>
+                      <input
+                        id="inbox-brewery"
+                        className="admin-input"
+                        value={catalogForm.brewery}
+                        onChange={(e) => setCatalogForm({ ...catalogForm, brewery: e.target.value })}
+                      />
+                    </div>
+                    <div className="taplist-field">
+                      <label htmlFor="inbox-style">风格</label>
+                      <input
+                        id="inbox-style"
+                        className="admin-input"
+                        value={catalogForm.beer_style}
+                        onChange={(e) => setCatalogForm({ ...catalogForm, beer_style: e.target.value })}
+                      />
+                    </div>
+                    <div className="taplist-field">
+                      <label htmlFor="inbox-abv">ABV %</label>
+                      <input
+                        id="inbox-abv"
+                        className="admin-input"
+                        value={catalogForm.abv}
+                        onChange={(e) => setCatalogForm({ ...catalogForm, abv: e.target.value })}
+                      />
+                    </div>
+                    <div className="taplist-field">
+                      <label htmlFor="inbox-ibu">IBU</label>
+                      <input
+                        id="inbox-ibu"
+                        className="admin-input"
+                        value={catalogForm.ibu}
+                        onChange={(e) => setCatalogForm({ ...catalogForm, ibu: e.target.value })}
+                      />
+                    </div>
+                    <div className="taplist-field">
+                      <label htmlFor="inbox-country">国家</label>
+                      <input
+                        id="inbox-country"
+                        className="admin-input"
+                        value={catalogForm.country}
+                        onChange={(e) => setCatalogForm({ ...catalogForm, country: e.target.value })}
+                      />
+                    </div>
+                    <div className="taplist-field taplist-field-span-2">
+                      <label htmlFor="inbox-image">图片 URL</label>
+                      <input
+                        id="inbox-image"
+                        className="admin-input"
+                        placeholder="可粘贴外链"
+                        value={catalogForm.image_url}
+                        onChange={(e) => setCatalogForm({ ...catalogForm, image_url: e.target.value })}
+                      />
+                    </div>
+                    <div className="taplist-field taplist-field-span-2">
+                      <label htmlFor="inbox-desc">介绍</label>
+                      <textarea
+                        id="inbox-desc"
+                        className="admin-input"
+                        rows={3}
+                        value={catalogForm.description}
+                        onChange={(e) => setCatalogForm({ ...catalogForm, description: e.target.value })}
+                      />
+                    </div>
+                  </div>
                 ) : null}
-                <div style={{ marginTop: 8 }}>
+                <div className="taplist-panel-actions" style={{ marginTop: 12 }}>
+                  <button
+                    type="button"
+                    className="admin-button admin-button-primary"
+                    disabled={!catalogForm || savingCatalog || !catalogDirty}
+                    onClick={() => {
+                      if (catalogForm) void saveCatalog(selected, catalogForm)
+                    }}>
+                    {savingCatalog ? '保存中…' : catalogDirty ? '保存档案' : '档案已是最新'}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-button admin-button-secondary"
+                    disabled={creatingId === selected.id || savingCatalog || !catalogForm}
+                    onClick={() => void createFromDrink(selected, catalogForm)}>
+                    {creatingId === selected.id ? '创建中…' : '一键建池并关联'}
+                  </button>
+                  <Link
+                    href={`/admin/taplist?tenant=${selected.tenant_id}`}
+                    className="admin-button admin-button-secondary"
+                    style={{ textDecoration: 'none' }}>
+                    打开门店 Tap List
+                  </Link>
+                </div>
+                {catalogMessage ? (
+                  <p style={{ margin: '8px 0 0', fontSize: 13, color: '#047857' }}>{catalogMessage}</p>
+                ) : null}
+                <p style={{ margin: '8px 0 0', fontSize: 13 }}>
                   <Link href="/admin/platform/products" style={{ color: '#2563eb' }}>
                     建池后可在产品池继续完善属性 →
                   </Link>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="admin-button admin-button-secondary"
-                  disabled={creatingId === selected.id}
-                  onClick={() => void createFromDrink(selected)}>
-                  {creatingId === selected.id ? '创建中…' : '一键建池并关联'}
-                </button>
-                <Link
-                  href={`/admin/taplist?tenant=${selected.tenant_id}`}
-                  className="admin-button admin-button-secondary"
-                  style={{ textDecoration: 'none' }}>
-                  打开门店 Tap List
-                </Link>
-              </div>
+                </p>
+              </section>
 
               <ProductPoolLinkSection
-                drink={rowToDrink(selected)}
+                drink={
+                  catalogForm
+                    ? {
+                        ...rowToDrink(selected),
+                        name: catalogForm.name.trim() || selected.name,
+                        brand_name: catalogForm.brand_name.trim() || catalogForm.brewery.trim() || selected.brand_name,
+                        image_url: catalogForm.image_url.trim() || selected.image_url,
+                      }
+                    : rowToDrink(selected)
+                }
                 isSuperAdmin
-                beerProfile={rowBeerProfile(selected)}
+                beerProfile={
+                  catalogForm
+                    ? {
+                        brewery: catalogForm.brewery || catalogForm.brand_name,
+                        beer_style: catalogForm.beer_style,
+                        abv: catalogForm.abv,
+                        ibu: catalogForm.ibu,
+                        country: catalogForm.country,
+                        description: catalogForm.description,
+                      }
+                    : rowBeerProfile(selected)
+                }
                 onLinked={() => {
                   void refreshAfterLink()
                 }}
