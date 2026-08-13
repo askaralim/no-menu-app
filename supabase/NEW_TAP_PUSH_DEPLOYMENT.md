@@ -1,5 +1,7 @@
 # New-tap iOS push deployment
 
+**Status (2026-08-13):** Consumer App Store `1.3.0` (follow + new-tap push) is **Waiting for Review**. Production migrations for the feature are applied. This doc remains the ops checklist for deploy, pilot activation, and emergency disable — not a “feature WIP” tracker.
+
 The feature is fail-closed in two places. The Edge Function requires
 `NEW_TAP_PUSH_ENABLED=true`, and the database singleton remains disabled until
 `set_new_tap_push_enabled(true)` is called with the service role.

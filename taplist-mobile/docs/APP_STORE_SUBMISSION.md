@@ -1,6 +1,6 @@
 # No Menu Tap List — App Store Connect MVP checklist
 
-> 当前 `1.2.3 (25)` 的可直接粘贴文案、PostHog 隐私标签和新版年龄分级设置，请优先使用 [APP_STORE_CONNECT_1.2.3.md](./APP_STORE_CONNECT_1.2.3.md)。本文件保留为通用流程参考。
+> **Current ASC:** `1.3.0` is Waiting for Review — use [APP_STORE_CONNECT_1.3.0.md](./APP_STORE_CONNECT_1.3.0.md). Older `1.2.x` paste packs remain historical. This file is the generic preflight checklist.
 
 Use this before uploading a **production** iOS build. Demo seed data (`taplist-demo-*` bars) is acceptable for TestFlight; replace with real bars before public App Store release if desired.
 

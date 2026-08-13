@@ -1,8 +1,13 @@
 # No Menu 1.3.0 — App Store Connect 发布资料
 
-本文按当前 `1.3.0` 功能整理。方括号内容必须在提交前由账号持有人填写或确认。
+> Canonical consumer ASC doc for `1.3.0`. Index: [`../../docs/INDEX.md`](../../docs/INDEX.md). Push ops: [`../../supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../../supabase/NEW_TAP_PUSH_DEPLOYMENT.md).
 
-> Build 说明：当前 TestFlight 为 `1.3.0 (41)`，但 build 41 之后仍有本地修复和 Edge Function 文案调整。如果这些改动需要随本次发布上线，请选择包含最终代码的更新 build，不要直接提交 41。
+## Status (2026-08-13)
+
+**Submitted — Waiting for App Store Connect review** (`1.3.0`, build ≥42).  
+Do not upload a replacement binary unless Apple requests changes. Production migrations through `20260813120000_…` are applied (operator-confirmed). Backend / Edge Function hotfixes OK without a new build when the submitted client already calls them.
+
+本文按 `1.3.0` 功能整理。方括号内容在提交时由账号持有人填写或确认；提交完成后保留作审核备查。
 
 ## 1. 构建与 App 信息
 
@@ -11,7 +16,7 @@
 | App Store Connect App ID | `6771324382` |
 | Bundle ID | `com.nomenuapp.taplist` |
 | 版本 | `1.3.0` |
-| Build | `[选择包含最终代码的 Production Build]` |
+| Build | `42` 或更高（已提交的 Production Build） |
 | 名称 | `No Menu` |
 | 主语言 | 简体中文 |
 | 主要类别 | 美食佳饮 / Food & Drink |
@@ -336,10 +341,11 @@ App 仅使用系统 HTTPS/TLS，没有自研或非豁免加密。若 ASC 仍询�
 
 ## 9. 发布依赖
 
-在选择最终 build 前确认生产环境：
+生产环境（提交前已确认；migrations 已全部执行）：
 
 - `20260807180000_consumer_bar_follows_and_new_tap_push.sql` 已执行；
 - `20260811120000_consumer_usernames.sql` 已执行；
+- `20260813120000_narrow_last_menu_updated_at.sql` 已执行；
 - `dispatch-new-tap-notifications` 为最终版本；
 - `merge-apple-account` 为支持 consumer profile 合并的最终版本；
 - `NEW_TAP_PUSH_ENABLED=true`；
@@ -347,6 +353,8 @@ App 仅使用系统 HTTPS/TLS，没有自研或非豁免加密。若 ASC 仍询�
 - Cron 每分钟调用 dispatcher 且最近响应不是 `disabled:true`；
 - Expo/APNs credentials 有效；
 - 关注账号存在有效、enabled 的 iOS push device。
+
+审核期间：勿随意关掉双 kill-switch，除非要紧急停推；停推不会影响浏览/关注。详见 `NEW_TAP_PUSH_DEPLOYMENT.md`。
 
 ## 10. 最终真机回归
 

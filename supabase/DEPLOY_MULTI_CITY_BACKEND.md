@@ -38,7 +38,7 @@ Production users on **App Store 1.2.x** keep working unchanged.
 
 **Migrations before Edge Function** is required if you deploy the updated edge function that passes `p_city`. The edge function includes a **legacy fallback** (no-arg RPC) if `p_city` is not yet available, so Beer Route on 1.2.x stays up even if function deploys first.
 
-**Do not** bump `taplist-mobile/app.json` version until submitting 1.3.0 to App Store.
+**Note (2026-08-13):** Consumer `1.3.0` has been submitted to ASC. Keep this guide for historical deploy order / smoke scripts; do not treat “wait to bump version” as current work.
 
 ## Verify after deploy
 

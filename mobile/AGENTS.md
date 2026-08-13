@@ -8,6 +8,10 @@ Doc index: [`../docs/INDEX.md`](../docs/INDEX.md).
 **App Store `1.0.0` (build ≥16) is Waiting for Review** (submitted 2026-08).  
 Do not replace the binary unless Apple asks for a new build. Prefer production RPC migrations for hotfixes that the submitted client already calls.
 
+Sibling consumer **No Menu** `1.3.0` (follow + new-tap push) is also Waiting for Review — see `taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`. POS still needs no UI for push enqueue.
+
+Post-1.0.0 POS queue (same-name soft warn → manual → 店休): **POS next** in [`../docs/INDEX.md`](../docs/INDEX.md). Do not start that sprint during ASC quiet period.
+
 Canonical ASC:
 - [`docs/APP_STORE_LISTED_V1.md`](./docs/APP_STORE_LISTED_V1.md)
 - [`APP_STORE_CONNECT_SUBMISSION.md`](./APP_STORE_CONNECT_SUBMISSION.md)

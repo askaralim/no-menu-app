@@ -10,6 +10,14 @@ combines public bar tap lists with a private personal drink history called **酒
 Monorepo ops index: [`../docs/INDEX.md`](../docs/INDEX.md).  
 Sibling POS (**No Menu Tonight**, `mobile/`) App Store `1.0.0` is Waiting for Review as of 2026-08 — do not confuse ASC docs with this consumer app.
 
+## Release status
+
+**App Store `1.3.0` (build ≥42) is Waiting for Review** (submitted 2026-08) — private bar follow + optional new-tap iOS push + 我的 hub polish.  
+Do not replace the binary unless Apple asks. Prefer production RPC / Edge Function hotfixes the submitted client already calls.
+
+Canonical ASC: [`docs/APP_STORE_CONNECT_1.3.0.md`](./docs/APP_STORE_CONNECT_1.3.0.md).  
+Push deploy / kill-switches: [`../supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md).
+
 ## Commands
 
 Run from `taplist-mobile/`:
@@ -29,9 +37,11 @@ Note: `npm run web` may fail on some local Node / Expo CLI combinations with por
 
 - `app/(tabs)/index.tsx` - Tonight home feed
 - `app/(tabs)/search.tsx` - Search (drinks + bars where supported)
-- `app/(tabs)/mine.tsx` - Private drink history / 酒迹
+- `app/(tabs)/mine.tsx` - Private hub: Apple protection, followed-bars entry, 酒迹 grid + share
 - `app/(tabs)/about.tsx` - About / compliance
-- `app/bar/[slug].tsx` - Bar detail and live tap list
+- `app/followed-bars.tsx` - Private followed bars + per-bar notify toggles (iOS)
+- `app/edit-profile.tsx` - Private NoMenuist username
+- `app/bar/[slug].tsx` - Bar detail and live tap list (compact follow control on hero meta row)
 - `app/bar/[slug]/beer/[drinkId].tsx` - Beer detail
 - `app/drink-log/[lightId].tsx` - One drink's private venue history
 - `components/taplist/` - Tap List-specific UI components
@@ -42,6 +52,7 @@ Note: `npm run web` may fail on some local Node / Expo CLI combinations with por
 - `constants/compliance.ts` - Legal / compliance copy
 - `lib/api/taplist.ts` - Supabase RPC API calls
 - `lib/api/drinkLog.ts` - Authenticated drink-history RPC wrappers
+- `lib/api/barFollows.ts` - Private bar follow / notify RPCs
 - `lib/drinkLogAuth.ts` - Anonymous auth, Apple protection, and account deletion
 - `lib/analytics.ts` - Consent-gated PostHog events
 - `lib/formatTaplist.ts` - Display formatting helpers
@@ -60,6 +71,8 @@ Current approved consumer surfaces include:
 - Serving options
 - Events and new-tap discovery
 - Private 酒迹 history
+- Private bar follows + optional new-tap notifications (iOS)
+- Private NoMenuist username / fixed avatar
 - Anonymous identity created on first record
 - Sign in with Apple protection and recovery on iOS
 - Drink-history and single-drink share images
@@ -89,6 +102,14 @@ Allowed private subscription exception:
 - Never expose follower identities, follower counts, public follow activity, or a social graph.
 - Following and push-device data must remain private, RLS-isolated, removable, and included in
   anonymous-to-Apple account merging and account deletion.
+- Mine hub layout (settled): title + Apple protection → followed-bars card → 最近喝过 + pill
+  「分享记录」→ summary (`N 款酒 · M 家酒吧 · YYYY.MM.DD 第一杯`) → history grid → delete.
+- Bar detail follow control: compact `＋ 关注` / `✓ 已关注` only (no duplicate status copy),
+  aligned to the right of address / hours on the hero meta row.
+- Followed-bars screen: Chinese large title (no English `FOLLOWING` kicker), same header rhythm
+  as other private screens.
+- Do not request Apple `FULL_NAME` / `EMAIL` scopes for profile chrome; Apple is protection /
+  restore only. Display names use the private NoMenuist username flow.
 
 Do not treat 酒迹 as proof of purchase, sales data, or a public social check-in. It is a
 private user-authored record that may reference the same canonical product across bars.

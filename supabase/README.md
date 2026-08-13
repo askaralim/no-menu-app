@@ -32,6 +32,7 @@ On Supabase you always have several **PostgreSQL schemas** (namespaces). You do 
 | Owner WeChat copy | [OWNER_WECHAT_GUIDE.md](./OWNER_WECHAT_GUIDE.md) |
 | Venue QR | [TENANT_QR_LINKS.md](./TENANT_QR_LINKS.md) |
 | Support requests | [SUPPORT_REQUESTS_DEPLOYMENT.md](./SUPPORT_REQUESTS_DEPLOYMENT.md) |
+| New-tap iOS push | [NEW_TAP_PUSH_DEPLOYMENT.md](./NEW_TAP_PUSH_DEPLOYMENT.md) |
 | Multi-city | [DEPLOY_MULTI_CITY_BACKEND.md](./DEPLOY_MULTI_CITY_BACKEND.md) |
 | Greenfield checklist | [GREENFIELD.md](./GREENFIELD.md) |
 
@@ -44,15 +45,20 @@ Root scripts call **`supabase`** on your **PATH** (not `npx`).
 3. **POS (`mobile/`):** copy `mobile/.env.local.example` → `mobile/.env` (or use local defaults in `mobile/lib/supabase.ts`).
 4. **Consumer (`taplist-mobile/`):** use that app’s `.env` / EAS secrets.
 
-## Tonight 1.0.0 / ASC-related migrations (pointers only)
+## ASC-related migrations (pointers only)
 
-Tonight **1.0.0 is Waiting for App Store review** (2026-08). Production should already include at least:
+**Operator-confirmed 2026-08-13:** production has applied migrations through `20260813120000_…`.
+
+Tonight **1.0.0** and consumer **1.3.0** are both Waiting for App Store review. Pointers (not a full list):
 
 - `20260806120000_support_requests.sql`
 - `20260807160000_business_day_close_restore_hardening.sql`  
   (**not** `20260807150000_…` — that file is We Cheers QR data)
 - `20260807170000_storefront_preserve_null_cover.sql` — POS null cover must not wipe `cover_image_url`
 - `20260807180000_consumer_bar_follows_and_new_tap_push.sql` — consumer follows / push outbox
+- `20260811120000_consumer_usernames.sql` — private NoMenuist username
+- `20260813120000_narrow_last_menu_updated_at.sql` — public freshness narrowing
 
-See [`docs/INDEX.md`](../docs/INDEX.md) and [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md).  
-Do not paste or rewrite these from this README; open the migration files in `migrations/`.
+Push Edge Function / kill-switches: [`NEW_TAP_PUSH_DEPLOYMENT.md`](./NEW_TAP_PUSH_DEPLOYMENT.md).  
+See [`docs/INDEX.md`](../docs/INDEX.md), [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md), [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md).  
+Do not paste or rewrite migrations from this README; open the files in `migrations/`.

@@ -9,16 +9,16 @@ Craft beer tap list platform: owner POS, consumer app, admin, and public web.
 | Surface | Path | Notes |
 |---------|------|--------|
 | **No Menu Tonight** (POS) | `mobile/` | App Store `1.0.0` — **Waiting for Review** (2026-08) |
-| **No Menu** (consumer) | `taplist-mobile/` | Listed separately |
+| **No Menu** (consumer) | `taplist-mobile/` | App Store `1.3.0` — **Waiting for Review** (follow + new-tap push) |
 | Admin / platform | `app/` | Next static export |
 | Public web | `taplist-web/` | `/bar/{slug}`, `/tonight`, `/support` |
-| Database | `supabase/` | Production: `migrations/` only · greenfield: [`supabase/GREENFIELD.md`](./supabase/GREENFIELD.md) |
+| Database | `supabase/` | Production migrations applied through `20260813120000_…` · greenfield: [`supabase/GREENFIELD.md`](./supabase/GREENFIELD.md) |
 
-### Tonight ASC (while in review)
+### ASC (while in review)
 
-- Canonical: [`mobile/docs/APP_STORE_LISTED_V1.md`](./mobile/docs/APP_STORE_LISTED_V1.md)
-- Checklist: [`mobile/APP_STORE_CONNECT_SUBMISSION.md`](./mobile/APP_STORE_CONNECT_SUBMISSION.md)
-- Agent notes: [`mobile/AGENTS.md`](./mobile/AGENTS.md)
+- Tonight: [`mobile/docs/APP_STORE_LISTED_V1.md`](./mobile/docs/APP_STORE_LISTED_V1.md) · [`mobile/APP_STORE_CONNECT_SUBMISSION.md`](./mobile/APP_STORE_CONNECT_SUBMISSION.md) · [`mobile/AGENTS.md`](./mobile/AGENTS.md)
+- Consumer 1.3.0: [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`](./taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md) · [`taplist-mobile/AGENTS.md`](./taplist-mobile/AGENTS.md)
+- New-tap push ops: [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](./supabase/NEW_TAP_PUSH_DEPLOYMENT.md)
 
 ---
 
@@ -32,8 +32,8 @@ Craft beer tap list platform: owner POS, consumer app, admin, and public web.
 ## 功能特性（摘要）
 
 - 店主：今晚酒单、商品库、门店资料 / 二维码 / 活动（点单按门店 `ordering_enabled`）
-- 消费者：城市 Tonight、酒吧酒单、搜索、酒迹等
-- 平台：Concierce 建店绑店主、商品池、支持请求
+- 消费者：城市 Tonight、酒吧酒单、搜索、酒迹、私密关注酒吧与可选上新推送（iOS）
+- 平台：Concierge 建店绑店主、商品池、支持请求
 
 下文部分章节仍偏早期单 App 描述；**以 `docs/INDEX.md` 为准。**
 

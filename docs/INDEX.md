@@ -1,6 +1,6 @@
 # Documentation index (source of truth)
 
-Last updated: 2026-08-09.
+Last updated: 2026-08-13 (consumer follow / new-tap push submitted ASC).
 
 Use this file to find the **canonical** doc for a topic. Prefer current ops docs over design-era `docs/` archives.
 
@@ -8,25 +8,27 @@ Use this file to find the **canonical** doc for a topic. Prefer current ops docs
 
 ---
 
-## Release status (2026-08-09)
+## Release status (2026-08-13)
 
 | Surface | Version | Status |
 |---------|---------|--------|
 | **No Menu Tonight** (POS) | App Store `1.0.0` (build ≥16) | **Submitted to ASC / in review** — POS 1.0.0 round closed |
-| **No Menu** (consumer) | App Store listed separately (`com.nomenuapp.taplist`) | See `taplist-mobile/` docs |
-| Production DB | Migrations through `20260807180000_…` (incl. cover preserve + bar follows) | Applied |
+| **No Menu** (consumer) | App Store `1.3.0` (build ≥42) | **Submitted to ASC / in review** — private bar follow + optional new-tap iOS push |
+| Production DB | Migrations through `20260813120000_…` (incl. follow/push, usernames, freshness, QR seeds) | **Applied** (operator-confirmed) |
 
-**Active engineering focus:** consumer bar follows + new-tap push (`20260807180000_…`) — in test; delivery gated off until activated.
+**Engineering stance (both apps in ASC):** quiet period. Answer Apple / resubmit **only if asked**. Prefer backend-only hotfixes that the submitted clients already call. Do **not** upload replacement binaries “just in case.”
 
-**POS stance while that runs:** no competing feature sprint. Keep ASC review quiet; queue post-1.0.0 POS work below.
+**Consumer 1.3.0 shipped in binary (awaiting review):** 我的 hub follow entry、酒吧详情关注、关注列表 + 通知开关、NoMenuist 昵称、new-tap outbox + `dispatch-new-tap-notifications`. Ops toggle docs: [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md). Canonical ASC: [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md).
 
-While Tonight is in review: do **not** upload a replacement binary unless Apple requests a resubmit. Backend hotfixes (RPC migrations) are OK without a new build.
+**Admin web (concierge only, does not change POS/iOS binaries):** `/admin/taplist` 公开状态中文化 + 上新提示、封面空串误清保护；产品池关联门店酒文案；品牌别名合酿提示。Do **not** add follower analytics or push toggles to admin.
+
+POS does **not** need new UI for new-tap push: enqueue is DB-triggered when a drink is public + `public_status = 'new'`. Owners keep setting 上新 as today.
 
 ---
 
 ## POS next (after 1.0.0 round)
 
-Constraint: consumer push owns active eng bandwidth. POS work below is **queued**, not parallel sprint.
+Constraint: both apps are in ASC quiet period. POS work below is **queued**, not a parallel sprint.
 
 ### Phase 0 — ASC quiet period (now)
 
@@ -35,8 +37,6 @@ Constraint: consumer push owns active eng bandwidth. POS work below is **queued*
 | Answer Apple / resubmit **only if asked** | Upload a replacement binary “just in case” |
 | Backend-only hotfix if a submitted client path breaks | Ship new POS product UI that needs a new build |
 | Keep opening bars on TestFlight / existing ops docs | Start 店休 or large POS redesign |
-
-POS does **not** need new UI for new-tap push: enqueue is DB-triggered when a drink is public + `public_status = 'new'`. Owners keep setting 上新 as today.
 
 ### Phase 1 — App Store live ops (on approval)
 
@@ -47,7 +47,7 @@ POS does **not** need new UI for new-tap push: enqueue is DB-triggered when a dr
 
 ### Phase 2 — Next POS binary (1.0.1 / 1.1 candidate)
 
-Ship only after Phase 1 is calm and push test is not blocked. Suggested order:
+Ship only after Phase 1 is calm and consumer `1.3.0` is live (or ASC feedback is settled). Suggested order:
 
 | Priority | Item | Notes |
 |----------|------|--------|
@@ -61,11 +61,11 @@ Not scheduled. Revisit when pilot bars hit real pain:
 
 - Schema-level drink archive (`archived_at`) once 已下架 lists get noisy
 - Ordering enablement playbook per bar (still opt-in; ASC review tenants stay off)
-- Any push-adjacent POS surfaces (e.g. “followers / notify” analytics) — only after consumer delivery is proven
+- Any push-adjacent POS surfaces (e.g. “followers / notify” analytics) — only after consumer `1.3.0` is live and usage is proven
 
 ### Explicit non-goals for the next POS cut
 
-- Competing with consumer follow/push delivery
+- Competing with consumer ASC quiet period / post-approval ops
 - Daily 营业/打烊/店休 three-state ritual
 - Reworking Tonight Control publish model unless a production bug forces it
 
@@ -90,6 +90,8 @@ Canonical Tonight ASC docs:
 | Tonight agent / release notes | [`mobile/AGENTS.md`](../mobile/AGENTS.md) · [`mobile/README.md`](../mobile/README.md) |
 | Consumer No Menu app | [`taplist-mobile/README.md`](../taplist-mobile/README.md) |
 | Consumer agent rules | [`taplist-mobile/AGENTS.md`](../taplist-mobile/AGENTS.md) |
+| Consumer ASC 1.3.0 (follow / 我的) | [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md) |
+| New-tap push deploy | [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md) |
 | Parked product ideas | [`PRODUCT_BACKLOG.md`](./PRODUCT_BACKLOG.md) |
 
 ### Related SQL (read-only pointers — apply via migrations)
@@ -103,6 +105,10 @@ Canonical Tonight ASC docs:
 | Default cup sizes | `supabase/migrations/20260807120000_tenant_default_cup_sizes.sql` |
 | Storefront: null cover/brewing preserve | `supabase/migrations/20260807170000_storefront_preserve_null_cover.sql` |
 | Consumer bar follows + new-tap push outbox | `supabase/migrations/20260807180000_consumer_bar_follows_and_new_tap_push.sql` |
+| Consumer usernames (NoMenuist) | `supabase/migrations/20260811120000_consumer_usernames.sql` |
+| Doubar venue QR | `supabase/migrations/20260812120000_add_doubar_qr.sql` |
+| Narrow `last_menu_updated_at` freshness | `supabase/migrations/20260813120000_narrow_last_menu_updated_at.sql` |
+| New-tap push Edge Function deploy | [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md) |
 | Owner bind / provision | `20260720120000_admin_bind_owner.sql`, `20260720130000_admin_provision_owner.sql` |
 | Greenfield empty DB | See [`supabase/GREENFIELD.md`](../supabase/GREENFIELD.md) |
 | Legacy SQL (do not apply) | [`supabase/legacy/`](../supabase/legacy/) |
@@ -140,7 +146,9 @@ POS 1.0.0 round deliberately deferred these; do not treat as review blockers.
 | Create-drink same-name soft warning | Agreed product follow-up; not shipped |
 | Closed-day / 店休 badge on storefront | Agreed product follow-up; not shipped |
 | Restore wiped `cover_image_url` rows | One-time ops if any bars lost covers before `07170000`; Storage files usually remain |
-| Consumer follow + new-tap push delivery | Migration applied; delivery gated off until activated — **active next phase** |
+| Consumer follow + new-tap push | **Done for ASC** — in `1.3.0` review; dual kill-switch ops remain in `NEW_TAP_PUSH_DEPLOYMENT.md` |
+| Admin: edit collab breweries on Tap List drink form | Deferred; companies aliases support `collaboration_text` only — do not block release |
+| Admin: follower / notify analytics for bars | Parked (privacy + product); never expose follower identities |
 
 ---
 
@@ -149,6 +157,6 @@ POS 1.0.0 round deliberately deferred these; do not treat as review blockers.
 | Surface | Path | Bundle / notes |
 |---------|------|----------------|
 | Tonight (POS / owner) | `mobile/` | `com.taklip.nomenuapp` — **1.0.0 in ASC review** |
-| No Menu (consumer) | `taplist-mobile/` | `com.nomenuapp.taplist` |
+| No Menu (consumer) | `taplist-mobile/` | `com.nomenuapp.taplist` — **1.3.0 in ASC review** |
 | Admin / platform web | `app/` | Next static export |
 | Public web menu | `taplist-web/` (if present) | `/bar/{slug}`, `/tonight`, `/support` |

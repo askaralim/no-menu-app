@@ -12,7 +12,9 @@ This app is a sibling of the No Menu POS app (**No Menu Tonight** under `mobile/
 consumer app must not depend on POS UI or mutate POS workflows.
 
 Monorepo doc index: [`../docs/INDEX.md`](../docs/INDEX.md).  
-Tonight POS App Store `1.0.0` is **Waiting for Review** (2026-08) — see `mobile/docs/APP_STORE_LISTED_V1.md`.
+
+**Status (2026-08-13):** App Store `1.3.0` (build ≥42) **Waiting for Review** — follow bars + optional new-tap push. ASC: [`docs/APP_STORE_CONNECT_1.3.0.md`](docs/APP_STORE_CONNECT_1.3.0.md).  
+Tonight POS `1.0.0` is also **Waiting for Review** — see `mobile/docs/APP_STORE_LISTED_V1.md`.
 
 ## Setup
 
@@ -40,10 +42,11 @@ repository-level `supabase/migrations/` before expecting corresponding RPCs to w
 
 - `今晚`: city feed, public bars, events, and new taps
 - `搜索`: public beer and bar discovery
-- `我的`: private 酒迹, Apple protection, sharing, and account deletion
+- `我的`: private 酒迹, followed bars entry, Apple protection, sharing, and account deletion
 - `关于`: product, privacy, compliance, and analytics controls
-- Bar detail: live public tap list
+- Bar detail: live public tap list + compact private follow control
 - Beer detail: beer information, serving prices, sharing, and `喝过`
+- Followed bars: private list + per-bar iOS new-tap notification toggles
 
 酒迹 is private history, not a purchase receipt, rating, public check-in, or social feed.
 One canonical beer counts once; distinct bar experiences can accumulate.
