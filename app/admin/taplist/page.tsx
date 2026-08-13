@@ -67,11 +67,25 @@ type DrinkServingRow = {
 }
 
 const PUBLIC_STATUS = ['new', 'available', 'low', 'sold_out', 'coming_soon'] as const
+const PUBLIC_STATUS_LABELS: Record<(typeof PUBLIC_STATUS)[number], string> = {
+  new: '上新',
+  available: '在售',
+  low: '少量',
+  sold_out: '售罄',
+  coming_soon: '即将上新',
+}
 const SERVING_TYPES = ['draft', 'can', 'bottle', 'flight', 'other'] as const
 
 const PLATFORM_SLUG = '__platform__'
 
 type BarOption = { id: string; name: string; slug: string }
+
+function publicStatusLabel(status: string | null | undefined) {
+  if (status && status in PUBLIC_STATUS_LABELS) {
+    return PUBLIC_STATUS_LABELS[status as (typeof PUBLIC_STATUS)[number]]
+  }
+  return status || '在售'
+}
 
 /** Tonight tap # is 1–99; null / 0 / empty means not on tonight. */
 function normalizeTonightTap(value: unknown): number | null {
@@ -116,6 +130,7 @@ function TaplistAdminPageInner() {
   const [storefrontReady, setStorefrontReady] = useState(false)
   const [storefrontLoadError, setStorefrontLoadError] = useState<string | null>(null)
   const storefrontLoadGenRef = useRef(0)
+  const loadedCoverUrlRef = useRef('')
   const [categories, setCategories] = useState<(Category & { is_public_visible?: boolean })[]>([])
   const [drinks, setDrinks] = useState<Drink[]>([])
   const [loading, setLoading] = useState(true)
@@ -209,6 +224,7 @@ function TaplistAdminPageInner() {
 
     const row = data as TenantTaplistRow
     setTenant(row)
+    loadedCoverUrlRef.current = row.cover_image_url ?? ''
     setTenantForm({
       display_name: row.display_name ?? '',
       district: row.district ?? '',
@@ -244,11 +260,11 @@ function TaplistAdminPageInner() {
     return pickerToOpeningHourJson(openingHourPicker)
   }
 
-  const buildStorefrontRpcPayload = () => ({
+  const buildStorefrontRpcPayload = (coverImageUrl: string | null) => ({
     p_display_name: tenantForm.display_name,
     p_district: tenantForm.district,
     p_address: tenantForm.address,
-    p_cover_image_url: tenantForm.cover_image_url,
+    p_cover_image_url: coverImageUrl,
     p_city: tenantForm.city || 'Shanghai',
     p_opening_hour: buildOpeningHourPayload(),
     p_description: tenantForm.description,
@@ -260,6 +276,19 @@ function TaplistAdminPageInner() {
         }
       : { p_update_storefront_extras: false }),
   })
+
+  /** null = leave cover unchanged on server; '' = clear; otherwise set URL. */
+  const resolveCoverPayloadForSave = (): string | null | undefined => {
+    const next = tenantForm.cover_image_url.trim()
+    const prev = loadedCoverUrlRef.current.trim()
+    if (next === prev) return null
+    if (!next && prev) {
+      const ok = window.confirm('确定清除门店封面图？消费端将不再显示该封面。')
+      if (!ok) return undefined
+      return ''
+    }
+    return next
+  }
 
   const storefrontSaveBlocked = !storefrontReady || Boolean(storefrontLoadError)
 
@@ -327,7 +356,7 @@ function TaplistAdminPageInner() {
       setTenantForm(nextForm)
       const { error } = await supabase.rpc('set_tenant_taplist_storefront', {
         p_tenant_id: tenantId,
-        ...buildStorefrontRpcPayload(),
+        ...buildStorefrontRpcPayload(publicUrl),
         p_cover_image_url: publicUrl,
       })
       if (error) throw error
@@ -346,11 +375,13 @@ function TaplistAdminPageInner() {
   const handleSaveStorefront = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tenantId || storefrontSaveBlocked) return
+    const coverPayload = resolveCoverPayloadForSave()
+    if (coverPayload === undefined) return
     setSavingTenant(true)
     try {
       const { error } = await supabase.rpc('set_tenant_taplist_storefront', {
         p_tenant_id: tenantId,
-        ...buildStorefrontRpcPayload(),
+        ...buildStorefrontRpcPayload(coverPayload),
       })
       if (error) throw error
       alert('门店 Tap List 信息已保存')
@@ -358,7 +389,7 @@ function TaplistAdminPageInner() {
       await loadTenant(tenantId, loadGen)
     } catch (err) {
       console.error(err)
-      alert('保存失败（请在 Supabase 执行最新 install_all_in_one / taplist_mvp_patch，含 set_tenant_taplist_storefront）')
+      alert('保存失败：请确认已部署最新 Supabase migrations（含 set_tenant_taplist_storefront），或稍后重试。')
     } finally {
       setSavingTenant(false)
     }
@@ -638,19 +669,35 @@ function TaplistAdminPageInner() {
           ) : null}
           <TaplistImageUploadField
             label="封面图"
-            hint="JPEG / PNG / WebP，最大 2MB"
+            hint="JPEG / PNG / WebP，最大 2MB。未改封面时保存不会清空现有图。"
             busy={uploadingCover}
             disabled={storefrontSaveBlocked}
             previewUrl={tenantForm.cover_image_url || null}
             inputRef={coverFileRef}
             onFileSelected={handleCoverFile}
           />
-          <input
-            className="admin-input"
-            placeholder="封面图 URL（可粘贴外链，或上方上传）"
-            value={tenantForm.cover_image_url}
-            onChange={(e) => setTenantForm({ ...tenantForm, cover_image_url: e.target.value })}
-          />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              className="admin-input"
+              style={{ flex: '1 1 240px', margin: 0 }}
+              placeholder="封面图 URL（可粘贴外链，或上方上传）"
+              value={tenantForm.cover_image_url}
+              onChange={(e) => setTenantForm({ ...tenantForm, cover_image_url: e.target.value })}
+            />
+            {tenantForm.cover_image_url.trim() ? (
+              <button
+                type="button"
+                className="admin-button admin-button-secondary"
+                disabled={storefrontSaveBlocked}
+                onClick={() => {
+                  if (!window.confirm('确定清除封面图字段？保存后门店封面将被清空。')) return
+                  setTenantForm({ ...tenantForm, cover_image_url: '' })
+                }}
+              >
+                清除封面
+              </button>
+            ) : null}
+          </div>
           <input
             className="admin-input"
             placeholder="城市（默认 Shanghai）"
@@ -741,6 +788,17 @@ function TaplistAdminPageInner() {
                           ) : (
                             <span style={{ marginLeft: 8, color: '#9ca3af', fontSize: 12 }}>未在今晚</span>
                           )}
+                          {d.is_public_visible ? (
+                            <span
+                              style={{
+                                marginLeft: 8,
+                                fontSize: 12,
+                                color: d.public_status === 'new' ? '#b45309' : '#6b7280',
+                              }}
+                            >
+                              {publicStatusLabel(d.public_status)}
+                            </span>
+                          ) : null}
                         </span>
                         <label className="admin-label-checkbox">
                           <input
@@ -1140,7 +1198,7 @@ function DrinkTaplistPanel({
                 />
               </div>
               <div className="taplist-field">
-                <label htmlFor={`${drink.id}-public-status`}>库存状态</label>
+                <label htmlFor={`${drink.id}-public-status`}>公开状态</label>
                 <select
                   id={`${drink.id}-public-status`}
                   className="admin-input"
@@ -1151,10 +1209,15 @@ function DrinkTaplistPanel({
                 >
                   {PUBLIC_STATUS.map((s) => (
                     <option key={s} value={s}>
-                      {s}
+                      {PUBLIC_STATUS_LABELS[s]}
                     </option>
                   ))}
                 </select>
+                {form.public_status === 'new' ? (
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: '#b45309', lineHeight: 1.45 }}>
+                    「上新」会进入消费端上新区；若用户已关注该酒吧并开启通知，可能收到推送。
+                  </p>
+                ) : null}
               </div>
               <div className="taplist-field">
                 <label htmlFor={`${drink.id}-public-sort`}>酒头编号（今晚）</label>

@@ -18,13 +18,13 @@ export const ShareableDrinkLogImage = forwardRef<
   return (
     <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }}>
       <View collapsable={false} style={styles.card}>
-        <Text style={styles.title}>我喝过的</Text>
+        <Text style={styles.title}>最近喝过</Text>
         <Text style={styles.summary}>
           {summary.drink_count} 款酒 · {summary.bar_count} 家店
           {summary.started_at ? ` · ${formatDate(summary.started_at)} 第一杯` : ''}
         </Text>
         <View style={styles.rule} />
-        <Text style={styles.sectionLabel}>最近9杯</Text>
+        <Text style={styles.sectionLabel}>最近 9 款</Text>
         <View style={styles.grid}>
           {summary.recent.slice(0, 9).map((drink) => (
             <View key={drink.light_id} style={styles.item}>
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 16,
   },
-  title: { ...typography.displayL, color: palette.text, fontSize: 38, lineHeight: 43 },
+  title: { ...typography.displayL, color: palette.text, fontSize: 36, lineHeight: 40 },
   summary: { ...typography.micro, color: palette.muted, marginTop: 2 },
   rule: { height: 1, backgroundColor: palette.line, marginVertical: spacing.xs },
   sectionLabel: { ...typography.label, color: palette.tungsten, fontSize: 9, lineHeight: 12, marginBottom: spacing.xs },

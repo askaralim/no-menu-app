@@ -947,6 +947,11 @@ export default function PlatformCompaniesPage() {
                         ))}
                       </select>
                     </div>
+                    {aliasForm.alias_type === 'collaboration_text' ? (
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.45 }}>
+                        「合酿文本」用于记录合酿伙伴写法；消费端合酿展示依赖产品/酒款侧合酿字段，别名主要用于匹配与检索。
+                      </p>
+                    ) : null}
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button
                         type="submit"

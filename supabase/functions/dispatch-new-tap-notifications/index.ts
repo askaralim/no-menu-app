@@ -91,7 +91,7 @@ async function createBatchDeliveries(admin: ReturnType<typeof createClient>, bat
 
   const { data: drinkRows, error: drinkError } = await admin
     .from('drinks')
-    .select('id, name, display_name, category_id, enabled, is_public_visible, public_status')
+    .select('id, name, display_name, product_id, category_id, enabled, is_public_visible, public_status')
     .in('id', drinkIds)
   if (drinkError) throw drinkError
 
@@ -110,6 +110,20 @@ async function createBatchDeliveries(admin: ReturnType<typeof createClient>, bat
     await cancelBatch(admin, batchId)
     return
   }
+
+  const validDrinkIds = validDrinks.map((drink) => drink.id)
+  const productIds = [...new Set(validDrinks
+    .map((drink) => drink.product_id)
+    .filter((productId): productId is string => Boolean(productId)))]
+  const [{ data: profileRows, error: profileError }, { data: productRows, error: productError }] = await Promise.all([
+    admin.from('drink_beer_profiles').select('drink_id, beer_style').in('drink_id', validDrinkIds),
+    productIds.length > 0
+      ? admin.from('drink_products').select('id, name, beer_style').in('id', productIds).eq('status', 'active')
+      : Promise.resolve({ data: [], error: null }),
+  ])
+  if (profileError || productError) throw profileError ?? productError
+  const profilesByDrinkId = new Map((profileRows ?? []).map((profile) => [profile.drink_id, profile]))
+  const productsById = new Map((productRows ?? []).map((product) => [product.id, product]))
 
   const earliestDetectedAt = events.reduce(
     (earliest, event) => event.detected_at < earliest ? event.detected_at : earliest,
@@ -138,15 +152,24 @@ async function createBatchDeliveries(admin: ReturnType<typeof createClient>, bat
 
   const barName = tenant.display_name?.trim() || tenant.name
   const singleDrink = validDrinks.length === 1 ? validDrinks[0] : null
-  const drinkNames = validDrinks.map((drink) => drink.display_name?.trim() || drink.name)
+  const drinkNames = validDrinks.map((drink) => {
+    const product = drink.product_id ? productsById.get(drink.product_id) : null
+    return drink.display_name?.trim() || product?.name?.trim() || drink.name
+  })
+  const singleProduct = singleDrink?.product_id ? productsById.get(singleDrink.product_id) : null
+  const singleStyle = singleDrink
+    ? singleProduct?.beer_style?.trim() || profilesByDrinkId.get(singleDrink.id)?.beer_style?.trim() || null
+    : null
   const title = singleDrink
-    ? `${barName} 上新 · ${singleDrink.display_name?.trim() || singleDrink.name}`
+    ? `${barName} 上新`
     : `${barName} 今晚上新 ${validDrinks.length} 款`
   const body = singleDrink
-    ? '今晚酒单有了新选择，点按查看这款酒。'
+    ? singleStyle
+      ? `${drinkNames[0]} · ${singleStyle}，点按查看这款新酒。`
+      : `${drinkNames[0]}已加入今晚酒单，点按查看。`
     : validDrinks.length === 2
-      ? `${drinkNames.map((name) => compactDrinkName(name)).join('、')} 已加入今晚酒单。`
-      : `${drinkNames.slice(0, 2).map((name) => compactDrinkName(name)).join('、')} 等新酒已加入今晚酒单，点按查看。`
+      ? `${drinkNames.map((name) => compactDrinkName(name)).join('、')}已加入今晚酒单，点按查看。`
+      : `${drinkNames.slice(0, 2).map((name) => compactDrinkName(name)).join('、')}等新酒已加入今晚酒单，点按查看。`
   const payload = {
     type: 'new_tap',
     tenantSlug: tenant.slug,

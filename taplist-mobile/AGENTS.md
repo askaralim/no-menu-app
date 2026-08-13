@@ -284,6 +284,7 @@ Private 酒迹 features should use authenticated RPCs in `lib/api/drinkLog.ts`.
 
 Use semantic versioning for user-visible releases.
 
+- Do not change `app.json` version or `ios.buildNumber` unless the user explicitly requests a release, App Store submission, or specific version/build-number update.
 - Patch versions, such as `1.0.3`, are for fixes and polish only.
 - Minor versions, such as `1.1.0`, are for user-visible features such as `NEW ON TAP`, new share templates, or new public RPC-backed surfaces.
 - Increment `ios.buildNumber` for every App Store submission.

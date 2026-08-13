@@ -117,6 +117,45 @@ Deno.serve(async (req) => {
     .eq('user_id', anonymous.id)
   if (deviceMoveError) return response({ ok: false, code: 'MERGE_FAILED' }, 500)
 
+  const [{ data: anonymousProfile, error: anonymousProfileError }, { data: targetProfile, error: targetProfileError }] = await Promise.all([
+    admin.from('user_profiles')
+      .select('consumer_username, consumer_username_normalized, consumer_username_is_default')
+      .eq('user_id', anonymous.id)
+      .maybeSingle(),
+    admin.from('user_profiles')
+      .select('consumer_username')
+      .eq('user_id', target.id)
+      .maybeSingle(),
+  ])
+  if (anonymousProfileError || targetProfileError) return response({ ok: false, code: 'MERGE_FAILED' }, 500)
+
+  if (anonymousProfile?.consumer_username && !targetProfile?.consumer_username) {
+    const { error: releaseUsernameError } = await admin.from('user_profiles').update({
+      consumer_username: null,
+      consumer_username_normalized: null,
+      consumer_username_is_default: false,
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', anonymous.id)
+    if (releaseUsernameError) return response({ ok: false, code: 'MERGE_FAILED' }, 500)
+
+    const { error: profileMoveError } = await admin.from('user_profiles').upsert({
+      user_id: target.id,
+      consumer_username: anonymousProfile.consumer_username,
+      consumer_username_normalized: anonymousProfile.consumer_username_normalized,
+      consumer_username_is_default: anonymousProfile.consumer_username_is_default,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+    if (profileMoveError) {
+      await admin.from('user_profiles').update({
+        consumer_username: anonymousProfile.consumer_username,
+        consumer_username_normalized: anonymousProfile.consumer_username_normalized,
+        consumer_username_is_default: anonymousProfile.consumer_username_is_default,
+        updated_at: new Date().toISOString(),
+      }).eq('user_id', anonymous.id)
+      return response({ ok: false, code: 'MERGE_FAILED' }, 500)
+    }
+  }
+
   const { error: deleteError } = await admin.auth.admin.deleteUser(anonymous.id)
   if (deleteError) return response({ ok: false, code: 'CLEANUP_FAILED' }, 500)
   return response({ ok: true })

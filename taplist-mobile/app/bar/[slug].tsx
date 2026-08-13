@@ -29,7 +29,7 @@ import { enablePushNotifications, getPushPermissionState } from '@/lib/pushNotif
 import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import { trackEvent } from '@/lib/analytics'
-import { partitionPublicDrinks, type PublicEventRow } from '@/lib/types'
+import { partitionPublicDrinks, type FollowedBarRow, type PublicEventRow } from '@/lib/types'
 
 export default function BarDetailScreen() {
   const insets = useSafeAreaInsets()
@@ -162,6 +162,7 @@ export default function BarDetailScreen() {
       await ensureDrinkLogSession()
       const state = await followBar(tenant.id)
       queryClient.setQueryData(['bar-follow', tenant.id], state)
+      await queryClient.invalidateQueries({ queryKey: ['bar-follows'] })
       const permission = await getPushPermissionState()
       if (permission === 'granted') {
         await enablePushNotifications()
@@ -219,6 +220,10 @@ export default function BarDetailScreen() {
               notify_new_taps: false,
               followed_at: null,
             })
+            queryClient.setQueryData<FollowedBarRow[]>(['bar-follows'], (current) => (
+              current?.filter((bar) => bar.tenant_id !== tenant.id)
+            ))
+            await queryClient.invalidateQueries({ queryKey: ['bar-follows'] })
           } catch (error) {
             console.warn('Unfollow bar failed', error)
             Alert.alert('暂时无法取消关注', '请稍后重试')
@@ -259,40 +264,62 @@ export default function BarDetailScreen() {
           <>
             <AtmosphereImage source={tenant.cover_image_url} aspectRatio={4 / 3} overlayOpacity={0.54} borderRadius={0}>
               <View style={styles.heroCopy}>
-                <Text style={styles.title}>{tenant.display_name || tenant.name}</Text>
+                <Text style={styles.title} numberOfLines={2}>{tenant.display_name || tenant.name}</Text>
                 <BrewingBadgeFromType
                   brewingType={tenant.brewing_type}
                   brewingLabel={tenant.brewing_label}
                   variant="hero"
                 />
-                {(tenant.address || openingHoursLabel) ? (
-                  <View style={[styles.heroMeta, styles.heroMetaAfterTitle]}>
-                    {tenant.address ? (
+                {(tenant.address || openingHoursLabel || Platform.OS === 'ios') ? (
+                  <View style={[styles.heroMetaBar, styles.heroMetaAfterTitle]}>
+                    <View style={styles.heroMeta}>
+                      {tenant.address ? (
+                        <Pressable
+                          accessibilityRole={appleMapsUrl ? 'link' : undefined}
+                          accessibilityLabel={appleMapsUrl ? `在 Apple Maps 中查看 ${tenant.display_name || tenant.name}` : undefined}
+                          disabled={!appleMapsUrl}
+                          hitSlop={8}
+                          onPress={handleOpenAppleMaps}
+                          style={({ pressed }) => [
+                            styles.heroMetaRow,
+                            appleMapsUrl && styles.heroAddressLink,
+                            pressed && appleMapsUrl && styles.heroAddressPressed,
+                          ]}>
+                          <FontAwesome name="map-marker" size={13} color={palette.muted} />
+                          <Text style={[styles.heroMetaText, appleMapsUrl && styles.heroAddressText]}>{tenant.address}</Text>
+                          {appleMapsUrl ? (
+                            <View style={styles.heroMapHint}>
+                              <FontAwesome name="location-arrow" size={13} color={palette.amber} />
+                            </View>
+                          ) : null}
+                        </Pressable>
+                      ) : null}
+                      {openingHoursLabel ? (
+                        <View style={styles.heroMetaRow}>
+                          <FontAwesome name="clock-o" size={13} color={palette.muted} />
+                          <Text style={styles.heroMetaText}>{openingHoursLabel}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    {Platform.OS === 'ios' ? (
                       <Pressable
-                        accessibilityRole={appleMapsUrl ? 'link' : undefined}
-                        accessibilityLabel={appleMapsUrl ? `在 Apple Maps 中查看 ${tenant.display_name || tenant.name}` : undefined}
-                        disabled={!appleMapsUrl}
-                        hitSlop={8}
-                        onPress={handleOpenAppleMaps}
+                        accessibilityRole="button"
+                        accessibilityLabel={followQuery.data?.followed ? '取消关注这家酒吧' : '关注这家酒吧'}
+                        disabled={followBusy || followQuery.isLoading}
+                        onPress={followQuery.data?.followed ? handleUnfollow : () => void handleFollow()}
                         style={({ pressed }) => [
-                          styles.heroMetaRow,
-                          appleMapsUrl && styles.heroAddressLink,
-                          pressed && appleMapsUrl && styles.heroAddressPressed,
+                          styles.followButton,
+                          followQuery.data?.followed && styles.followButtonActive,
+                          pressed && styles.followButtonPressed,
                         ]}>
-                        <FontAwesome name="map-marker" size={13} color={palette.muted} />
-                        <Text style={[styles.heroMetaText, appleMapsUrl && styles.heroAddressText]}>{tenant.address}</Text>
-                        {appleMapsUrl ? (
-                          <View style={styles.heroMapHint}>
-                            <FontAwesome name="location-arrow" size={13} color={palette.amber} />
-                          </View>
-                        ) : null}
+                        {followBusy ? (
+                          <ActivityIndicator size="small" color={palette.amber} />
+                        ) : (
+                          <Text style={[styles.followButtonText, followQuery.data?.followed && styles.followButtonTextActive]}>
+                            {followQuery.data?.followed ? '✓ 已关注' : '＋ 关注'}
+                          </Text>
+                        )}
                       </Pressable>
-                    ) : null}
-                    {openingHoursLabel ? (
-                      <View style={styles.heroMetaRow}>
-                        <FontAwesome name="clock-o" size={13} color={palette.muted} />
-                        <Text style={styles.heroMetaText}>{openingHoursLabel}</Text>
-                      </View>
                     ) : null}
                   </View>
                 ) : null}
@@ -303,37 +330,6 @@ export default function BarDetailScreen() {
               {tenant.description ? (
                 <View style={styles.barDescriptionStrip}>
                   <Text style={styles.barDescription}>{tenant.description}</Text>
-                </View>
-              ) : null}
-              {Platform.OS === 'ios' ? (
-                <View style={styles.followRow}>
-                  <View style={styles.followCopy}>
-                    <Text style={styles.followTitle}>
-                      {followQuery.data?.followed ? '已关注这家酒吧' : '关注这家酒吧'}
-                    </Text>
-                    <Text style={styles.followBody}>
-                      {followQuery.data?.notify_new_taps
-                        ? '上新通知已开启'
-                        : followQuery.data?.followed
-                          ? '通知未开启'
-                          : '正式发布新酒时提醒你'}
-                    </Text>
-                  </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={followBusy || followQuery.isLoading}
-                    onPress={followQuery.data?.followed ? handleUnfollow : () => void handleFollow()}
-                    style={({ pressed }) => [
-                      styles.followButton,
-                      followQuery.data?.followed && styles.followButtonActive,
-                      pressed && styles.followButtonPressed,
-                    ]}>
-                    {followBusy ? <ActivityIndicator size="small" color={palette.amber} /> : (
-                      <Text style={[styles.followButtonText, followQuery.data?.followed && styles.followButtonTextActive]}>
-                        {followQuery.data?.followed ? '✓ 已关注' : '＋ 关注'}
-                      </Text>
-                    )}
-                  </Pressable>
                 </View>
               ) : null}
               {tenant.tags && tenant.tags.length > 0 ? <BarTagRow tags={tenant.tags} /> : null}
@@ -583,7 +579,14 @@ const styles = StyleSheet.create({
     ...typography.displayL,
     color: palette.text,
   },
+  heroMetaBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   heroMeta: {
+    flex: 1,
+    minWidth: 0,
     gap: spacing.xxs,
   },
   heroMetaAfterTitle: {
@@ -630,29 +633,18 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: palette.faint,
   },
-  followRow: {
-    minHeight: 72,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.hairline,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  followCopy: { flex: 1 },
-  followTitle: { ...typography.title, color: palette.text },
-  followBody: { ...typography.micro, color: palette.muted, marginTop: 3 },
   followButton: {
-    minWidth: 82,
-    minHeight: 38,
+    flexShrink: 0,
+    minWidth: 78,
+    minHeight: 34,
     paddingHorizontal: spacing.sm,
-    borderRadius: 19,
+    borderRadius: 17,
     backgroundColor: palette.amber,
     alignItems: 'center',
     justifyContent: 'center',
   },
   followButtonActive: {
-    backgroundColor: 'rgba(211,154,69,0.10)',
+    backgroundColor: 'rgba(13,13,13,0.55)',
     borderWidth: 1,
     borderColor: palette.goldMuted,
   },

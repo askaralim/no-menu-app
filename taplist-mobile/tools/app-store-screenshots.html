@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>无菜单酒单商店截图生成器</title>
+  <title>No Menu App Store 截图生成器</title>
   <script src="../node_modules/html2canvas/dist/html2canvas.min.js"></script>
   <style>
     :root {
@@ -337,9 +337,9 @@
 <body>
   <header class="topbar">
     <div>
-      <h1>无菜单酒单商店截图生成器</h1>
+      <h1>No Menu App Store 截图生成器</h1>
       <p class="intro">
-        默认导出 6.9 英寸竖屏 PNG。当前故事对应 1.2.4：今晚酒单、搜索发现、喝过与分享酒迹；点击手机区域可替换为最终真实设备截图。
+        默认导出 6.9 英寸竖屏 PNG。当前故事对应 1.3.0：实时酒单、关注酒吧、上新通知与私人喝过记录；点击手机区域可替换为最终 TestFlight 截图。
       </p>
     </div>
     <div class="controls">
@@ -396,8 +396,7 @@
               <p class="subtitle">IPA、酸、世涛、拉格与小麦，点一下就能找</p>
             </div>
             <phone-frame
-              label="待上传高清：搜索首页，包含风格、上新与酒厂"
-              src="file:///private/var/folders/jv/fmrvl4sd0md1qfdbzwx3dqpm0000gn/T/codex-clipboard-ef03300b-69cf-474b-8933-4dcd5dc12781.png"></phone-frame>
+              label="待上传高清：搜索首页，包含风格、上新与酒厂"></phone-frame>
           </div>
         </div>
       </div>
@@ -420,8 +419,7 @@
               <p class="subtitle">浏览新上酒款，也能从供应较多的酒厂继续探索</p>
             </div>
             <phone-frame
-              label="待上传高清：搜索页上新与酒厂区域"
-              src="file:///private/var/folders/jv/fmrvl4sd0md1qfdbzwx3dqpm0000gn/T/codex-clipboard-60ac1f75-b899-4d4f-893b-864be9a32311.png"></phone-frame>
+              label="待上传高清：搜索页上新与酒厂区域"></phone-frame>
           </div>
         </div>
       </div>
@@ -444,8 +442,7 @@
               <p class="subtitle">酒名、风格、ABV 与杯型价格清楚呈现</p>
             </div>
             <phone-frame
-              label="酒吧详情：标签与胶囊酒单（修正营业时间后重拍）"
-              src="file:///Users/askar/Downloads/beer%20list%201.PNG"></phone-frame>
+              label="酒吧详情：标签与胶囊酒单（修正营业时间后重拍）"></phone-frame>
           </div>
         </div>
       </div>
@@ -454,22 +451,21 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>05 我的酒迹</h2>
-          <span class="shot-status ready">可用</span>
+          <h2>05 关注酒吧</h2>
+          <span class="shot-status">待新截图</span>
         </div>
-        <button onclick="downloadImage('ss5', '05_喝过的酒.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss5', '05_关注酒吧.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss5">
             <div class="copy">
-              <div class="eyebrow">喝过</div>
-              <h3 class="title">喝过的酒，都留在自己的酒迹里</h3>
-              <p class="subtitle">按时间回看酒款与酒吧，也能用 Apple 保护记录</p>
+              <div class="eyebrow">关注酒吧</div>
+              <h3 class="title">喜欢的酒吧，关注起来</h3>
+              <p class="subtitle">在酒吧详情一键关注，随时管理上新通知</p>
             </div>
             <phone-frame
-              label="我的：喝过的酒款与月份时间流"
-              src="file:///var/folders/jv/fmrvl4sd0md1qfdbzwx3dqpm0000gn/T/codex-clipboard-b61675c9-4bc5-49e3-8561-7b49a320a821.png"></phone-frame>
+              label="待上传：酒吧详情页已关注状态"></phone-frame>
           </div>
         </div>
       </div>
@@ -478,23 +474,21 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>06 分享酒迹</h2>
-          <span class="shot-status ready">可用</span>
+          <h2>06 上新通知</h2>
+          <span class="shot-status">待新截图</span>
         </div>
-        <button onclick="downloadImage('ss6', '06_分享我的酒迹.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss6', '06_酒吧上新通知.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss6">
             <div class="copy">
-              <div class="eyebrow">分享酒迹</div>
-              <h3 class="title">把最近喝过的，变成一张图</h3>
-              <p class="subtitle">酒款、酒吧与第一杯，生成图片保存或分享</p>
+              <div class="eyebrow">上新通知</div>
+              <h3 class="title">关注的酒吧上新，及时知道</h3>
+              <p class="subtitle">只在正式发布新酒时提醒，通知可以随时关闭</p>
             </div>
             <phone-frame
-              label="分享酒迹：最多展示最近九款"
-              fit="contain"
-              src="file:///var/folders/jv/fmrvl4sd0md1qfdbzwx3dqpm0000gn/T/codex-clipboard-ddefd433-7c50-460d-98c3-37a703ed9716.png"></phone-frame>
+              label="待上传：真实 iOS 锁屏上新通知"></phone-frame>
           </div>
         </div>
       </div>
@@ -503,69 +497,68 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>07 酒款详情</h2>
-          <span class="shot-status ready">可用</span>
+          <h2>07 我的</h2>
+          <span class="shot-status">待新截图</span>
         </div>
-        <button onclick="downloadImage('ss7', '07_酒款详情.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss7', '07_我的喝过记录.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss7">
+            <div class="copy">
+              <div class="eyebrow">我的</div>
+              <h3 class="title">喝过的酒，留在自己的记录里</h3>
+              <p class="subtitle">按时间回看酒款，也能管理关注与 Apple 保护</p>
+            </div>
+            <phone-frame
+              label="待上传：1.3.0 我的页面与 NoMenuist 身份"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>08 分享喝过</h2>
+          <span class="shot-status">待新截图</span>
+        </div>
+        <button onclick="downloadImage('ss8', '08_分享喝过记录.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss8">
+            <div class="copy">
+              <div class="eyebrow">分享喝过</div>
+              <h3 class="title">把最近喝过的，变成一张图</h3>
+              <p class="subtitle">最多九款酒，生成图片保存或分享</p>
+            </div>
+            <phone-frame
+              label="待上传：最新喝过记录分享图"
+              fit="contain"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>09 酒款详情</h2>
+          <span class="shot-status">待新截图</span>
+        </div>
+        <button onclick="downloadImage('ss9', '09_酒款详情.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss9">
             <div class="copy">
               <div class="eyebrow">酒款详情</div>
               <h3 class="title">单款信息，一页读清</h3>
               <p class="subtitle">酒厂、风格、ABV、价格与供应酒吧</p>
             </div>
             <phone-frame
-              label="酒款详情：有真实酒标图片"
-              src="file:///Users/askar/Downloads/beer%20detail.PNG"></phone-frame>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="shot">
-      <div class="shot-tools">
-        <div class="shot-heading">
-          <h2>08 近期活动</h2>
-          <span class="shot-status">待重拍</span>
-        </div>
-        <button onclick="downloadImage('ss8', '08_今晚近期活动.png', this)">下载 PNG</button>
-      </div>
-      <div class="preview-frame">
-        <div class="preview-scale">
-          <div class="canvas" id="ss8">
-            <div class="copy">
-              <div class="eyebrow">近期活动</div>
-              <h3 class="title">今晚喝什么，也看看哪里有活动</h3>
-              <p class="subtitle">Happy Hour、主题活动与近期安排</p>
-            </div>
-            <phone-frame
-              label="活动列表：清理重复内容后重拍"
-              src="file:///Users/askar/Downloads/events%20list%201.PNG"></phone-frame>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="shot">
-      <div class="shot-tools">
-        <div class="shot-heading">
-          <h2>09 城市切换</h2>
-          <span class="shot-status">可选</span>
-        </div>
-        <button onclick="downloadImage('ss9', '09_城市切换.png', this)">下载 PNG</button>
-      </div>
-      <div class="preview-frame">
-        <div class="preview-scale">
-          <div class="canvas" id="ss9">
-            <div class="copy">
-              <div class="eyebrow">城市切换</div>
-              <h3 class="title">手动选择城市，不需要定位权限</h3>
-              <p class="subtitle">只显示已公开的真实酒吧与实时酒单</p>
-            </div>
-            <phone-frame
-              label="可选上传：首页城市选择弹层"></phone-frame>
+              label="待上传：酒款详情与真实酒标图片"></phone-frame>
           </div>
         </div>
       </div>
@@ -724,11 +717,11 @@
         ['ss2', '02_搜索发现.png'],
         ['ss3', '03_今晚上新.png'],
         ['ss4', '04_今晚在售酒单.png'],
-        ['ss5', '05_喝过的酒.png'],
-        ['ss6', '06_分享我的酒迹.png'],
-        ['ss7', '07_酒款详情.png'],
-        ['ss8', '08_今晚近期活动.png'],
-        ['ss9', '09_城市切换.png'],
+        ['ss5', '05_关注酒吧.png'],
+        ['ss6', '06_酒吧上新通知.png'],
+        ['ss7', '07_我的喝过记录.png'],
+        ['ss8', '08_分享喝过记录.png'],
+        ['ss9', '09_酒款详情.png'],
       ];
       try {
         for (const [id, filename] of jobs) {

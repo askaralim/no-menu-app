@@ -341,6 +341,12 @@ export type MyDrinkSummary = {
 
 export type AccountProtectionState = 'anonymous' | 'apple' | 'unavailable'
 
+export type ConsumerProfile = {
+  ok: true
+  consumer_username: string
+  is_default: boolean
+}
+
 export type BarFollowState = {
   ok: true
   followed: boolean

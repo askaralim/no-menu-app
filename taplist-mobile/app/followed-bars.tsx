@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { router } from 'expo-router'
-import { useState } from 'react'
+import { router, useFocusEffect } from 'expo-router'
+import { useCallback, useState } from 'react'
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -16,7 +16,7 @@ import type { FollowedBarRow } from '@/lib/types'
 export default function FollowedBarsScreen() {
   const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
-  const [busyTenantId, setBusyTenantId] = useState<string | null>(null)
+  const [busyState, setBusyState] = useState<{ tenantId: string; action: 'notification' | 'unfollow' } | null>(null)
   const sessionQuery = useQuery({
     queryKey: ['drink-log', 'session'],
     queryFn: async () => (await getTaplistSupabase().auth.getSession()).data.session,
@@ -27,9 +27,14 @@ export default function FollowedBarsScreen() {
     enabled: Platform.OS === 'ios' && Boolean(sessionQuery.data),
   })
 
+  useFocusEffect(useCallback(() => {
+    void sessionQuery.refetch()
+    if (sessionQuery.data) void barsQuery.refetch()
+  }, [barsQuery.refetch, sessionQuery.data, sessionQuery.refetch]))
+
   const updateNotification = async (bar: FollowedBarRow) => {
-    if (busyTenantId) return
-    setBusyTenantId(bar.tenant_id)
+    if (busyState) return
+    setBusyState({ tenantId: bar.tenant_id, action: 'notification' })
     try {
       if (bar.notify_new_taps) {
         await setBarNewTapNotifications(bar.tenant_id, false)
@@ -51,7 +56,7 @@ export default function FollowedBarsScreen() {
       console.warn('Update bar notification failed', error)
       Alert.alert('设置失败', '请稍后重试')
     } finally {
-      setBusyTenantId(null)
+      setBusyState(null)
     }
   }
 
@@ -62,7 +67,7 @@ export default function FollowedBarsScreen() {
         text: '取消关注',
         style: 'destructive',
         onPress: async () => {
-          setBusyTenantId(bar.tenant_id)
+          setBusyState({ tenantId: bar.tenant_id, action: 'unfollow' })
           try {
             await unfollowBar(bar.tenant_id)
             await queryClient.invalidateQueries({ queryKey: ['bar-follows'] })
@@ -73,7 +78,7 @@ export default function FollowedBarsScreen() {
             console.warn('Unfollow bar failed', error)
             Alert.alert('暂时无法取消关注', '请稍后重试')
           } finally {
-            setBusyTenantId(null)
+            setBusyState(null)
           }
         },
       },
@@ -84,10 +89,10 @@ export default function FollowedBarsScreen() {
   return (
     <View style={styles.screen}>
       <BackButton />
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 62 }]}>
-        <Text style={styles.kicker}>FOLLOWING</Text>
-        <Text style={styles.title}>关注的酒吧</Text>
-        <Text style={styles.intro}>关注关系只有你自己可见。关闭通知不会取消关注。</Text>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xxxl }]}>
+        <Text style={styles.eyebrow}>FOLLOWING</Text>
+        <Text style={styles.followCount}>已关注 {bars.length} 家 · 仅自己可见</Text>
+        <Text style={styles.intro}>关闭通知不会取消关注</Text>
 
         {sessionQuery.isLoading || barsQuery.isLoading ? (
           <ActivityIndicator color={palette.amber} style={styles.loading} />
@@ -98,9 +103,11 @@ export default function FollowedBarsScreen() {
         ) : (
           <View style={styles.list}>
             {bars.map((bar) => {
-              const busy = busyTenantId === bar.tenant_id
+              const busy = busyState?.tenantId === bar.tenant_id
+              const updatingNotification = busy && busyState.action === 'notification'
+              const removingFollow = busy && busyState.action === 'unfollow'
               return (
-                <View key={bar.tenant_id} style={styles.row}>
+                <View key={bar.tenant_id} style={[styles.row, removingFollow && styles.rowBusy]}>
                   <Pressable
                     accessibilityRole="link"
                     onPress={() => router.push(`/bar/${bar.tenant_slug}`)}
@@ -111,7 +118,7 @@ export default function FollowedBarsScreen() {
                     <View style={styles.copy}>
                       <Text style={styles.barName} numberOfLines={1}>{bar.tenant_display_name}</Text>
                       <Text style={styles.meta} numberOfLines={1}>
-                        {bar.tenant_district || '上海'} · {bar.notify_new_taps ? '上新通知已开启' : '通知未开启'}
+                      {bar.tenant_district || '上海'} · {bar.notify_new_taps ? '通知已开启' : '通知已关闭'}
                       </Text>
                     </View>
                   </Pressable>
@@ -121,7 +128,7 @@ export default function FollowedBarsScreen() {
                     disabled={busy}
                     onPress={() => void updateNotification(bar)}
                     style={[styles.toggle, bar.notify_new_taps && styles.toggleOn]}>
-                    {busy ? <ActivityIndicator size="small" color={palette.amber} /> : <View style={[styles.knob, bar.notify_new_taps && styles.knobOn]} />}
+                    {updatingNotification ? <ActivityIndicator size="small" color={palette.amber} /> : <View style={[styles.knob, bar.notify_new_taps && styles.knobOn]} />}
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
@@ -130,7 +137,7 @@ export default function FollowedBarsScreen() {
                     disabled={busy}
                     onPress={() => removeFollow(bar)}
                     style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>
-                    <FontAwesome name="minus-circle" size={18} color={palette.copper} />
+                    {removingFollow ? <ActivityIndicator size="small" color={palette.copper} /> : <FontAwesome name="minus-circle" size={18} color={palette.copper} />}
                   </Pressable>
                 </View>
               )
@@ -145,12 +152,13 @@ export default function FollowedBarsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.background },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  kicker: { ...typography.label, color: palette.amber },
-  title: { ...typography.displayL, color: palette.text, fontSize: 38, lineHeight: 44, marginTop: spacing.xs },
-  intro: { ...typography.body, color: palette.muted, marginTop: spacing.sm },
+  eyebrow: { ...typography.label, color: palette.amber, fontSize: 13, lineHeight: 18 },
+  followCount: { ...typography.title, color: palette.text, marginTop: spacing.sm },
+  intro: { ...typography.body, color: palette.muted, marginTop: spacing.xxs },
   loading: { marginTop: spacing.xxl },
   list: { marginTop: spacing.xl, borderTopWidth: 1, borderTopColor: palette.line },
   row: { minHeight: 78, borderBottomWidth: 1, borderBottomColor: palette.line, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  rowBusy: { opacity: 0.6 },
   barLink: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   artSlot: { width: 50, height: 50, borderRadius: 7, backgroundColor: palette.panel, overflow: 'hidden' },
   art: { width: '100%', height: '100%' },

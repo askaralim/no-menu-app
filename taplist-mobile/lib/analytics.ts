@@ -55,6 +55,9 @@ export type AnalyticsEventName =
   | 'apple_link_started'
   | 'apple_link_succeeded'
   | 'apple_link_failed'
+  | 'consumer_profile_edit_opened'
+  | 'consumer_username_updated'
+  | 'consumer_username_update_failed'
 
 type AnalyticsExtra = {
   posthogApiKey?: string
