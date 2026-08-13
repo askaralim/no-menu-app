@@ -187,7 +187,7 @@ Use real Supabase data only. Do not add placeholder bars, placeholder drinks, fa
 
 If Supabase env vars are missing, an RPC fails, or a query returns no rows, show a natural empty/error state instead of fabricated data.
 
-`last_menu_updated_at` is consumer-facing freshness metadata. It must only represent intentional public tap list / menu changes, not POS order activity or stock-only inventory changes. Stock-only updates from order deductions should not refresh bar ordering or home-feed freshness labels.
+`last_menu_updated_at` is consumer-facing freshness metadata. It must only represent intentional public tonight tap-list changes (add/remove/swap tap, public status, servings on a drink already on tonight, publish/unpublish). Do not refresh it for catalog/product metadata edits, product-pool corrections, storefront profile edits, public price-mode toggles, POS order activity, or stock-only inventory changes.
 
 ## Missing Images
 
