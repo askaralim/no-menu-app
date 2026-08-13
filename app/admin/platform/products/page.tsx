@@ -113,6 +113,7 @@ export default function PlatformProductsPage() {
   const [companyQuery, setCompanyQuery] = useState('')
   const [companyOptions, setCompanyOptions] = useState<AdminDrinkCompanyRow[]>([])
   const [companyLoading, setCompanyLoading] = useState(false)
+  const [unlinkedDrinksCount, setUnlinkedDrinksCount] = useState<number | null>(null)
 
   const loadProducts = useCallback(async () => {
     const { data, error: rpcError } = await supabase.rpc('admin_list_drink_products', {
@@ -143,6 +144,17 @@ export default function PlatformProductsPage() {
       setCompanyOptions(payload?.companies ?? [])
     } finally {
       setCompanyLoading(false)
+    }
+  }, [])
+
+  const loadUnlinkedDrinksCount = useCallback(async () => {
+    try {
+      const { data, error: rpcError } = await supabase.rpc('admin_get_drink_product_stats')
+      if (rpcError) throw rpcError
+      const payload = (data ?? {}) as { stats?: { unlinked_drinks?: number } }
+      setUnlinkedDrinksCount(payload.stats?.unlinked_drinks ?? null)
+    } catch {
+      setUnlinkedDrinksCount(null)
     }
   }, [])
 
@@ -183,7 +195,7 @@ export default function PlatformProductsPage() {
         }
 
         setRole('super_admin')
-        await loadProducts()
+        await Promise.all([loadProducts(), loadUnlinkedDrinksCount()])
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : '加载失败')
       } finally {
@@ -439,6 +451,10 @@ export default function PlatformProductsPage() {
           <Link href="/admin/platform" style={{ color: '#6b7280', textDecoration: 'none' }}>
             ← 平台管理
           </Link>
+          {' · '}
+          <Link href="/admin/platform/unlinked-drinks" style={{ color: '#6b7280', textDecoration: 'none' }}>
+            待关联酒款{unlinkedDrinksCount != null ? ` (${unlinkedDrinksCount})` : ''} →
+          </Link>
         </p>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
           <div>
@@ -476,6 +492,25 @@ export default function PlatformProductsPage() {
               setFilters((prev) => ({ ...prev, unlinked_company_only: !prev.unlinked_company_only }))
             }
           />
+          {unlinkedDrinksCount != null ? (
+            <Link
+              href="/admin/platform/unlinked-drinks"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 12px',
+                borderRadius: 999,
+                border: '1px solid #e5e7eb',
+                background: '#fff',
+                color: '#c2410c',
+                fontSize: '0.85rem',
+                textDecoration: 'none',
+              }}>
+              <span>门店未关联</span>
+              <strong>{unlinkedDrinksCount}</strong>
+            </Link>
+          ) : null}
         </div>
 
         <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'minmax(220px, 2fr) repeat(2, minmax(140px, 1fr)) auto' }}>

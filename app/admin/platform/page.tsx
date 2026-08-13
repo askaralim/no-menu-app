@@ -264,6 +264,12 @@ export default function PlatformAdminPage() {
             style={{ textDecoration: 'none', display: 'inline-block', fontSize: '0.9rem' }}>
             产品池管理 →
           </Link>
+          <Link
+            href="/admin/platform/unlinked-drinks"
+            className="admin-button admin-button-secondary"
+            style={{ textDecoration: 'none', display: 'inline-block', fontSize: '0.9rem' }}>
+            待关联酒款 →
+          </Link>
         </p>
       </div>
 

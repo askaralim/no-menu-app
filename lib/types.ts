@@ -232,3 +232,32 @@ export interface AdminDrinkProductRow {
   linked_drink_count: number
 }
 
+/** Row from `admin_list_unlinked_drinks` */
+export interface AdminUnlinkedDrinkRow {
+  id: string
+  tenant_id: string
+  tenant_name: string
+  tenant_slug: string | null
+  tenant_display_name: string | null
+  category_id: string | null
+  category_name: string | null
+  name: string
+  brand_name: string | null
+  image_url: string | null
+  enabled: boolean
+  is_public_visible: boolean
+  public_status: string | null
+  public_sort_order: number | null
+  product_id: string | null
+  display_name: string | null
+  display_description: string | null
+  created_at: string
+  brewery: string | null
+  beer_style: string | null
+  abv: number | null
+  ibu: number | null
+  country: string | null
+  description: string | null
+  collab_breweries: string[]
+}
+
