@@ -1022,7 +1022,17 @@ BEGIN
             jsonb_agg(
               jsonb_build_object(
                 'id', d.id,
-                'brand_name', d.brand_name,
+                'brand_name', nullif(
+                  trim(
+                    coalesce(
+                      nullif(trim(d.brand_name), ''),
+                      nullif(trim(p.brewery), ''),
+                      nullif(trim(dp.brand_name), ''),
+                      nullif(trim(dp.brewery), '')
+                    )
+                  ),
+                  ''
+                ),
                 'name', d.name,
                 'volume_ml', d.volume_ml,
                 'price', d.price,
@@ -1061,6 +1071,11 @@ BEGIN
             '[]'::jsonb
           )
           FROM public.drinks d
+          LEFT JOIN public.drink_beer_profiles p
+            ON p.drink_id = d.id
+           AND p.tenant_id = v_tenant_id
+          LEFT JOIN public.drink_products dp
+            ON dp.id = d.product_id
           WHERE d.category_id = c.id
             AND d.tenant_id = v_tenant_id
             AND d.enabled = true

@@ -31,12 +31,21 @@ function legacyPrices(drink: Drink): string[] {
   return out
 }
 
+function formatDisplayName(drink: Drink): string {
+  const name = (drink.name || '').trim()
+  const brand = (drink.brand_name || '').trim()
+  if (!brand) return name
+  // Name already includes brand (e.g. "纸飞机 IPA") — don't duplicate.
+  if (name.toLowerCase().startsWith(brand.toLowerCase())) return name
+  return `${brand} ${name}`
+}
+
 export default function DrinkItem({ drink, disabled }: DrinkItemProps) {
   const servings = activeServings(drink)
   const priceTexts =
     servings.length > 0 ? servings.map(formatServingPrice) : legacyPrices(drink)
 
-  const displayName = [drink.brand_name?.trim(), drink.name].filter(Boolean).join(' ')
+  const displayName = formatDisplayName(drink)
 
   return (
     <li className={`drink-row ${disabled ? 'disabled' : ''}`}>
