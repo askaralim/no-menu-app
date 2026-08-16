@@ -23,6 +23,8 @@ export interface Drink {
   category_id: string
   brand_name?: string | null
   name: string
+  /** Beer style from profile / product pool; used by in-bar /display */
+  beer_style?: string | null
   volume_ml?: number | null
   /** @deprecated POS uses drink_serving_options */
   price: number

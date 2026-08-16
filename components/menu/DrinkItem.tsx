@@ -46,10 +46,18 @@ export default function DrinkItem({ drink, disabled }: DrinkItemProps) {
     servings.length > 0 ? servings.map(formatServingPrice) : legacyPrices(drink)
 
   const displayName = formatDisplayName(drink)
+  const beerStyle = (drink.beer_style || '').trim()
+  const styleAlreadyInName =
+    beerStyle !== '' && displayName.toLowerCase().includes(beerStyle.toLowerCase())
 
   return (
     <li className={`drink-row ${disabled ? 'disabled' : ''}`}>
-      <span className="drink-name">{displayName}</span>
+      <span className="drink-name">
+        {displayName}
+        {beerStyle && !styleAlreadyInName ? (
+          <span className="drink-style"> · {beerStyle}</span>
+        ) : null}
+      </span>
       <div className="drink-prices">
         {priceTexts.map((text, i) => (
           <span key={`${drink.id}-price-${i}`} className="drink-price">

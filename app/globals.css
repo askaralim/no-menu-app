@@ -204,6 +204,12 @@ body::after {
   padding-right: 24px;
 }
 
+.drink-style {
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
 .drink-prices {
   display: flex;
   gap: 16px;

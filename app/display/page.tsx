@@ -75,6 +75,7 @@ function DisplayPageContent() {
               id: drink.id,
               brand_name: drink.brand_name ?? null,
               name: drink.name,
+              beer_style: drink.beer_style ?? null,
               volume_ml: drink.volume_ml ?? null,
               price: drink.price,
               price_unit: drink.price_unit,

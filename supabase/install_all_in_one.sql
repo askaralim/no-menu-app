@@ -1034,6 +1034,15 @@ BEGIN
                   ''
                 ),
                 'name', d.name,
+                'beer_style', nullif(
+                  trim(
+                    coalesce(
+                      nullif(trim(p.beer_style), ''),
+                      nullif(trim(dp.beer_style), '')
+                    )
+                  ),
+                  ''
+                ),
                 'volume_ml', d.volume_ml,
                 'price', d.price,
                 'price_unit', d.price_unit,
