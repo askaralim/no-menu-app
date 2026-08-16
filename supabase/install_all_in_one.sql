@@ -1032,7 +1032,29 @@ BEGIN
                 'enabled', d.enabled,
                 'sort_order', d.sort_order,
                 'created_at', d.created_at,
-                'category_id', c.id
+                'category_id', c.id,
+                'drink_serving_options', (
+                  SELECT COALESCE(
+                    jsonb_agg(
+                      jsonb_build_object(
+                        'id', so.id,
+                        'serving_type', so.serving_type,
+                        'label', so.label,
+                        'volume_ml', so.volume_ml,
+                        'price', so.price,
+                        'is_default', so.is_default,
+                        'is_active', so.is_active,
+                        'public_sort_order', so.public_sort_order
+                      )
+                      ORDER BY so.public_sort_order, so.is_default DESC, so.label
+                    ),
+                    '[]'::jsonb
+                  )
+                  FROM public.drink_serving_options so
+                  WHERE so.drink_id = d.id
+                    AND so.tenant_id = v_tenant_id
+                    AND so.is_active = true
+                )
               )
               ORDER BY d.sort_order
             ),

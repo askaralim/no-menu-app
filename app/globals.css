@@ -213,6 +213,7 @@ body::after {
   flex-shrink: 0;
 }
 
+.drink-price,
 .drink-price-cup,
 .drink-price-bottle {
   font-family: 'Inter', sans-serif;
@@ -220,6 +221,7 @@ body::after {
   color: var(--gold);
   font-size: 20px;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 /* =========================
@@ -871,6 +873,7 @@ input:checked + .toggle-slider:hover {
     padding-left: 8px;
   }
 
+  .drink-price,
   .drink-price-cup,
   .drink-price-bottle {
     font-size: 16px;

@@ -84,6 +84,17 @@ function DisplayPageContent() {
               enabled: drink.enabled,
               created_at: drink.created_at,
               category_id: category.id,
+              drink_serving_options: (drink.drink_serving_options ?? [])
+                .filter((s) => s.is_active !== false)
+                .map((s) => ({
+                  id: s.id,
+                  label: s.label ?? null,
+                  volume_ml: s.volume_ml ?? null,
+                  price: Number(s.price),
+                  serving_type: s.serving_type ?? null,
+                  is_default: s.is_default,
+                  is_active: s.is_active !== false,
+                })),
             })),
         }))
         .filter((category) => category.drinks.length > 0)

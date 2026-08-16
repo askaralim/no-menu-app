@@ -1,32 +1,53 @@
 'use client'
 
-import { Drink } from '@/lib/types'
+import { Drink, DrinkServingOption } from '@/lib/types'
 
 interface DrinkItemProps {
   drink: Drink
   disabled?: boolean
 }
 
+function activeServings(drink: Drink): DrinkServingOption[] {
+  return (drink.drink_serving_options ?? []).filter((s) => s.is_active !== false)
+}
+
+function formatServingPrice(s: DrinkServingOption): string {
+  const label = (s.label || '').trim()
+  const volume = s.volume_ml != null && s.volume_ml > 0 ? `${s.volume_ml}ml` : ''
+  const unit = [label, volume].filter(Boolean).join(' ')
+  const price = `¥${Number(s.price).toFixed(0)}`
+  return unit ? `${price}/${unit}` : price
+}
+
+/** Legacy cup/bottle columns — only when no serving options exist yet. */
+function legacyPrices(drink: Drink): string[] {
+  const out: string[] = []
+  if (drink.price && drink.price > 0) {
+    out.push(`¥${Number(drink.price).toFixed(0)}/${drink.price_unit || '杯'}`)
+  }
+  if (drink.price_bottle && drink.price_bottle > 0) {
+    out.push(`¥${Number(drink.price_bottle).toFixed(0)}/${drink.price_unit_bottle || '瓶'}`)
+  }
+  return out
+}
+
 export default function DrinkItem({ drink, disabled }: DrinkItemProps) {
-  const priceUnit = drink.price_unit || '杯'
-  const hasBottlePrice = drink.price_bottle && drink.price_bottle > 0
-  const bottleUnit = drink.price_unit_bottle || '瓶'
-  const displayName = [drink.brand_name?.trim(), drink.name, drink.volume_ml ? `${drink.volume_ml}ml` : '']
-    .filter(Boolean)
-    .join(' ')
+  const servings = activeServings(drink)
+  const priceTexts =
+    servings.length > 0 ? servings.map(formatServingPrice) : legacyPrices(drink)
+
+  const displayName = [drink.brand_name?.trim(), drink.name].filter(Boolean).join(' ')
 
   return (
     <li className={`drink-row ${disabled ? 'disabled' : ''}`}>
       <span className="drink-name">{displayName}</span>
       <div className="drink-prices">
-        <span className="drink-price-cup">
-          {drink.price ? `¥${drink.price.toFixed(0)}/${priceUnit}` : ''}
-        </span>
-        <span className="drink-price-bottle">
-          {hasBottlePrice ? `¥${drink.price_bottle!.toFixed(0)}/${bottleUnit}` : ''}
-        </span>
+        {priceTexts.map((text, i) => (
+          <span key={`${drink.id}-price-${i}`} className="drink-price">
+            {text}
+          </span>
+        ))}
       </div>
     </li>
   )
 }
-
