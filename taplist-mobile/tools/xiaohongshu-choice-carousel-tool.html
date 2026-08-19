@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>No Menu 小红书拼贴封面与精选轮播工具</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b0b0a; --panel:#13120f; --line:#2d2921; --text:#f6f1e8; --muted:#b8afa1; --faint:#7d7568; --gold:#c7a86f; --bronze:#745333; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif; }
+    button,input,textarea,select { font:inherit; }
+    .shell { min-height:100vh; display:grid; grid-template-columns:minmax(370px,470px) minmax(0,1fr); }
+    .sidebar { height:100vh; overflow:auto; padding:28px; border-right:1px solid var(--line); background:#10100f; }
+    h1 { margin:0; font-size:29px; line-height:1.03; font-weight:600; letter-spacing:1.5px; }
+    .rule { width:116px; height:2px; margin:16px 0 12px; background:var(--bronze); }
+    .intro,.hint { color:var(--muted); font-size:13px; line-height:1.6; }
+    .group { padding:20px 0; border-top:1px solid var(--line); }
+    .group:first-of-type { margin-top:24px; }
+    .group-title { margin:0 0 12px; color:var(--faint); font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+    .field { display:grid; gap:7px; margin-top:13px; }
+    .field label { color:var(--muted); font-size:13px; }
+    .field input,.field textarea,.field select { width:100%; border:1px solid var(--line); border-radius:0; background:var(--panel); color:var(--text); outline:none; padding:0 12px; }
+    .field input,.field select { height:42px; }
+    .field textarea { min-height:280px; padding-top:10px; line-height:1.55; resize:vertical; font-family:"SFMono-Regular","SF Mono",Menlo,monospace; font-size:12px; }
+    .field input:focus,.field textarea:focus,.field select:focus { border-color:rgba(199,168,111,.72); }
+    .uploads { display:grid; gap:10px; }
+    .drop { min-height:72px; display:grid; grid-template-columns:42px minmax(0,1fr); align-items:center; gap:12px; padding:12px; border:1px solid var(--line); background:var(--panel); cursor:pointer; transition:border-color 140ms ease,background 140ms ease; }
+    .drop:hover,.drop.dragging { border-color:var(--gold); background:#171511; }
+    .drop.has-image { border-color:rgba(199,168,111,.62); }
+    .slot-number { width:42px; height:42px; display:grid; place-items:center; border:1px solid var(--bronze); color:var(--gold); font-family:"SFMono-Regular","SF Mono",Menlo,monospace; font-size:13px; }
+    .drop-copy { min-width:0; color:var(--faint); font-size:12px; line-height:1.45; }
+    .drop-copy strong { display:block; overflow:hidden; color:var(--text); font-size:13px; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+    .grid-2,.actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .action { height:44px; border:1px solid var(--line); background:var(--panel); color:var(--text); cursor:pointer; }
+    .action.primary { border-color:var(--bronze); background:var(--text); color:#0b0b0a; font-weight:700; }
+    .actions { margin-top:14px; }
+    .stage { min-width:0; min-height:100vh; display:grid; grid-template-rows:1fr auto; background:linear-gradient(rgba(246,241,232,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(246,241,232,.025) 1px,transparent 1px),var(--bg); background-size:28px 28px; }
+    .preview-wrap { min-height:0; display:grid; place-items:center; padding:34px; }
+    .preview-frame { width:min(520px,100%); aspect-ratio:3/4; display:grid; place-items:center; overflow:hidden; border:1px solid var(--line); background:#070706; box-shadow:0 24px 80px rgba(0,0,0,.42); }
+    canvas { width:100%; height:100%; display:block; }
+    .meta { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-top:1px solid var(--line); background:#10100f; }
+    .metric { min-height:76px; padding:16px 20px; border-right:1px solid var(--line); }
+    .metric:last-child { border-right:0; }
+    .metric span { display:block; color:var(--faint); font-size:11px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:8px; font-size:15px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    @media (max-width:920px) { .shell{grid-template-columns:1fr}.sidebar{height:auto;border-right:0;border-bottom:1px solid var(--line)}.meta{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar">
+      <h1>NO MENU<br>拼贴封面与精选轮播</h1>
+      <div class="rule"></div>
+        <p class="intro">第一页使用五图杂志拼贴封面；第二页为五款精选；完整酒单按酒吧聚合，每页最多 7 款，超出自动分页。</p>
+
+      <section class="group">
+        <h2 class="group-title">Cover Copy</h2>
+        <div class="grid-2">
+          <div class="field"><label for="cityInput">城市</label><input id="cityInput" value="上海"></div>
+          <div class="field"><label for="cityEnInput">城市英文</label><input id="cityEnInput" value="SHANGHAI"></div>
+        </div>
+        <div class="field"><label for="titleInput">主标题</label><input id="titleInput" value="今晚不只喝 IPA"></div>
+        <div class="grid-2">
+          <div class="field"><label for="tapCountInput">新 Tap 数量</label><input id="tapCountInput" value="17"></div>
+          <div class="field"><label for="barCountInput">酒吧数量</label><input id="barCountInput" value="10"></div>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group-title">Cover Images</h2>
+        <p class="hint" style="margin-bottom:12px">默认使用五款精选的真实酒图；上传后可逐张覆盖。</p>
+        <div class="uploads">
+          <label class="drop" data-drop="0"><input data-cover-image="0" type="file" accept="image/*" hidden><span class="slot-number">01</span><span class="drop-copy"><strong>右侧主图</strong>点击或拖入图片</span></label>
+          <label class="drop" data-drop="1"><input data-cover-image="1" type="file" accept="image/*" hidden><span class="slot-number">02</span><span class="drop-copy"><strong>中左横图</strong>点击或拖入图片</span></label>
+          <label class="drop" data-drop="2"><input data-cover-image="2" type="file" accept="image/*" hidden><span class="slot-number">03</span><span class="drop-copy"><strong>底部中间</strong>点击或拖入图片</span></label>
+          <label class="drop" data-drop="3"><input data-cover-image="3" type="file" accept="image/*" hidden><span class="slot-number">04</span><span class="drop-copy"><strong>底部右侧</strong>点击或拖入图片</span></label>
+          <label class="drop" data-drop="4"><input data-cover-image="4" type="file" accept="image/*" hidden><span class="slot-number">05</span><span class="drop-copy"><strong>左下角</strong>点击或拖入图片</span></label>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group-title">Production Data</h2>
+        <div class="field"><label for="dataInput">酒款 JSON（可直接替换）</label><textarea id="dataInput"></textarea></div>
+        <button id="applyButton" class="action" type="button">应用数据</button>
+        <p class="hint">featured=true 的前5款进入精选页；serving 仅填写生产环境公开的杯型与价格。图片加载失败时不会生成假图，只保留暗色版位。</p>
+      </section>
+
+      <section class="group">
+        <h2 class="group-title">Preview & Export</h2>
+        <div class="grid-2">
+          <div class="field"><label for="pageInput">当前页</label><select id="pageInput"></select></div>
+          <div class="field"><label for="filenameInput">文件名</label><input id="filenameInput" value="no-menu-xhs-0819-choice"></div>
+        </div>
+        <div class="actions"><button id="downloadButton" class="action primary" type="button">下载当前页</button><button id="downloadAllButton" class="action" type="button">下载全部页</button></div>
+        <button id="clearCoverButton" class="action" type="button" style="width:100%;margin-top:12px">恢复精选图片</button>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <div class="preview-wrap"><div class="preview-frame"><canvas id="canvas" width="1080" height="1440"></canvas></div></div>
+      <div class="meta">
+        <div class="metric"><span>Output</span><strong>1080 × 1440</strong></div>
+        <div class="metric"><span>Page</span><strong id="pageMetric">01 / 04</strong></div>
+        <div class="metric"><span>Data</span><strong id="dataMetric">13 taps · 8 bars</strong></div>
+        <div class="metric"><span>Style</span><strong>No Menu editorial</strong></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const initialItems = [
+      {name:'断肠草',brewery:'酿造方程式',style:'英式苦啤',abv:'5.6%',bar:"Liquid's Tag",group:'英式艾尔',featured:true,image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/494bcf1f-8346-480f-a396-204b104c9313/drinks/4d745593-51c1-44b7-a410-64b00351d756/no-menu-beer-artwork__3_.jpg'},
+      {name:'橘柚澄江',brewery:'赤屿谷盗',style:'餐桌啤酒',abv:'4.9%',bar:"Liquid's Tag",group:'低度 / 果味',featured:true,image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/494bcf1f-8346-480f-a396-204b104c9313/drinks/fc8b12d7-1706-48f2-84a8-3cabeaab6c61/no-menu-beer-artwork__1_.jpg'},
+      {name:'潮渡',brewery:'虽吾酿造',style:'意式皮尔森',abv:'5.2%',bar:'2062',group:'拉格',featured:true,image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/494bcf1f-8346-480f-a396-204b104c9313/drinks/3172e038-4141-499a-9d6f-67f1100d82bd/no-menu-beer-artwork__9_.jpg'},
+      {name:'朦胧的梦八周年纪念版',brewery:'明日酿造',style:'TDH 双倍浑浊 IPA',abv:'8.0%',bar:'Much Beer',group:'IPA',featured:true,serving:'330ml ¥50 / 400ml ¥58',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/3d6cb427-a8c3-4583-a7c4-5a3ad9f5f787/drinks/583eed2c-a50b-43b8-933d-75bfc54ad382/4093.jpg'},
+      {name:'小青龙',brewery:'制乐厂',style:'青提乌龙茶西打',abv:'3.0%',bar:'Breno',group:'低度 / 果味',featured:true,serving:'330ml ¥48 / 470ml ¥58',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/44a4429c-fb70-47a5-923b-370fce8f167e/drinks/5f3cc1c7-e205-4694-b310-467b2a41f4da/no-menu-beer-artwork.jpg'},
+      {name:'阿尔比恩',brewery:'伍德弗尔铎',style:'英式世涛',abv:'4.2%',bar:"Liquid's Tag",group:'英式艾尔',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/494bcf1f-8346-480f-a396-204b104c9313/drinks/aa4b9a38-d9ad-4f66-860e-88067abaf2ea/____________.png'},
+      {name:'布尔金',brewery:'伍德弗尔铎',style:'金色艾尔',abv:'4.0%',bar:"Liquid's Tag",group:'英式艾尔',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/494bcf1f-8346-480f-a396-204b104c9313/drinks/ca9e0dd4-19d8-4500-b805-94a24be7be67/___________.png'},
+      {name:'白雨跳珠',brewery:'赤屿谷盗',style:'西海岸 IPA',abv:'6.0%',bar:"Liquid's Tag",group:'IPA',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/a7c25410-3fcd-46b6-a11e-7fe1c0ed5d53/drinks/9f58e8f4-3e75-484c-be1f-5d98cacf0b94/no-menu-beer-artwork__54_.jpg'},
+      {name:'科隆',brewery:'凯西',style:'科隆',abv:'5.0%',bar:'GEER 嗝 · 武夷路',group:'淡色艾尔',serving:'492ml ¥69 / 980ml ¥129',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/283206e3-22d9-4a54-b8a5-70694b1ec062/drinks/60f3243d-aa91-41c8-b8a8-d2a9f3331255/no-menu-beer-artwork.jpg'},
+      {name:'莱比锡淡影（70天窖藏版）',brewery:'远山啤酒',style:'科隆',abv:'5.0%',bar:'酒宵 Drunken Night',group:'淡色艾尔',serving:'300ml ¥35 / 400ml ¥45',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/82bf1237-e90c-4379-a2bc-a6dad2726b93/drinks/2abdadf0-16e0-46e2-a1dc-4932c56a42fa/no-menu-beer-artwork__22_.jpg'},
+      {name:'滨海路拉格',brewery:'撬啤酿造',style:'拉格',abv:'5.2%',bar:'撬啤',group:'拉格',serving:'330ml ¥25 / 473ml ¥35',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/d897a73b-37fb-4c57-af0f-79d8759173cb/drinks/369dbff3-316a-4422-afff-b3b16779f979/no-menu-beer-artwork__32_.jpg'},
+      {name:'透明大溪地',brewery:'远山啤酒',style:'西海岸 IPA',abv:'6.7%',bar:'Breno',group:'IPA',serving:'330ml ¥48 / 470ml ¥58',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/13b6f277-ab0d-4c19-ba8a-d97a5af9f51d/drinks/0d998eb0-55f8-4bac-872e-5e95ebacdada/no-menu-beer-artwork__69_.jpg'},
+      {name:'蜂蜜兰比克',brewery:'3泉',style:'兰比克',abv:'8.1%',bar:'Breno',group:'酸啤',serving:'330ml ¥98',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/44a4429c-fb70-47a5-923b-370fce8f167e/drinks/49cadac6-a9c9-4364-98f7-996c410f1c13/3_________.png'},
+      {name:'风之丘',brewery:'美奇乐',style:'浑浊 IPA',abv:'7.0%',bar:'Start',group:'IPA',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/a7c25410-3fcd-46b6-a11e-7fe1c0ed5d53/drinks/a3ce8c8c-2b40-4132-88aa-3dfddca63c3e/Mikkeller____.jpg'},
+      {name:'蓝芒果',brewery:'美奇乐',style:'果泥酸艾尔',abv:'6.2%',bar:'Start',group:'酸啤',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/a7c25410-3fcd-46b6-a11e-7fe1c0ed5d53/drinks/6e469aff-e316-479c-8594-fa73da6ebab6/no-menu-beer-artwork__65_.jpg'},
+      {name:'轻浪',brewery:'野鹅微醺',style:'双倍干投浑浊淡色艾尔',abv:'6.5%',bar:'造浪 BEER WAVE',group:'IPA',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/27c1beca-c912-4f4a-bee5-3ccf0e5d981f/drinks/b76a89ba-5f20-4bfc-b52c-bf4b296e903a/14879.jpg'},
+      {name:'重磅啤酒',brewery:'回头客',style:'帝国 IPA',abv:'8.0%',bar:'問·ASK',group:'IPA',image:'https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/a4f4002f-fccd-41dd-bbc5-153d30fc5385/drinks/83e258c6-280b-4087-bb93-7bde42dd1613/no-menu-beer-artwork__64_.jpg'}
+    ]
+
+    const colors={bg:'#090908',panel:'#11100e',line:'#2d2921',text:'#f6f1e8',muted:'#b8afa1',faint:'#7d7568',gold:'#c7a86f',bronze:'#745333'}
+    const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d')
+    const controls={city:document.getElementById('cityInput'),cityEn:document.getElementById('cityEnInput'),title:document.getElementById('titleInput'),tapCount:document.getElementById('tapCountInput'),barCount:document.getElementById('barCountInput'),data:document.getElementById('dataInput'),apply:document.getElementById('applyButton'),page:document.getElementById('pageInput'),filename:document.getElementById('filenameInput'),download:document.getElementById('downloadButton'),downloadAll:document.getElementById('downloadAllButton'),clearCover:document.getElementById('clearCoverButton')}
+    const pageMetric=document.getElementById('pageMetric'),dataMetric=document.getElementById('dataMetric')
+    let items=structuredClone(initialItems),remoteImages=new Map()
+    const coverState={images:Array(5).fill(null)}
+    const coverCards=[
+      {x:492,y:382,w:630,h:638,angle:.055,paper:'#bbc5c7',z:1},
+      {x:22,y:858,w:468,h:294,angle:-.055,paper:'#d7cec0',z:3},
+      {x:350,y:1030,w:466,h:475,angle:-.028,paper:'#a4462f',z:2},
+      {x:724,y:1010,w:396,h:438,angle:.045,paper:'#c9bda2',z:4},
+      {x:-30,y:1134,w:388,h:330,angle:.04,paper:'#a9b0a8',z:5}
+    ]
+    controls.data.value=JSON.stringify(initialItems,null,2)
+
+    function font(size,weight=400,mono=false){return `${weight} ${size}px ${mono?'"SFMono-Regular","SF Mono",Menlo,monospace':'"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif'}`}
+    function text(value,x,y,o={}){ctx.save();ctx.fillStyle=o.color||colors.text;ctx.font=font(o.size||32,o.weight||400,o.mono);ctx.textBaseline='top';if(o.align)ctx.textAlign=o.align;ctx.fillText(String(value),x,y);ctx.restore()}
+    function fit(value,x,y,maxWidth,size,minSize,o={}){let s=size;ctx.font=font(s,o.weight||400,o.mono);while(ctx.measureText(value).width>maxWidth&&s>minSize){s-=2;ctx.font=font(s,o.weight||400,o.mono)}text(value,x,y,{...o,size:s})}
+    function rect(x,y,w,h,r,fill,stroke=colors.line,lw=1){ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}ctx.restore()}
+    function value(input,fallback){return input.value.trim()||fallback}
+    function seededNoise(index){const result=Math.sin(index*12.9898+78.233)*43758.5453;return result-Math.floor(result)}
+    function background(){ctx.fillStyle=colors.bg;ctx.fillRect(0,0,1080,1440);const g=ctx.createRadialGradient(90,60,20,90,60,900);g.addColorStop(0,'rgba(122,81,36,.34)');g.addColorStop(.5,'rgba(38,28,16,.16)');g.addColorStop(1,'rgba(9,9,8,0)');ctx.fillStyle=g;ctx.fillRect(0,0,1080,1440);ctx.save();ctx.globalAlpha=.09;ctx.strokeStyle=colors.gold;for(let r=300;r<1100;r+=128){ctx.beginPath();ctx.arc(1140,370,r,2.55,4.95);ctx.stroke()}ctx.restore()}
+    const listPageSize=7
+    function groupedBars(){const groups=[];const byBar=new Map();for(const item of items){if(!byBar.has(item.bar)){const group={bar:item.bar,items:[]};byBar.set(item.bar,group);groups.push(group)}byBar.get(item.bar).items.push(item)}return groups}
+    function listPages(){const pages=[];let page=[],count=0;for(const group of groupedBars()){if(page.length&&count+group.items.length>listPageSize){pages.push(page);page=[];count=0}page.push(group);count+=group.items.length}if(page.length)pages.push(page);return pages}
+    function totalPages(){return 2+listPages().length}
+    function header(page,kicker){text('NO MENU',64,62,{size:28,mono:true,color:colors.gold});text(kicker,1016,67,{size:19,mono:true,color:colors.faint,align:'right'});ctx.strokeStyle=colors.line;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(64,138);ctx.lineTo(1016,138);ctx.stroke()}
+    function listHeader(){text('NO MENU',64,62,{size:28,mono:true,color:colors.gold});ctx.strokeStyle=colors.line;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(64,138);ctx.lineTo(1016,138);ctx.stroke()}
+    function imageCover(img,x,y,w,h){ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,18);ctx.clip();const ratio=Math.max(w/img.naturalWidth,h/img.naturalHeight),dw=img.naturalWidth*ratio,dh=img.naturalHeight*ratio;ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);ctx.fillStyle='rgba(0,0,0,.1)';ctx.fillRect(x,y,w,h);ctx.restore()}
+    function paperPath(width,height){const edge=9;ctx.beginPath();ctx.moveTo(edge,2);for(let x=edge;x<width-edge;x+=24)ctx.lineTo(x,2+seededNoise(x)*8);ctx.lineTo(width-2,edge);for(let y=edge;y<height-edge;y+=24)ctx.lineTo(width-2-seededNoise(y+41)*8,y);ctx.lineTo(width-edge,height-2);for(let x=width-edge;x>edge;x-=24)ctx.lineTo(x,height-2-seededNoise(x+83)*8);ctx.lineTo(2,height-edge);for(let y=height-edge;y>edge;y-=24)ctx.lineTo(2+seededNoise(y+127)*8,y);ctx.closePath()}
+    function drawCoverImage(image,width,height){const ratio=Math.max(width/image.naturalWidth,height/image.naturalHeight),drawWidth=image.naturalWidth*ratio,drawHeight=image.naturalHeight*ratio;ctx.drawImage(image,(width-drawWidth)/2,(height-drawHeight)/2,drawWidth,drawHeight)}
+    function drawCoverCard(card,index){ctx.save();ctx.translate(card.x+card.w/2,card.y+card.h/2);ctx.rotate(card.angle);ctx.translate(-card.w/2,-card.h/2);ctx.save();ctx.shadowColor='rgba(0,0,0,.58)';ctx.shadowBlur=24;ctx.shadowOffsetY=14;paperPath(card.w,card.h);ctx.fillStyle=card.paper;ctx.fill();ctx.restore();paperPath(card.w,card.h);ctx.clip();ctx.fillStyle=card.paper;ctx.fillRect(0,0,card.w,card.h);const featured=items.filter(item=>item.featured).slice(0,5),image=coverState.images[index]||remoteImages.get(featured[index]?.image);if(image){drawCoverImage(image,card.w,card.h);ctx.fillStyle='rgba(20,12,7,.06)';ctx.fillRect(0,0,card.w,card.h)}else{ctx.fillStyle='rgba(20,16,12,.14)';ctx.fillRect(0,0,card.w,card.h);text(String(index+1).padStart(2,'0'),28,26,{size:Math.min(card.w,card.h)*.22,weight:700,mono:true,color:'rgba(28,24,19,.28)'});text('上传酒款图片',30,card.h-66,{size:24,weight:600,color:'rgba(28,24,19,.52)'})}ctx.restore()}
+    function drawCover(){
+      ctx.fillStyle=colors.bg;ctx.fillRect(0,0,1080,1440)
+      const warmth=ctx.createRadialGradient(80,40,20,80,40,760);warmth.addColorStop(0,'rgba(83,55,24,.22)');warmth.addColorStop(1,'rgba(9,9,8,0)');ctx.fillStyle=warmth;ctx.fillRect(0,0,1080,1440)
+      ctx.save();ctx.globalAlpha=.32;ctx.strokeStyle=colors.gold;ctx.lineWidth=1.5;for(let radius=190;radius<=730;radius+=74){ctx.beginPath();ctx.arc(970,178,radius,Math.PI*.84,Math.PI*1.9);ctx.stroke()}ctx.restore()
+      text('NO MENU',46,52,{size:64,weight:500,mono:true,color:colors.gold});fit(value(controls.city,'上海'),824,42,214,80,46,{weight:700,color:colors.gold});fit(value(controls.cityEn,'SHANGHAI'),826,128,210,26,16,{weight:600,mono:true,color:colors.gold})
+      ctx.save();ctx.strokeStyle=colors.gold;ctx.globalAlpha=.72;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(46,168);ctx.lineTo(1038,168);ctx.stroke();ctx.restore()
+      fit(value(controls.title,'今晚不只喝 IPA'),46,202,992,126,72,{weight:700,color:colors.text})
+      text(value(controls.tapCount,String(items.length)),52,462,{size:150,weight:700,mono:true});text('款新 Tap',222,534,{size:45,weight:600,color:'#a99070'});ctx.strokeStyle='#615443';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(48,632);ctx.lineTo(434,632);ctx.stroke();text(value(controls.barCount,String(new Set(items.map(x=>x.bar)).size)),52,650,{size:122,weight:700,mono:true});text('家酒吧',176,710,{size:42,weight:600,color:'#a99070'})
+      for(const entry of coverCards.map((card,index)=>({card,index})).sort((a,b)=>a.card.z-b.card.z))drawCoverCard(entry.card,entry.index)
+    }
+    function drawFeatured(){
+      ctx.fillStyle=colors.bg;ctx.fillRect(0,0,1080,1440)
+      const gradient=ctx.createRadialGradient(80,0,20,80,0,760);gradient.addColorStop(0,'rgba(80,55,24,.32)');gradient.addColorStop(.48,'rgba(26,22,14,.18)');gradient.addColorStop(1,'rgba(9,9,8,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,1080,1440)
+      text('NO MENU',58,74,{size:28,mono:true,color:colors.gold});text('今晚先看这 5 款',1022,78,{size:25,weight:600,color:colors.text,align:'right'});ctx.strokeStyle=colors.line;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(58,154);ctx.lineTo(1022,154);ctx.stroke()
+      const featured=items.filter(x=>x.featured).slice(0,5)
+      for(let index=0;index<5;index+=1){const item=featured[index]||{bar:'酒吧',brewery:'酒厂',name:`酒名 ${index+1}`,style:'风格',abv:'-'};const y=202+index*241;rect(54,y,972,204,20,colors.panel,colors.line,2);const img=remoteImages.get(item.image);if(img)imageCover(img,82,y+40,232,124);else rect(82,y+40,232,124,16,'#171613','#24211c');fit(item.bar,352,y+38,620,30,20,{color:colors.gold,weight:600});fit(`${item.brewery} · ${item.name}`,352,y+86,620,40,24,{weight:500});fit(item.style,352,y+144,396,21,14,{color:colors.muted});text(`ABV ${item.abv}`,782,y+148,{size:18,mono:true,color:colors.faint})}
+    }
+    function drawList(page,pageIndex){background();const groups=listPages()[pageIndex];listHeader();let y=186;for(const group of groups){fit(group.bar,66,y,760,28,20,{weight:600,color:colors.gold});text(`${group.items.length} TAPS`,1008,y+5,{size:16,mono:true,color:colors.faint,align:'right'});y+=43;for(const item of group.items){rect(58,y,964,112,14,colors.panel,colors.line);fit(`${item.brewery} · ${item.name}`,82,y+18,650,27,19,{weight:600});text(item.abv,994,y+21,{size:18,mono:true,color:colors.gold,align:'right'});fit(item.style,82,y+68,450,18,13,{color:colors.muted});if(item.serving)fit(item.serving,994,y+67,390,17,12,{mono:true,color:colors.faint,align:'right'});y+=126}y+=36}}
+    function rebuildPages(){const current=Math.min(Number(controls.page.value)||0,totalPages()-1),pages=listPages();controls.page.innerHTML='';const labels=['01 主图','02 五款精选'];for(let index=0;index<pages.length;index+=1)labels.push(`${String(index+3).padStart(2,'0')} 完整酒单 ${index+1}/${pages.length}`);labels.forEach((label,index)=>{const option=document.createElement('option');option.value=String(index);option.textContent=label;controls.page.appendChild(option)});controls.page.value=String(current)}
+    function draw(page=Number(controls.page.value)){ctx.clearRect(0,0,1080,1440);if(page===0)drawCover();else if(page===1)drawFeatured();else drawList(page,page-2);pageMetric.textContent=`${String(page+1).padStart(2,'0')} / ${String(totalPages()).padStart(2,'0')}`;dataMetric.textContent=`${items.length} taps · ${new Set(items.map(x=>x.bar)).size} bars`}
+    function preload(){for(const item of items){if(!item.image||remoteImages.has(item.image))continue;const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{remoteImages.set(item.image,img);draw()};img.src=item.image}}
+    function applyData(){try{const parsed=JSON.parse(controls.data.value);if(!Array.isArray(parsed))throw new Error();items=parsed;remoteImages=new Map();controls.tapCount.value=String(items.length);controls.barCount.value=String(new Set(items.map(x=>x.bar)).size);rebuildPages();preload();draw()}catch{alert('JSON 格式有误，请检查后重试。')}}
+    function loadCoverImage(file,index){if(!file||!file.type.startsWith('image/'))return;const url=URL.createObjectURL(file),image=new Image();image.onload=()=>{const previous=coverState.images[index];if(previous?.src?.startsWith('blob:'))URL.revokeObjectURL(previous.src);coverState.images[index]=image;const drop=document.querySelector(`[data-drop="${index}"]`);drop.classList.add('has-image');drop.querySelector('.drop-copy').innerHTML=`<strong>${file.name}</strong>点击可替换图片`;draw()};image.src=url}
+    function clearCoverImages(){coverState.images.forEach(image=>{if(image?.src?.startsWith('blob:'))URL.revokeObjectURL(image.src)});coverState.images=Array(5).fill(null);const labels=['右侧主图','中左横图','底部中间','底部右侧','左下角'];document.querySelectorAll('.drop').forEach((drop,index)=>{drop.classList.remove('has-image');drop.querySelector('.drop-copy').innerHTML=`<strong>${labels[index]}</strong>点击或拖入图片`;drop.querySelector('input').value=''});draw()}
+    function downloadPage(page){draw(page);const link=document.createElement('a');link.download=`${controls.filename.value||'no-menu-xhs-choice'}-${String(page+1).padStart(2,'0')}.png`;link.href=canvas.toDataURL('image/png');link.click()}
+    controls.apply.addEventListener('click',applyData);controls.page.addEventListener('change',()=>draw());for(const el of [controls.city,controls.cityEn,controls.title,controls.tapCount,controls.barCount])el.addEventListener('input',()=>draw());controls.download.addEventListener('click',()=>downloadPage(Number(controls.page.value)));controls.downloadAll.addEventListener('click',()=>{for(let i=0;i<totalPages();i++)setTimeout(()=>downloadPage(i),i*350);setTimeout(()=>{controls.page.value='0';draw()},totalPages()*350+300)});controls.clearCover.addEventListener('click',clearCoverImages)
+    for(const input of document.querySelectorAll('[data-cover-image]'))input.addEventListener('change',event=>loadCoverImage(event.target.files[0],Number(input.dataset.coverImage)))
+    for(const drop of document.querySelectorAll('.drop')){for(const eventName of ['dragenter','dragover'])drop.addEventListener(eventName,event=>{event.preventDefault();drop.classList.add('dragging')});for(const eventName of ['dragleave','drop'])drop.addEventListener(eventName,event=>{event.preventDefault();drop.classList.remove('dragging')});drop.addEventListener('drop',event=>loadCoverImage(event.dataTransfer.files[0],Number(drop.dataset.drop)))}
+    rebuildPages();preload();draw()
+  </script>
+</body>
+</html>

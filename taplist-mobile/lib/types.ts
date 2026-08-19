@@ -73,7 +73,7 @@ export type PublicTenantDetail = {
 
 export type PublicBeerProfile = {
   brewery: string | null
-  /** Co-breweries (0–3), shown with primary as `主酒厂 × 合酿…`. */
+  /** Co-breweries (0–3); bar taplist / detail / share as `主酒厂 × 合酿…`. */
   collab_breweries?: string[] | null
   beer_style: string | null
   abv: number | null
@@ -185,7 +185,10 @@ export type PublicTaplistSearchResult = {
   tenant_district: string | null
   tenant_address: string | null
   brewery: string | null
-  /** Co-breweries (0–3) from the bar drink profile. */
+  /**
+   * Not returned by search / NEW ON TAP RPCs (bar taplist only).
+   * Kept optional so older payloads remain type-safe.
+   */
   collab_breweries?: string[] | null
   beer_style: string | null
   abv: number | null

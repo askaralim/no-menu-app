@@ -361,6 +361,21 @@ export function ProductPoolLinkSection({
               }}
             >
               <div style={{ fontWeight: 600, marginBottom: 4 }}>继承字段（只读）</div>
+              {inheritedPreview.image ? (
+                <img
+                  src={inheritedPreview.image}
+                  alt=""
+                  style={{
+                    width: 56,
+                    height: 56,
+                    objectFit: 'cover',
+                    borderRadius: 6,
+                    marginBottom: 8,
+                    border: '1px solid #e5e7eb',
+                    background: '#fff',
+                  }}
+                />
+              ) : null}
               <div>名称：{inheritedPreview.name}</div>
               {inheritedPreview.brewery ? <div>酒厂：{inheritedPreview.brewery}</div> : null}
               {inheritedPreview.style ? <div>风格：{inheritedPreview.style}</div> : null}

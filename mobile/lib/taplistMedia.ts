@@ -1,9 +1,14 @@
+import * as ImageManipulator from 'expo-image-manipulator'
 import { supabase } from './supabase'
 
 export const TAPLIST_MEDIA_BUCKET = 'taplist-media'
 
 /** Align with web Admin ADR-013 (~2MB client cap; bucket allows 3MiB). */
 export const TAPLIST_IMAGE_MAX_BYTES = 2 * 1024 * 1024
+
+const UPLOAD_TIMEOUT_MS = 30_000
+const COMPRESS_MAX_DIMENSION = 1200
+const COMPRESS_QUALITY = 0.75
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
@@ -85,10 +90,29 @@ export function translateImageUploadError(raw: unknown): string {
   return '图片上传失败，请稍后再试。'
 }
 
+async function compressImage(uri: string): Promise<{ uri: string; width: number; height: number }> {
+  const result = await ImageManipulator.manipulateAsync(
+    uri,
+    [{ resize: { width: COMPRESS_MAX_DIMENSION } }],
+    { compress: COMPRESS_QUALITY, format: ImageManipulator.SaveFormat.JPEG },
+  )
+  return result
+}
+
 async function readAssetBytes(uri: string): Promise<ArrayBuffer> {
   const res = await fetch(uri)
   if (!res.ok) throw new Error('无法读取所选图片')
   return res.arrayBuffer()
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timed out')), ms)
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v) },
+      (e) => { clearTimeout(timer); reject(e) },
+    )
+  })
 }
 
 async function uploadTaplistImageFromAsset(
@@ -96,21 +120,34 @@ async function uploadTaplistImageFromAsset(
   asset: LocalImageAsset,
 ): Promise<string> {
   try {
-    const mime = assertImageAsset(asset)
-    const bytes = await readAssetBytes(asset.uri)
+    assertImageAsset(asset)
+
+    const compressed = await compressImage(asset.uri)
+    const compressedAsset: LocalImageAsset = {
+      uri: compressed.uri,
+      mimeType: 'image/jpeg',
+      fileName: (asset.fileName || 'image').replace(/\.[^.]+$/, '') + '.jpg',
+      fileSize: null,
+    }
+
+    const bytes = await readAssetBytes(compressedAsset.uri)
     if (bytes.byteLength > TAPLIST_IMAGE_MAX_BYTES) {
       throw new Error(
         `图片不能超过 ${Math.round(TAPLIST_IMAGE_MAX_BYTES / 1024 / 1024)}MB，请换一张或压缩后再传`,
       )
     }
 
-    const { error } = await supabase.storage.from(TAPLIST_MEDIA_BUCKET).upload(path, bytes, {
-      upsert: true,
-      contentType: mime,
-    })
+    const uploadPath = path.replace(/\.[^.]+$/, '.jpg')
+    const { error } = await withTimeout(
+      supabase.storage.from(TAPLIST_MEDIA_BUCKET).upload(uploadPath, bytes, {
+        upsert: true,
+        contentType: 'image/jpeg',
+      }),
+      UPLOAD_TIMEOUT_MS,
+    )
     if (error) throw new Error(error.message || '图片上传失败')
 
-    const { data } = supabase.storage.from(TAPLIST_MEDIA_BUCKET).getPublicUrl(path)
+    const { data } = supabase.storage.from(TAPLIST_MEDIA_BUCKET).getPublicUrl(uploadPath)
     if (!data?.publicUrl) throw new Error('无法生成图片公开 URL')
     return data.publicUrl
   } catch (e) {

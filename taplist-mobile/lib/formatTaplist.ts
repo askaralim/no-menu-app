@@ -89,13 +89,24 @@ export function beerStyleLine(drink: PublicDrinkRow) {
     .join(' · ')
 }
 
-/** Primary brewery + collabs, e.g. `主酒厂 × 合酿A × 合酿B`. */
+/** Primary brewery only (search / NEW ON TAP compact cards). */
+export function formatPrimaryBrewery(
+  brewery?: string | null,
+  brandFallback?: string | null,
+): string | null {
+  return (brewery || brandFallback || '').trim() || null
+}
+
+/**
+ * Primary brewery + collabs, e.g. `主酒厂 × 合酿A × 合酿B`.
+ * Use on bar taplist, beer detail, and share images only — not search / NEW ON TAP.
+ */
 export function formatBreweryWithCollab(
   brewery?: string | null,
   collabs?: string[] | null,
   brandFallback?: string | null,
 ): string | null {
-  const primary = (brewery || brandFallback || '').trim() || null
+  const primary = formatPrimaryBrewery(brewery, brandFallback)
   const extras = (collabs ?? [])
     .map((x) => (typeof x === 'string' ? x.trim() : ''))
     .filter(Boolean)

@@ -55,12 +55,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: '点单',
+          title: '开台',
           href: orderingEnabled ? '/(tabs)/' : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart-outline" size={size} color={color} />
           ),
         }}
+        listeners={({ navigation }) => popStackToRoot(navigation, 'index')}
       />
       <Tabs.Screen
         name="orders"

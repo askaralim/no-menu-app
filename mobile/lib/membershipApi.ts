@@ -12,7 +12,7 @@ export type MyTenant = {
   is_public_visible: boolean
   // Added by ordering_enabled migration. Undefined on older backends;
   // clients treat undefined as enabled until the column ships, then only
-  // true shows 点单/订单 (opt-in).
+  // true shows 开台/订单 (opt-in).
   ordering_enabled?: boolean
 }
 

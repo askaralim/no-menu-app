@@ -1,4 +1,6 @@
+import type { ComponentProps } from 'react'
 import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { TAPLIST_THEME as T } from '../../lib/taplistTheme'
 
 export type AnchorRect = { x: number; y: number; width: number; height: number }
@@ -6,6 +8,8 @@ export type AnchorRect = { x: number; y: number; width: number; height: number }
 export type AnchorMenuItem = {
   key: string
   label: string
+  icon?: ComponentProps<typeof Ionicons>['name']
+  iconColor?: string
   destructive?: boolean
   onPress: () => void
 }
@@ -59,6 +63,13 @@ export default function AnchorMenu({ visible, anchor, items, onClose }: Props) {
                   requestAnimationFrame(() => item.onPress())
                 }}
               >
+                {item.icon ? (
+                  <Ionicons
+                    name={item.icon}
+                    size={18}
+                    color={item.destructive ? T.danger : item.iconColor || T.goldSoft}
+                  />
+                ) : null}
                 <Text style={[styles.label, item.destructive && styles.labelDanger]}>{item.label}</Text>
               </Pressable>
             ))}
@@ -91,8 +102,11 @@ const styles = StyleSheet.create({
   },
   row: {
     minHeight: EST_ITEM_H,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     paddingHorizontal: 14,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   rowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,

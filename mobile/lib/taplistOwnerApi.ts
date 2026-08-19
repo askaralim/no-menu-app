@@ -82,6 +82,20 @@ export async function loadOwnerTaplist(tenantId?: string | null): Promise<OwnerT
     if (payload?.code === 'no_tenant') throw new Error('未找到关联门店')
     throw new Error('加载酒单失败')
   }
+  const fallbackCount = tapSlotCount(payload.drinks ?? [])
+  try {
+    const { data: countData, error: countError } = await supabase.rpc(
+      'get_tenant_tap_slot_count',
+      { p_tenant_id: payload.tenant.id },
+    )
+    if (countError) throw countError
+    const count = Number((countData as { tap_slot_count?: number } | null)?.tap_slot_count)
+    payload.tenant.tap_slot_count =
+      Number.isInteger(count) && count >= 1 && count <= 99 ? count : fallbackCount
+  } catch {
+    // During migration rollout, keep the submitted client-compatible derived value.
+    payload.tenant.tap_slot_count = fallbackCount
+  }
   return payload
 }
 
@@ -143,29 +157,35 @@ export function validateDraftDrink(d: DraftDrink): string[] {
   return Array.from(new Set(issues))
 }
 
-function serializeDraftDrink(d: DraftDrink): Record<string, unknown> {
+function serializeDraftDrink(
+  d: DraftDrink,
+  opts?: { includeServings?: boolean },
+): Record<string, unknown> {
+  const includeServings = opts?.includeServings !== false
   const servings: Record<string, unknown>[] = []
-  let sort = 0
-  d.servings.forEach((s) => {
-    if (s._new && s._deleted) return // created then removed locally
-    if (s._deleted) {
-      if (s.id) servings.push({ id: s.id, drink_id: d.id, delete: true })
-      return
-    }
-    const row: Record<string, unknown> = {
-      drink_id: d.id || undefined,
-      serving_type: s.serving_type,
-      label: s.label,
-      volume_ml: s.volume_ml,
-      price: s.price,
-      is_default: s.is_default,
-      is_active: s.is_active,
-      public_sort_order: sort++,
-    }
-    if (!s._new && s.id) row.id = s.id
-    else if (s.client_id) row.client_id = s.client_id
-    servings.push(row)
-  })
+  if (includeServings) {
+    let sort = 0
+    d.servings.forEach((s) => {
+      if (s._new && s._deleted) return // created then removed locally
+      if (s._deleted) {
+        if (s.id) servings.push({ id: s.id, drink_id: d.id, delete: true })
+        return
+      }
+      const row: Record<string, unknown> = {
+        drink_id: d.id || undefined,
+        serving_type: s.serving_type,
+        label: s.label,
+        volume_ml: s.volume_ml,
+        price: s.price,
+        is_default: s.is_default,
+        is_active: s.is_active,
+        public_sort_order: sort++,
+      }
+      if (!s._new && s.id) row.id = s.id
+      else if (s.client_id) row.client_id = s.client_id
+      servings.push(row)
+    })
+  }
 
   const brewery = nn(d.profile.brewery)
   return {
@@ -186,7 +206,8 @@ function serializeDraftDrink(d: DraftDrink): Record<string, unknown> {
       country: nn(d.profile.country),
       description: nn(d.profile.description),
     },
-    servings,
+    // Omit servings key entirely when image-only updates — RPC skips serving loop if not an array.
+    ...(includeServings ? { servings } : {}),
   }
 }
 
@@ -200,14 +221,72 @@ export async function upsertTaplistDrink(tenantId: string, drink: DraftDrink): P
   return data as DrinkUpsertResult
 }
 
+export type UpsertDrinkProductOpts = {
+  /**
+   * When false, skip the servings array so RPC leaves drink_serving_options unchanged.
+   * Use for image-only writes — otherwise unsaved `_new` rows would INSERT again.
+   */
+  includeServings?: boolean
+}
+
+/** Load non-archived servings for a drink (with real ids, for draft reconcile). */
+export async function loadDrinkServingsForEdit(drinkId: string): Promise<DraftServing[]> {
+  const { data, error } = await supabase
+    .from('drink_serving_options')
+    .select(
+      'id, drink_id, serving_type, label, volume_ml, price, is_default, is_active, public_sort_order',
+    )
+    .eq('drink_id', drinkId)
+    .is('archived_at', null)
+    .order('public_sort_order', { ascending: true })
+  if (error) throw new Error(translateError(error.message))
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    drink_id: row.drink_id as string,
+    serving_type: (row.serving_type as ServingType) || 'draft',
+    label: (row.label as string) ?? '',
+    volume_ml: (row.volume_ml as number | null) ?? null,
+    price: Number(row.price ?? 0),
+    is_default: Boolean(row.is_default),
+    is_active: row.is_active !== false,
+    public_sort_order: Number(row.public_sort_order ?? 0),
+  }))
+}
+
+/** Replace draft servings with DB rows so subsequent upserts UPDATE instead of INSERT. */
+export function withPersistedServings(drink: DraftDrink, servings: DraftServing[]): DraftDrink {
+  return {
+    ...drink,
+    servings: servings.map((s) => ({
+      ...s,
+      _new: false,
+      _deleted: undefined,
+      client_id: undefined,
+    })),
+  }
+}
+
 /** Catalog-only save: never writes tonight listing fields. */
-export async function upsertDrinkProduct(tenantId: string, drink: DraftDrink): Promise<DrinkUpsertResult> {
+export async function upsertDrinkProduct(
+  tenantId: string,
+  drink: DraftDrink,
+  opts?: UpsertDrinkProductOpts,
+): Promise<DrinkUpsertResult> {
+  const includeServings = opts?.includeServings !== false
   const { data, error } = await supabase.rpc('upsert_drink_product', {
     p_tenant_id: tenantId,
-    p_drink: serializeDraftDrink(drink),
+    p_drink: serializeDraftDrink(drink, { includeServings }),
   })
   if (error) throw new Error(translateError(error.message))
-  return data as DrinkUpsertResult
+  const result = data as DrinkUpsertResult
+  if (result?.ok && result.drink_id && includeServings) {
+    try {
+      result.servings = await loadDrinkServingsForEdit(result.drink_id)
+    } catch {
+      // Soft: caller can still succeed; next open will reload from payload.
+    }
+  }
+  return result
 }
 
 export type ListingResult = {
@@ -268,6 +347,7 @@ export async function saveDrinkWithIntent(
       await linkDrinkToProduct(product.drink_id, drink.product_id)
     } catch (e) {
       return {
+        ...product,
         ok: false,
         drink_id: product.drink_id,
         created: product.created,
@@ -289,6 +369,7 @@ export async function saveDrinkWithIntent(
 
   if (!tap) {
     return {
+      ...product,
       ok: false,
       drink_id: product.drink_id,
       created: product.created,
@@ -304,6 +385,7 @@ export async function saveDrinkWithIntent(
 
   if (!listing.ok) {
     return {
+      ...product,
       ok: false,
       drink_id: product.drink_id,
       created: product.created,
@@ -322,14 +404,16 @@ export async function saveDrinkWithIntent(
 export function nextFreeTapNumber(
   drinks: { public_sort_order?: number | null }[],
   preferred?: number | null,
+  limit = 99,
 ): number {
   const used = new Set(
     drinks
       .map((d) => d.public_sort_order)
       .filter((n): n is number => typeof n === 'number' && n >= 1),
   )
-  if (preferred && preferred >= 1 && preferred <= 99 && !used.has(preferred)) return preferred
-  for (let i = 1; i <= 99; i++) {
+  const max = Math.min(99, Math.max(1, Math.floor(limit)))
+  if (preferred && preferred >= 1 && preferred <= max && !used.has(preferred)) return preferred
+  for (let i = 1; i <= max; i++) {
     if (!used.has(i)) return i
   }
   return 1
@@ -409,9 +493,37 @@ export async function assignDrinkTapNumber(
 export const DEFAULT_TAP_COUNT = 12
 
 /** How many tap slots to offer in the picker. */
-export function tapSlotCount(drinks: { public_sort_order?: number | null }[]): number {
+export function tapSlotCount(
+  drinks: { public_sort_order?: number | null }[],
+  configuredCount?: number | null,
+): number {
   const maxAssigned = drinks.reduce((m, d) => Math.max(m, d.public_sort_order || 0), 0)
+  if (
+    configuredCount != null &&
+    Number.isInteger(configuredCount) &&
+    configuredCount >= 1 &&
+    configuredCount <= 99
+  ) {
+    return Math.max(configuredCount, maxAssigned)
+  }
   return Math.min(99, Math.max(DEFAULT_TAP_COUNT, drinks.length, maxAssigned))
+}
+
+/** Owner/super_admin only: update the number of physical tap slots. */
+export async function setTenantTapSlotCount(
+  tenantId: string,
+  count: number,
+): Promise<number> {
+  const { data, error } = await supabase.rpc('set_tenant_tap_slot_count', {
+    p_tenant_id: tenantId,
+    p_tap_slot_count: count,
+  })
+  if (error) throw new Error(translateError(error.message))
+  const next = Number((data as { ok?: boolean; tap_slot_count?: number } | null)?.tap_slot_count)
+  if (!Number.isInteger(next) || next < 1 || next > 99) {
+    throw new Error('更新酒头数量失败')
+  }
+  return next
 }
 
 export type PublishReadiness = {
@@ -613,6 +725,15 @@ export function isOnTonight(drink: { public_sort_order?: number | null }): boole
 function translateError(message: string): string {
   const m = message || ''
   if (m.includes('Invalid tap number')) return '枪号无效（请选择 1–99）'
+  if (m.includes('Tap number exceeds tenant tap slot count')) return '枪号超出本店设置的酒头数量'
+  if (m.includes('Invalid tap slot count')) return '酒头数量必须在 1–99 之间'
+  if (m.includes('Tap slot count below highest assigned tap')) {
+    const match = m.match(/\((\d+)\)/)
+    return match?.[1]
+      ? `当前最高使用到 #${match[1]}，请先调整酒头再减少数量`
+      : '新数量小于当前最高使用的酒头编号'
+  }
+  if (m.includes('Only owner can change tap slot count')) return '仅店主可以修改酒头数量'
   if (m.includes('Product not found') || m.includes('not active')) {
     return '商品池条目不存在或已停用'
   }

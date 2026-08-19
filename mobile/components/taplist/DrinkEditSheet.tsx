@@ -10,6 +10,7 @@ import {
   Switch,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Image,
   Alert,
@@ -28,6 +29,7 @@ import {
   searchDrinkProducts,
   upsertDrinkProduct,
   validateDraftDrink,
+  withPersistedServings,
 } from '../../lib/taplistOwnerApi'
 import { matchLocalDrinks } from '../../lib/taplistLocalDrinkMatch'
 import {
@@ -48,6 +50,12 @@ async function loadImagePicker(): Promise<ImagePickerModule> {
 
 const SERVING_TYPES: ServingType[] = ['draft', 'can', 'bottle', 'flight', 'other']
 
+function findEnabledSameNameDrink(drinks: DraftDrink[], name: string): DraftDrink | undefined {
+  const normalized = name.trim().toLowerCase()
+  if (!normalized) return undefined
+  return drinks.find((d) => d.enabled && (d.name || '').trim().toLowerCase() === normalized)
+}
+
 export type DrinkEditorEntryPoint = 'tonight' | 'catalog'
 
 interface Props {
@@ -67,7 +75,7 @@ interface Props {
   /** User picked an existing local drink from suggestions. */
   onPickLocalDrink?: (drink: DraftDrink) => void
   onClose: () => void
-  onSaved: (result?: DrinkUpsertResult) => void | Promise<void>
+  onSaved: (result?: DrinkUpsertResult, savedDrink?: DraftDrink) => void | Promise<void>
 }
 
 export default function DrinkEditSheet({
@@ -145,15 +153,17 @@ export default function DrinkEditSheet({
   }, [visible, drink?.id, isCreate])
 
   const nameQuery = (local?.name ?? '').trim()
+  const linkedProductId = local?.product_id ?? null
 
   const localMatches = useMemo(() => {
-    if (!isCreate || !visible || nameQuery.length < 1) return []
+    if (!isCreate || !visible || linkedProductId || nameQuery.length < 1) return []
     return matchLocalDrinks(catalogDrinks, nameQuery)
-  }, [isCreate, visible, nameQuery, catalogDrinks])
+  }, [isCreate, visible, linkedProductId, nameQuery, catalogDrinks])
 
   // Create mode: debounce product-pool search from 酒款名称.
+  // Skip while linked — otherwise applying a pool hit renames the field and reopens suggestions.
   useEffect(() => {
-    if (!visible || !isCreate) {
+    if (!visible || !isCreate || linkedProductId) {
       setPoolResults([])
       setPoolSearchDone(false)
       setSearching(false)
@@ -184,7 +194,7 @@ export default function DrinkEditSheet({
         })
     }, 250)
     return () => clearTimeout(timer)
-  }, [nameQuery, visible, isCreate])
+  }, [nameQuery, visible, isCreate, linkedProductId])
 
   if (!local) return null
 
@@ -266,6 +276,12 @@ export default function DrinkEditSheet({
     })
 
   const applyProduct = (p: ProductSearchResult) => {
+    Keyboard.dismiss()
+    // Invalidate any in-flight pool search before name update.
+    searchSeq.current += 1
+    setSearching(false)
+    setPoolResults([])
+    setPoolSearchDone(false)
     setLocal((d) => {
       if (!d) return d
       const applied = applyProductToDraftDrink(d, p)
@@ -273,8 +289,6 @@ export default function DrinkEditSheet({
       return { ...applied, name: p.name }
     })
     if (p.abv != null) setAbvText(String(p.abv))
-    setPoolResults([])
-    setPoolSearchDone(false)
   }
 
   const unlinkProduct = () => {
@@ -359,18 +373,18 @@ export default function DrinkEditSheet({
         return
       }
 
+      setPendingImage(localAsset)
       setUploadingImage(true)
       const publicUrl = await uploadDrinkImageFromAsset(tenantId, local.id, localAsset)
       setPendingImage(null)
       const withImage = { ...local, image_url: publicUrl }
       setLocal(withImage)
-      // Persist image immediately so consumer sees it without requiring a full save.
-      const imageSave = await upsertDrinkProduct(tenantId, withImage)
+      const imageSave = await upsertDrinkProduct(tenantId, withImage, { includeServings: false })
       if (!imageSave.ok) {
         Alert.alert('图片已上传', '写入酒款失败，请再点保存。')
       }
     } catch (e: any) {
-      Alert.alert('图片未上传成功', translateImageUploadError(e))
+      Alert.alert('图片未上传成功', translateImageUploadError(e) + '\n图片已保留，可点「更换」重试。')
     } finally {
       setUploadingImage(false)
     }
@@ -383,7 +397,7 @@ export default function DrinkEditSheet({
     setLocal(cleared)
     // Existing drink: clear URL in DB immediately. Create flow only clears draft.
     if (!isCreate && local.id && tenantId) {
-      void upsertDrinkProduct(tenantId, cleared).catch((e: any) => {
+      void upsertDrinkProduct(tenantId, cleared, { includeServings: false }).catch((e: any) => {
         Alert.alert('移除失败', e?.message || '请重试')
         setLocal(local)
       })
@@ -396,9 +410,9 @@ export default function DrinkEditSheet({
       Alert.alert('无法保存', '未找到关联门店')
       return
     }
-    // Visibility is list-controlled; new tonight drinks always start public.
+    // A direct tonight action always publishes the selected drink on that tap.
     const toSave: DraftDrink =
-      entryPoint === 'tonight' && isCreate
+      intent === 'save_and_add_to_tonight'
         ? { ...local, is_public_visible: true }
         : local
     const issues = validateDraftDrink(toSave)
@@ -406,6 +420,28 @@ export default function DrinkEditSheet({
       Alert.alert('无法保存', issues.slice(0, 5).join('\n'))
       return
     }
+
+    if (isCreate && toSave.name?.trim()) {
+      const duplicate = findEnabledSameNameDrink(catalogDrinks, toSave.name)
+      if (duplicate) {
+        Alert.alert(
+          '已有同名酒款',
+          `商品库中已有名为「${duplicate.name}」的在售酒款，仍要创建？`,
+          [
+            { text: '取消', style: 'cancel' },
+            { text: '仍要创建', onPress: () => void performSave(intent, toSave) },
+          ],
+        )
+        return
+      }
+    }
+
+    await performSave(intent, toSave)
+  }
+
+  const performSave = async (intent: DrinkSaveIntent, toSave: DraftDrink) => {
+    if (!local || saving || uploadingImage) return
+    if (!tenantId) return
     setSaving(true)
     try {
       const tapNumber =
@@ -415,29 +451,46 @@ export default function DrinkEditSheet({
             : suggestedTapNumber ?? null
           : null
       let res = await saveDrinkWithIntent(tenantId, toSave, intent, { tapNumber })
+
+      // Product save and tap assignment are separate RPCs. If assignment fails,
+      // keep editing the persisted product instead of inserting it again on retry.
+      let savedDrink: DraftDrink = {
+        ...toSave,
+        id: res.drink_id || toSave.id,
+      }
+      if (res.drink_id) {
+        if (res.servings) {
+          savedDrink = withPersistedServings(savedDrink, res.servings as DraftServing[])
+        }
+        setLocal(savedDrink)
+      }
+
       if (!res.ok) {
         const msg = (res.errors ?? []).map((e) => e.message).slice(0, 5).join('\n')
-        Alert.alert('保存未完成', msg || '存在校验错误')
+        Alert.alert(
+          res.drink_id ? '商品已保存，尚未上枪' : '保存未完成',
+          msg || '存在校验错误',
+        )
         return
       }
 
-      // New drink: upload pending image after we have drink_id, then persist URL.
+      // New drink: upload pending image after we have drink_id, then persist URL only.
       if (pendingImage && res.drink_id) {
         setUploadingImage(true)
         try {
           const publicUrl = await uploadDrinkImageFromAsset(tenantId, res.drink_id, pendingImage)
           const withImage: DraftDrink = {
-            ...toSave,
+            ...savedDrink,
             id: res.drink_id,
             image_url: publicUrl,
           }
-          const imageSave = await upsertDrinkProduct(tenantId, withImage)
+          const imageSave = await upsertDrinkProduct(tenantId, withImage, { includeServings: false })
           if (!imageSave.ok) {
             Alert.alert('已保存酒款', '图片上传后写入失败，请重新打开编辑器再试上传。')
           } else {
             setPendingImage(null)
             setLocal(withImage)
-            res = { ...res, ...imageSave, drink_id: res.drink_id }
+            res = { ...res, ...imageSave, drink_id: res.drink_id, servings: res.servings }
           }
         } catch (e: any) {
           Alert.alert(
@@ -449,15 +502,12 @@ export default function DrinkEditSheet({
         }
       }
 
-      if (res.missing_price_warning || res.pos_orderable === false) {
-        Alert.alert(
-          '已保存',
-          orderingEnabled
-            ? '该商品暂未设置价格规格。加入酒单后可以展示，但无法用于门店点单。'
-            : '该商品暂未设置价格规格。仍可加入酒单展示；如需公开价格，请先添加有效规格。',
-        )
+      const finalDrink: DraftDrink = {
+        ...savedDrink,
+        ...(res.public_sort_order != null ? { public_sort_order: res.public_sort_order } : {}),
+        ...(intent === 'save_and_add_to_tonight' ? { enabled: true, is_public_visible: true } : {}),
       }
-      await onSaved(res)
+      await onSaved(res, finalDrink)
     } catch (e: any) {
       Alert.alert('保存失败', e?.message || '请重试')
     } finally {
@@ -473,13 +523,22 @@ export default function DrinkEditSheet({
   const selectedCategoryId =
     local.category_id ?? selectableCategories.find((c) => c.enabled)?.id ?? null
   const previewImageUri = pendingImage?.uri || local.image_url || null
-  // One primary action per entry — tonight edit is just "保存" (product + listing).
-  const primaryLabel =
-    entryPoint === 'catalog'
+  const directTapNumber =
+    primaryIntent === 'save_and_add_to_tonight' ? suggestedTapNumber : null
+  const primaryLabel = directTapNumber
+    ? `保存并上到 #${directTapNumber}`
+    : entryPoint === 'catalog'
       ? '保存'
       : isCreate
         ? '保存并加入酒单'
         : '保存'
+  const editorTitle = isCreate
+    ? directTapNumber
+      ? `为 #${directTapNumber} 上酒`
+      : entryPoint === 'catalog'
+        ? '新建商品'
+        : '添加酒款'
+    : local.display_name || local.name || '编辑酒款'
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -493,11 +552,7 @@ export default function DrinkEditSheet({
               <Text style={styles.cancel}>取消</Text>
             </TouchableOpacity>
             <Text style={styles.title} numberOfLines={1}>
-              {isCreate
-                ? entryPoint === 'catalog'
-                  ? '新建商品'
-                  : '添加酒款'
-                : local.display_name || local.name || '编辑酒款'}
+              {editorTitle}
             </Text>
             <View style={styles.headerSide} />
           </View>
@@ -553,7 +608,7 @@ export default function DrinkEditSheet({
                   ) : null}
                 </View>
 
-                {localMatches.length > 0 ? (
+                {!linkedProductId && localMatches.length > 0 ? (
                   <View style={styles.suggestGroup}>
                     <Text style={styles.suggestGroupTitle}>本店已有</Text>
                     {localMatches.map((d) => (
@@ -572,14 +627,14 @@ export default function DrinkEditSheet({
                               .join(' · ')}
                           </Text>
                         </View>
-                        <Text style={styles.localBadge}>已有</Text>
+                        <Text style={styles.localBadge}>{d.enabled ? '已有' : '已下架'}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 ) : null}
 
-                {/* Prefer local dedup; hide pool when this store already has hits. */}
-                {localMatches.length === 0 && poolResults.length > 0 ? (
+                {/* Prefer local dedup; hide pool when linked or this store already has hits. */}
+                {!linkedProductId && localMatches.length === 0 && poolResults.length > 0 ? (
                   <View style={styles.suggestGroup}>
                     <Text style={styles.suggestGroupTitle}>商品池</Text>
                     {poolResults.map((r) => (

@@ -14,6 +14,7 @@ import { TAPLIST_THEME as T, EDITOR_STATUSES, statusVisual } from '../../lib/tap
 import {
   type DraftDrink,
   nextFreeTapNumber,
+  restoreDrink,
   setDrinkTaplistListing,
   tapSlotCount,
 } from '../../lib/taplistOwnerApi'
@@ -23,6 +24,8 @@ interface Props {
   visible: boolean
   drink: DraftDrink | null
   allDrinks: DraftDrink[]
+  configuredTapCount?: number | null
+  fixedTapNumber?: number | null
   onClose: () => void
   onJoined: () => void | Promise<void>
 }
@@ -35,6 +38,8 @@ export default function JoinTonightSheet({
   visible,
   drink,
   allDrinks,
+  configuredTapCount,
+  fixedTapNumber,
   onClose,
   onJoined,
 }: Props) {
@@ -42,7 +47,10 @@ export default function JoinTonightSheet({
   const [status, setStatus] = useState<PublicStatus>('new')
   const [saving, setSaving] = useState(false)
 
-  const slotCount = useMemo(() => tapSlotCount(allDrinks), [allDrinks])
+  const slotCount = useMemo(
+    () => tapSlotCount(allDrinks, configuredTapCount),
+    [allDrinks, configuredTapCount],
+  )
   const occupantByTap = useMemo(() => {
     const map = new Map<number, DraftDrink>()
     for (const d of allDrinks) {
@@ -54,11 +62,18 @@ export default function JoinTonightSheet({
 
   useEffect(() => {
     if (!visible || !drink) return
-    setTap(nextFreeTapNumber(allDrinks.filter((d) => d.id !== drink.id), drink.public_sort_order))
+    setTap(
+      fixedTapNumber ??
+        nextFreeTapNumber(
+          allDrinks.filter((d) => d.id !== drink.id),
+          drink.public_sort_order,
+          slotCount,
+        ),
+    )
     // Always default to 上新 when joining; operator can change before confirm.
     setStatus('new')
     setSaving(false)
-  }, [visible, drink, allDrinks])
+  }, [visible, drink, allDrinks, fixedTapNumber, slotCount])
 
   if (!drink) return null
 
@@ -66,6 +81,7 @@ export default function JoinTonightSheet({
     if (saving) return
     setSaving(true)
     try {
+      if (!drink.enabled) await restoreDrink(drink.id)
       const res = await setDrinkTaplistListing(drink.id, {
         isPublicVisible: true,
         publicStatus: status,
@@ -84,6 +100,8 @@ export default function JoinTonightSheet({
     }
   }
 
+  const occupant = occupantByTap.get(tap)
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -96,28 +114,39 @@ export default function JoinTonightSheet({
           </Text>
 
           <Text style={styles.section}>枪号</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tapRow}>
-            {Array.from({ length: slotCount }, (_, i) => i + 1).map((n) => {
-              const occupant = occupantByTap.get(n)
-              const active = tap === n
-              return (
-                <TouchableOpacity
-                  key={n}
-                  style={[styles.tapChip, active && styles.tapChipActive]}
-                  onPress={() => setTap(n)}
-                >
-                  <Text style={[styles.tapChipText, active && styles.tapChipTextActive]}>#{n}</Text>
-                  {occupant ? (
-                    <Text style={styles.tapOcc} numberOfLines={1}>
-                      {occupant.display_name || occupant.name}
-                    </Text>
-                  ) : (
-                    <Text style={styles.tapOccEmpty}>空</Text>
-                  )}
-                </TouchableOpacity>
-              )
-            })}
-          </ScrollView>
+          {fixedTapNumber ? (
+            <View style={styles.fixedTap}>
+              <Text style={styles.fixedTapNumber}>#{fixedTapNumber}</Text>
+              <Text style={styles.fixedTapText} numberOfLines={2}>
+                {occupant
+                  ? `将替换「${occupant.display_name || occupant.name}」，原酒款仍保留在商品库`
+                  : '当前为空位，确认后直接上枪'}
+              </Text>
+            </View>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tapRow}>
+              {Array.from({ length: slotCount }, (_, i) => i + 1).map((n) => {
+                const tapOccupant = occupantByTap.get(n)
+                const active = tap === n
+                return (
+                  <TouchableOpacity
+                    key={n}
+                    style={[styles.tapChip, active && styles.tapChipActive]}
+                    onPress={() => setTap(n)}
+                  >
+                    <Text style={[styles.tapChipText, active && styles.tapChipTextActive]}>#{n}</Text>
+                    {tapOccupant ? (
+                      <Text style={styles.tapOcc} numberOfLines={1}>
+                        {tapOccupant.display_name || tapOccupant.name}
+                      </Text>
+                    ) : (
+                      <Text style={styles.tapOccEmpty}>空</Text>
+                    )}
+                  </TouchableOpacity>
+                )
+              })}
+            </ScrollView>
+          )}
 
           <Text style={styles.section}>状态</Text>
           <View style={styles.chipRow}>
@@ -208,6 +237,18 @@ const styles = StyleSheet.create({
   tapChipTextActive: { color: T.gold },
   tapOcc: { color: T.muted, fontSize: 11, marginTop: 4 },
   tapOccEmpty: { color: T.faint, fontSize: 11, marginTop: 4 },
+  fixedTap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldFill,
+    borderRadius: 10,
+    padding: 12,
+  },
+  fixedTapNumber: { color: T.gold, fontSize: 20, fontWeight: '800' },
+  fixedTapText: { flex: 1, color: T.muted, fontSize: 13, lineHeight: 19 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13, fontWeight: '600' },

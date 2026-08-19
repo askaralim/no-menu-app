@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>No Menu 小红书拼贴封面工具</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090908;
+      --panel: #11100f;
+      --panel-soft: #171511;
+      --line: #302b22;
+      --text: #f1eadf;
+      --muted: #b9ae9d;
+      --faint: #776e61;
+      --gold: #b8955e;
+      --bronze: #765234;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    button,
+    input { font: inherit; }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
+    }
+
+    .sidebar {
+      height: 100vh;
+      overflow: auto;
+      padding: 28px;
+      border-right: 1px solid var(--line);
+      background: #100f0e;
+    }
+
+    .brand { margin-bottom: 28px; }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.08;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+    }
+
+    .brand .rule {
+      width: 116px;
+      height: 2px;
+      margin: 16px 0 12px;
+      background: var(--bronze);
+    }
+
+    .brand p,
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .group {
+      padding: 20px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .group-title {
+      margin: 0 0 14px;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .field input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 12px;
+      outline: none;
+    }
+
+    .field input:focus { border-color: rgba(184, 149, 94, 0.75); }
+
+    .uploads {
+      display: grid;
+      gap: 10px;
+    }
+
+    .drop {
+      min-height: 78px;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      cursor: pointer;
+      transition: border-color 140ms ease, background 140ms ease;
+    }
+
+    .drop:hover,
+    .drop.dragging {
+      border-color: var(--gold);
+      background: var(--panel-soft);
+    }
+
+    .drop.has-image { border-color: rgba(184, 149, 94, 0.62); }
+
+    .slot-number {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--bronze);
+      color: var(--gold);
+      font-family: "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+
+    .drop-copy {
+      min-width: 0;
+      color: var(--faint);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .drop-copy strong {
+      display: block;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .action {
+      height: 44px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .action.primary {
+      border-color: var(--bronze);
+      background: var(--text);
+      color: var(--bg);
+      font-weight: 700;
+    }
+
+    .stage {
+      min-width: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      background:
+        linear-gradient(rgba(241, 234, 223, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(241, 234, 223, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+    }
+
+    .preview-wrap {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 36px;
+    }
+
+    .preview-frame {
+      width: min(520px, 100%);
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #070706;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.46);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      background: #100f0e;
+    }
+
+    .metric {
+      min-height: 76px;
+      padding: 16px 20px;
+      border-right: 1px solid var(--line);
+    }
+
+    .metric:last-child { border-right: 0; }
+
+    .metric span {
+      display: block;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      overflow: hidden;
+      font-size: 15px;
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 920px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar {
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .meta { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>NO MENU<br>拼贴封面</h1>
+        <div class="rule"></div>
+        <p>固定 5 张酒图的杂志拼贴结构。第 5 张位于左下角，适合小红书第一张图。</p>
+      </div>
+
+      <section class="group">
+        <h2 class="group-title">Cover Copy</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="cityInput">城市</label>
+            <input id="cityInput" type="text" value="上海">
+          </div>
+          <div class="field">
+            <label for="cityEnInput">城市英文</label>
+            <input id="cityEnInput" type="text" value="SHANGHAI">
+          </div>
+        </div>
+        <div class="field">
+          <label for="headlineInput">主标题</label>
+          <input id="headlineInput" type="text" value="今晚不只喝 IPA">
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="tapCountInput">新 Tap 数量</label>
+            <input id="tapCountInput" type="text" value="13">
+          </div>
+          <div class="field">
+            <label for="barCountInput">酒吧数量</label>
+            <input id="barCountInput" type="text" value="8">
+          </div>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group-title">Five Beer Images</h2>
+        <div class="uploads">
+          <label class="drop" data-drop="0">
+            <input data-image="0" type="file" accept="image/*" hidden>
+            <span class="slot-number">01</span>
+            <span class="drop-copy"><strong>右侧主图</strong>点击或拖入图片</span>
+          </label>
+          <label class="drop" data-drop="1">
+            <input data-image="1" type="file" accept="image/*" hidden>
+            <span class="slot-number">02</span>
+            <span class="drop-copy"><strong>中左横图</strong>点击或拖入图片</span>
+          </label>
+          <label class="drop" data-drop="2">
+            <input data-image="2" type="file" accept="image/*" hidden>
+            <span class="slot-number">03</span>
+            <span class="drop-copy"><strong>底部中间</strong>点击或拖入图片</span>
+          </label>
+          <label class="drop" data-drop="3">
+            <input data-image="3" type="file" accept="image/*" hidden>
+            <span class="slot-number">04</span>
+            <span class="drop-copy"><strong>底部右侧</strong>点击或拖入图片</span>
+          </label>
+          <label class="drop" data-drop="4">
+            <input data-image="4" type="file" accept="image/*" hidden>
+            <span class="slot-number">05</span>
+            <span class="drop-copy"><strong>左下角</strong>点击或拖入图片</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group-title">Export</h2>
+        <div class="field">
+          <label for="filenameInput">文件名</label>
+          <input id="filenameInput" type="text" value="no-menu-xhs-shanghai-collage-cover">
+        </div>
+        <p class="hint">输出固定为 1080 × 1440 PNG。图片会自动居中裁切；建议上传带完整酒标文字的横图或方图。</p>
+        <div class="actions">
+          <button id="clearButton" class="action" type="button">清空图片</button>
+          <button id="downloadButton" class="action primary" type="button">下载 PNG</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <div class="preview-wrap">
+        <div class="preview-frame">
+          <canvas id="canvas" width="1080" height="1440"></canvas>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="metric"><span>Output</span><strong>1080 × 1440</strong></div>
+        <div class="metric"><span>Images</span><strong id="imageMetric">0 / 5</strong></div>
+        <div class="metric"><span>Layout</span><strong>Editorial collage</strong></div>
+        <div class="metric"><span>City</span><strong id="cityMetric">上海</strong></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const colors = {
+      bg: '#090908',
+      text: '#eee7dc',
+      muted: '#a99070',
+      faint: '#615443',
+      gold: '#b8955e',
+      paper: '#d9d0c1',
+    }
+
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    const imageMetric = document.getElementById('imageMetric')
+    const cityMetric = document.getElementById('cityMetric')
+    const state = { images: Array(5).fill(null) }
+
+    const controls = {
+      city: document.getElementById('cityInput'),
+      cityEn: document.getElementById('cityEnInput'),
+      headline: document.getElementById('headlineInput'),
+      tapCount: document.getElementById('tapCountInput'),
+      barCount: document.getElementById('barCountInput'),
+      filename: document.getElementById('filenameInput'),
+      clear: document.getElementById('clearButton'),
+      download: document.getElementById('downloadButton'),
+    }
+
+    const cards = [
+      { x: 492, y: 382, w: 630, h: 638, angle: 0.055, paper: '#bbc5c7', z: 1 },
+      { x: 22, y: 858, w: 468, h: 294, angle: -0.055, paper: '#d7cec0', z: 3 },
+      { x: 350, y: 1030, w: 466, h: 475, angle: -0.028, paper: '#a4462f', z: 2 },
+      { x: 724, y: 1010, w: 396, h: 438, angle: 0.045, paper: '#c9bda2', z: 4 },
+      { x: -30, y: 1134, w: 388, h: 330, angle: 0.04, paper: '#a9b0a8', z: 5 },
+    ]
+
+    function value(input, fallback) {
+      return input.value.trim() || fallback
+    }
+
+    function font(size, weight = 400, mono = false) {
+      const family = mono
+        ? '"SFMono-Regular", "SF Mono", Menlo, Consolas, monospace'
+        : '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif'
+      return `${weight} ${size}px ${family}`
+    }
+
+    function drawText(text, x, y, options = {}) {
+      ctx.save()
+      ctx.fillStyle = options.color || colors.text
+      ctx.font = font(options.size || 32, options.weight || 400, options.mono || false)
+      ctx.textBaseline = 'top'
+      if (options.letterSpacing) {
+        let currentX = x
+        for (const char of text) {
+          ctx.fillText(char, currentX, y)
+          currentX += ctx.measureText(char).width + options.letterSpacing
+        }
+      } else {
+        ctx.fillText(text, x, y)
+      }
+      ctx.restore()
+    }
+
+    function fitText(text, x, y, maxWidth, size, minSize, options = {}) {
+      let currentSize = size
+      ctx.font = font(currentSize, options.weight || 400, options.mono || false)
+      while (ctx.measureText(text).width > maxWidth && currentSize > minSize) {
+        currentSize -= 2
+        ctx.font = font(currentSize, options.weight || 400, options.mono || false)
+      }
+      drawText(text, x, y, { ...options, size: currentSize })
+    }
+
+    function seededNoise(index) {
+      const value = Math.sin(index * 12.9898 + 78.233) * 43758.5453
+      return value - Math.floor(value)
+    }
+
+    function drawBackground() {
+      ctx.fillStyle = colors.bg
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      const warmth = ctx.createRadialGradient(80, 40, 20, 80, 40, 760)
+      warmth.addColorStop(0, 'rgba(83, 55, 24, 0.22)')
+      warmth.addColorStop(1, 'rgba(9, 9, 8, 0)')
+      ctx.fillStyle = warmth
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      ctx.save()
+      ctx.globalAlpha = 0.32
+      ctx.strokeStyle = colors.gold
+      ctx.lineWidth = 1.5
+      for (let radius = 190; radius <= 730; radius += 74) {
+        ctx.beginPath()
+        ctx.arc(970, 178, radius, Math.PI * 0.84, Math.PI * 1.9)
+        ctx.stroke()
+      }
+      ctx.restore()
+
+      ctx.save()
+      for (let index = 0; index < 1600; index += 1) {
+        const x = seededNoise(index) * canvas.width
+        const y = seededNoise(index + 1700) * canvas.height
+        const alpha = 0.018 + seededNoise(index + 3300) * 0.04
+        ctx.fillStyle = `rgba(238, 231, 220, ${alpha})`
+        ctx.fillRect(x, y, 1, 1)
+      }
+      ctx.restore()
+    }
+
+    function paperPath(width, height) {
+      const edge = 9
+      ctx.beginPath()
+      ctx.moveTo(edge, 2)
+      for (let x = edge; x < width - edge; x += 24) {
+        ctx.lineTo(x, 2 + seededNoise(x) * 8)
+      }
+      ctx.lineTo(width - 2, edge)
+      for (let y = edge; y < height - edge; y += 24) {
+        ctx.lineTo(width - 2 - seededNoise(y + 41) * 8, y)
+      }
+      ctx.lineTo(width - edge, height - 2)
+      for (let x = width - edge; x > edge; x -= 24) {
+        ctx.lineTo(x, height - 2 - seededNoise(x + 83) * 8)
+      }
+      ctx.lineTo(2, height - edge)
+      for (let y = height - edge; y > edge; y -= 24) {
+        ctx.lineTo(2 + seededNoise(y + 127) * 8, y)
+      }
+      ctx.closePath()
+    }
+
+    function drawImageCover(image, width, height) {
+      const ratio = Math.max(width / image.naturalWidth, height / image.naturalHeight)
+      const drawWidth = image.naturalWidth * ratio
+      const drawHeight = image.naturalHeight * ratio
+      ctx.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight)
+    }
+
+    function drawCard(card, index) {
+      ctx.save()
+      ctx.translate(card.x + card.w / 2, card.y + card.h / 2)
+      ctx.rotate(card.angle)
+      ctx.translate(-card.w / 2, -card.h / 2)
+
+      ctx.save()
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.58)'
+      ctx.shadowBlur = 24
+      ctx.shadowOffsetY = 14
+      paperPath(card.w, card.h)
+      ctx.fillStyle = card.paper
+      ctx.fill()
+      ctx.restore()
+
+      paperPath(card.w, card.h)
+      ctx.clip()
+      ctx.fillStyle = card.paper
+      ctx.fillRect(0, 0, card.w, card.h)
+
+      if (state.images[index]) {
+        drawImageCover(state.images[index], card.w, card.h)
+        ctx.fillStyle = 'rgba(20, 12, 7, 0.06)'
+        ctx.fillRect(0, 0, card.w, card.h)
+      } else {
+        ctx.fillStyle = 'rgba(20, 16, 12, 0.14)'
+        ctx.fillRect(0, 0, card.w, card.h)
+        drawText(String(index + 1).padStart(2, '0'), 28, 26, {
+          size: Math.min(card.w, card.h) * 0.22,
+          weight: 700,
+          mono: true,
+          color: 'rgba(28, 24, 19, 0.28)',
+        })
+        drawText('上传酒款图片', 30, card.h - 66, {
+          size: 24,
+          weight: 600,
+          color: 'rgba(28, 24, 19, 0.52)',
+        })
+      }
+
+      ctx.save()
+      for (let dot = 0; dot < 360; dot += 1) {
+        const x = seededNoise(dot + index * 500) * card.w
+        const y = seededNoise(dot + index * 500 + 370) * card.h
+        ctx.fillStyle = `rgba(245, 236, 218, ${0.018 + seededNoise(dot + 900) * 0.035})`
+        ctx.fillRect(x, y, 1, 1)
+      }
+      ctx.restore()
+      ctx.restore()
+    }
+
+    function drawCover() {
+      drawBackground()
+
+      drawText('NO MENU', 46, 52, {
+        size: 64,
+        weight: 500,
+        mono: true,
+        color: colors.gold,
+        letterSpacing: 5,
+      })
+
+      const city = value(controls.city, '上海')
+      const cityEn = value(controls.cityEn, 'SHANGHAI')
+      fitText(city, 824, 42, 214, 80, 46, { weight: 700, color: colors.gold })
+      fitText(cityEn, 826, 128, 210, 26, 16, { weight: 600, mono: true, color: colors.gold })
+
+      ctx.strokeStyle = colors.gold
+      ctx.globalAlpha = 0.72
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(46, 168)
+      ctx.lineTo(1038, 168)
+      ctx.stroke()
+      ctx.globalAlpha = 1
+
+      fitText(value(controls.headline, '今晚不只喝 IPA'), 46, 202, 992, 126, 72, {
+        weight: 700,
+        color: colors.text,
+      })
+
+      drawText(value(controls.tapCount, '13'), 52, 462, {
+        size: 150,
+        weight: 700,
+        mono: true,
+        color: colors.text,
+      })
+      drawText('款新 Tap', 222, 534, {
+        size: 45,
+        weight: 600,
+        color: colors.muted,
+      })
+      ctx.strokeStyle = colors.faint
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(48, 632)
+      ctx.lineTo(434, 632)
+      ctx.stroke()
+      drawText(value(controls.barCount, '8'), 52, 650, {
+        size: 122,
+        weight: 700,
+        mono: true,
+        color: colors.text,
+      })
+      drawText('家酒吧', 176, 710, {
+        size: 42,
+        weight: 600,
+        color: colors.muted,
+      })
+
+      for (const entry of cards.map((card, index) => ({ card, index })).sort((a, b) => a.card.z - b.card.z)) {
+        drawCard(entry.card, entry.index)
+      }
+
+      imageMetric.textContent = `${state.images.filter(Boolean).length} / 5`
+      cityMetric.textContent = city
+    }
+
+    function loadImage(file, index) {
+      if (!file || !file.type.startsWith('image/')) return
+      const url = URL.createObjectURL(file)
+      const image = new Image()
+      image.onload = () => {
+        const previous = state.images[index]
+        if (previous?.src?.startsWith('blob:')) URL.revokeObjectURL(previous.src)
+        state.images[index] = image
+        const drop = document.querySelector(`[data-drop="${index}"]`)
+        drop.classList.add('has-image')
+        drop.querySelector('.drop-copy').innerHTML = `<strong>${file.name}</strong>点击可替换图片`
+        drawCover()
+      }
+      image.src = url
+    }
+
+    function clearImages() {
+      state.images.forEach((image) => {
+        if (image?.src?.startsWith('blob:')) URL.revokeObjectURL(image.src)
+      })
+      state.images = Array(5).fill(null)
+      document.querySelectorAll('.drop').forEach((drop, index) => {
+        drop.classList.remove('has-image')
+        const labels = ['右侧主图', '中左横图', '底部中间', '底部右侧', '左下角']
+        drop.querySelector('.drop-copy').innerHTML = `<strong>${labels[index]}</strong>点击或拖入图片`
+        drop.querySelector('input').value = ''
+      })
+      drawCover()
+    }
+
+    function download() {
+      drawCover()
+      const link = document.createElement('a')
+      link.download = `${value(controls.filename, 'no-menu-xhs-collage-cover')}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    }
+
+    for (const input of document.querySelectorAll('input[type="text"]')) {
+      input.addEventListener('input', drawCover)
+    }
+
+    for (const input of document.querySelectorAll('[data-image]')) {
+      input.addEventListener('change', (event) => {
+        loadImage(event.target.files[0], Number(input.dataset.image))
+      })
+    }
+
+    for (const drop of document.querySelectorAll('.drop')) {
+      for (const eventName of ['dragenter', 'dragover']) {
+        drop.addEventListener(eventName, (event) => {
+          event.preventDefault()
+          drop.classList.add('dragging')
+        })
+      }
+      for (const eventName of ['dragleave', 'drop']) {
+        drop.addEventListener(eventName, (event) => {
+          event.preventDefault()
+          drop.classList.remove('dragging')
+        })
+      }
+      drop.addEventListener('drop', (event) => {
+        loadImage(event.dataTransfer.files[0], Number(drop.dataset.drop))
+      })
+    }
+
+    controls.clear.addEventListener('click', clearImages)
+    controls.download.addEventListener('click', download)
+    drawCover()
+  </script>
+</body>
+</html>

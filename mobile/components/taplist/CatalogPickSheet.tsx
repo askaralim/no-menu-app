@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Modal,
   View,
@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { TAPLIST_THEME as T } from '../../lib/taplistTheme'
+import { useAuth } from '../../lib/authProvider'
 import { type DraftDrink, drinkHasOrderablePrice, isOnTonight } from '../../lib/taplistOwnerApi'
 
 type PickTab = 'catalog' | 'archived'
@@ -17,16 +18,32 @@ type PickTab = 'catalog' | 'archived'
 interface Props {
   visible: boolean
   drinks: DraftDrink[]
+  targetTapNumber?: number | null
   onClose: () => void
   onPick: (drink: DraftDrink) => void
+  onCreate: () => void
 }
 
 /**
  * Pick an existing catalog drink (not on tonight) or an archived one to restore into tonight.
  */
-export default function CatalogPickSheet({ visible, drinks, onClose, onPick }: Props) {
+export default function CatalogPickSheet({
+  visible,
+  drinks,
+  targetTapNumber,
+  onClose,
+  onPick,
+  onCreate,
+}: Props) {
+  const { orderingEnabled } = useAuth()
   const [tab, setTab] = useState<PickTab>('catalog')
   const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    if (!visible) return
+    setTab('catalog')
+    setQuery('')
+  }, [visible, targetTapNumber])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -35,7 +52,7 @@ export default function CatalogPickSheet({ visible, drinks, onClose, onPick }: P
       .filter((d) => !isOnTonight(d))
       .filter((d) => {
         if (!q) return true
-        const hay = `${d.brand_name || ''} ${d.name} ${d.display_name || ''}`.toLowerCase()
+        const hay = `${d.brand_name || ''} ${d.profile?.brewery || ''} ${d.name} ${d.display_name || ''} ${d.profile?.beer_style || ''}`.toLowerCase()
         return hay.includes(q)
       })
       .sort((a, b) => a.name.localeCompare(b.name, 'zh'))
@@ -48,7 +65,9 @@ export default function CatalogPickSheet({ visible, drinks, onClose, onPick }: P
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.header}>
-            <Text style={styles.title}>从商品库选择</Text>
+            <Text style={styles.title}>
+              {targetTapNumber ? `为 #${targetTapNumber} 选择酒款` : '从商品库选择'}
+            </Text>
             <TouchableOpacity onPress={onClose} hitSlop={10}>
               <Ionicons name="close" size={22} color={T.muted} />
             </TouchableOpacity>
@@ -92,7 +111,7 @@ export default function CatalogPickSheet({ visible, drinks, onClose, onPick }: P
               </Text>
             }
             renderItem={({ item }) => {
-              const orderable = drinkHasOrderablePrice(item)
+              const priced = drinkHasOrderablePrice(item)
               return (
                 <TouchableOpacity style={styles.row} onPress={() => onPick(item)} activeOpacity={0.8}>
                   <View style={{ flex: 1 }}>
@@ -102,7 +121,7 @@ export default function CatalogPickSheet({ visible, drinks, onClose, onPick }: P
                     <Text style={styles.meta} numberOfLines={1}>
                       {[item.profile?.brewery, item.profile?.beer_style].filter(Boolean).join(' · ') ||
                         '未填资料'}
-                      {!orderable ? ' · 不可点单' : ''}
+                      {!priced ? (orderingEnabled ? ' · 不可点单' : ' · 未设价格') : ''}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={T.goldSoft} />
@@ -110,6 +129,10 @@ export default function CatalogPickSheet({ visible, drinks, onClose, onPick }: P
               )
             }}
           />
+          <TouchableOpacity style={styles.createBtn} onPress={onCreate} activeOpacity={0.8}>
+            <Ionicons name="add-circle-outline" size={18} color={T.gold} />
+            <Text style={styles.createText}>找不到酒款？新增商品</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -179,4 +202,14 @@ const styles = StyleSheet.create({
   },
   name: { color: T.text, fontSize: 15, fontWeight: '700' },
   meta: { color: T.muted, fontSize: 12, marginTop: 3 },
+  createBtn: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: T.border,
+  },
+  createText: { color: T.gold, fontSize: 15, fontWeight: '700' },
 })

@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Redirect, useLocalSearchParams } from 'expo-router'
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../lib/authProvider'
 import { orderStatusLabel, isOrderSettled } from '../../../lib/constants'
@@ -63,6 +63,7 @@ async function shareReceipt(order: OrderWithItems) {
 
 export default function OrderDetailScreen() {
   const { orderingEnabled, isLoading: authLoading } = useAuth()
+  const router = useRouter()
   const params = useLocalSearchParams<{ id?: string }>()
   const orderId = typeof params.id === 'string' ? params.id : ''
 
@@ -164,6 +165,11 @@ export default function OrderDetailScreen() {
     ])
   }
 
+  const handleContinueOrdering = () => {
+    if (!order) return
+    router.push({ pathname: '/(tabs)/form', params: { id: order.id } })
+  }
+
   if (authLoading) {
     return (
       <View style={styles.centered}>
@@ -259,17 +265,26 @@ export default function OrderDetailScreen() {
 
         <View style={styles.actionSection}>
           {order.status === 'active' ? (
-            <TouchableOpacity
-              style={[styles.primaryBtn, statusUpdating && styles.buttonDisabled]}
-              disabled={statusUpdating}
-              onPress={confirmCheckout}
-            >
-              {statusUpdating ? (
-                <ActivityIndicator size="small" color={T.background} />
-              ) : (
-                <Text style={styles.primaryBtnText}>标记为已结账</Text>
-              )}
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={[styles.primaryBtn, statusUpdating && styles.buttonDisabled]}
+                disabled={statusUpdating}
+                onPress={handleContinueOrdering}
+              >
+                <Text style={styles.primaryBtnText}>继续加点</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.secondaryBtn, statusUpdating && styles.buttonDisabled]}
+                disabled={statusUpdating}
+                onPress={confirmCheckout}
+              >
+                {statusUpdating ? (
+                  <ActivityIndicator size="small" color={T.gold} />
+                ) : (
+                  <Text style={styles.secondaryBtnText}>标记为已结账</Text>
+                )}
+              </TouchableOpacity>
+            </>
           ) : null}
           {isOrderSettled(order.status) ? (
             <>

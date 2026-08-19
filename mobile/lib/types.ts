@@ -145,6 +145,7 @@ export interface TaplistTenant {
   slug: string
   name: string
   display_name: string | null
+  tap_slot_count: number
   is_public_visible: boolean
   last_menu_updated_at: string | null
   status: string
@@ -226,6 +227,8 @@ export interface DrinkUpsertResult {
   public_cleared?: boolean
   public_sort_order?: number | null
   errors?: DrinkUpsertError[]
+  /** Client-filled after servings-inclusive upsert (real DB ids). */
+  servings?: TaplistServingOption[]
 }
 
 export type DrinkSaveIntent = 'product_only' | 'save_and_add_to_tonight'

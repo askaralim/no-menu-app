@@ -26,6 +26,47 @@
 3. Re-captured and verified both legal links and both consent paths.
 
 final result: passed
+
+---
+
+# Xiaohongshu five-image collage cover tool design QA
+
+## Evidence
+
+- Source visual truth: `/Users/askar/.codex/generated_images/01a00f09-159d-76a0-a76c-80e5ed15191f/exec-527359c1-7c0a-463e-8731-a5e477b7720d.png` (1086 × 1448).
+- Browser-rendered implementation capture: `/private/tmp/xiaohongshu-collage-cover-tool-preview.png` (512 × 683 crop of the 3:4 canvas preview).
+- Side-by-side comparison: `/private/tmp/xiaohongshu-collage-cover-tool-comparison.png`.
+- Browser viewport: default 1280 × 720 for interaction testing; temporary 2400 × 1700 viewport for the full comparison, reset afterward.
+- Output canvas: 1080 × 1440 at device pixel ratio 2; default empty-image state.
+
+## Full-view comparison evidence
+
+- The implementation preserves the reference hierarchy: NO MENU and city slug, oversized editorial headline, stacked tap/bar statistics, and a dense torn-paper collage occupying the lower-right field.
+- The first four image slots follow the selected composition. The requested fifth slot is added at the lower-left and overlaps the other cards without displacing the statistics.
+- Empty slots use muted paper colors only to communicate position before upload; exported user images replace those surfaces with centered cover crops.
+
+## Focused comparison evidence
+
+- Fonts and typography: PingFang/system Chinese and SF Mono fallbacks reproduce the condensed editorial hierarchy; editable long headlines shrink to fit rather than wrap unpredictably.
+- Spacing and layout rhythm: header rule, title block, statistics, and collage start positions follow the reference proportions. The fifth card intentionally occupies the previously open lower-left area.
+- Colors and visual tokens: black, aged ivory, muted gold, pale blue, rust red, and warm paper tones match the selected direction.
+- Image quality and asset fidelity: uploads draw at the native 1080 × 1440 export resolution with centered cover cropping; no fake beer artwork is included.
+- Copy and content: city, English city, headline, tap count, and bar count are editable. No date, update time, 24-hour wording, page number, footer, or CTA is introduced.
+
+## Primary interactions tested
+
+- One local image upload updated the image counter from `0 / 5` to `1 / 5`; all five slots share the same upload and drag/drop handler.
+- Editing the city updated the preview metric immediately.
+- Clearing images restored the `0 / 5` state.
+- Canvas dimensions remained 1080 × 1440 and the browser console reported no errors.
+- The PNG button executes the same canvas data-URL download pattern as the existing No Menu Xiaohongshu tools. The in-app browser did not expose its synthetic anchor download as a browser download event, so the saved-file dialog itself was not asserted.
+
+## Findings and comparison history
+
+- No actionable P0/P1/P2 mismatch remains. The reduced texture fidelity of empty placeholders is intentional; actual uploaded artwork supplies the final label texture.
+- P3: future refinement could add per-image focal-point controls if real label crops regularly need manual adjustment.
+
+final result: passed
 ---
 
 # Beer detail redesign QA
