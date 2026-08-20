@@ -211,6 +211,7 @@ export interface AdminDrinkProductRow {
   aliases: string[]
   brand_name: string | null
   brewery: string | null
+  collab_breweries: string[]
   beer_style: string | null
   abv: number | null
   ibu: number | null

@@ -17,6 +17,7 @@ type ProductForm = {
   aliases_text: string
   brand_name: string
   brewery: string
+  collab_breweries_text: string
   beer_style: string
   abv: string
   ibu: string
@@ -56,6 +57,7 @@ const EMPTY_FORM: ProductForm = {
   aliases_text: '',
   brand_name: '',
   brewery: '',
+  collab_breweries_text: '',
   beer_style: '',
   abv: '',
   ibu: '',
@@ -97,6 +99,10 @@ function textToAliases(text: string) {
     .split(',')
     .map((v) => v.trim())
     .filter(Boolean)
+}
+
+function textToCollabBreweries(text: string) {
+  return textToAliases(text).slice(0, 3)
 }
 
 export default function PlatformProductsPage() {
@@ -260,6 +266,7 @@ export default function PlatformProductsPage() {
       aliases_text: aliasesToText(product.aliases ?? []),
       brand_name: product.brand_name ?? '',
       brewery: product.brewery ?? '',
+      collab_breweries_text: aliasesToText(product.collab_breweries ?? []),
       beer_style: product.beer_style ?? '',
       abv: product.abv != null ? String(product.abv) : '',
       ibu: product.ibu != null ? String(product.ibu) : '',
@@ -337,6 +344,7 @@ export default function PlatformProductsPage() {
         p_aliases: textToAliases(form.aliases_text),
         p_brand_name: form.brand_name.trim() || null,
         p_brewery: form.brewery.trim() || null,
+        p_collab_breweries: textToCollabBreweries(form.collab_breweries_text),
         p_beer_style: form.beer_style.trim() || null,
         p_abv: form.abv.trim() ? Number(form.abv) : null,
         p_ibu: form.ibu.trim() ? Number.parseInt(form.ibu, 10) : null,
@@ -390,6 +398,7 @@ export default function PlatformProductsPage() {
         p_aliases: product.aliases ?? [],
         p_brand_name: product.brand_name,
         p_brewery: product.brewery,
+        p_collab_breweries: product.collab_breweries ?? [],
         p_beer_style: product.beer_style,
         p_abv: product.abv,
         p_ibu: product.ibu,
@@ -598,6 +607,11 @@ export default function PlatformProductsPage() {
                         {product.brewery && product.brewery !== product.brand_name ? (
                           <div style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: 2 }}>{product.brewery}</div>
                         ) : null}
+                        {(product.collab_breweries ?? []).length > 0 ? (
+                          <div style={{ color: '#6b7280', fontSize: '0.78rem', marginTop: 2 }}>
+                            合酿：{(product.collab_breweries ?? []).join(' × ')}
+                          </div>
+                        ) : null}
                       </td>
                       <td style={{ ...tdStyle, fontSize: '0.85rem' }}>{product.beer_style ?? '—'}</td>
                       <td style={{ ...tdStyle, fontSize: '0.85rem' }}>{product.abv != null ? `${product.abv}%` : '—'}</td>
@@ -780,6 +794,18 @@ export default function PlatformProductsPage() {
                   className="admin-input"
                   value={form.brewery}
                   onChange={(e) => setForm({ ...form, brewery: e.target.value })}
+                  style={{ margin: 0 }}
+                />
+              </Field>
+              <Field
+                label="合酿酒厂（最多 3 个，逗号分隔）"
+                hint="仅存档于产品池，不会自动同步到门店酒或消费端展示（门店合酿仍由 POS / Tap List 编辑）。"
+              >
+                <input
+                  className="admin-input"
+                  value={form.collab_breweries_text}
+                  onChange={(e) => setForm({ ...form, collab_breweries_text: e.target.value })}
+                  placeholder="例如：酒厂A, 酒厂B"
                   style={{ margin: 0 }}
                 />
               </Field>
