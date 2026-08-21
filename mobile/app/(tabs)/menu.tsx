@@ -316,12 +316,20 @@ export default function MenuScreen() {
   const handleSaved = async (result?: DrinkUpsertResult, savedDrink?: DraftDrink) => {
     closeEditor()
     if (draft && savedDrink && result?.ok && result.drink_id) {
+      const servingsSafe = !(savedDrink.servings ?? []).some((s) => !s._deleted && (!s.id || s._new))
+      const merged: DraftDrink = {
+        ...savedDrink,
+        id: result.drink_id,
+        servings: servingsSafe
+          ? (savedDrink.servings ?? []).map((s) => ({ ...s, _new: false, _deleted: undefined }))
+          : draft.drinks.find((d) => d.id === result.drink_id)?.servings ?? [],
+      }
       const exists = draft.drinks.some((d) => d.id === result.drink_id)
       const optimistic: TaplistDraft = {
         ...draft,
         drinks: exists
-          ? draft.drinks.map((d) => (d.id === result.drink_id ? { ...d, ...savedDrink, id: result.drink_id! } : d))
-          : [...draft.drinks, { ...savedDrink, id: result.drink_id! }],
+          ? draft.drinks.map((d) => (d.id === result.drink_id ? { ...d, ...merged } : d))
+          : [...draft.drinks, merged],
       }
       setDraft(optimistic)
     }

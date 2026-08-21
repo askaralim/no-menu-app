@@ -24,6 +24,7 @@ import {
   type ProductSearchResult,
   applyProductToDraftDrink,
   getDrinkStatusEvents,
+  loadDrinkServingsForEdit,
   newDraftServing,
   saveDrinkWithIntent,
   searchDrinkProducts,
@@ -110,6 +111,7 @@ export default function DrinkEditSheet({
   const [statusEvents, setStatusEvents] = useState<DrinkStatusEvent[]>([])
 
   const searchSeq = useRef(0)
+  const savingRef = useRef(false)
 
   useEffect(() => {
     let next = drink
@@ -127,6 +129,7 @@ export default function DrinkEditSheet({
     setPoolResults([])
     setPoolSearchDone(false)
     setSaving(false)
+    savingRef.current = false
     setSearching(false)
     setUploadingImage(false)
     setPendingImage(null)
@@ -405,7 +408,7 @@ export default function DrinkEditSheet({
   }
 
   const save = async (intent: DrinkSaveIntent) => {
-    if (!local || saving || uploadingImage) return
+    if (!local || saving || uploadingImage || savingRef.current) return
     if (!tenantId) {
       Alert.alert('无法保存', '未找到关联门店')
       return
@@ -440,8 +443,9 @@ export default function DrinkEditSheet({
   }
 
   const performSave = async (intent: DrinkSaveIntent, toSave: DraftDrink) => {
-    if (!local || saving || uploadingImage) return
+    if (!local || saving || uploadingImage || savingRef.current) return
     if (!tenantId) return
+    savingRef.current = true
     setSaving(true)
     try {
       const tapNumber =
@@ -461,6 +465,15 @@ export default function DrinkEditSheet({
       if (res.drink_id) {
         if (res.servings) {
           savedDrink = withPersistedServings(savedDrink, res.servings as DraftServing[])
+        } else {
+          // Defensive: never leave `_new` servings in parent optimistic state.
+          try {
+            const servings = await loadDrinkServingsForEdit(res.drink_id)
+            savedDrink = withPersistedServings(savedDrink, servings)
+            res = { ...res, servings }
+          } catch {
+            savedDrink = { ...savedDrink, servings: [] }
+          }
         }
         setLocal(savedDrink)
       }
@@ -490,6 +503,7 @@ export default function DrinkEditSheet({
           } else {
             setPendingImage(null)
             setLocal(withImage)
+            savedDrink = withImage
             res = { ...res, ...imageSave, drink_id: res.drink_id, servings: res.servings }
           }
         } catch (e: any) {
@@ -511,6 +525,7 @@ export default function DrinkEditSheet({
     } catch (e: any) {
       Alert.alert('保存失败', e?.message || '请重试')
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }

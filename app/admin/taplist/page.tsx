@@ -907,6 +907,7 @@ function DrinkTaplistPanel({
       .from('drink_serving_options')
       .select('*')
       .eq('drink_id', drink.id)
+      .is('archived_at', null)
       .order('public_sort_order')
     if (error) {
       console.error(error)

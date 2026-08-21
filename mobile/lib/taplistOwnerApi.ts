@@ -181,7 +181,9 @@ function serializeDraftDrink(
         is_active: s.is_active,
         public_sort_order: sort++,
       }
-      if (!s._new && s.id) row.id = s.id
+      // Prefer real DB id whenever present — even if a stale `_new` flag survived.
+      // Missing id is what caused duplicate INSERT on rapid re-save.
+      if (s.id) row.id = s.id
       else if (s.client_id) row.client_id = s.client_id
       servings.push(row)
     })
@@ -280,11 +282,8 @@ export async function upsertDrinkProduct(
   if (error) throw new Error(translateError(error.message))
   const result = data as DrinkUpsertResult
   if (result?.ok && result.drink_id && includeServings) {
-    try {
-      result.servings = await loadDrinkServingsForEdit(result.drink_id)
-    } catch {
-      // Soft: caller can still succeed; next open will reload from payload.
-    }
+    // Hard reload: without real ids the next save would INSERT duplicate servings.
+    result.servings = await loadDrinkServingsForEdit(result.drink_id)
   }
   return result
 }

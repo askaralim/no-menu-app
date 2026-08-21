@@ -24,7 +24,15 @@ function isBusinessDayClosedError(err: unknown): boolean {
 }
 
 function activeServings(drink: Drink): DrinkServingOption[] {
-  return (drink.drink_serving_options ?? []).filter((s) => s.is_active && Number(s.price) > 0)
+  const seen = new Set<string>()
+  return (drink.drink_serving_options ?? []).filter((s) => {
+    if (!s.is_active || !(Number(s.price) > 0)) return false
+    // Guard against historical duplicate rows until migration archives them.
+    const key = `${(s.label || '').trim().toLowerCase()}:${s.volume_ml ?? 'x'}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 function formatServingLabel(s: Pick<DrinkServingOption, 'label' | 'volume_ml'>): string {
