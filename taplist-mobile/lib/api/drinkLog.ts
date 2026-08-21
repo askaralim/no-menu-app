@@ -2,6 +2,7 @@ import { getTaplistSupabase } from '@/lib/supabase'
 import type {
   LightDrinkResult,
   MyDrinkHistoryRow,
+  MyDrinkInsights,
   MyDrinkState,
   MyDrinkSummary,
 } from '@/lib/types'
@@ -50,6 +51,12 @@ export async function getMyDrinkSummary() {
   const { data, error } = await getTaplistSupabase().rpc('get_my_drink_summary')
   if (error) throw error
   return data as MyDrinkSummary
+}
+
+export async function getMyDrinkInsights() {
+  const { data, error } = await getTaplistSupabase().rpc('get_my_drink_insights')
+  if (error) throw error
+  return data as MyDrinkInsights
 }
 
 export async function removeMyDrinkVenue(lightId: string, tenantId: string) {

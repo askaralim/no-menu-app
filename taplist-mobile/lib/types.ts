@@ -342,6 +342,39 @@ export type MyDrinkSummary = {
   recent: MyDrinkHistoryRow[]
 }
 
+export type MyDrinkInsightRow = {
+  light_id: string
+  name: string
+  brewery: string | null
+  beer_style: string | null
+  image_url: string | null
+  recorded_at: string
+}
+
+export type MyDrinkInsights = {
+  ok: true
+  generated_at: string
+  tonight: {
+    business_day_start: string
+    drink_count: number
+    bar_count: number
+    drinks: MyDrinkInsightRow[]
+  }
+  month: {
+    month_start: string
+    month_end: string
+    new_drink_count: number
+    bar_count: number
+    style_counts: Array<{ style: string; count: number }>
+    first_drink_id: string | null
+    first_new_style: string | null
+    first_new_style_drink_id: string | null
+    top_style: string | null
+    latest_drink_id: string | null
+    drinks: MyDrinkInsightRow[]
+  }
+}
+
 export type AccountProtectionState = 'anonymous' | 'apple' | 'unavailable'
 
 export type ConsumerProfile = {
