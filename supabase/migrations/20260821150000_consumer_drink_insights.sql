@@ -143,6 +143,13 @@ BEGIN
         'first_new_style', (SELECT style FROM first_new_style),
         'first_new_style_drink_id', (SELECT light_id FROM first_new_style),
         'top_style', (SELECT style FROM top_style),
+        'top_style_drink_id', (
+          SELECT ml.light_id
+          FROM month_lights ml
+          JOIN top_style ts ON coalesce(ml.beer_style, '其他') = ts.style
+          ORDER BY ml.first_lit_at ASC, ml.light_id ASC
+          LIMIT 1
+        ),
         'latest_drink_id', (SELECT light_id FROM month_lights ORDER BY first_lit_at DESC, light_id DESC LIMIT 1),
         'drinks', coalesce((
           SELECT jsonb_agg(jsonb_build_object(

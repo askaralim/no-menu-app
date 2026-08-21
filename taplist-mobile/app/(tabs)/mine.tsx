@@ -1,21 +1,20 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, type Href, router, useFocusEffect } from 'expo-router'
-import * as Sharing from 'expo-sharing'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CachedImage } from '@/components/taplist/CachedImage'
 import { ShareableDrinkLogImage, type ShareableDrinkLogImageHandle } from '@/components/taplist/ShareableDrinkLogImage'
+import { ShareImagePreviewModal } from '@/components/taplist/ShareImagePreviewModal'
 import { palette, spacing, typography } from '@/constants/design'
 import { resetUser, trackEvent } from '@/lib/analytics'
 import { getMyConsumerProfile } from '@/lib/api/consumerProfile'
-import { getMyDrinkHistory, getMyDrinkSummary } from '@/lib/api/drinkLog'
+import { getMyDrinkHistory, getMyDrinkInsights, getMyDrinkSummary } from '@/lib/api/drinkLog'
 import { deleteDrinkLogAccount, getAccountProtectionState, isAppleCancellation, protectDrinkLogWithApple } from '@/lib/drinkLogAuth'
-import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
 import { getTaplistSupabase } from '@/lib/supabase'
-import type { AccountProtectionState, MyDrinkHistoryRow, MyDrinkSummary } from '@/lib/types'
+import type { AccountProtectionState, MyDrinkHistoryRow } from '@/lib/types'
 
 export default function MineScreen() {
   const insets = useSafeAreaInsets()
@@ -24,7 +23,6 @@ export default function MineScreen() {
   const [protection, setProtection] = useState<AccountProtectionState>('unavailable')
   const [previewUri, setPreviewUri] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [saving, setSaving] = useState(false)
 
   const sessionQuery = useQuery({
     queryKey: ['drink-log', 'session'],
@@ -46,6 +44,11 @@ export default function MineScreen() {
     queryFn: getMyDrinkSummary,
     enabled: hasSession,
   })
+  const insightsQuery = useQuery({
+    queryKey: ['drink-log', 'insights'],
+    queryFn: getMyDrinkInsights,
+    enabled: hasSession,
+  })
 
   useFocusEffect(useCallback(() => {
     void sessionQuery.refetch()
@@ -58,17 +61,8 @@ export default function MineScreen() {
   }, [])
 
   const groups = useMemo(() => groupByMonth(historyQuery.data ?? []), [historyQuery.data])
-  const shareSummary = useMemo<MyDrinkSummary | null>(() => {
-    if (!summaryQuery.data) return null
-    const history = historyQuery.data ?? []
-    return {
-      ...summaryQuery.data,
-      recent: (history.length > summaryQuery.data.recent.length ? history : summaryQuery.data.recent).slice(0, 9),
-    }
-  }, [historyQuery.data, summaryQuery.data])
-
   const generateShare = async () => {
-    if (!shareSummary || busy || historyQuery.isLoading) return
+    if (!insightsQuery.data?.month.new_drink_count || busy) return
     setBusy(true)
     try {
       const uri = await shareRef.current?.capture()
@@ -78,22 +72,6 @@ export default function MineScreen() {
       }
     } finally {
       setBusy(false)
-    }
-  }
-
-  const savePreview = async () => {
-    if (!previewUri || saving) return
-    setSaving(true)
-    try {
-      await saveImageUriToPhotoLibrary(previewUri)
-      Alert.alert('保存成功', '记录分享图已保存到相册')
-    } catch (error) {
-      Alert.alert(
-        error instanceof PhotoLibraryPermissionError ? '无法保存分享图' : '保存失败',
-        error instanceof PhotoLibraryPermissionError ? '请在系统设置中允许 No Menu 添加照片。' : '暂时无法保存到相册，请稍后重试。',
-      )
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -137,7 +115,9 @@ export default function MineScreen() {
 
   const summary = summaryQuery.data
   const hasDrinks = Boolean(summary && summary.drink_count > 0)
-  const firstCupLabel = summary?.started_at ? `${formatDotDate(summary.started_at)} 第一杯` : null
+  const month = insightsQuery.data?.month
+  const monthLabel = month ? `${new Date(month.month_start).getMonth() + 1} 月新增` : '本月新增'
+  const maxStyleCount = Math.max(1, ...(month?.style_counts.slice(0, 3).map((item) => item.count) ?? [1]))
 
   return (
     <View style={styles.screen}>
@@ -197,14 +177,14 @@ export default function MineScreen() {
           </Pressable>
         ) : null}
 
-        <View style={styles.historyHeader}>
-          <Text style={styles.historyTitle}>最近喝过</Text>
-          {hasDrinks ? (
+        <View style={styles.tapHeader}>
+          <Text style={styles.tapTitle}>我的 TAP</Text>
+          {month?.new_drink_count ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="分享喝过记录图"
+              accessibilityLabel="分享本月 TAP 记录图"
               hitSlop={4}
-              disabled={busy || historyQuery.isLoading}
+              disabled={busy || insightsQuery.isLoading}
               onPress={() => void generateShare()}
               style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}>
               {busy ? (
@@ -217,13 +197,67 @@ export default function MineScreen() {
           ) : null}
         </View>
 
-        {firstCupLabel ? <Text style={styles.summary}>{firstCupLabel}</Text> : null}
+        {hasSession ? (
+          <View style={styles.insights}>
+            {insightsQuery.isLoading ? (
+              <ActivityIndicator color={palette.amber} style={styles.insightsLoading} />
+            ) : insightsQuery.isError ? (
+              <Pressable onPress={() => void insightsQuery.refetch()} style={styles.insightsError}>
+                <Text style={styles.insightsErrorTitle}>暂时无法加载本月记录</Text>
+                <Text style={styles.insightsErrorAction}>点按重试</Text>
+              </Pressable>
+            ) : month?.new_drink_count ? (
+              <>
+                <View style={styles.monthSummaryHeader}>
+                  <View>
+                    <Text style={styles.monthSummaryTitle}>{monthLabel}</Text>
+                    <Text style={styles.monthSummaryMeta}>{month.new_drink_count} 款 · 来自 {month.bar_count} 家酒吧</Text>
+                  </View>
+                  <Text style={styles.monthSummaryDate}>
+                    截至 {formatDotDate(insightsQuery.data?.generated_at ?? month.month_start)}
+                  </Text>
+                </View>
+                <Text style={styles.insightsLabel}>本月记录</Text>
+                <View style={styles.styleRows}>
+                  {month.style_counts.slice(0, 3).map((item) => (
+                    <View key={item.style} style={styles.styleRow}>
+                      <Text numberOfLines={1} style={styles.styleName}>{item.style}</Text>
+                      <View style={styles.styleTrack}>
+                        <View style={[styles.styleBar, { width: `${Math.max(12, (item.count / maxStyleCount) * 100)}%` }]} />
+                      </View>
+                      <Text style={styles.styleCount}>{item.count} 款</Text>
+                    </View>
+                  ))}
+                </View>
+                {month.first_new_style ? (
+                  <Text style={styles.milestone}>第一次记录：{month.first_new_style}</Text>
+                ) : null}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void generateShare()}
+                  style={({ pressed }) => [styles.reportButton, pressed && styles.pressed]}>
+                  <Text style={styles.reportButtonText}>查看 {formatMonthName(month.month_start)} TAP 报告</Text>
+                  <FontAwesome name="angle-right" size={18} color={palette.amber} />
+                </Pressable>
+              </>
+            ) : (
+              <View style={styles.monthEmpty}>
+                <Text style={styles.monthEmptyTitle}>{monthLabel}还没有新增记录</Text>
+                <Text style={styles.monthEmptyBody}>记录新的酒款后，本月总结会出现在这里。</Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        <View style={styles.historyHeader}>
+          <Text style={styles.historyTitle}>最近记录</Text>
+        </View>
 
         {sessionQuery.isLoading || (hasSession && historyQuery.isLoading) ? (
           <ActivityIndicator color={palette.amber} style={styles.loading} />
         ) : groups.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>还没有记录</Text>
+            <Text style={styles.emptyTitle}>还没有 TAP 记录</Text>
             <Text style={styles.emptyBody}>看到喝过的酒，点一下“喝过”，它就会留在这里。</Text>
             <Link href="/search" asChild>
               <Pressable style={styles.emptyButton}>
@@ -263,30 +297,16 @@ export default function MineScreen() {
         ) : null}
       </ScrollView>
 
-      {shareSummary ? (
+      {month?.new_drink_count ? (
         <View pointerEvents="none" style={styles.hiddenCanvas}>
-          <ShareableDrinkLogImage ref={shareRef} summary={shareSummary} />
+          <ShareableDrinkLogImage
+            ref={shareRef}
+            month={month}
+            username={profileQuery.data?.consumer_username || 'NoMenuist'}
+          />
         </View>
       ) : null}
-      <Modal visible={Boolean(previewUri)} animationType="slide" onRequestClose={() => setPreviewUri(null)}>
-        <View style={[styles.preview, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.md }]}>
-          <View style={styles.previewHeader}>
-            <Text style={styles.previewTitle}>分享图预览</Text>
-            <Pressable onPress={() => setPreviewUri(null)}>
-              <Text style={styles.close}>关闭</Text>
-            </Pressable>
-          </View>
-          {previewUri ? <Image source={{ uri: previewUri }} resizeMode="contain" style={styles.previewImage} /> : null}
-          <View style={styles.actions}>
-            <Pressable style={styles.primaryAction} onPress={() => previewUri && void Sharing.shareAsync(previewUri)}>
-              <Text style={styles.primaryActionText}>分享记录图</Text>
-            </Pressable>
-            <Pressable disabled={saving} style={styles.secondaryAction} onPress={() => void savePreview()}>
-              {saving ? <ActivityIndicator size="small" color={palette.text} /> : <Text style={styles.secondaryActionText}>保存到相册</Text>}
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+      <ShareImagePreviewModal uri={previewUri} onClose={() => setPreviewUri(null)} />
     </View>
   )
 }
@@ -345,6 +365,10 @@ function formatMonthDay(value: string) {
 function formatDotDate(value: string) {
   const d = new Date(value)
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+}
+
+function formatMonthName(value: string) {
+  return `${new Date(value).getMonth() + 1} 月`
 }
 
 const styles = StyleSheet.create({
@@ -440,10 +464,143 @@ const styles = StyleSheet.create({
     color: palette.muted,
     marginTop: 2,
   },
+  tapHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tapTitle: {
+    ...typography.headline,
+    color: palette.text,
+    fontSize: 24,
+    lineHeight: 32,
+  },
+  insights: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  insightsLoading: {
+    marginVertical: spacing.lg,
+  },
+  insightsError: {
+    minHeight: 76,
+    justifyContent: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.line,
+  },
+  insightsErrorTitle: {
+    ...typography.caption,
+    color: palette.muted,
+  },
+  insightsErrorAction: {
+    ...typography.caption,
+    color: palette.amber,
+    marginTop: spacing.xxs,
+  },
+  monthSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  monthSummaryTitle: {
+    ...typography.headline,
+    color: palette.text,
+    fontSize: 24,
+    lineHeight: 32,
+  },
+  monthSummaryMeta: {
+    ...typography.body,
+    color: palette.muted,
+    marginTop: 2,
+  },
+  monthSummaryDate: {
+    ...typography.micro,
+    color: palette.faint,
+    paddingBottom: 3,
+  },
+  insightsLabel: {
+    ...typography.title,
+    color: palette.text,
+    fontSize: 15,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  styleRows: {
+    gap: spacing.sm,
+  },
+  styleRow: {
+    minHeight: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  styleName: {
+    ...typography.caption,
+    color: palette.muted,
+    width: 74,
+  },
+  styleTrack: {
+    flex: 1,
+    height: 2,
+    backgroundColor: palette.line,
+  },
+  styleBar: {
+    height: 2,
+    backgroundColor: palette.amber,
+  },
+  styleCount: {
+    ...typography.caption,
+    color: palette.muted,
+    width: 34,
+    textAlign: 'right',
+  },
+  milestone: {
+    ...typography.caption,
+    color: palette.muted,
+    marginTop: spacing.lg,
+  },
+  reportButton: {
+    minHeight: 48,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: palette.amber,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  reportButtonText: {
+    ...typography.caption,
+    color: palette.amber,
+  },
+  monthEmpty: {
+    minHeight: 88,
+    justifyContent: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.line,
+  },
+  monthEmptyTitle: {
+    ...typography.title,
+    color: palette.text,
+  },
+  monthEmptyBody: {
+    ...typography.caption,
+    color: palette.muted,
+    marginTop: spacing.xxs,
+  },
   historyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingTop: spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: palette.line,
+    marginBottom: spacing.md,
   },
   historyTitle: {
     ...typography.headline,

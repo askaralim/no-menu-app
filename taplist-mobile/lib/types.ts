@@ -370,6 +370,7 @@ export type MyDrinkInsights = {
     first_new_style: string | null
     first_new_style_drink_id: string | null
     top_style: string | null
+    top_style_drink_id: string | null
     latest_drink_id: string | null
     drinks: MyDrinkInsightRow[]
   }
