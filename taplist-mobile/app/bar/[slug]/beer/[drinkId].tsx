@@ -86,8 +86,8 @@ export default function BeerDetailScreen() {
         Alert.alert('生成失败', '今晚分享图暂时无法生成，请稍后重试。')
         return
       }
-      setTonightPreviewUri(uri)
       drinkLightController.clearLastResult()
+      setTimeout(() => setTonightPreviewUri(uri), 250)
       trackEvent('drink_tonight_share_generated', { drink_count: insightsQuery.data.tonight.drink_count })
     } finally {
       setIsSharingTonight(false)

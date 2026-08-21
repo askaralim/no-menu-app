@@ -1,3 +1,35 @@
+# My TAP monthly experience and sharing QA
+
+- Source visual truth:
+  - `/Users/askar/.codex/generated_images/01a010bb-e978-7bb0-b85e-f14317278775/exec-a31f24cc-a83b-48f0-9645-f8bebe19adc6.png`
+  - `/Users/askar/.codex/generated_images/01a010bb-e978-7bb0-b85e-f14317278775/exec-a812e0d9-6ccb-414e-be7d-df5802e0377a.png`
+  - `/Users/askar/.codex/generated_images/01a010bb-e978-7bb0-b85e-f14317278775/exec-97dc7a73-6bb9-4b65-b7ae-ea4da2575502.png`
+- Implementation capture: unavailable for the authenticated states. The static web export opens the mandatory first-launch legal/age gate, which cannot be completed by browser automation.
+- Intended viewport: iPhone portrait; share outputs remain fixed at `390 × 520`.
+
+## Static comparison
+
+- The implementation uses the existing No Menu palette, typography, spacing, icon set, real beer artwork components, and fixed share dimensions.
+- The Mine page remains the personal hub. `我的 TAP` is a module below profile protection and followed bars, followed by the existing three-column history.
+- The success sheet uses one primary action and one secondary sharing action, with separate copy for a new canonical beer and a new venue on an existing beer.
+- Tonight and monthly share templates use deterministic data only, adapt from one through nine drinks, and reserve the footer inside the fixed canvas.
+
+## Findings
+
+- [P2] Authenticated post-change visual evidence is unavailable.
+  - Impact: final text wrapping, modal transition timing, image loading before capture, and compact-device vertical fit still require native confirmation.
+  - Required check: on an unlocked iPhone/TestFlight session, capture the populated Mine page, both success-sheet variants, Tonight share preview, and monthly TAP report.
+
+## Verification completed
+
+- `npm run preflight`: passed after implementation.
+- `supabase db lint --local`: completed; only pre-existing warnings were reported.
+- Static web export loaded without console errors but remained at the mandatory first-launch gate.
+
+final result: blocked
+
+---
+
 # First-launch consent design QA
 
 - Source: `/Users/askar/.codex/generated_images/019f79df-334d-7bd1-94a6-6ecc143593c8/exec-f40e75b7-4eea-4428-937e-4bfe38021c09.png`
