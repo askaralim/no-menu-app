@@ -52,6 +52,7 @@ export type AnalyticsEventName =
   | 'drink_unlit'
   | 'drink_log_opened'
   | 'drink_share_generated'
+  | 'drink_tonight_share_generated'
   | 'apple_link_started'
   | 'apple_link_succeeded'
   | 'apple_link_failed'

@@ -7,6 +7,7 @@ import { palette, spacing, typography } from '@/constants/design'
 import { trackEvent } from '@/lib/analytics'
 import { getMyDrinkState, lightMyDrink, removeMyDrinkVenue } from '@/lib/api/drinkLog'
 import { ensureDrinkLogSession } from '@/lib/drinkLogAuth'
+import type { LightDrinkResult } from '@/lib/types'
 
 type Props = {
   drinkId: string
@@ -17,6 +18,7 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
   const queryClient = useQueryClient()
   const [message, setMessage] = useState<string | null>(null)
   const [showUndo, setShowUndo] = useState(false)
+  const [lastResult, setLastResult] = useState<LightDrinkResult | null>(null)
 
   const stateQuery = useQuery({
     queryKey: ['drink-log', 'state', drinkId],
@@ -43,7 +45,9 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
       queryClient.setQueryData(['drink-log', 'state', drinkId], result)
       void queryClient.invalidateQueries({ queryKey: ['drink-log', 'history'] })
       void queryClient.invalidateQueries({ queryKey: ['drink-log', 'summary'] })
+      void queryClient.invalidateQueries({ queryKey: ['drink-log', 'insights'] })
       setShowUndo(result.created_venue)
+      setLastResult(result.created_venue ? result : null)
       setMessage(null)
       trackEvent('drink_light_succeeded', {
         created_drink: result.created_light,
@@ -64,6 +68,7 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
     },
     onSuccess: () => {
       setShowUndo(false)
+      setLastResult(null)
       setMessage(null)
       void queryClient.invalidateQueries({ queryKey: ['drink-log'] })
       void stateQuery.refetch()
@@ -82,6 +87,8 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
     showUndo,
     lightMutation,
     undoMutation,
+    lastResult,
+    clearLastResult: () => setLastResult(null),
   }
 }
 

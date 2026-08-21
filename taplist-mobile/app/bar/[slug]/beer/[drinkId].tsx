@@ -10,13 +10,16 @@ import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { BackButton } from '@/components/taplist/BackButton'
 import { BeerRoadmapSection } from '@/components/taplist/BeerRoadmapSection'
 import { DrinkLightAction, DrinkLightFeedback, useDrinkLightController } from '@/components/taplist/DrinkLightSection'
+import { DrinkRecordSuccessSheet } from '@/components/taplist/DrinkRecordSuccessSheet'
+import { ShareableTonightImage, type ShareableTonightImageHandle } from '@/components/taplist/ShareableTonightImage'
+import { ShareImagePreviewModal } from '@/components/taplist/ShareImagePreviewModal'
 import { ShareableBeerImage, type ShareableBeerImageHandle } from '@/components/taplist/ShareableBeerImage'
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { displayServingOptions, formatBreweryWithCollab, localizeServingLabel } from '@/lib/formatTaplist'
 import { fetchPublicDrinks, fetchPublicTenantBySlug } from '@/lib/api/taplist'
 import { partitionPublicDrinks } from '@/lib/types'
-import { getMyDrinkState } from '@/lib/api/drinkLog'
+import { getMyDrinkInsights, getMyDrinkState } from '@/lib/api/drinkLog'
 import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicDrinkRow, PublicServingOption } from '@/lib/types'
@@ -25,7 +28,10 @@ import { trackEvent } from '@/lib/analytics'
 export default function BeerDetailScreen() {
   const insets = useSafeAreaInsets()
   const shareableRef = useRef<ShareableBeerImageHandle>(null)
+  const tonightShareRef = useRef<ShareableTonightImageHandle>(null)
   const [isSavingBeer, setIsSavingBeer] = useState(false)
+  const [isSharingTonight, setIsSharingTonight] = useState(false)
+  const [tonightPreviewUri, setTonightPreviewUri] = useState<string | null>(null)
   const { slug, drinkId, fromPush } = useLocalSearchParams<{ slug: string; drinkId: string; fromPush?: string }>()
   const configured = useTaplistSupabaseReady()
 
@@ -65,6 +71,28 @@ export default function BeerDetailScreen() {
     drinkId: drink?.id ?? '',
     tenantId: tenant?.id ?? '',
   })
+  const insightsQuery = useQuery({
+    queryKey: ['drink-log', 'insights'],
+    queryFn: getMyDrinkInsights,
+    enabled: Boolean(drinkLightController.lastResult?.created_venue),
+  })
+
+  const handleShareTonight = async () => {
+    if (!insightsQuery.data?.tonight.drink_count || isSharingTonight) return
+    setIsSharingTonight(true)
+    try {
+      const uri = await tonightShareRef.current?.capture()
+      if (!uri) {
+        Alert.alert('生成失败', '今晚分享图暂时无法生成，请稍后重试。')
+        return
+      }
+      setTonightPreviewUri(uri)
+      drinkLightController.clearLastResult()
+      trackEvent('drink_tonight_share_generated', { drink_count: insightsQuery.data.tonight.drink_count })
+    } finally {
+      setIsSharingTonight(false)
+    }
+  }
 
   useEffect(() => {
     if (fromPush !== '1' || isResolvingDrink || !configured) return
@@ -170,6 +198,20 @@ export default function BeerDetailScreen() {
           <FontAwesome name="share-square-o" size={16} color={canSaveBeer ? palette.text : palette.faint} />
         </Pressable>
       ) : null}
+      {insightsQuery.data?.tonight.drink_count ? (
+        <View pointerEvents="none" style={styles.shareableCanvas}>
+          <ShareableTonightImage ref={tonightShareRef} tonight={insightsQuery.data.tonight} />
+        </View>
+      ) : null}
+      <DrinkRecordSuccessSheet
+        result={drinkLightController.lastResult}
+        insights={insightsQuery.data}
+        insightsLoading={insightsQuery.isLoading}
+        sharing={isSharingTonight}
+        onDismiss={drinkLightController.clearLastResult}
+        onShareTonight={() => void handleShareTonight()}
+      />
+      <ShareImagePreviewModal uri={tonightPreviewUri} onClose={() => setTonightPreviewUri(null)} />
       {tenant && drink ? (
         <Pressable
           accessibilityLabel="保存酒款图片"
