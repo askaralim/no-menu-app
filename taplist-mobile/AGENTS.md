@@ -5,7 +5,7 @@
 This is the Expo / React Native consumer app **No Menu** (tap list; display name in `app.json`).
 
 The product is a Chinese-first real-time craft beer discovery app for supported cities. It
-combines public bar tap lists with a private personal drink history called **酒迹**.
+combines public bar tap lists with a private personal drink history called **我的 TAP**.
 
 Monorepo ops index: [`../docs/INDEX.md`](../docs/INDEX.md).  
 Sibling POS (**No Menu Tonight**, `mobile/`) App Store `1.0.0` is Waiting for Review as of 2026-08 — do not confuse ASC docs with this consumer app.
@@ -37,7 +37,7 @@ Note: `npm run web` may fail on some local Node / Expo CLI combinations with por
 
 - `app/(tabs)/index.tsx` - Tonight home feed
 - `app/(tabs)/search.tsx` - Search (drinks + bars where supported)
-- `app/(tabs)/mine.tsx` - Private hub: Apple protection, followed-bars entry, 酒迹 grid + share
+- `app/(tabs)/mine.tsx` - Private hub: Apple protection, followed-bars entry, 我的 TAP grid + share
 - `app/(tabs)/about.tsx` - About / compliance
 - `app/followed-bars.tsx` - Private followed bars + per-bar notify toggles (iOS)
 - `app/edit-profile.tsx` - Private NoMenuist username
@@ -70,7 +70,7 @@ Current approved consumer surfaces include:
 - Public tap list
 - Serving options
 - Events and new-tap discovery
-- Private 酒迹 history
+- Private 我的 TAP history
 - Private bar follows + optional new-tap notifications (iOS)
 - Private NoMenuist username / fixed avatar
 - Anonymous identity created on first record
@@ -102,8 +102,8 @@ Allowed private subscription exception:
 - Never expose follower identities, follower counts, public follow activity, or a social graph.
 - Following and push-device data must remain private, RLS-isolated, removable, and included in
   anonymous-to-Apple account merging and account deletion.
-- Mine hub layout (settled): title + Apple protection → followed-bars card → 最近喝过 + pill
-  「分享记录」→ summary (`N 款酒 · M 家酒吧 · YYYY.MM.DD 第一杯`) → history grid → delete.
+- Mine hub layout (settled): profile + Apple protection → followed-bars card → 我的 TAP
+  monthly summary + 「分享记录」→ 最近记录 grid → delete.
 - Bar detail follow control: compact `＋ 关注` / `✓ 已关注` only (no duplicate status copy),
   aligned to the right of address / hours on the hero meta row.
 - Followed-bars screen: Chinese large title (no English `FOLLOWING` kicker), same header rhythm
@@ -111,12 +111,13 @@ Allowed private subscription exception:
 - Do not request Apple `FULL_NAME` / `EMAIL` scopes for profile chrome; Apple is protection /
   restore only. Display names use the private NoMenuist username flow.
 
-Do not treat 酒迹 as proof of purchase, sales data, or a public social check-in. It is a
+Do not treat 我的 TAP as proof of purchase, sales data, or a public social check-in. It is a
 private user-authored record that may reference the same canonical product across bars.
 
-## Drink History / 酒迹
+## Drink History / 我的 TAP
 
-- The user-facing noun is `酒迹`. Actions may use natural copy such as `喝过` or `已喝过`.
+- The user-facing noun is `我的 TAP`. Actions may use natural copy such as `喝过`, `已喝过`,
+  `最近记录`, or `TAP 报告`. Do not reintroduce `酒迹` in current user-facing UI.
 - Do not reintroduce `DRINK LOG` in user-facing UI or share images.
 - First record may create a Supabase anonymous session; public browsing must remain usable
   without authentication.
@@ -228,8 +229,8 @@ Share/download images are product-facing assets and should feel like premium edi
 - Default share exports should follow the app's dark premium style.
 - Tenant-specific bespoke exports are allowed only for concrete partner needs.
 - Tenant-specific export logic should be narrowly gated by tenant id and should not affect the default template.
-- 酒迹 summary and personal drink shares use fixed `390 × 520` output.
-- 酒迹 summary shares show at most nine recent drinks and must keep the footer visible.
+- 我的 TAP summary and personal drink shares use fixed `390 × 520` output.
+- 我的 TAP summary shares show at most nine recent drinks and must keep the footer visible.
 - A personal single-drink share is only generated after the drink-state query confirms the
   user has recorded it. Do not silently fall back to the public template on query failure.
 - Personal share locations should prefer Chinese district/address labels and must not expose
@@ -264,10 +265,10 @@ For App Store release readiness, also run a real-device or TestFlight smoke test
 - Beer detail opens from home, search, and bar detail links.
 - Save/share beer image works for beers with and without images.
 - Save/share bar taplist image works for mixed image/no-image lists.
-- First drink record creates/restores an anonymous session and updates the 酒迹 screen.
+- First drink record creates/restores an anonymous session and updates the 我的 TAP module.
 - Same product at another bar adds a venue without increasing the unique drink count.
 - Apple protection, reinstall/restore, and existing-account merge preserve records.
-- 酒迹 summary and personal drink share/save flows work with one through nine drinks.
+- 我的 TAP summary and personal drink share/save flows work with one through nine drinks.
 - Removing one venue, unlighting a drink, and deleting the account require confirmation and
   update history consistently.
 - A delisted source drink remains in history but does not expose an invalid share link.
@@ -287,7 +288,7 @@ Supabase reads should go through public RPCs in `lib/api/taplist.ts`.
 The Supabase client must remain safe for static export / SSR. Do not remove the no-op storage fallback for server-side rendering.
 
 Public consumer features should use public RPCs rather than direct table reads from screens.
-Private 酒迹 features should use authenticated RPCs in `lib/api/drinkLog.ts`.
+Private 我的 TAP features should use authenticated RPCs in `lib/api/drinkLog.ts`.
 
 - Add matching TypeScript DTOs in `lib/types.ts`.
 - Add API helpers in `lib/api/taplist.ts`.

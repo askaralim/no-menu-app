@@ -1,7 +1,7 @@
 # No Menu (consumer app)
 
 No Menu is a Chinese-first Expo / React Native app for discovering live craft beer tap
-lists in supported cities. It also includes a private personal history called **酒迹**:
+lists in supported cities. It also includes a private personal history called **我的 TAP**:
 users can record a drink without registering first, protect the record with Sign in with
 Apple, and create share images.
 
@@ -42,13 +42,13 @@ repository-level `supabase/migrations/` before expecting corresponding RPCs to w
 
 - `今晚`: city feed, public bars, events, and new taps
 - `搜索`: public beer and bar discovery
-- `我的`: private 酒迹, followed bars entry, Apple protection, sharing, and account deletion
+- `我的`: private 我的 TAP, followed bars entry, Apple protection, sharing, and account deletion
 - `关于`: product, privacy, compliance, and analytics controls
 - Bar detail: live public tap list + compact private follow control
 - Beer detail: beer information, serving prices, sharing, and `喝过`
 - Followed bars: private list + per-bar iOS new-tap notification toggles
 
-酒迹 is private history, not a purchase receipt, rating, public check-in, or social feed.
+我的 TAP is private history, not a purchase receipt, rating, public check-in, or social feed.
 One canonical beer counts once; distinct bar experiences can accumulate.
 
 ## Release
@@ -80,12 +80,12 @@ See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_ST
 |------|------|
 | `app/(tabs)/index.tsx` | Tonight feed |
 | `app/(tabs)/search.tsx` | Search (drinks + bars) |
-| `app/(tabs)/mine.tsx` | Private 酒迹 |
+| `app/(tabs)/mine.tsx` | Private 我的 TAP |
 | `app/(tabs)/about.tsx` | About / compliance |
 | `app/bar/[slug].tsx` | Bar detail and live tap list |
 | `app/bar/[slug]/beer/[drinkId].tsx` | Beer detail and record action |
 | `app/drink-log/[lightId].tsx` | One drink's venue history |
-| `components/taplist/ShareableDrinkLogImage.tsx` | 酒迹 summary export |
+| `components/taplist/ShareableDrinkLogImage.tsx` | 我的 TAP monthly summary export |
 | `components/taplist/FirstLaunchLegalGate.tsx` | First-launch age notice |
 | `lib/api/taplist.ts` | Public RPC wrappers |
 | `lib/api/drinkLog.ts` | Authenticated history RPC wrappers |
