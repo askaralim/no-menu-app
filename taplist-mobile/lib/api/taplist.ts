@@ -7,10 +7,12 @@ import type {
   PublicTaplistEventRpc,
   PublicTaplistEventsRpc,
   PublicTaplistNewDrinksRpc,
+  PublicTaplistDrinkRpc,
   PublicTaplistDrinksRpc,
   PublicTaplistSearchRpc,
   PublicTaplistTenantRpc,
 } from '@/lib/types'
+import { partitionPublicDrinks } from '@/lib/types'
 
 export async function fetchPublicCities() {
   const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_cities')
@@ -42,6 +44,36 @@ export async function fetchPublicDrinks(tenantId: string) {
   })
   if (error) throw error
   return data as PublicTaplistDrinksRpc
+}
+
+function isMissingPublicDrinkRpc(error: { code?: string; message?: string }) {
+  return error.code === 'PGRST202' || error.code === '42883'
+}
+
+/**
+ * Prefer the additive single-drink RPC. During a staggered backend rollout only,
+ * fall back to the existing public RPCs when PostgREST reports that function missing.
+ */
+export async function fetchPublicDrink(slug: string, drinkId: string): Promise<PublicTaplistDrinkRpc> {
+  const client = getTaplistSupabase()
+  const { data, error } = await client.rpc('get_public_taplist_drink', {
+    p_slug: slug,
+    p_drink_id: drinkId,
+  })
+
+  if (!error) return data as PublicTaplistDrinkRpc
+  if (!isMissingPublicDrinkRpc(error)) throw error
+
+  const tenantResult = await fetchPublicTenantBySlug(slug)
+  if (!tenantResult.ok) {
+    return { ...tenantResult, code: `tenant_${tenantResult.code}` }
+  }
+
+  const drinksResult = await fetchPublicDrinks(tenantResult.tenant.id)
+  if (!drinksResult.ok) return drinksResult
+  const drink = partitionPublicDrinks(drinksResult).allForLookup.find((item) => item.id === drinkId)
+  if (!drink) return { ok: false, code: 'not_found' }
+  return { ok: true, tenant: tenantResult.tenant, drink }
 }
 
 export async function fetchPublicNewDrinks(city?: string | null) {

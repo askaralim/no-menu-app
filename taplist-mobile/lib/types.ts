@@ -122,6 +122,11 @@ export type PublicTaplistTenantRpc =
   | { ok: true; tenant: PublicTenantDetail }
   | { ok: false; code: string; name?: string }
 
+/** RPC `get_public_taplist_drink` JSON union (additive optimized detail endpoint). */
+export type PublicTaplistDrinkRpc =
+  | { ok: true; tenant: PublicTenantDetail; drink: PublicDrinkRow }
+  | { ok: false; code: string; name?: string }
+
 /** RPC `get_public_taplist_cities` JSON union */
 export type PublicTaplistCitiesRpc =
   | { ok: true; cities: PublicTaplistCity[] }
