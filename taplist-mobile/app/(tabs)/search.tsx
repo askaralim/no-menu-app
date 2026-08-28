@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { CachedImageBackground } from '@/components/taplist/CachedImage'
+import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicNewDrinks, fetchPublicTaplistBreweries, searchPublicTaplist } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
@@ -397,7 +398,7 @@ function SearchNewTapTile({
 }) {
   const router = useRouter()
   const breweryLine = formatPrimaryBrewery(drink.brewery, drink.brand_name)
-  const hasImage = Boolean(drink.image_url)
+  const artworkSource = drink.image_url || defaultBeerArtwork
   const copy = (
     <View style={styles.newTapTileCopy}>
       <Text style={styles.newTapTileName} numberOfLines={2} ellipsizeMode="tail">
@@ -430,26 +431,17 @@ function SearchNewTapTile({
         { width, height },
         pressed && styles.newTapTilePressed,
       ]}>
-      {hasImage ? (
-        <CachedImageBackground
-          source={drink.image_url as string}
-          style={styles.newTapTileImage}
-          imageStyle={styles.newTapTileImageRadius}>
-          <LinearGradient
-            colors={['rgba(13,13,13,0.05)', 'rgba(13,13,13,0.42)', 'rgba(13,13,13,0.94)']}
-            locations={[0, 0.42, 1]}
-            style={styles.newTapTileScrim}>
-            {copy}
-          </LinearGradient>
-        </CachedImageBackground>
-      ) : (
+      <CachedImageBackground
+        source={artworkSource}
+        style={styles.newTapTileImage}
+        imageStyle={styles.newTapTileImageRadius}>
         <LinearGradient
-          colors={['rgba(75,54,31,0.28)', 'rgba(17,16,15,0.94)']}
-          locations={[0, 1]}
+          colors={['rgba(13,13,13,0.05)', 'rgba(13,13,13,0.42)', 'rgba(13,13,13,0.94)']}
+          locations={[0, 0.42, 1]}
           style={styles.newTapTileScrim}>
           {copy}
         </LinearGradient>
-      )}
+      </CachedImageBackground>
     </Pressable>
   )
 }
@@ -532,11 +524,7 @@ function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
           }
           style={({ pressed }) => [styles.drinkPressable, pressed && styles.pressed]}>
           <View style={styles.drinkRowInner}>
-            {drink.image_url ? (
-              <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
-            ) : (
-              <View style={styles.artworkSpacer} />
-            )}
+            <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
             <View style={styles.drinkCopy}>
               <Text style={styles.resultName} numberOfLines={2}>
                 {drink.name}
@@ -841,10 +829,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.lg,
     alignItems: 'flex-start',
-  },
-  artworkSpacer: {
-    width: 72,
-    height: 72,
   },
   pressed: {
     opacity: 0.78,

@@ -5,14 +5,15 @@ Doc index: [`../docs/INDEX.md`](../docs/INDEX.md).
 
 ## Release status
 
-**App Store `1.0.0` (build ≥16) is approved / live.**
+**App Store `1.1.0` (build ≥20) is approved / live** — fixed tap slots + catalog UX.  
+`1.0.0` is superseded; keep its ASC docs as baseline metadata only.
 
-**`1.1.0` (fixed tap slots) is being prepared for submission** — most of it is still uncommitted on `codex/taplist-fixed-slots`. Two production migrations gate the build: `20260817120000_tenant_tap_slot_count.sql` and `20260817130000_link_drink_copy_product_image.sql`. The first one also rewrites `set_drink_taplist_listing`, which live `1.0.0` clients call, so verify no regression on a live device after applying it.
+Production migrations for this release: `20260817120000_tenant_tap_slot_count.sql` and `20260817130000_link_drink_copy_product_image.sql` (applied). The tap-slot migration rewrites `set_drink_taplist_listing`; do not regress that RPC.
 
-Sibling consumer **No Menu** `1.3.0` (follow + new-tap push) — see `taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`. POS still needs no UI for push enqueue.
+Sibling consumer **No Menu** `1.3.0` is also **approved / live** — see `taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`. POS still needs no UI for push enqueue.
 
 Canonical ASC:
-- [`docs/APP_STORE_CONNECT_1.1.0.md`](./docs/APP_STORE_CONNECT_1.1.0.md) — current release
+- [`docs/APP_STORE_CONNECT_1.1.0.md`](./docs/APP_STORE_CONNECT_1.1.0.md) — current live release
 - [`docs/APP_STORE_LISTED_V1.md`](./docs/APP_STORE_LISTED_V1.md) — `1.0.0` baseline metadata
 - [`APP_STORE_CONNECT_SUBMISSION.md`](./APP_STORE_CONNECT_SUBMISSION.md) — `1.0.0` fill-in checklist
 

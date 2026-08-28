@@ -8,12 +8,12 @@ The product is a Chinese-first real-time craft beer discovery app for supported 
 combines public bar tap lists with a private personal drink history called **我的 TAP**.
 
 Monorepo ops index: [`../docs/INDEX.md`](../docs/INDEX.md).  
-Sibling POS (**No Menu Tonight**, `mobile/`) App Store `1.0.0` is Waiting for Review as of 2026-08 — do not confuse ASC docs with this consumer app.
+Sibling POS (**No Menu Tonight**, `mobile/`) App Store `1.1.0` is **approved / live** — do not confuse ASC docs with this consumer app.
 
 ## Release status
 
-**App Store `1.3.0` (build ≥42) is Waiting for Review** (submitted 2026-08) — private bar follow + optional new-tap iOS push + 我的 hub polish.  
-Do not replace the binary unless Apple asks. Prefer production RPC / Edge Function hotfixes the submitted client already calls.
+**App Store `1.3.0` (build ≥42) is approved / live** (public availability reconfirmed 2026-08-24) — private bar follow + optional new-tap iOS push + 我的 hub polish.  
+Prefer production RPC / Edge Function hotfixes when no new binary is needed. Ship a new build only for user-visible changes or Apple-requested fixes.
 
 Canonical ASC: [`docs/APP_STORE_CONNECT_1.3.0.md`](./docs/APP_STORE_CONNECT_1.3.0.md).  
 Push deploy / kill-switches: [`../supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md).

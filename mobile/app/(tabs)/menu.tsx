@@ -13,7 +13,6 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
-  Image,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -34,6 +33,7 @@ import {
 } from '../../lib/taplistOwnerApi'
 import DrinkEditSheet from '../../components/taplist/DrinkEditSheet'
 import JoinTonightSheet from '../../components/taplist/JoinTonightSheet'
+import { BeerArtworkImage } from '../../components/taplist/BeerArtworkImage'
 import AnchorMenu, { type AnchorRect } from '../../components/ui/AnchorMenu'
 
 type ViewMode = 'categories' | 'drinks'
@@ -101,13 +101,7 @@ function CatalogDrinkRow({
         activeOpacity={0.78}
         onPress={onEdit}
       >
-        {drink.image_url ? (
-          <Image source={{ uri: drink.image_url }} style={styles.catalogRowImage} />
-        ) : (
-          <View style={[styles.catalogRowImage, styles.catalogRowImagePlaceholder]}>
-            <Ionicons name="wine-outline" size={20} color={T.faint} />
-          </View>
-        )}
+        <BeerArtworkImage imageUrl={drink.image_url} style={styles.catalogRowImage} />
         <View style={styles.catalogRowBody}>
           <View style={styles.catalogRowTitleLine}>
             {brewery ? (
@@ -934,8 +928,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   catalogRowMainArchived: { opacity: 0.58 },
-  catalogRowImage: { width: 54, height: 54, borderRadius: 7, backgroundColor: T.surfaceMuted },
-  catalogRowImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  catalogRowImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 7,
+    backgroundColor: T.surfaceMuted,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+  },
   catalogRowBody: { flex: 1, minWidth: 0 },
   catalogRowTitleLine: { flexDirection: 'row', alignItems: 'baseline', minWidth: 0 },
   catalogRowBrewery: { color: T.goldSoft, fontSize: 15, fontWeight: '600', maxWidth: '38%' },

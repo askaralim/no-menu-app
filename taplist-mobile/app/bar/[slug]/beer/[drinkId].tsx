@@ -1,7 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
 import { Link, router, useLocalSearchParams } from 'expo-router'
-import * as Sharing from 'expo-sharing'
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -11,16 +10,17 @@ import { BackButton } from '@/components/taplist/BackButton'
 import { BeerRoadmapSection } from '@/components/taplist/BeerRoadmapSection'
 import { DrinkLightAction, DrinkLightFeedback, useDrinkLightController } from '@/components/taplist/DrinkLightSection'
 import { DrinkRecordSuccessSheet } from '@/components/taplist/DrinkRecordSuccessSheet'
+import { CachedImage } from '@/components/taplist/CachedImage'
+import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { ShareableTonightImage, type ShareableTonightImageHandle } from '@/components/taplist/ShareableTonightImage'
 import { ShareImagePreviewModal } from '@/components/taplist/ShareImagePreviewModal'
 import { ShareableBeerImage, type ShareableBeerImageHandle } from '@/components/taplist/ShareableBeerImage'
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { displayServingOptions, formatBreweryWithCollab, localizeServingLabel } from '@/lib/formatTaplist'
-import { fetchPublicDrinks, fetchPublicTenantBySlug } from '@/lib/api/taplist'
-import { partitionPublicDrinks } from '@/lib/types'
+import { fetchPublicDrink } from '@/lib/api/taplist'
+import { getMyConsumerProfile } from '@/lib/api/consumerProfile'
 import { getMyDrinkInsights, getMyDrinkState } from '@/lib/api/drinkLog'
-import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicDrinkRow, PublicServingOption } from '@/lib/types'
 import { trackEvent } from '@/lib/analytics'
@@ -32,27 +32,19 @@ export default function BeerDetailScreen() {
   const [isSavingBeer, setIsSavingBeer] = useState(false)
   const [isSharingTonight, setIsSharingTonight] = useState(false)
   const [tonightPreviewUri, setTonightPreviewUri] = useState<string | null>(null)
+  const [beerPreviewUri, setBeerPreviewUri] = useState<string | null>(null)
   const { slug, drinkId, fromPush } = useLocalSearchParams<{ slug: string; drinkId: string; fromPush?: string }>()
   const configured = useTaplistSupabaseReady()
 
-  const tenantQuery = useQuery({
-    queryKey: ['taplist', 'tenant', slug],
-    queryFn: () => fetchPublicTenantBySlug(slug),
-    enabled: configured && !!slug,
+  const detailQuery = useQuery({
+    queryKey: ['taplist', 'drink', slug, drinkId],
+    queryFn: () => fetchPublicDrink(slug, drinkId),
+    enabled: configured && !!slug && !!drinkId,
   })
 
-  const tenantResult = tenantQuery.data
-  const tenant = tenantResult?.ok ? tenantResult.tenant : null
-
-  const drinksQuery = useQuery({
-    queryKey: ['taplist', 'drinks', tenant?.id],
-    queryFn: () => fetchPublicDrinks(tenant!.id),
-    enabled: configured && !!tenant?.id,
-  })
-
-  const drinkResult = drinksQuery.data
-  const drinks = drinkResult?.ok ? partitionPublicDrinks(drinkResult).allForLookup : []
-  const drink = drinks.find((item) => item.id === drinkId) ?? null
+  const detailResult = detailQuery.data
+  const tenant = detailResult?.ok ? detailResult.tenant : null
+  const drink = detailResult?.ok ? detailResult.drink : null
   const breweryLine = drink
     ? formatBreweryWithCollab(drink.beer?.brewery, drink.beer?.collab_breweries, drink.brand_name)
     : null
@@ -60,7 +52,7 @@ export default function BeerDetailScreen() {
   const servingOptions = drink ? displayServingOptions(drink.serving_options) : []
   const servingGroups = groupServingOptions(servingOptions)
   const metadata = drink ? beerMetadata(drink) : []
-  const isResolvingDrink = configured && (tenantQuery.isLoading || (!!tenant && drinksQuery.isLoading))
+  const isResolvingDrink = configured && detailQuery.isLoading
   const drinkLogStateQuery = useQuery({
     queryKey: ['drink-log', 'state', drink?.id],
     queryFn: () => getMyDrinkState(drink!.id),
@@ -75,6 +67,11 @@ export default function BeerDetailScreen() {
     queryKey: ['drink-log', 'insights'],
     queryFn: getMyDrinkInsights,
     enabled: Boolean(drinkLightController.lastResult?.created_venue),
+  })
+  const profileQuery = useQuery({
+    queryKey: ['consumer-profile'],
+    queryFn: getMyConsumerProfile,
+    enabled: Boolean(insightsQuery.data?.tonight.drink_count),
   })
 
   const handleShareTonight = async () => {
@@ -96,14 +93,17 @@ export default function BeerDetailScreen() {
 
   useEffect(() => {
     if (fromPush !== '1' || isResolvingDrink || !configured) return
-    if (tenantQuery.isError || tenantResult?.ok === false) {
+    if (
+      detailQuery.isError ||
+      (detailResult?.ok === false && detailResult.code.startsWith('tenant_'))
+    ) {
       router.replace('/')
-    } else if (!drink && !drinksQuery.isLoading) {
+    } else if (detailResult?.ok === false) {
       router.replace(`/bar/${slug}?fromPush=1`)
     }
-  }, [configured, drink, drinksQuery.isLoading, fromPush, isResolvingDrink, slug, tenantQuery.isError, tenantResult])
+  }, [configured, detailQuery.isError, detailResult, fromPush, isResolvingDrink, slug])
 
-  const handleShareBeerImage = async () => {
+  const handlePreviewBeerImage = async () => {
     if (!tenant || !drink || isSavingBeer) return
     if (drinkLogStateQuery.isLoading) return
     if (drinkLogStateQuery.isError) {
@@ -114,67 +114,13 @@ export default function BeerDetailScreen() {
     try {
       setIsSavingBeer(true)
       const uri = await shareableRef.current?.capture()
-      if (!uri || !(await Sharing.isAvailableAsync())) {
-        Alert.alert('分享失败', '暂时无法打开系统分享面板')
-        return
-      }
-      await Sharing.shareAsync(uri)
-    } catch {
-      Alert.alert('分享失败', '酒款图片生成失败，请稍后再试')
-    } finally {
-      setIsSavingBeer(false)
-    }
-  }
-
-  const handleSaveBeerImage = async () => {
-    if (!tenant || !drink) {
-      Alert.alert('暂无可保存的酒款')
-      return
-    }
-    if (isSavingBeer) return
-    if (drinkLogStateQuery.isLoading) return
-    if (drinkLogStateQuery.isError) {
-      Alert.alert('暂时无法生成图片', '无法确认这款酒的喝过状态，请稍后重试。')
-      void drinkLogStateQuery.refetch()
-      return
-    }
-
-    try {
-      setIsSavingBeer(true)
-      const uri = await shareableRef.current?.capture()
       if (!uri) {
-        trackEvent('beer_image_save_failed', {
-          tenant_id: tenant.id,
-          drink_id: drink.id,
-          reason: 'capture_failed',
-        })
-        Alert.alert('保存失败', '酒款图片生成失败，请稍后再试')
+        Alert.alert('生成失败', '酒款图片生成失败，请稍后再试')
         return
       }
-
-      await saveImageUriToPhotoLibrary(uri)
-      trackEvent('beer_image_save_succeeded', {
-        tenant_id: tenant.id,
-        drink_id: drink.id,
-      })
-      Alert.alert('保存成功', '酒款已保存到相册')
-    } catch (error) {
-      if (error instanceof PhotoLibraryPermissionError) {
-        trackEvent('beer_image_save_failed', {
-          tenant_id: tenant.id,
-          drink_id: drink.id,
-          reason: 'permission_denied',
-        })
-        Alert.alert('无法保存', '需要相册权限才能保存酒款')
-        return
-      }
-      trackEvent('beer_image_save_failed', {
-        tenant_id: tenant.id,
-        drink_id: drink.id,
-        reason: 'unknown',
-      })
-      console.error('Save beer image failed', error)
-      Alert.alert('保存失败', '酒款图片生成失败，请稍后再试')
+      setBeerPreviewUri(uri)
+    } catch {
+      Alert.alert('生成失败', '酒款图片生成失败，请稍后再试')
     } finally {
       setIsSavingBeer(false)
     }
@@ -188,7 +134,7 @@ export default function BeerDetailScreen() {
           accessibilityLabel="分享酒款图片"
           hitSlop={10}
           disabled={!canSaveBeer}
-          onPress={() => void handleShareBeerImage()}
+          onPress={() => void handlePreviewBeerImage()}
           style={({ pressed }) => [
             styles.shareButton,
             { top: insets.top + 14 },
@@ -200,7 +146,11 @@ export default function BeerDetailScreen() {
       ) : null}
       {insightsQuery.data?.tonight.drink_count ? (
         <View pointerEvents="none" style={styles.shareableCanvas}>
-          <ShareableTonightImage ref={tonightShareRef} tonight={insightsQuery.data.tonight} />
+          <ShareableTonightImage
+            ref={tonightShareRef}
+            tonight={insightsQuery.data.tonight}
+            username={profileQuery.data?.consumer_username || 'NoMenuist'}
+          />
         </View>
       ) : null}
       <DrinkRecordSuccessSheet
@@ -212,12 +162,13 @@ export default function BeerDetailScreen() {
         onShareTonight={() => void handleShareTonight()}
       />
       <ShareImagePreviewModal uri={tonightPreviewUri} onClose={() => setTonightPreviewUri(null)} />
+      <ShareImagePreviewModal uri={beerPreviewUri} onClose={() => setBeerPreviewUri(null)} />
       {tenant && drink ? (
         <Pressable
           accessibilityLabel="保存酒款图片"
           hitSlop={10}
           disabled={!canSaveBeer}
-          onPress={handleSaveBeerImage}
+          onPress={() => void handlePreviewBeerImage()}
           style={({ pressed }) => [
             styles.downloadButton,
             { top: insets.top + 14 },
@@ -239,6 +190,13 @@ export default function BeerDetailScreen() {
         ) : null}
 
         <View style={artworkUrl ? styles.paddedContent : undefined}>
+          {!artworkUrl && drink ? (
+            <CachedImage
+              accessibilityLabel={`${drink.name}默认酒款图片`}
+              source={defaultBeerArtwork}
+              style={styles.fallbackHero}
+            />
+          ) : null}
           {!configured ? (
             <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看实时公开酒单。" />
           ) : isResolvingDrink ? (
@@ -246,11 +204,11 @@ export default function BeerDetailScreen() {
               <ActivityIndicator color={palette.amber} />
               <Text style={styles.loadingText}>正在加载酒款...</Text>
             </View>
-          ) : tenantQuery.isError || tenantResult?.ok === false ? (
-            <EmptyState title="找不到这家酒吧" body="该酒吧可能尚未发布公开酒单，或链接已经失效。" />
-          ) : drinksQuery.isError || drinkResult?.ok === false ? (
+          ) : detailQuery.isError ? (
             <EmptyState title="暂时无法加载酒款" body="请稍后重试，或以门店实际供应为准。" />
-          ) : !drink && !drinksQuery.isLoading ? (
+          ) : detailResult?.ok === false && detailResult.code.startsWith('tenant_') ? (
+            <EmptyState title="找不到这家酒吧" body="该酒吧可能尚未发布公开酒单，或链接已经失效。" />
+          ) : detailResult?.ok === false || (!drink && !detailQuery.isLoading) ? (
             <EmptyState title="找不到这款酒" body="这款酒可能已经下架，或不再公开展示。" />
           ) : drink ? (
             <>
@@ -346,7 +304,7 @@ export default function BeerDetailScreen() {
         <View style={styles.saveOverlay} pointerEvents="none">
           <View style={styles.saveToast}>
             <ActivityIndicator size="small" color={palette.amber} />
-            <Text style={styles.saveText}>正在保存酒款</Text>
+            <Text style={styles.saveText}>正在生成预览</Text>
           </View>
         </View>
       ) : null}
@@ -466,6 +424,13 @@ const styles = StyleSheet.create({
   },
   paddedContent: {
     paddingHorizontal: spacing.lg,
+  },
+  fallbackHero: {
+    width: 238,
+    height: 238,
+    alignSelf: 'center',
+    borderRadius: 8,
+    marginBottom: spacing.lg,
   },
   loading: {
     marginTop: spacing.lg,

@@ -2,12 +2,12 @@
 
 > Canonical consumer ASC doc for `1.3.0`. Index: [`../../docs/INDEX.md`](../../docs/INDEX.md). Push ops: [`../../supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../../supabase/NEW_TAP_PUSH_DEPLOYMENT.md).
 
-## Status (2026-08-13)
+## Status (2026-08-24)
 
-**Submitted — Waiting for App Store Connect review** (`1.3.0`, build ≥42).  
-Do not upload a replacement binary unless Apple requests changes. Production migrations through `20260813120000_…` are applied (operator-confirmed). Backend / Edge Function hotfixes OK without a new build when the submitted client already calls them.
+**Approved / live** (`1.3.0`, build ≥42).  
+App Store 公开下载状态已由账号持有人确认。本文保留为 `1.3.0` 发布记录及后续排障参考。Production migrations through `20260813120000_…` are applied (operator-confirmed). Backend / Edge Function hotfixes OK without a new build when the live client already calls them; ship a new binary only for user-visible changes or Apple-requested fixes.
 
-本文按 `1.3.0` 功能整理。方括号内容在提交时由账号持有人填写或确认；提交完成后保留作审核备查。
+本文按 `1.3.0` 功能整理。方括号内容为提交当时的填写参考。
 
 ## 1. 构建与 App 信息
 
@@ -354,7 +354,7 @@ App 仅使用系统 HTTPS/TLS，没有自研或非豁免加密。若 ASC 仍询�
 - Expo/APNs credentials 有效；
 - 关注账号存在有效、enabled 的 iOS push device。
 
-审核期间：勿随意关掉双 kill-switch，除非要紧急停推；停推不会影响浏览/关注。详见 `NEW_TAP_PUSH_DEPLOYMENT.md`。
+上线后：保持双 kill-switch 开启并监控 dispatcher、Expo receipts 与失效 token 清理；仅在异常推送时紧急停推。停推不会影响浏览或关注。详见 `NEW_TAP_PUSH_DEPLOYMENT.md`。
 
 ## 10. 最终真机回归
 
@@ -377,16 +377,12 @@ App 仅使用系统 HTTPS/TLS，没有自研或非豁免加密。若 ASC 仍询�
 - [ ] 飞行模式或私人 RPC 失败不影响公开酒单
 - [ ] 隐私政策、条款、支持和营销 URL 可公开访问
 
-## 11. 最终提交顺序
+## 11. 发布结果
 
-1. 确认生产迁移、Edge Functions、推送双开关和 Cron。
-2. 构建并上传包含最终代码的 `1.3.0` Production Build。
-3. 在 TestFlight 完成第 10 节真机回归。
-4. 使用最终 build 重拍并生成 6.9 英寸截图。
-5. 在 ASC 打开 iOS `1.3.0`，填写版本文案并上传截图。
-6. 更新并发布 App Privacy。
-7. 确认年龄分级、内容版权、价格、销售范围、ICP 和 DSA 无警告。
-8. 选择最终 build，处理 Export Compliance。
-9. 填写审核联系人和英文审核备注。
-10. 选择手动发布并点击 `Add for Review`。
-11. 在 Draft Submission 最后检查后点击 `Submit for Review`。
+- [x] 生产迁移、Edge Functions、推送双开关和 Cron 已配置
+- [x] `1.3.0` Production Build 已上传并完成 TestFlight 真机验证
+- [x] ASC 文案、截图、App Privacy、年龄分级与审核资料已提交
+- [x] Apple 审核通过
+- [x] `1.3.0` 已在 App Store 正式上线并可公开下载
+
+第 10 节保留为线上回归与后续版本复测清单；未留下逐项测试证据的条目不在文档中追溯打勾。

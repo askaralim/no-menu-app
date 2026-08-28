@@ -3,6 +3,7 @@ import { Link } from 'expo-router'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { CachedImage } from '@/components/taplist/CachedImage'
+import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import {
   listCapsuleCardStyles,
   listCapsuleMetaStyle,
@@ -25,7 +26,6 @@ type BeerListCardProps = {
 }
 
 export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
-  const hasArtwork = Boolean(drink.image_url)
   const publicStatus = drink.public_status || null
   const isSoldOut = publicStatus === '售罄'
   const isNew = publicStatus === '上新'
@@ -55,16 +55,12 @@ export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
           pressed && listCapsuleCardStyles.cardPressed,
         ]}>
         <View style={listCapsuleCardStyles.cardInner}>
-          {hasArtwork ? (
-            <View style={listCapsuleCardStyles.artworkFrame}>
-              <CachedImage
-                source={drink.image_url as string}
-                style={listCapsuleCardStyles.artwork}
-              />
-            </View>
-          ) : (
-            <View style={listCapsuleCardStyles.artworkSpacer} />
-          )}
+          <View style={listCapsuleCardStyles.artworkFrame}>
+            <CachedImage
+              source={drink.image_url || defaultBeerArtwork}
+              style={listCapsuleCardStyles.artwork}
+            />
+          </View>
 
           <View style={listCapsuleCardStyles.panel}>
             <LinearGradient

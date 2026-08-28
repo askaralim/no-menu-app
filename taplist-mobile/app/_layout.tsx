@@ -81,6 +81,7 @@ function RootLayoutNav() {
         <Stack.Screen name="bar/[slug]/event/[eventId]" options={{ headerShown: false }} />
         <Stack.Screen name="bar/[slug]/beer/[drinkId]" options={{ headerShown: false }} />
         <Stack.Screen name="drink-log/[lightId]" options={{ headerShown: false }} />
+        <Stack.Screen name="tap-report" options={{ headerShown: false }} />
         <Stack.Screen name="followed-bars" options={{ headerShown: false }} />
         <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />

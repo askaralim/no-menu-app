@@ -23,7 +23,7 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
     const shotRef = useRef<ViewShot>(null)
     const title = tenant.display_name || tenant.name
     const addressLine = [tenant.district, tenant.address].filter(Boolean).join(' · ')
-    const personalLocation = uniqueLocationParts([localizeCity(tenant.city), tenant.district, tenant.address]).join(' · ')
+    const personalCity = localizeCity(tenant.city)
     const generatedAtLabel = formatGeneratedAt(new Date())
     const generatedDateLabel = formatShortDate(new Date().toISOString())
     const breweryLine = formatBreweryWithCollab(
@@ -33,6 +33,7 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
     )
     const breweryStyle = beerInfoLine(drink)
     const stats = beerStatsLine(drink)
+    const personalAbv = typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null
     const servingOptions = displayServingOptions(drink.serving_options)
     const status = drink.public_status || null
 
@@ -49,34 +50,35 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
           {litAt ? (
             <>
               <View style={styles.personalHeader}>
-                <Text style={styles.personalKicker}>我在这里喝过 · {formatShortDate(litAt)}</Text>
-                <Text numberOfLines={2} style={styles.personalVenue}>{title}</Text>
-                {personalLocation ? (
-                  <View style={styles.personalLocationRow}>
-                    <FontAwesome name="map-marker" size={12} color={palette.muted} />
-                    <Text numberOfLines={1} style={styles.personalLocation}>{personalLocation}</Text>
-                  </View>
-                ) : null}
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.68} style={styles.personalHeaderTitle}>
+                  <Text style={styles.personalHeaderDate}>{formatShortDate(litAt)} · </Text>
+                  {personalCity ? <Text style={styles.personalHeaderDate}>{personalCity} · </Text> : null}
+                  <Text style={styles.personalHeaderVenue}>{title} · </Text>
+                  <Text style={styles.personalHeaderAccent}>新 TAP</Text>
+                </Text>
+                <View style={styles.personalHeaderRule} />
               </View>
 
-              <View style={[styles.personalPanel, !drink.image_url && styles.personalPanelWithoutArt]}>
-                {drink.image_url ? <BeerArtwork name={drink.name} source={drink.image_url} size={154} /> : null}
-                <View style={styles.personalBeerCopy}>
-                  <Text numberOfLines={2} style={styles.personalBeerName}>{drink.name}</Text>
-                  {breweryLine ? (
-                    <Text numberOfLines={2} style={styles.personalMeta}>
-                      {breweryLine}
-                    </Text>
-                  ) : null}
-                  {drink.beer?.beer_style ? <PersonalFact label="风格" value={drink.beer.beer_style} /> : null}
-                  {drink.beer?.country ? <PersonalFact label="产地" value={drink.beer.country} /> : null}
-                  {stats ? <PersonalFact label="酒款参数" value={stats} /> : null}
-                </View>
+              <View style={styles.personalArtFrame}>
+                <BeerArtwork name={drink.name} source={drink.image_url} size={270} />
+              </View>
+
+              <View style={styles.personalBeerCopy}>
+                <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72} style={styles.personalIdentityLine}>
+                  {breweryLine ? <Text style={styles.personalMeta}>{breweryLine} · </Text> : null}
+                  <Text style={styles.personalBeerName}>{drink.name}</Text>
+                </Text>
+                {drink.beer?.country ? <Text numberOfLines={1} style={styles.personalOrigin}>{drink.beer.country}</Text> : null}
+                {[drink.beer?.beer_style, personalAbv].filter(Boolean).length ? (
+                  <Text numberOfLines={1} style={styles.personalFacts}>
+                    {[drink.beer?.beer_style, personalAbv].filter(Boolean).join(' · ')}
+                  </Text>
+                ) : null}
+
               </View>
 
               <View style={styles.personalFooter}>
-                <Text style={styles.personalBrand}>NO MENU</Text>
-                <Text style={styles.personalGenerated}>生成于 {generatedDateLabel}</Text>
+                <Text style={styles.personalBrand}>NO MENU · {generatedDateLabel}</Text>
               </View>
             </>
           ) : (
@@ -94,7 +96,7 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
 
               <View style={styles.beerPanel}>
                 <View style={styles.hero}>
-                  {drink.image_url ? <BeerArtwork name={drink.name} source={drink.image_url} size={132} /> : null}
+                  <BeerArtwork name={drink.name} source={drink.image_url} size={132} />
                   <View style={styles.heroCopy}>
                     <View style={styles.titleRow}>
                       <Text style={styles.beerName}>{drink.name}</Text>
@@ -139,15 +141,6 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
   }
 )
 
-function PersonalFact({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.personalFact}>
-      <Text style={styles.personalFactLabel}>{label}</Text>
-      <Text numberOfLines={2} style={styles.personalFactValue}>{value}</Text>
-    </View>
-  )
-}
-
 function beerInfoLine(drink: PublicDrinkRow) {
   return [
     formatBreweryWithCollab(drink.beer?.brewery, drink.beer?.collab_breweries, drink.brand_name),
@@ -190,6 +183,8 @@ function localizeCity(city: string) {
   const labels: Record<string, string> = {
     shanghai: '上海',
     beijing: '北京',
+    tianjin: '天津',
+    天津: '天津',
     guangzhou: '广州',
     shenzhen: '深圳',
     chengdu: '成都',
@@ -200,14 +195,12 @@ function localizeCity(city: string) {
     xian: '西安',
     "xi'an": '西安',
     chongqing: '重庆',
+    qingdao: '青岛',
+    青岛: '青岛',
+    binzhou: '滨州',
+    滨州: '滨州',
   }
   return labels[city.trim().toLowerCase()] ?? city
-}
-
-function uniqueLocationParts(values: Array<string | null>) {
-  return values
-    .map((value) => value?.trim())
-    .filter((value, index, all): value is string => Boolean(value) && all.indexOf(value) === index)
 }
 
 const styles = StyleSheet.create({
@@ -231,15 +224,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   personalHeader: {
-    paddingBottom: spacing.sm,
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
-  personalKicker: {
-    ...typography.label,
-    color: palette.tungsten,
-    fontSize: 10,
-    lineHeight: 13,
-    marginBottom: spacing.xxs,
-  },
+  personalHeaderTitle: { ...typography.body, fontSize: 13, lineHeight: 18, fontWeight: '500', flexShrink: 1 },
+  personalHeaderDate: { color: palette.muted },
+  personalHeaderVenue: { color: palette.text, fontSize: 15, fontWeight: '600' },
+  personalHeaderAccent: { color: palette.tungsten },
+  personalHeaderRule: { flex: 1, minWidth: 18, height: 1, backgroundColor: palette.line },
   kicker: {
     ...typography.label,
     color: palette.tungsten,
@@ -247,84 +241,39 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     marginBottom: spacing.xs,
   },
-  personalBeerName: {
-    ...typography.displayL,
+  personalIdentityLine: {
+    ...typography.headline,
     color: palette.text,
-    fontSize: 30,
-    lineHeight: 34,
+    fontSize: 24,
+    lineHeight: 31,
+    textAlign: 'center',
+  },
+  personalBeerName: {
+    color: palette.text,
+    fontSize: 24,
   },
   personalMeta: {
-    ...typography.caption,
-    color: palette.muted,
-    marginTop: spacing.xs,
+    color: palette.amber,
+    fontSize: 17,
   },
-  personalPanel: {
-    minHeight: 220,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(245,241,232,0.08)',
-    backgroundColor: 'rgba(17,17,17,0.48)',
-    padding: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  personalPanelWithoutArt: {
-    alignItems: 'flex-start',
-  },
+  personalOrigin: { ...typography.caption, color: palette.muted, fontSize: 11, lineHeight: 15, marginTop: spacing.xxs, textAlign: 'center' },
+  personalArtFrame: { width: 280, height: 280, alignSelf: 'center', marginTop: spacing.sm, padding: 5, borderRadius: 5, backgroundColor: palette.text },
   personalBeerCopy: {
-    flex: 1,
-    minWidth: 0,
+    marginTop: spacing.md,
   },
-  personalVenue: {
-    ...typography.displayL,
-    color: palette.text,
-    fontSize: 32,
-    lineHeight: 36,
-  },
-  personalLocationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  personalLocation: {
-    ...typography.caption,
-    color: palette.muted,
-    flex: 1,
-  },
-  personalFact: {
-    marginTop: spacing.sm,
-  },
-  personalFactLabel: {
-    ...typography.label,
-    color: palette.tungsten,
-    fontSize: 9,
-    lineHeight: 12,
-  },
-  personalFactValue: {
-    ...typography.micro,
-    color: palette.text,
-    marginTop: 2,
-  },
+  personalFacts: { ...typography.micro, color: palette.tungsten, fontSize: 10, lineHeight: 14, marginTop: 2, textAlign: 'center' },
   personalFooter: {
     minHeight: 24,
     marginTop: 'auto',
     paddingTop: spacing.xs,
     borderTopWidth: 1,
     borderTopColor: palette.line,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
   },
   personalBrand: {
     ...typography.label,
     color: palette.text,
     fontSize: 10,
-  },
-  personalGenerated: {
-    ...typography.micro,
-    color: palette.faint,
   },
   venue: {
     ...typography.displayL,

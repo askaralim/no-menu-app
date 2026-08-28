@@ -1,6 +1,6 @@
 # No Menu Tap List — App Store Connect MVP checklist
 
-> **Current ASC:** `1.3.0` is Waiting for Review — use [APP_STORE_CONNECT_1.3.0.md](./APP_STORE_CONNECT_1.3.0.md). Older `1.2.x` paste packs remain historical. This file is the generic preflight checklist.
+> **Current submission candidate:** `1.3.1` build `43` — use [APP_STORE_CONNECT_1.3.1.md](./APP_STORE_CONNECT_1.3.1.md). `1.3.0` remains the approved/live baseline in [APP_STORE_CONNECT_1.3.0.md](./APP_STORE_CONNECT_1.3.0.md). This file is the generic preflight checklist.
 
 Use this before uploading a **production** iOS build. Demo seed data (`taplist-demo-*` bars) is acceptable for TestFlight; replace with real bars before public App Store release if desired.
 
@@ -93,9 +93,9 @@ The current build includes optional PostHog product analytics. Use the release-s
 ## 6. Screenshots & metadata
 
 Use `tools/app-store-screenshots.html` to generate Chinese App Store Connect screenshots.
-It defaults to the current 6.9" iPhone portrait size and also supports 6.7" / 6.5" exports.
+It defaults to the current 6.9" iPhone portrait size and also supports an alternate 6.9" size plus 6.5" exports.
 
-Prepare 6.9", 6.7", and 6.5" iPhone screenshots showing:
+Prepare the highest-resolution 6.9" iPhone screenshots first. If the UI is identical across device sizes, App Store Connect can scale them automatically; add alternate 6.9" or 6.5" exports only when you need a different composition. Show:
 
 1. Multi-city Tonight feed with city label  
 2. City picker or a second city feed  

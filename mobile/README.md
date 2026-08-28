@@ -2,7 +2,7 @@
 
 Home-screen / App Store display name: **No Menu Tonight** (`expo.name` in `app.json`).  
 App Store subtitle (listed v1): **酒吧实时酒单管理**.  
-**Status (2026-08-19): App Store `1.0.0` live; `1.1.0` in submission prep.**  
+**Status (2026-08-21): App Store `1.1.0` approved / live** (build ≥20; fixed tap slots).  
 ASC docs: [`docs/APP_STORE_CONNECT_1.1.0.md`](./docs/APP_STORE_CONNECT_1.1.0.md) (current) · [`docs/APP_STORE_LISTED_V1.md`](./docs/APP_STORE_LISTED_V1.md) (`1.0.0` baseline) · agent notes: [`AGENTS.md`](./AGENTS.md) · index: [`../docs/INDEX.md`](../docs/INDEX.md).
 
 ## iOS release

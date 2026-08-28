@@ -13,8 +13,8 @@ consumer app must not depend on POS UI or mutate POS workflows.
 
 Monorepo doc index: [`../docs/INDEX.md`](../docs/INDEX.md).  
 
-**Status (2026-08-13):** App Store `1.3.0` (build ≥42) **Waiting for Review** — follow bars + optional new-tap push. ASC: [`docs/APP_STORE_CONNECT_1.3.0.md`](docs/APP_STORE_CONNECT_1.3.0.md).  
-Tonight POS `1.0.0` is also **Waiting for Review** — see `mobile/docs/APP_STORE_LISTED_V1.md`.
+**Status (2026-08-24):** App Store `1.3.0` (build ≥42) **Approved / live** — follow bars + optional new-tap push. ASC: [`docs/APP_STORE_CONNECT_1.3.0.md`](docs/APP_STORE_CONNECT_1.3.0.md).  
+Tonight POS `1.1.0` is also **Approved / live** — see `mobile/docs/APP_STORE_CONNECT_1.1.0.md`.
 
 ## Setup
 

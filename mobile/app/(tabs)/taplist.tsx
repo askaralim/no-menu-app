@@ -38,6 +38,7 @@ import DrinkEditSheet from '../../components/taplist/DrinkEditSheet'
 import JoinTonightSheet from '../../components/taplist/JoinTonightSheet'
 import TapSlotCountSheet from '../../components/taplist/TapSlotCountSheet'
 import TaplistSlotRow from '../../components/taplist/TaplistSlotRow'
+import TonightShareSheet from '../../components/taplist/TonightShareSheet'
 import AnchorMenu, { type AnchorRect } from '../../components/ui/AnchorMenu'
 
 const SOLD_OUT_UNDO_MS = 7000
@@ -87,6 +88,7 @@ export default function TaplistScreen() {
   const [editorTapNumber, setEditorTapNumber] = useState<number | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsSaving, setSettingsSaving] = useState(false)
+  const [tonightShareOpen, setTonightShareOpen] = useState(false)
   const [tapNumberHintVisible, setTapNumberHintVisible] = useState(false)
   const soldOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const tapNumberHintCheckedRef = useRef(false)
@@ -159,6 +161,17 @@ export default function TaplistScreen() {
     const occupied = slots.filter((slot) => slot.drink).length
     return { occupied, empty: slotCount - occupied }
   }, [slots, slotCount])
+
+  const filterCounts = useMemo<Record<Filter, number>>(
+    () => ({
+      all: slots.length,
+      new: slots.filter((slot) => slot.drink?.public_status === 'new').length,
+      sold_out: slots.filter((slot) => slot.drink?.public_status === 'sold_out').length,
+      hidden: slots.filter((slot) => slot.drink && !slot.drink.is_public_visible).length,
+      empty: counts.empty,
+    }),
+    [counts.empty, slots],
+  )
 
   useEffect(() => {
     if (counts.occupied < 1 || tapNumberHintCheckedRef.current) return
@@ -497,11 +510,17 @@ export default function TaplistScreen() {
                   <Text style={styles.barName} numberOfLines={1}>
                     {draft.tenant.display_name || draft.tenant.name}
                   </Text>
-                  <Text style={styles.summary}>
-                    {slotCount} 个酒头 · {counts.occupied} 在枪 · {counts.empty} 空位
-                  </Text>
                 </View>
                 <View style={styles.headerActions}>
+                  <TouchableOpacity
+                    style={styles.shareTonightBtn}
+                    onPress={() => setTonightShareOpen(true)}
+                    activeOpacity={0.72}
+                    accessibilityLabel="分享上新"
+                  >
+                    <Ionicons name="share-outline" size={21} color={T.gold} />
+                    <Text style={styles.shareTonightText}>分享上新</Text>
+                  </TouchableOpacity>
                   {draft.isOwner ? (
                     <TouchableOpacity
                       style={styles.settingsBtn}
@@ -533,6 +552,14 @@ export default function TaplistScreen() {
                 >
                   <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>
                     {f.label}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.filterCount,
+                      filter === f.key && styles.filterCountActive,
+                    ]}
+                  >
+                    {filterCounts[f.key]}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -738,6 +765,11 @@ export default function TaplistScreen() {
         }}
         onSave={(count) => void handleSaveTapSlotCount(count)}
       />
+      <TonightShareSheet
+        visible={tonightShareOpen}
+        draft={draft}
+        onClose={() => setTonightShareOpen(false)}
+      />
     </SafeAreaView>
   )
 }
@@ -753,11 +785,23 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 16,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1, minWidth: 0 },
   barName: { color: T.text, fontSize: 24, fontWeight: '800' },
-  summary: { color: T.muted, fontSize: 14, marginTop: 7 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  shareTonightBtn: {
+    height: 36,
+    flexDirection: 'row',
+    gap: 5,
+    paddingHorizontal: 10,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareTonightText: { color: T.gold, fontSize: 14, fontWeight: '700' },
   settingsBtn: {
     height: 36,
     flexDirection: 'row',
@@ -783,6 +827,9 @@ const styles = StyleSheet.create({
   },
   filterRow: { flexGrow: 0, paddingHorizontal: LAYOUT.pagePad, paddingBottom: 8 },
   filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
     minHeight: 36,
@@ -795,6 +842,8 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: T.goldFill, borderColor: T.goldBorder },
   filterText: { color: T.muted, fontSize: 14 },
   filterTextActive: { color: T.text, fontWeight: '600' },
+  filterCount: { color: T.faint, fontSize: 12, fontVariant: ['tabular-nums'] },
+  filterCountActive: { color: T.goldSoft, fontWeight: '700' },
   tapNumberHint: {
     flexDirection: 'row',
     alignItems: 'center',

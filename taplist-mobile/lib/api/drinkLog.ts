@@ -54,9 +54,70 @@ export async function getMyDrinkSummary() {
 }
 
 export async function getMyDrinkInsights() {
-  const { data, error } = await getTaplistSupabase().rpc('get_my_drink_insights')
+  const client = getTaplistSupabase()
+  const [{ data, error }, history] = await Promise.all([
+    client.rpc('get_my_drink_insights'),
+    getMyDrinkHistory(null, 200),
+  ])
   if (error) throw error
-  return data as MyDrinkInsights
+  const insights = data as Omit<MyDrinkInsights, 'tonight'> & {
+    tonight: Omit<MyDrinkInsights['tonight'], 'drinks'> & {
+      drinks: Array<Omit<MyDrinkInsights['tonight']['drinks'][number], 'bar_names'>>
+    }
+  }
+  const historyByLightId = new Map(history.map((item) => [item.light_id, item]))
+  const businessDayStart = new Date(insights.tonight.business_day_start).getTime()
+  const normalizedStyleCounts = [...insights.month.drinks.reduce((counts, drink) => {
+    const style = normalizeBeerStyle(drink.beer_style)
+    counts.set(style, (counts.get(style) ?? 0) + 1)
+    return counts
+  }, new Map<string, number>())]
+    .map(([style, count]) => ({ style, count }))
+    .sort((a, b) => b.count - a.count || a.style.localeCompare(b.style, 'zh-CN'))
+
+  return {
+    ...insights,
+    tonight: {
+      ...insights.tonight,
+      drinks: insights.tonight.drinks.map((drink) => ({
+        ...drink,
+        bar_names: [...new Set(
+          (historyByLightId.get(drink.light_id)?.venues ?? [])
+            .filter((venue) => new Date(venue.first_drank_at).getTime() >= businessDayStart)
+            .map((venue) => venue.tenant_name),
+        )],
+      })),
+    },
+    month: {
+      ...insights.month,
+      style_counts: normalizedStyleCounts,
+      drinks: insights.month.drinks.map((drink) => ({
+        ...drink,
+        bar_names: [...new Set(
+          (historyByLightId.get(drink.light_id)?.venues ?? [])
+            .map((venue) => venue.tenant_name),
+        )],
+      })),
+    },
+  } satisfies MyDrinkInsights
+}
+
+export function normalizeBeerStyle(value: string | null) {
+  const style = value?.trim() ?? ''
+  const normalized = style.toLocaleLowerCase()
+
+  if (!normalized || normalized === '其他') return '其他'
+  if (/(ipa|印度淡色|西海岸|新英格兰|浑浊|ddh)/i.test(normalized)) return 'IPA'
+  if (/(酸|sour|gose|古斯|柏林酸)/i.test(normalized)) return '酸啤'
+  if (/(拉格|lager|pils|皮尔森|博克|helles)/i.test(normalized)) return '拉格'
+  if (/(小麦|白啤|wheat|weizen|witbier)/i.test(normalized)) return '小麦'
+  if (/(世涛|波特|stout|porter)/i.test(normalized)) return '世涛 / 波特'
+  if (/(赛松|农舍|saison|farmhouse)/i.test(normalized)) return '赛松 / 农舍'
+  if (/(比利时|修道院|三料|四料|belgian|tripel|dubbel|quadrupel)/i.test(normalized)) return '比利时艾尔'
+  if (/(西打|苹果酒|cider)/i.test(normalized)) return '西打'
+  if (/(蜂蜜酒|mead)/i.test(normalized)) return '蜂蜜酒'
+  if (/(淡色艾尔|金色艾尔|琥珀艾尔|pale ale|amber ale|golden ale)/i.test(normalized)) return '艾尔'
+  return '其他'
 }
 
 export async function removeMyDrinkVenue(lightId: string, tenantId: string) {

@@ -19,6 +19,7 @@ Production users on **App Store 1.2.x** keep working unchanged.
 1. `20260630120000_taplist_public_cities.sql` — city catalog + `get_public_taplist_cities()` + Beer Route `p_city` param (defaults to Shanghai)
 2. `20260630130000_admin_taplist_cities.sql` — admin-only city management RPCs
 3. `20260630140000_taplist_public_cities_normalized_key.sql` — canonical city keys + unique normalized index
+4. `20260821130000_roadmap_bbox_china.sql` — Beer Route coordinate bbox widened from Shanghai to mainland China (required before any non-Shanghai tenant can store `roadmap_longitude` / `roadmap_latitude`)
 
 ### Why this is safe for 1.2.x
 

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>No Menu 1.3.1 小红书更新图</title>
+  <style>
+    :root { --ink:#080908; --panel:#121310; --paper:#f0ece3; --muted:#aba497; --gold:#d8a03d; --line:#3c3426; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#171815; color:var(--paper); font-family:"PingFang SC","Noto Sans CJK SC",sans-serif; }
+    .toolbar { position:sticky; top:0; z-index:10; display:flex; gap:12px; align-items:center; padding:14px 18px; background:#111; border-bottom:1px solid #333; }
+    .toolbar button { border:1px solid #58482d; border-radius:8px; padding:9px 16px; color:#f4ead7; background:#211d16; cursor:pointer; }
+    .toolbar p { margin:0; color:#aaa; font-size:13px; }
+    #slides { display:grid; gap:30px; justify-content:center; padding:30px; }
+    .slide { position:relative; width:1080px; height:1440px; overflow:hidden; background:var(--ink); border:1px solid #332d22; }
+    .slide::before { content:""; position:absolute; inset:0; opacity:.28; background-image:linear-gradient(#342d22 1px,transparent 1px),linear-gradient(90deg,#342d22 1px,transparent 1px); background-size:48px 48px; }
+    .rings { position:absolute; width:930px; height:930px; right:-390px; top:-400px; border:2px solid rgba(216,160,61,.22); border-radius:50%; box-shadow:0 0 0 72px rgba(216,160,61,.04),0 0 0 144px rgba(216,160,61,.035),0 0 0 216px rgba(216,160,61,.03); }
+    .inner { position:absolute; inset:54px; border:1px solid rgba(216,160,61,.32); padding:48px; }
+    .top { display:flex; align-items:flex-start; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:26px; }
+    .brand { font:600 31px/1 "SFMono-Regular",Menlo,monospace; letter-spacing:3px; color:#d8b671; }
+    .version { color:var(--muted); font:500 20px/1 "SFMono-Regular",Menlo,monospace; letter-spacing:2px; }
+    h1 { position:relative; margin:62px 0 0; max-width:900px; font-size:82px; line-height:1.12; letter-spacing:-4px; font-weight:700; }
+    h2 { position:relative; margin:48px 0 0; font-size:60px; line-height:1.18; letter-spacing:-2px; }
+    .lead { position:relative; margin:24px 0 0; color:var(--muted); font-size:30px; line-height:1.55; }
+    .amber { color:var(--gold); }
+    .num { position:absolute; right:48px; bottom:38px; font:500 18px/1 "SFMono-Regular",Menlo,monospace; color:#827968; letter-spacing:2px; }
+    .phone { position:absolute; overflow:hidden; border-radius:28px; background:#080808; border:1px solid #544832; box-shadow:0 28px 80px rgba(0,0,0,.56); }
+    .phone img { width:100%; height:100%; object-fit:cover; display:block; }
+    .phone.contain img { object-fit:contain; }
+    .cover .phone.one { width:475px; height:930px; right:54px; bottom:-110px; transform:rotate(3deg); }
+    .cover .phone.two { width:360px; height:780px; right:430px; bottom:-260px; transform:rotate(-5deg); opacity:.9; }
+    .cover h1 { width:600px; font-size:88px; margin-top:64px; }
+    .cover .lead { width:470px; }
+    .pill { display:inline-flex; position:relative; margin-top:34px; border:1px solid #735a31; border-radius:999px; padding:12px 19px; color:#d8b671; font-size:22px; }
+    .feature .phone.main { left:82px; top:360px; width:510px; height:970px; }
+    .notes { position:absolute; left:640px; top:470px; width:330px; display:grid; gap:42px; }
+    .note { border-top:1px solid #5d4a2a; padding-top:16px; }
+    .note b { display:block; color:var(--gold); font:600 24px/1.4 "SFMono-Regular",Menlo,monospace; }
+    .note span { display:block; margin-top:8px; color:var(--paper); font-size:27px; line-height:1.45; }
+    .record .phone.main { right:68px; top:360px; width:500px; height:965px; }
+    .record .phone.secondary { left:65px; bottom:-75px; width:365px; height:780px; transform:rotate(-3deg); }
+    .record h2,.record .lead { width:430px; }
+    .record .lead { font-size:27px; }
+    .report .phone.main { left:66px; top:430px; width:475px; height:895px; }
+    .report .phone.secondary { right:58px; top:505px; width:410px; height:820px; transform:rotate(2.5deg); }
+    .share-grid { position:absolute; left:70px; right:70px; top:455px; bottom:84px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; align-items:end; }
+    .share-card { height:760px; overflow:hidden; border:1px solid #4d412e; border-radius:22px; background:#0b0c0a; box-shadow:0 20px 50px rgba(0,0,0,.45); }
+    .share-card:nth-child(2) { height:820px; }
+    .share-card img { width:100%; height:100%; object-fit:cover; object-position:top; }
+    .labels { position:absolute; top:420px; left:75px; right:75px; display:grid; grid-template-columns:repeat(3,1fr); gap:20px; text-align:center; color:#d8b671; font-size:24px; }
+    @media (max-width:1100px){ .slide{transform-origin:top center; transform:scale(.7); margin-bottom:-432px;} }
+  </style>
+</head>
+<body>
+  <div class="toolbar"><button onclick="window.print()">打印 / 导出 PDF</button><p>画布固定 1080 × 1440；浏览器逐张截图即可导出 PNG。</p></div>
+  <main id="slides">
+    <section class="slide cover">
+      <div class="rings"></div><div class="inner">
+        <div class="top"><div class="brand">NO MENU</div><div class="version">UPDATE · 1.3.1</div></div>
+        <h1>喜欢的酒吧<br><span class="amber">及时知道</span><br>喝过的酒<br>好好留下</h1>
+        <p class="lead">关注管理、今晚 TAP、月度报告与分享图片，这次一起整理顺了。</p>
+        <div class="pill">城市精酿实时酒单</div>
+      </div>
+      <div class="phone two"><img src="../output/xiaohongshu-1.3.1-feature/sources/mine.jpg" alt="我的页面" /></div>
+      <div class="phone one"><img src="../output/xiaohongshu-1.3.1-feature/sources/followed-bars.jpg" alt="关注酒吧" /></div>
+      <div class="num">01 / 05</div>
+    </section>
+
+    <section class="slide feature">
+      <div class="rings"></div><div class="inner">
+        <div class="top"><div class="brand">关注酒吧</div><div class="version">FOLLOW</div></div>
+        <h2>关注与通知，<br>现在可以<span class="amber">分开管理</span></h2>
+      </div>
+      <div class="phone main"><img src="../output/xiaohongshu-1.3.1-feature/sources/followed-bars.jpg" alt="关注管理页" /></div>
+      <div class="notes">
+        <div class="note"><b>PRIVATE</b><span>关注关系<br>仅自己可见</span></div>
+        <div class="note"><b>PER BAR</b><span>每家酒吧<br>单独开关通知</span></div>
+        <div class="note"><b>STAY FOLLOWED</b><span>关闭通知<br>不会取消关注</span></div>
+      </div><div class="num">02 / 05</div>
+    </section>
+
+    <section class="slide record">
+      <div class="rings"></div><div class="inner">
+        <div class="top"><div class="brand">今晚 TAP</div><div class="version">RECORD</div></div>
+        <h2>记完这一杯，<br>今晚的 TAP<br><span class="amber">顺手分享</span></h2>
+        <p class="lead">记录成功后会告诉你这是第几款，也能直接生成今晚的分享图片。</p>
+      </div>
+      <div class="phone secondary"><img src="../output/xiaohongshu-1.3.1-feature/sources/tonight-share.png" alt="今晚 TAP 分享" /></div>
+      <div class="phone main"><img src="../output/xiaohongshu-1.3.1-feature/sources/record-success.png" alt="记录成功" /></div>
+      <div class="num">03 / 05</div>
+    </section>
+
+    <section class="slide report">
+      <div class="rings"></div><div class="inner">
+        <div class="top"><div class="brand">我的 TAP</div><div class="version">MONTHLY</div></div>
+        <h2>这个月喝过什么，<br><span class="amber">一眼回看</span></h2>
+        <p class="lead">按月整理，也可以按风格筛选；报告同样能保存和分享。</p>
+      </div>
+      <div class="phone main"><img src="../output/xiaohongshu-1.3.1-feature/sources/report.png" alt="月度 TAP 报告" /></div>
+      <div class="phone secondary"><img src="../output/xiaohongshu-1.3.1-feature/sources/month-share.png" alt="月度分享图" /></div>
+      <div class="num">04 / 05</div>
+    </section>
+
+    <section class="slide shares">
+      <div class="rings"></div><div class="inner">
+        <div class="top"><div class="brand">保存 / 分享</div><div class="version">LOCAL IMAGE</div></div>
+        <h2>一杯、今晚、一个月，<br>都有自己的<span class="amber">分享图</span></h2>
+        <p class="lead">图片在本地生成，由你决定保存或分享。</p>
+      </div>
+      <div class="labels"><span>单款 TAP</span><span>今晚 TAP</span><span>月度 TAP</span></div>
+      <div class="share-grid">
+        <div class="share-card"><img src="../output/xiaohongshu-1.3.1-feature/sources/single-share.png" alt="单款分享" /></div>
+        <div class="share-card"><img src="../output/xiaohongshu-1.3.1-feature/sources/tonight-share.png" alt="今晚分享" /></div>
+        <div class="share-card"><img src="../output/xiaohongshu-1.3.1-feature/sources/month-share.png" alt="月度分享" /></div>
+      </div><div class="num">05 / 05</div>
+    </section>
+  </main>
+  <script>
+    const slideNumber = Number(new URLSearchParams(location.search).get('slide'))
+    if (slideNumber) {
+      document.querySelector('.toolbar').remove()
+      document.body.style.background = '#080908'
+      document.querySelector('#slides').style.padding = '0'
+      document.querySelectorAll('.slide').forEach((slide, index) => {
+        slide.style.display = index === slideNumber - 1 ? 'block' : 'none'
+      })
+    }
+  </script>
+</body>
+</html>

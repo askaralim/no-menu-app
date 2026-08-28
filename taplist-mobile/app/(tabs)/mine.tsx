@@ -1,13 +1,12 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, type Href, router, useFocusEffect } from 'expo-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CachedImage } from '@/components/taplist/CachedImage'
-import { ShareableDrinkLogImage, type ShareableDrinkLogImageHandle } from '@/components/taplist/ShareableDrinkLogImage'
-import { ShareImagePreviewModal } from '@/components/taplist/ShareImagePreviewModal'
+import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import { resetUser, trackEvent } from '@/lib/analytics'
 import { getMyConsumerProfile } from '@/lib/api/consumerProfile'
@@ -19,10 +18,7 @@ import type { AccountProtectionState, MyDrinkHistoryRow } from '@/lib/types'
 export default function MineScreen() {
   const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
-  const shareRef = useRef<ShareableDrinkLogImageHandle>(null)
   const [protection, setProtection] = useState<AccountProtectionState>('unavailable')
-  const [previewUri, setPreviewUri] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
 
   const sessionQuery = useQuery({
     queryKey: ['drink-log', 'session'],
@@ -61,20 +57,6 @@ export default function MineScreen() {
   }, [])
 
   const groups = useMemo(() => groupByMonth(historyQuery.data ?? []), [historyQuery.data])
-  const generateShare = async () => {
-    if (!insightsQuery.data?.month.new_drink_count || busy) return
-    setBusy(true)
-    try {
-      const uri = await shareRef.current?.capture()
-      if (uri) {
-        setPreviewUri(uri)
-        trackEvent('drink_share_generated')
-      }
-    } finally {
-      setBusy(false)
-    }
-  }
-
   const linkApple = async () => {
     trackEvent('apple_link_started')
     try {
@@ -116,8 +98,9 @@ export default function MineScreen() {
   const summary = summaryQuery.data
   const hasDrinks = Boolean(summary && summary.drink_count > 0)
   const month = insightsQuery.data?.month
-  const monthLabel = month ? `${new Date(month.month_start).getMonth() + 1} 月新增` : '本月新增'
-  const maxStyleCount = Math.max(1, ...(month?.style_counts.slice(0, 3).map((item) => item.count) ?? [1]))
+  const tapCardMeta = month?.new_drink_count
+    ? `${formatMonthName(month.month_start)}新增 ${month.new_drink_count} 款 · 来自 ${month.bar_count} 家酒吧`
+    : '查看月度报告与分享记录'
 
   return (
     <View style={styles.screen}>
@@ -162,95 +145,39 @@ export default function MineScreen() {
           ) : null}
         </View>
 
-        {Platform.OS === 'ios' && hasSession ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="关注酒吧，管理关注和上新通知"
-            onPress={() => router.push('/followed-bars' as Href)}
-            style={({ pressed }) => [styles.followCard, pressed && styles.pressed]}>
-            <FontAwesome name="bell-o" size={16} color={palette.amber} style={styles.followIcon} />
-            <View style={styles.followCopy}>
-              <Text style={styles.followTitle}>关注酒吧</Text>
-              <Text style={styles.followBody}>管理关注和上新通知</Text>
-            </View>
-            <FontAwesome name="angle-right" size={18} color={palette.faint} />
-          </Pressable>
-        ) : null}
-
-        <View style={styles.tapHeader}>
-          <Text style={styles.tapTitle}>我的 TAP</Text>
-          {month?.new_drink_count ? (
+        {hasSession ? (
+          <View style={styles.featureCards}>
+            {Platform.OS === 'ios' ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="关注酒吧，管理关注和上新通知"
+                onPress={() => router.push('/followed-bars' as Href)}
+                style={({ pressed }) => [styles.featureCard, pressed && styles.pressed]}>
+                <FontAwesome name="bell-o" size={18} color={palette.amber} style={styles.featureIcon} />
+                <View style={styles.featureCopy}>
+                  <Text style={styles.featureTitle}>关注酒吧</Text>
+                  <Text style={styles.featureBody}>管理关注和上新通知</Text>
+                </View>
+                <FontAwesome name="angle-right" size={20} color={palette.faint} />
+              </Pressable>
+            ) : null}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="分享本月 TAP 记录图"
-              hitSlop={4}
-              disabled={busy || insightsQuery.isLoading}
-              onPress={() => void generateShare()}
-              style={({ pressed }) => [styles.shareButton, pressed && styles.pressed]}>
-              {busy ? (
-                <ActivityIndicator size="small" color={palette.amber} />
-              ) : (
-                <FontAwesome name="share-square-o" size={13} color={palette.amber} />
-              )}
-              <Text style={styles.shareText}>分享记录</Text>
-            </Pressable>
-          ) : null}
-        </View>
-
-        {hasSession ? (
-          <View style={styles.insights}>
-            {insightsQuery.isLoading ? (
-              <ActivityIndicator color={palette.amber} style={styles.insightsLoading} />
-            ) : insightsQuery.isError ? (
-              <Pressable onPress={() => void insightsQuery.refetch()} style={styles.insightsError}>
-                <Text style={styles.insightsErrorTitle}>暂时无法加载本月记录</Text>
-                <Text style={styles.insightsErrorAction}>点按重试</Text>
-              </Pressable>
-            ) : month?.new_drink_count ? (
-              <>
-                <View style={styles.monthSummaryHeader}>
-                  <View>
-                    <Text style={styles.monthSummaryTitle}>{monthLabel}</Text>
-                    <Text style={styles.monthSummaryMeta}>{month.new_drink_count} 款 · 来自 {month.bar_count} 家酒吧</Text>
-                  </View>
-                  <Text style={styles.monthSummaryDate}>
-                    截至 {formatDotDate(insightsQuery.data?.generated_at ?? month.month_start)}
-                  </Text>
-                </View>
-                <Text style={styles.insightsLabel}>本月记录</Text>
-                <View style={styles.styleRows}>
-                  {month.style_counts.slice(0, 3).map((item) => (
-                    <View key={item.style} style={styles.styleRow}>
-                      <Text numberOfLines={1} style={styles.styleName}>{item.style}</Text>
-                      <View style={styles.styleTrack}>
-                        <View style={[styles.styleBar, { width: `${Math.max(12, (item.count / maxStyleCount) * 100)}%` }]} />
-                      </View>
-                      <Text style={styles.styleCount}>{item.count} 款</Text>
-                    </View>
-                  ))}
-                </View>
-                {month.first_new_style ? (
-                  <Text style={styles.milestone}>第一次记录：{month.first_new_style}</Text>
-                ) : null}
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => void generateShare()}
-                  style={({ pressed }) => [styles.reportButton, pressed && styles.pressed]}>
-                  <Text style={styles.reportButtonText}>查看 {formatMonthName(month.month_start)} TAP 报告</Text>
-                  <FontAwesome name="angle-right" size={18} color={palette.amber} />
-                </Pressable>
-              </>
-            ) : (
-              <View style={styles.monthEmpty}>
-                <Text style={styles.monthEmptyTitle}>{monthLabel}还没有新增记录</Text>
-                <Text style={styles.monthEmptyBody}>记录新的酒款后，本月总结会出现在这里。</Text>
+              accessibilityLabel={`我的 TAP，${tapCardMeta}`}
+              onPress={() => router.push('/tap-report' as Href)}
+              style={({ pressed }) => [styles.featureCard, pressed && styles.pressed]}>
+              <FontAwesome name="check-circle-o" size={18} color={palette.amber} style={styles.featureIcon} />
+              <View style={styles.featureCopy}>
+                <Text style={styles.featureTitle}>我的 TAP</Text>
+                <Text numberOfLines={1} style={styles.featureBody}>{tapCardMeta}</Text>
               </View>
-            )}
+              <FontAwesome name="angle-right" size={20} color={palette.faint} />
+            </Pressable>
           </View>
         ) : null}
 
         <View style={styles.historyHeader}>
-          <Text style={styles.historyTitle}>最近记录</Text>
+          <Text style={styles.historyTitle}>TAP 记录</Text>
         </View>
 
         {sessionQuery.isLoading || (hasSession && historyQuery.isLoading) ? (
@@ -297,16 +224,6 @@ export default function MineScreen() {
         ) : null}
       </ScrollView>
 
-      {month?.new_drink_count ? (
-        <View pointerEvents="none" style={styles.hiddenCanvas}>
-          <ShareableDrinkLogImage
-            ref={shareRef}
-            month={month}
-            username={profileQuery.data?.consumer_username || 'NoMenuist'}
-          />
-        </View>
-      ) : null}
-      <ShareImagePreviewModal uri={previewUri} onClose={() => setPreviewUri(null)} />
     </View>
   )
 }
@@ -318,7 +235,7 @@ function DrinkGridItem({ item }: { item: MyDrinkHistoryRow }) {
       <Link href={href} asChild>
         <Pressable style={({ pressed }) => [styles.gridPressable, pressed && styles.pressed]}>
           <View style={styles.artSlot}>
-            {item.image_url ? <CachedImage source={item.image_url} style={styles.art} /> : null}
+            <CachedImage source={item.image_url || defaultBeerArtwork} style={styles.art} />
           </View>
           <Text numberOfLines={2} style={styles.drinkName}>{item.name}</Text>
           <Text numberOfLines={1} style={styles.drinkMeta}>{item.brewery || item.beer_style || '精酿啤酒'}</Text>
@@ -360,11 +277,6 @@ function chunkIntoRows<T>(items: T[], size: number) {
 function formatMonthDay(value: string) {
   const d = new Date(value)
   return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
-}
-
-function formatDotDate(value: string) {
-  const d = new Date(value)
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
 }
 
 function formatMonthName(value: string) {
@@ -433,173 +345,46 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
     flex: 1,
   },
-  followCard: {
+  featureCards: {
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  featureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 64,
-    paddingVertical: 14,
+    minHeight: 76,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.xl,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: palette.bgSoft,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: palette.line,
   },
-  followIcon: {
-    marginRight: spacing.sm,
+  featureIcon: {
+    width: 24,
+    marginRight: spacing.md,
+    textAlign: 'center',
   },
-  followCopy: {
+  featureCopy: {
     flex: 1,
     minWidth: 0,
     marginRight: spacing.sm,
   },
-  followTitle: {
+  featureTitle: {
     ...typography.title,
     color: palette.text,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 17,
+    lineHeight: 23,
   },
-  followBody: {
+  featureBody: {
     ...typography.caption,
     color: palette.muted,
     marginTop: 2,
-  },
-  tapHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  tapTitle: {
-    ...typography.headline,
-    color: palette.text,
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  insights: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  insightsLoading: {
-    marginVertical: spacing.lg,
-  },
-  insightsError: {
-    minHeight: 76,
-    justifyContent: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.line,
-  },
-  insightsErrorTitle: {
-    ...typography.caption,
-    color: palette.muted,
-  },
-  insightsErrorAction: {
-    ...typography.caption,
-    color: palette.amber,
-    marginTop: spacing.xxs,
-  },
-  monthSummaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  monthSummaryTitle: {
-    ...typography.headline,
-    color: palette.text,
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  monthSummaryMeta: {
-    ...typography.body,
-    color: palette.muted,
-    marginTop: 2,
-  },
-  monthSummaryDate: {
-    ...typography.micro,
-    color: palette.faint,
-    paddingBottom: 3,
-  },
-  insightsLabel: {
-    ...typography.title,
-    color: palette.text,
-    fontSize: 15,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  styleRows: {
-    gap: spacing.sm,
-  },
-  styleRow: {
-    minHeight: 22,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  styleName: {
-    ...typography.caption,
-    color: palette.muted,
-    width: 74,
-  },
-  styleTrack: {
-    flex: 1,
-    height: 2,
-    backgroundColor: palette.line,
-  },
-  styleBar: {
-    height: 2,
-    backgroundColor: palette.amber,
-  },
-  styleCount: {
-    ...typography.caption,
-    color: palette.muted,
-    width: 34,
-    textAlign: 'right',
-  },
-  milestone: {
-    ...typography.caption,
-    color: palette.muted,
-    marginTop: spacing.lg,
-  },
-  reportButton: {
-    minHeight: 48,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: palette.amber,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  reportButtonText: {
-    ...typography.caption,
-    color: palette.amber,
-  },
-  monthEmpty: {
-    minHeight: 88,
-    justifyContent: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.line,
-  },
-  monthEmptyTitle: {
-    ...typography.title,
-    color: palette.text,
-  },
-  monthEmptyBody: {
-    ...typography.caption,
-    color: palette.muted,
-    marginTop: spacing.xxs,
   },
   historyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: palette.line,
     marginBottom: spacing.md,
   },
   historyTitle: {
@@ -607,29 +392,6 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 22,
     lineHeight: 30,
-  },
-  summary: {
-    ...typography.body,
-    color: palette.muted,
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 34,
-    paddingHorizontal: 12,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: palette.amber,
-    backgroundColor: 'transparent',
-  },
-  shareText: {
-    ...typography.caption,
-    color: palette.amber,
-    marginLeft: 6,
-    fontWeight: '500',
   },
   pressed: {
     opacity: 0.72,
@@ -731,59 +493,5 @@ const styles = StyleSheet.create({
   deleteAccountText: {
     ...typography.caption,
     color: palette.copper,
-  },
-  hiddenCanvas: {
-    position: 'absolute',
-    left: -10000,
-    top: 0,
-  },
-  preview: {
-    flex: 1,
-    backgroundColor: palette.background,
-    paddingHorizontal: spacing.lg,
-  },
-  previewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  previewTitle: {
-    ...typography.title,
-    color: palette.text,
-  },
-  close: {
-    ...typography.caption,
-    color: palette.amber,
-  },
-  previewImage: {
-    flex: 1,
-    width: '100%',
-    marginVertical: spacing.md,
-  },
-  actions: {
-    gap: spacing.sm,
-  },
-  primaryAction: {
-    minHeight: 50,
-    borderRadius: 8,
-    backgroundColor: palette.amber,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryActionText: {
-    ...typography.title,
-    color: palette.background,
-  },
-  secondaryAction: {
-    minHeight: 50,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: palette.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryActionText: {
-    ...typography.title,
-    color: palette.text,
   },
 })

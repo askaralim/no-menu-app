@@ -8,16 +8,17 @@ Craft beer tap list platform: owner POS, consumer app, admin, and public web.
 
 | Surface | Path | Notes |
 |---------|------|--------|
-| **No Menu Tonight** (POS) | `mobile/` | App Store `1.0.0` — **Waiting for Review** (2026-08) |
-| **No Menu** (consumer) | `taplist-mobile/` | App Store `1.3.0` — **Waiting for Review** (follow + new-tap push) |
+| **No Menu Tonight** (POS) | `mobile/` | App Store `1.1.0` — **Approved / live** (fixed tap slots) |
+| **No Menu** (consumer) | `taplist-mobile/` | App Store `1.3.0` — **Approved / live** (follow + new-tap push) |
 | Admin / platform | `app/` | Next static export |
 | Public web | `taplist-web/` | `/bar/{slug}`, `/tonight`, `/support` |
-| Database | `supabase/` | Production migrations applied through `20260813120000_…` · greenfield: [`supabase/GREENFIELD.md`](./supabase/GREENFIELD.md) |
+| Database | `supabase/` | Production migrations applied through `20260817130000_…` · greenfield: [`supabase/GREENFIELD.md`](./supabase/GREENFIELD.md) |
 
-### ASC (while in review)
+### ASC (live)
 
-- Tonight: [`mobile/docs/APP_STORE_LISTED_V1.md`](./mobile/docs/APP_STORE_LISTED_V1.md) · [`mobile/APP_STORE_CONNECT_SUBMISSION.md`](./mobile/APP_STORE_CONNECT_SUBMISSION.md) · [`mobile/AGENTS.md`](./mobile/AGENTS.md)
-- Consumer 1.3.0: [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`](./taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md) · [`taplist-mobile/AGENTS.md`](./taplist-mobile/AGENTS.md)
+- Tonight `1.1.0`: [`mobile/docs/APP_STORE_CONNECT_1.1.0.md`](./mobile/docs/APP_STORE_CONNECT_1.1.0.md) · [`mobile/AGENTS.md`](./mobile/AGENTS.md)
+- Tonight `1.0.0` baseline: [`mobile/docs/APP_STORE_LISTED_V1.md`](./mobile/docs/APP_STORE_LISTED_V1.md) · [`mobile/APP_STORE_CONNECT_SUBMISSION.md`](./mobile/APP_STORE_CONNECT_SUBMISSION.md)
+- Consumer `1.3.0`: [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`](./taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md) · [`taplist-mobile/AGENTS.md`](./taplist-mobile/AGENTS.md)
 - New-tap push ops: [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](./supabase/NEW_TAP_PUSH_DEPLOYMENT.md)
 
 ---

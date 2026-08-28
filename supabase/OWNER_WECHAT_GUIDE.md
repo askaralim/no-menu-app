@@ -4,7 +4,7 @@
 Doc index: [`docs/INDEX.md`](../docs/INDEX.md).  
 完整上手说明：[`OWNER_USER_GUIDE.md`](./OWNER_USER_GUIDE.md).
 
-**Tonight App Store 状态：已上架（1.0.0）。** 新店主一律用「已上架」模板；勿再发 TestFlight / 审核中话术。
+**Tonight App Store 状态：已上架（1.1.0）。** 新店主一律用「已上架」模板；勿再发 TestFlight / 审核中话术。
 
 ## 开户消息 — 已上架（当前）
 

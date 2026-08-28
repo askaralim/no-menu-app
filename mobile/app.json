@@ -3,7 +3,7 @@
     "name": "No Menu Tonight",
     "slug": "nomenu",
     "scheme": "nomenu",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.taklip.nomenuapp",
-      "buildNumber": "20",
+      "buildNumber": "23",
       "infoPlist": {
         "CFBundleDisplayName": "NM Tonight",
         "ITSAppUsesNonExemptEncryption": false,

@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 
 import { RailVenueBadge } from '@/components/taplist/RailVenueBadge'
 import { CachedImageBackground } from '@/components/taplist/CachedImage'
+import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import {
   RAIL_CARD_HEIGHT,
   RAIL_CARD_IMAGE_BORDER,
@@ -11,8 +12,6 @@ import {
   RAIL_CARD_WIDTH,
   RAIL_IMAGE_SCRIM_COLORS,
   RAIL_IMAGE_SCRIM_LOCATIONS,
-  RAIL_TEXT_ONLY_SCRIM_COLORS,
-  RAIL_TEXT_ONLY_SCRIM_LOCATIONS,
   RAIL_TEXT_SHADOW,
   railCardBodyStyle,
   railCardScrimStyle,
@@ -36,6 +35,7 @@ export function NewTapRailCard({
     .filter(Boolean)
     .join('，')
   const hasImage = Boolean(drink.image_url)
+  const artworkSource = drink.image_url || defaultBeerArtwork
 
   const textBlock = (
     <View style={styles.newTapCardBody}>
@@ -77,31 +77,21 @@ export function NewTapRailCard({
       }}
       style={({ pressed }) => [
         styles.newTapCard,
-        hasImage && styles.newTapCardImage,
+        styles.newTapCardImage,
         pressed && styles.newTapCardPressed,
       ]}>
-      {hasImage ? (
-        <CachedImageBackground
-          source={drink.image_url as string}
-          style={styles.newTapImageFill}
-          imageStyle={styles.newTapImageRadius}>
-          <LinearGradient
-            colors={RAIL_IMAGE_SCRIM_COLORS}
-            locations={RAIL_IMAGE_SCRIM_LOCATIONS}
-            style={styles.newTapImageScrim}>
-            {textBlock}
-            {venueBadge}
-          </LinearGradient>
-        </CachedImageBackground>
-      ) : (
+      <CachedImageBackground
+        source={artworkSource}
+        style={styles.newTapImageFill}
+        imageStyle={styles.newTapImageRadius}>
         <LinearGradient
-          colors={RAIL_TEXT_ONLY_SCRIM_COLORS}
-          locations={RAIL_TEXT_ONLY_SCRIM_LOCATIONS}
-          style={styles.newTapCardContent}>
+          colors={RAIL_IMAGE_SCRIM_COLORS}
+          locations={RAIL_IMAGE_SCRIM_LOCATIONS}
+          style={styles.newTapImageScrim}>
           {textBlock}
           {venueBadge}
         </LinearGradient>
-      )}
+      </CachedImageBackground>
       <View pointerEvents="none" style={styles.railBorderOverlay} />
     </Pressable>
   )
@@ -135,9 +125,6 @@ const styles = StyleSheet.create({
     borderRadius: RAIL_CARD_RADIUS,
   },
   newTapImageScrim: {
-    ...railCardScrimStyle,
-  },
-  newTapCardContent: {
     ...railCardScrimStyle,
   },
   newTapCardPressed: {

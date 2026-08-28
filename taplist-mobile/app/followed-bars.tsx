@@ -89,10 +89,16 @@ export default function FollowedBarsScreen() {
   return (
     <View style={styles.screen}>
       <BackButton />
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xxxl }]}>
-        <Text style={styles.eyebrow}>FOLLOWING</Text>
-        <Text style={styles.followCount}>已关注 {bars.length} 家 · 仅自己可见</Text>
-        <Text style={styles.intro}>关闭通知不会取消关注</Text>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 14 }]}>
+        <View style={styles.headerRow}>
+          <View style={styles.backButtonSpace} />
+          <View style={styles.headerCopy}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} style={styles.followCount}>
+              已关注 {bars.length} 家 · 仅自己可见
+            </Text>
+            <Text style={styles.intro}>关闭通知不会取消关注</Text>
+          </View>
+        </View>
 
         {sessionQuery.isLoading || barsQuery.isLoading ? (
           <ActivityIndicator color={palette.amber} style={styles.loading} />
@@ -152,9 +158,11 @@ export default function FollowedBarsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.background },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  eyebrow: { ...typography.label, color: palette.amber, fontSize: 13, lineHeight: 18 },
-  followCount: { ...typography.title, color: palette.text, marginTop: spacing.sm },
-  intro: { ...typography.body, color: palette.muted, marginTop: spacing.xxs },
+  headerRow: { minHeight: 50, flexDirection: 'row', alignItems: 'flex-start' },
+  backButtonSpace: { width: 54 },
+  headerCopy: { flex: 1, minWidth: 0, paddingTop: 2 },
+  followCount: { ...typography.title, color: palette.text, flex: 1 },
+  intro: { ...typography.caption, color: palette.faint, fontSize: 11, lineHeight: 15, marginTop: 2 },
   loading: { marginTop: spacing.xxl },
   list: { marginTop: spacing.xl, borderTopWidth: 1, borderTopColor: palette.line },
   row: { minHeight: 78, borderBottomWidth: 1, borderBottomColor: palette.line, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

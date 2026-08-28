@@ -1,6 +1,7 @@
-import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native'
+import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { TAPLIST_THEME as T, statusVisual } from '../../lib/taplistTheme'
+import { BeerArtworkImage } from './BeerArtworkImage'
 import type { TaplistDraft } from '../../lib/taplistOwnerApi'
 
 interface Props {
@@ -57,7 +58,10 @@ export default function TaplistPreview({ visible, draft, onClose }: Props) {
             <Text style={styles.tapBadgeText}>#{d.public_sort_order}</Text>
           </View>
         ) : null}
-        {d.image_url ? <Image source={{ uri: d.image_url }} style={styles.cardImage} /> : null}
+        <BeerArtworkImage
+          imageUrl={d.image_url}
+          style={styles.cardImage}
+        />
         <View style={{ flex: 1 }}>
           <View style={styles.cardTitleRow}>
             <Text style={styles.drinkName} numberOfLines={2}>
@@ -203,7 +207,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   tapBadgeText: { color: T.gold, fontSize: 14, fontWeight: '800' },
-  cardImage: { width: 64, height: 64, borderRadius: 8, backgroundColor: T.surfaceMuted },
+  cardImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: T.surfaceMuted,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+  },
   cardTitleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   drinkName: { color: T.text, fontSize: 17, fontWeight: '700', flex: 1 },
   statusChip: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, borderWidth: 1 },

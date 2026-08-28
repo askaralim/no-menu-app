@@ -1,11 +1,11 @@
 # No Menu Tonight — App Store Listed v1
 
-> Canonical ASC / listed-v1 doc for Tonight. Connect fill-in checklist: [`../APP_STORE_CONNECT_SUBMISSION.md`](../APP_STORE_CONNECT_SUBMISSION.md). Index: [`../../docs/INDEX.md`](../../docs/INDEX.md).
+> `1.0.0` baseline ASC / listed-v1 doc for Tonight. **Current live release is `1.1.0`** — see [`APP_STORE_CONNECT_1.1.0.md`](./APP_STORE_CONNECT_1.1.0.md). Connect fill-in checklist: [`../APP_STORE_CONNECT_SUBMISSION.md`](../APP_STORE_CONNECT_SUBMISSION.md). Index: [`../../docs/INDEX.md`](../../docs/INDEX.md).
 
-## Status (2026-08-07)
+## Status (2026-08-21)
 
-**Submitted — Waiting for App Store Connect review** (`1.0.0`, build ≥16).  
-Do not upload a replacement binary unless Apple requests changes. Production DB hotfixes (migrations) may continue; cover-null preserve is `20260807170000_storefront_preserve_null_cover.sql` (applied).
+**Approved / live, superseded by `1.1.0`.** Historical `1.0.0` (build ≥16) metadata retained below.  
+Cover-null preserve: `20260807170000_storefront_preserve_null_cover.sql` (applied).
 
 ## Release candidate decision (2026-08-06)
 

@@ -269,7 +269,7 @@
         <div class="grid-2">
           <div class="field">
             <label for="dateInput">日期</label>
-            <input id="dateInput" type="text" value="07.23">
+            <input id="dateInput" type="text" value="08.26">
           </div>
           <div class="field">
             <label for="cityInput">城市标题</label>
@@ -278,7 +278,7 @@
         </div>
         <div class="field">
           <label for="tapCountInput">新酒头数</label>
-          <input id="tapCountInput" type="text" value="20">
+          <input id="tapCountInput" type="text" value="57">
         </div>
         <div class="field">
           <label for="sourceInput">粘贴新 Tap 清单（可选）</label>
@@ -299,7 +299,7 @@
           </div>
           <div class="field">
             <label for="filenameInput">文件名</label>
-            <input id="filenameInput" type="text" value="no-menu-xhs-0723-daily-cover">
+            <input id="filenameInput" type="text" value="no-menu-xhs-0826-daily-cover">
           </div>
         </div>
         <p class="hint">主图保持极简：不要酒吧数量、App Store CTA 或解释文字。具体酒款放后续图。</p>
@@ -528,7 +528,7 @@
       ctx.stroke()
 
       const titleY = square ? 222 : 300
-      drawText(value(controls.date, '07.23'), 64, titleY, {
+      drawText(value(controls.date, '08.26'), 64, titleY, {
         size: square ? 114 : 136,
         weight: 700,
         mono: true,
@@ -541,7 +541,7 @@
       })
 
       const tapY = square ? 640 : 830
-      drawText(value(controls.tapCount, '20'), 72, tapY, {
+      drawText(value(controls.tapCount, '57'), 72, tapY, {
         size: square ? 154 : 186,
         weight: 700,
         mono: true,
@@ -554,7 +554,7 @@
         shadow: { color: 'rgba(0, 0, 0, 0.38)', blur: 14, y: 5 },
       })
 
-      coverMetric.textContent = `${value(controls.date, '07.23')} · ${value(controls.tapCount, '20')} taps`
+      coverMetric.textContent = `${value(controls.date, '08.26')} · ${value(controls.tapCount, '57')} taps`
     }
 
     function download() {
@@ -567,11 +567,11 @@
     }
 
     function resetExample() {
-      controls.date.value = '07.23'
+      controls.date.value = '08.26'
       controls.city.value = '上海新 Tap'
-      controls.tapCount.value = '20'
+      controls.tapCount.value = '57'
       controls.source.value = ''
-      controls.filename.value = 'no-menu-xhs-0723-daily-cover'
+      controls.filename.value = 'no-menu-xhs-0826-daily-cover'
       drawCover()
     }
 

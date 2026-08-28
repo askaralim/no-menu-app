@@ -20,7 +20,7 @@ export function ShareImagePreviewModal({ uri, onClose }: Props) {
     setSaving(true)
     try {
       await saveImageUriToPhotoLibrary(uri)
-      Alert.alert('保存成功', '记录分享图已保存到相册')
+      Alert.alert('保存成功', '图片已保存到相册')
     } catch (error) {
       Alert.alert(
         error instanceof PhotoLibraryPermissionError ? '无法保存分享图' : '保存失败',
@@ -41,10 +41,10 @@ export function ShareImagePreviewModal({ uri, onClose }: Props) {
         {uri ? <Image source={{ uri }} resizeMode="contain" style={styles.image} /> : null}
         <View style={styles.actions}>
           <Pressable style={styles.primary} onPress={() => uri && void Sharing.shareAsync(uri)}>
-            <Text style={styles.primaryText}>分享记录图</Text>
+            <Text style={styles.primaryText}>分享图片</Text>
           </Pressable>
           <Pressable disabled={saving} style={styles.secondary} onPress={() => void save()}>
-            {saving ? <ActivityIndicator size="small" color={palette.text} /> : <Text style={styles.secondaryText}>保存到相册</Text>}
+            {saving ? <ActivityIndicator size="small" color={palette.text} /> : <Text style={styles.secondaryText}>保存图片</Text>}
           </Pressable>
         </View>
       </View>

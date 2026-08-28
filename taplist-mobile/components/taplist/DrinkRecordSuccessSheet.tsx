@@ -25,8 +25,7 @@ export function DrinkRecordSuccessSheet({ result, insights, insightsLoading, sha
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.sm }]}>
           <View style={styles.handle} />
           <View style={styles.check}><FontAwesome name="check" size={18} color={palette.tungsten} /></View>
-          <Text style={styles.title}>{result?.created_light ? `第 ${result.drink_count} 款已记录` : '已新增这家酒吧'}</Text>
-          <Text style={styles.subtitle}>{result?.created_light ? '已加入「我的 TAP」' : '这款酒已在「我的 TAP」中'}</Text>
+          <Text style={styles.title}>{result?.created_light ? `第 ${result.drink_count} 款 Tap 已记录` : '已新增这家酒吧'}</Text>
           {insightsLoading ? <ActivityIndicator color={palette.amber} style={styles.insightsLoading} /> : tonightCount > 0 ? (
             <Text style={styles.tonight}>今晚新记录 {tonightCount} 款</Text>
           ) : null}
@@ -36,7 +35,7 @@ export function DrinkRecordSuccessSheet({ result, insights, insightsLoading, sha
           {tonightCount > 0 ? (
             <Pressable accessibilityRole="button" disabled={sharing} onPress={onShareTonight} style={({ pressed }) => [styles.share, pressed && styles.pressed]}>
               {sharing ? <ActivityIndicator size="small" color={palette.amber} /> : <FontAwesome name="share-alt" size={15} color={palette.amber} />}
-              <Text style={styles.shareText}>分享今晚喝过 · {tonightCount} 款</Text>
+              <Text style={styles.shareText}>分享今晚 TAP</Text>
             </Pressable>
           ) : null}
         </View>
@@ -52,10 +51,9 @@ const styles = StyleSheet.create({
   handle: { width: 34, height: 4, borderRadius: 2, backgroundColor: palette.tungsten, marginBottom: spacing.lg },
   check: { width: 46, height: 46, borderRadius: 23, borderWidth: 1, borderColor: palette.goldMuted, alignItems: 'center', justifyContent: 'center' },
   title: { ...typography.headline, color: palette.text, fontSize: 21, lineHeight: 29, marginTop: spacing.md },
-  subtitle: { ...typography.body, color: palette.muted, marginTop: spacing.xs },
-  tonight: { ...typography.caption, color: palette.muted, marginTop: spacing.xs },
+  tonight: { ...typography.caption, color: palette.muted, marginTop: spacing.sm },
   insightsLoading: { marginTop: spacing.sm },
-  done: { width: '100%', minHeight: 52, borderRadius: 8, backgroundColor: palette.tungsten, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
+  done: { width: '100%', minHeight: 52, borderRadius: 8, backgroundColor: palette.amber, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
   doneText: { ...typography.title, color: palette.black },
   share: { minHeight: 44, flexDirection: 'row', gap: spacing.xs, alignItems: 'center', justifyContent: 'center', marginTop: spacing.xs },
   shareText: { ...typography.caption, color: palette.amber },

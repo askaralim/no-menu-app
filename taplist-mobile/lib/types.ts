@@ -354,6 +354,7 @@ export type MyDrinkInsightRow = {
   beer_style: string | null
   image_url: string | null
   recorded_at: string
+  bar_names: string[]
 }
 
 export type MyDrinkInsights = {

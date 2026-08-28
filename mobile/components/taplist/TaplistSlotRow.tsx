@@ -1,7 +1,6 @@
 import { useRef } from 'react'
 import {
   ActivityIndicator,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { TAPLIST_THEME as T, statusVisual } from '../../lib/taplistTheme'
 import type { DraftDrink } from '../../lib/taplistOwnerApi'
 import type { AnchorRect } from '../ui/AnchorMenu'
+import { BeerArtworkImage } from './BeerArtworkImage'
 
 type Props = {
   tapNumber: number
@@ -72,13 +72,10 @@ export default function TaplistSlotRow({
         />
       </TouchableOpacity>
 
-      {drink.image_url ? (
-        <Image source={{ uri: drink.image_url }} style={styles.image} />
-      ) : (
-        <View style={[styles.image, styles.imagePlaceholder]}>
-          <Ionicons name="wine-outline" size={20} color={T.faint} />
-        </View>
-      )}
+      <BeerArtworkImage
+        imageUrl={drink.image_url}
+        style={styles.image}
+      />
 
       <View style={styles.body}>
         <View style={styles.titleLine}>
@@ -201,8 +198,14 @@ const styles = StyleSheet.create({
   tapButtonEmpty: { backgroundColor: 'transparent', borderColor: T.border },
   tapNumber: { color: T.gold, fontSize: 19, fontWeight: '800' },
   tapNumberEmpty: { color: T.faint },
-  image: { width: 54, height: 54, borderRadius: 7, backgroundColor: T.surfaceMuted },
-  imagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  image: {
+    width: 54,
+    height: 54,
+    borderRadius: 7,
+    backgroundColor: T.surfaceMuted,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+  },
   body: { flex: 1, minWidth: 0, paddingTop: 1 },
   titleLine: { flexDirection: 'row', alignItems: 'baseline', minWidth: 0 },
   brewery: { color: T.goldSoft, fontSize: 15, fontWeight: '600', maxWidth: '38%' },
