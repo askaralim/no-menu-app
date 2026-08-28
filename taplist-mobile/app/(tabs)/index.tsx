@@ -107,6 +107,7 @@ export default function TonightScreen() {
           refreshing={refreshing}
           onRefresh={() => void handleRefresh()}
           tintColor={palette.amber}
+          progressViewOffset={insets.top + spacing.md}
         />
       }
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
