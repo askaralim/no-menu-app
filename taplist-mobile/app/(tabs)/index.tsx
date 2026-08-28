@@ -1,8 +1,8 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useCallback, useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
-import { Link } from 'expo-router'
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Link, useFocusEffect } from 'expo-router'
+import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -27,39 +27,72 @@ import { taplistCityMatches, useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicBarRow, PublicEventRow, PublicNewTapRow, PublicTaplistCity } from '@/lib/types'
 
+const HOME_STALE_TIME = 2 * 60_000
+
 export default function TonightScreen() {
   const insets = useSafeAreaInsets()
-  const queryClient = useQueryClient()
   const configured = useTaplistSupabaseReady()
   const { selectedCity, cities, canSelectCity, selectCity } = useTaplistCity()
   const [cityPickerVisible, setCityPickerVisible] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const selectedCityName = selectedCity.city
-
-  useEffect(() => {
-    if (!configured) return
-    void queryClient.invalidateQueries({ queryKey: ['taplist'] })
-  }, [configured, queryClient])
 
   const barsQuery = useQuery({
     queryKey: ['taplist', 'bars', selectedCityName],
     queryFn: () => fetchPublicBars(selectedCityName),
     enabled: configured,
-    refetchOnMount: 'always',
+    staleTime: HOME_STALE_TIME,
   })
 
   const newTapsQuery = useQuery({
     queryKey: ['taplist', 'new-drinks', selectedCityName],
     queryFn: () => fetchPublicNewDrinks(selectedCityName),
     enabled: configured,
-    refetchOnMount: 'always',
+    staleTime: HOME_STALE_TIME,
   })
 
   const eventsQuery = useQuery({
     queryKey: ['taplist', 'events', selectedCityName],
     queryFn: () => fetchPublicEvents(selectedCityName),
     enabled: configured,
-    refetchOnMount: 'always',
+    staleTime: HOME_STALE_TIME,
   })
+
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now()
+      if (barsQuery.dataUpdatedAt > 0 && now - barsQuery.dataUpdatedAt >= HOME_STALE_TIME) {
+        void barsQuery.refetch()
+      }
+      if (newTapsQuery.dataUpdatedAt > 0 && now - newTapsQuery.dataUpdatedAt >= HOME_STALE_TIME) {
+        void newTapsQuery.refetch()
+      }
+      if (eventsQuery.dataUpdatedAt > 0 && now - eventsQuery.dataUpdatedAt >= HOME_STALE_TIME) {
+        void eventsQuery.refetch()
+      }
+    }, [
+      barsQuery.dataUpdatedAt,
+      barsQuery.refetch,
+      eventsQuery.dataUpdatedAt,
+      eventsQuery.refetch,
+      newTapsQuery.dataUpdatedAt,
+      newTapsQuery.refetch,
+    ]),
+  )
+
+  const handleRefresh = async () => {
+    if (!configured || refreshing) return
+    setRefreshing(true)
+    try {
+      await Promise.allSettled([
+        barsQuery.refetch(),
+        newTapsQuery.refetch(),
+        eventsQuery.refetch(),
+      ])
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   const bars = sortPublicBarsByMenuUpdated(barsQuery.data ?? [])
   const newTaps = newTapsQuery.data ?? []
@@ -69,6 +102,13 @@ export default function TonightScreen() {
   return (
     <ScrollView
       style={styles.screen}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void handleRefresh()}
+          tintColor={palette.amber}
+        />
+      }
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
       <View style={styles.header}>
         <Text style={styles.title}>TONIGHT</Text>
@@ -125,8 +165,8 @@ export default function TonightScreen() {
           title="暂时无法加载酒吧"
           body="若系统询问是否允许使用网络，请选择「无线局域网与蜂窝网络」，然后点重试。"
           actionLabel="重试"
-          onAction={() => void barsQuery.refetch()}
-          actionLoading={barsQuery.isFetching}
+          onAction={() => void handleRefresh()}
+          actionLoading={refreshing}
         />
       ) : bars.length === 0 && !barsQuery.isLoading ? (
         <EmptyState title="暂无公开酒吧" body="当前城市还没有已发布的公开酒单。" />

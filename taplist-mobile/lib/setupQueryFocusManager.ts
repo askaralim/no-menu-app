@@ -1,7 +1,6 @@
 import { focusManager } from '@tanstack/react-query'
 import { AppState, type AppStateStatus } from 'react-native'
 
-import { queryClient } from '@/lib/queryClient'
 import { resetTaplistSupabaseCache } from '@/lib/supabase'
 
 let installed = false
@@ -17,11 +16,10 @@ export function setupTaplistQueryFocusManager(): void {
   focusManager.setEventListener((onFocus) => {
     const onChange = (status: AppStateStatus) => {
       const active = status === 'active'
-      onFocus(active)
       if (active) {
         resetTaplistSupabaseCache()
-        void queryClient.invalidateQueries({ queryKey: ['taplist'] })
       }
+      onFocus(active)
     }
     onChange(AppState.currentState)
     const sub = AppState.addEventListener('change', onChange)
