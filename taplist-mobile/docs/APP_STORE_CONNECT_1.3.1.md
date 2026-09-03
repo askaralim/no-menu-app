@@ -1,12 +1,12 @@
-# No Menu 1.3.1 — App Store Connect 提审资料
+# No Menu 1.3.1 — App Store Connect 上线记录
 
-> 适用于当前 consumer app `1.3.1`、iOS build `43`。`1.3.0` 已上线资料保留在 [`APP_STORE_CONNECT_1.3.0.md`](./APP_STORE_CONNECT_1.3.0.md)，不要覆盖其发布记录。
+> 当前 consumer app `1.3.1`、iOS build `43` 已通过 Apple 审核并上线。`1.3.0` 资料保留在 [`APP_STORE_CONNECT_1.3.0.md`](./APP_STORE_CONNECT_1.3.0.md)，作为上一版本发布记录。
 
-## 状态（2026-08-28）
+## 状态（2026-08-30）
 
-**待 TestFlight 最终回归与 ASC 提交。**
+**Approved / live**（`1.3.1`，build `43`）。
 
-本版本的主要用户变化是：记录新 TAP、重构“我的”入口、月度 TAP 报告，以及今晚/月度/单款分享图片。关注酒吧与上新通知继续保留。
+Apple 审核通过与功能上线状态已由账号持有人确认。本版本上线了记录新 TAP、重构后的“我的”入口、月度 TAP 报告，以及今晚/月度/单款分享图片；关注酒吧与上新通知继续保留。本文现作为 `1.3.1` 发布记录及后续排障参考。
 
 ## 1. Build 与固定信息
 
@@ -199,15 +199,13 @@ npm run preflight
 - [ ] 隐私政策、支持与营销 URL 可公开访问
 - [ ] 飞行模式和私人 RPC 失败不影响公开酒单浏览
 
-### ASC 提交前
+### ASC 提交结果
 
-- [ ] build 43 已完成 TestFlight 真机验证
-- [ ] 版本号、Build、截图和 What’s New 均为 1.3.1
-- [ ] 优先上传最高分辨率的 6.9 英寸截图；界面一致时由 ASC 自动缩放，需要自定义构图时再补充其他尺寸
-- [ ] App Privacy 已复核并 Publish
-- [ ] 年龄分级仍正确显示 18+（新系统）/ 17+（旧系统）
-- [ ] Content Rights、出口合规、价格与销售地区无待处理警告
-- [ ] 选择手动发布，除非本次明确需要审核通过后自动发布
+- [x] build 43 已完成 TestFlight 与 ASC 提交
+- [x] 版本号、Build、截图和 What’s New 均为 1.3.1
+- [x] App Privacy、年龄分级与合规字段已被本次审核接受
+- [x] Apple 审核通过
+- [x] App Store 版本已上线
 
 ## 7. 不变的合规声明
 

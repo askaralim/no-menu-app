@@ -27,7 +27,7 @@ export default function TapReportScreen() {
   )) ?? []
 
   const generateShare = async () => {
-    if (!month?.new_drink_count || sharing) return
+    if (!month?.drink_count || sharing) return
     setSharing(true)
     try {
       const uri = await shareRef.current?.capture()
@@ -42,7 +42,7 @@ export default function TapReportScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.xxl }]}>
         {insightsQuery.isLoading ? (
           <ActivityIndicator color={palette.amber} style={styles.loading} />
-        ) : !month?.new_drink_count ? (
+        ) : !month?.drink_count ? (
           <>
             <ReportHeader title="TAP 报告" />
             <View style={styles.empty}>
@@ -57,7 +57,9 @@ export default function TapReportScreen() {
               sharing={sharing}
               title={`${formatMonth(month.month_start)} TAP 报告`}
             />
-            <Text style={styles.summary}>本月新增 {month.new_drink_count} 款 · 来自 {month.bar_count} 家酒吧</Text>
+            <Text style={styles.summary}>
+              本月 TAP {month.drink_count} 款 · 新增 {month.new_drink_count} 款 · 来自 {month.bar_count} 家酒吧
+            </Text>
 
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -105,7 +107,7 @@ export default function TapReportScreen() {
           </>
         )}
       </ScrollView>
-      {month?.new_drink_count ? (
+      {month?.drink_count ? (
         <View pointerEvents="none" style={styles.hiddenCanvas}>
           <ShareableDrinkLogImage ref={shareRef} month={month} username={profileQuery.data?.consumer_username || 'NoMenuist'} />
         </View>

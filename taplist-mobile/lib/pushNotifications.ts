@@ -10,6 +10,9 @@ import { getTaplistSupabase } from '@/lib/supabase'
 
 export type PushPermissionState = 'unavailable' | 'undetermined' | 'granted' | 'denied'
 
+let enablePushPromise: Promise<'granted' | 'denied'> | null = null
+let registeredDeviceKey: string | null = null
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: false,
@@ -29,17 +32,38 @@ export async function getPushPermissionState(): Promise<PushPermissionState> {
 
 export async function enablePushNotifications() {
   if (Platform.OS !== 'ios' || !Device.isDevice) return 'unavailable' as const
-  const current = await Notifications.getPermissionsAsync()
-  const permission = current.status === 'undetermined'
-    ? await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowSound: true } })
-    : current
-  if (permission.status !== 'granted') return 'denied' as const
+  if (enablePushPromise) return enablePushPromise
 
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
-  if (typeof projectId !== 'string' || !projectId) throw new Error('EAS_PROJECT_ID_MISSING')
-  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data
-  await registerMyPushDevice(token)
-  return 'granted' as const
+  enablePushPromise = (async () => {
+    const current = await Notifications.getPermissionsAsync()
+    const permission = current.status === 'undetermined'
+      ? await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowSound: true } })
+      : current
+    if (permission.status !== 'granted') return 'denied' as const
+
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
+    if (typeof projectId !== 'string' || !projectId) throw new Error('EAS_PROJECT_ID_MISSING')
+
+    const client = getTaplistSupabase()
+    const [{ data: sessionData }, tokenResult] = await Promise.all([
+      client.auth.getSession(),
+      Notifications.getExpoPushTokenAsync({ projectId }),
+    ])
+    if (!sessionData.session) return 'granted' as const
+
+    const deviceKey = `${sessionData.session.user.id}:${tokenResult.data}`
+    if (registeredDeviceKey === deviceKey) return 'granted' as const
+
+    await registerMyPushDevice(tokenResult.data)
+    registeredDeviceKey = deviceKey
+    return 'granted' as const
+  })()
+
+  try {
+    return await enablePushPromise
+  } finally {
+    enablePushPromise = null
+  }
 }
 
 export async function syncGrantedPushDevice() {
@@ -77,13 +101,9 @@ export function usePushNotificationObserver() {
     const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
       routeFromNotification(response.notification)
     })
-    const tokenSubscription = Notifications.addPushTokenListener(() => {
-      void syncGrantedPushDevice()
-    })
     void syncGrantedPushDevice()
     return () => {
       responseSubscription.remove()
-      tokenSubscription.remove()
     }
   }, [])
 }

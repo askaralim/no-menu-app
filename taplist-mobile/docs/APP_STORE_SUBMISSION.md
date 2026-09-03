@@ -1,6 +1,6 @@
 # No Menu Tap List — App Store Connect MVP checklist
 
-> **Current submission candidate:** `1.3.1` build `43` — use [APP_STORE_CONNECT_1.3.1.md](./APP_STORE_CONNECT_1.3.1.md). `1.3.0` remains the approved/live baseline in [APP_STORE_CONNECT_1.3.0.md](./APP_STORE_CONNECT_1.3.0.md). This file is the generic preflight checklist.
+> **Current live release:** `1.3.2` build `48` was approved and confirmed available on the App Store on 2026-09-03 — use [APP_STORE_CONNECT_1.3.2.md](./APP_STORE_CONNECT_1.3.2.md). This file is the generic preflight checklist.
 
 Use this before uploading a **production** iOS build. Demo seed data (`taplist-demo-*` bars) is acceptable for TestFlight; replace with real bars before public App Store release if desired.
 
@@ -117,9 +117,9 @@ eas submit --platform ios --profile production
 
 `ascAppId` is set in `eas.json`. Add `appleId` (Apple ID email) and `appleTeamId` when running submit, or in `eas.json`.
 
-## 8. MVP scope reminders (do not add for v1.0)
+## 8. Current scope reminders
 
-No maps, GPS, user accounts, ordering, payments, push, or social features (see `AGENTS.md`).
+No general map, background or automatic GPS, ordering, payments, delivery, reservations, ratings, or social features. The approved exceptions are user-triggered iOS foreground-location sorting, private anonymous/Apple-protected TAP records, private bar follows, and optional new-tap push (see `AGENTS.md`).
 
 ## 9. Pre-submission manual smoke (5 min)
 
@@ -127,9 +127,13 @@ No maps, GPS, user accounts, ordering, payments, push, or social features (see `
 - [ ] Kill app, reopen → gate does **not** show again  
 - [ ] Tonight lists bars for the default city  
 - [ ] City picker appears when 2+ public cities exist  
-- [ ] Switch city → Tonight, Search, NEW ON TAP, and Events use the selected city  
+- [ ] Switch city → Tonight, Search, 最近上新, and 活动 use the selected city
 - [ ] Kill app, reopen → selected city is restored  
+- [ ] Tap 附近 → purpose sheet precedes iOS permission; allow, deny, and failure all behave correctly
+- [ ] Swipe the homepage activity banner → one complete banner per page and page dots update correctly
+- [ ] Open 活动 → Chinese groups, dates, event detail, full-poster viewer, and participating-bar link work
 - [ ] Open bar → drinks load  
+- [ ] Download bar tap list → preview shows all drinks; public prices are complete and private prices are absent
 - [ ] Open beer → servings + disclaimer  
 - [ ] Search “IPA” → drink results  
 - [ ] About shows disclaimer (+ privacy link if URL configured)  
@@ -139,10 +143,10 @@ No maps, GPS, user accounts, ordering, payments, push, or social features (see `
 
 | Item | Status |
 |------|--------|
-| Typecheck | Run `npx tsc --noEmit` |
-| Web export | Run `npx expo export --platform web` |
+| Typecheck | Passed for live `1.3.2` build `48` |
+| Web export | Passed for live `1.3.2` build `48` |
 | First-launch gate | Implemented |
 | Compliance on About / bar / beer | Implemented |
 | `ITSAppUsesNonExemptEncryption: false` | In `app.json` |
 | Privacy policy URL | https://nomenuapp.com/privacy (set in EAS secrets) |
-| EAS production build | Run `eas build --profile production` after secrets |
+| EAS production build | `1.3.2` build `48` completed |

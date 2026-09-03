@@ -1913,6 +1913,8 @@ BEGIN
             'cover_image_url', t.cover_image_url,
             'city', t.city,
             'country', t.country,
+            'latitude', t.roadmap_latitude,
+            'longitude', t.roadmap_longitude,
             'last_menu_updated_at', t.last_menu_updated_at,
             'status_counts', (
               SELECT jsonb_build_object(

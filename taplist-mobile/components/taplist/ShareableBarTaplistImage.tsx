@@ -1,4 +1,3 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import ViewShot from 'react-native-view-shot'
@@ -23,8 +22,9 @@ export const ShareableBarTaplistImage = forwardRef<
 >(function ShareableBarTaplistImage({ tenant, drinks }, ref) {
   const shotRef = useRef<ViewShot>(null)
   const title = tenant.display_name || tenant.name
-  const addressLine = [tenant.district, tenant.address].filter(Boolean).join(' · ')
   const generatedAtLabel = formatGeneratedAt(new Date())
+  const isDense = drinks.length >= 13
+  const drinkRows = chunkDrinks(drinks)
 
   useImperativeHandle(ref, () => ({
     capture: async () => {
@@ -34,82 +34,91 @@ export const ShareableBarTaplistImage = forwardRef<
   }))
 
   return (
-    <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }}>
+    <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }} style={styles.shot}>
       <View style={styles.card} collapsable={false}>
         <View style={styles.header}>
-          <Text style={styles.kicker}>NO MENU</Text>
-          <Text style={styles.title}>{title}</Text>
-          {addressLine ? (
-            <View style={styles.headerMetaRow}>
-              <FontAwesome name="map-marker" size={12} color={palette.muted} />
-              <Text style={styles.headerMetaText}>{addressLine}</Text>
+          <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+            {title}
+          </Text>
+          <Text style={styles.headerCount}>今晚 {drinks.length} 款在售</Text>
+        </View>
+
+        <View style={[styles.list, isDense && styles.listDense]}>
+          {drinkRows.map((row) => (
+            <View key={row[0].id} style={styles.beerGridRow}>
+              {row.map((drink) => (
+                <ExportBeerRow key={drink.id} drink={drink} isDense={isDense} />
+              ))}
+              {row.length === 1 ? <View style={styles.beerRowPlaceholder} /> : null}
             </View>
-          ) : null}
-        </View>
-
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryText}>今晚 {drinks.length} 款在售</Text>
-          <Text style={styles.summaryAccent}>以门店实际供应为准</Text>
-        </View>
-
-        <View style={styles.list}>
-          {drinks.map((drink, index) => (
-            <ExportBeerRow key={drink.id} drink={drink} isLast={index === drinks.length - 1} />
           ))}
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>No Menu · 酒单创建时间 {generatedAtLabel}</Text>
+          <Text style={styles.footerText}>No Menu · {generatedAtLabel}</Text>
         </View>
       </View>
     </ViewShot>
   )
 })
 
-function ExportBeerRow({ drink, isLast }: { drink: PublicDrinkRow; isLast: boolean }) {
+function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boolean }) {
   const servingOptions = displayServingOptions(drink.serving_options)
   const publicStatus = drink.public_status ? drink.public_status : null
   const isSoldOut = publicStatus === '售罄'
-  const breweryStyle = beerInfoLine(drink)
-  const abvIbu = beerStatsLine(drink)
-  const showServingOptions = servingOptions.length > 1
+  const beerStyle = drink.beer?.beer_style ?? null
+  const brewery = formatBreweryWithCollab(
+    drink.beer?.brewery,
+    drink.beer?.collab_breweries,
+    drink.brand_name,
+  )
+  const abv = typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null
+  const priceLine = servingOptions.map(servingOptionLine).filter(Boolean).join(' / ')
+  const tapNumber = drink.public_sort_order > 0 ? drink.public_sort_order : null
 
   return (
-    <View style={[styles.beerRow, !isLast && styles.beerRowSpacing, isSoldOut && styles.beerRowSoldOut]}>
-      <View style={styles.beerContent}>
-        {drink.image_url ? (
-          <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
-        ) : (
-          <View style={styles.beerArtworkSpacer} />
-        )}
+    <View style={[styles.beerRow, isDense && styles.beerRowDense, isSoldOut && styles.beerRowSoldOut]}>
+      <View style={[styles.beerContent, isDense && styles.beerContentDense]}>
+        <View style={styles.artworkWrap}>
+          <BeerArtwork name={drink.name} source={drink.image_url} size={isDense ? 40 : 44} />
+          {tapNumber ? (
+            <View style={styles.tapNumberBadge}>
+              <Text style={styles.tapNumberText}>{tapNumber}</Text>
+            </View>
+          ) : null}
+        </View>
         <View style={styles.beerMain}>
           <View style={styles.beerTitleRow}>
-            <Text style={styles.beerName}>{drink.name}</Text>
+            <Text
+              style={[styles.beerName, isDense && styles.beerNameDense]}
+              numberOfLines={2}
+              ellipsizeMode="tail">
+              {drink.name}
+            </Text>
             <View style={styles.beerRightRail}>
               {publicStatus ? (
-                <View style={[styles.statusBadge, isSoldOut && styles.statusBadgeSoldOut]}>
-                  <Text style={[styles.statusTag, isSoldOut && styles.statusTagSoldOut]}>{publicStatus}</Text>
+                <View style={[styles.statusBadge, isDense && styles.statusBadgeDense, isSoldOut && styles.statusBadgeSoldOut]}>
+                  <Text style={[styles.statusTag, isDense && styles.statusTagDense, isSoldOut && styles.statusTagSoldOut]}>
+                    {publicStatus}
+                  </Text>
                 </View>
               ) : null}
             </View>
           </View>
-          {breweryStyle || abvIbu ? (
+          {beerStyle || brewery || abv || priceLine ? (
             <View style={styles.beerCopy}>
-              {breweryStyle ? <Text style={styles.beerMeta}>{breweryStyle}</Text> : null}
-              {abvIbu ? <Text style={styles.beerStats}>{abvIbu}</Text> : null}
-            </View>
-          ) : null}
-          {showServingOptions ? (
-            <View style={styles.servingOptions}>
-              {servingOptions.map((option) => {
-                const line = servingOptionLine(option)
-                if (!line) return null
-                return (
-                  <View key={option.id} style={styles.servingOptionTag}>
-                    <Text style={styles.servingOptionText}>{line}</Text>
-                  </View>
-                )
-              })}
+              {beerStyle ? (
+                <Text style={styles.beerStyle} numberOfLines={1} ellipsizeMode="tail">
+                  {beerStyle}
+                </Text>
+              ) : null}
+              {brewery ? (
+                <Text style={styles.brewery} numberOfLines={1} ellipsizeMode="tail">
+                  {brewery}
+                </Text>
+              ) : null}
+              {abv ? <Text style={styles.beerStats}>{abv}</Text> : null}
+              {priceLine ? <Text style={styles.price}>{priceLine}</Text> : null}
             </View>
           ) : null}
         </View>
@@ -118,27 +127,17 @@ function ExportBeerRow({ drink, isLast }: { drink: PublicDrinkRow; isLast: boole
   )
 }
 
-function beerInfoLine(drink: PublicDrinkRow) {
-  return [
-    formatBreweryWithCollab(drink.beer?.brewery, drink.beer?.collab_breweries, drink.brand_name),
-    drink.beer?.beer_style,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-}
-
-function beerStatsLine(drink: PublicDrinkRow) {
-  return [
-    typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null,
-    typeof drink.beer?.ibu === 'number' ? `IBU ${drink.beer.ibu}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-}
-
 function servingOptionLine(option: ReturnType<typeof displayServingOptions>[number]) {
   const parts = servingParts(option)
   return parts.length > 0 ? parts.join(' · ') : null
+}
+
+function chunkDrinks(drinks: PublicDrinkRow[]) {
+  const rows: PublicDrinkRow[][] = []
+  for (let index = 0; index < drinks.length; index += 2) {
+    rows.push(drinks.slice(index, index + 2))
+  }
+  return rows
 }
 
 function formatGeneratedAt(date: Date) {
@@ -148,65 +147,59 @@ function formatGeneratedAt(date: Date) {
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
 
-  return `${year}/${month}/${day} ${hour}:${minute}`
+  return `${year}.${month}.${day} ${hour}:${minute}`
 }
 
 const styles = StyleSheet.create({
+  shot: {
+    backgroundColor: palette.background,
+  },
   card: {
     width: 390,
     backgroundColor: palette.background,
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    paddingTop: 36,
+    paddingBottom: spacing.md + 1,
+    paddingTop: 24,
   },
   header: {
-    paddingBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: palette.hairline,
-  },
-  kicker: {
-    ...typography.label,
-    color: palette.tungsten,
-    fontSize: 10,
-    lineHeight: 14,
-    marginBottom: spacing.xs,
   },
   title: {
     ...typography.displayL,
     color: palette.text,
-    fontSize: 44,
-    lineHeight: 50,
+    fontSize: 36,
+    lineHeight: 42,
+    flex: 1,
+    minWidth: 0,
   },
-  headerMetaRow: {
-    marginTop: spacing.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  headerMetaText: {
+  headerCount: {
     ...typography.caption,
     color: palette.muted,
-    flex: 1,
-  },
-  summaryRow: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.hairline,
-    gap: spacing.xxs,
-  },
-  summaryText: {
-    ...typography.title,
-    color: palette.text,
-  },
-  summaryAccent: {
-    ...typography.micro,
-    color: palette.faint,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '500',
+    textAlign: 'right',
+    flexShrink: 0,
   },
   list: {
     paddingTop: spacing.sm,
+    gap: 6,
+  },
+  listDense: {
+    gap: 4,
+  },
+  beerGridRow: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'stretch',
   },
   footer: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: palette.hairline,
@@ -216,14 +209,20 @@ const styles = StyleSheet.create({
     color: palette.faint,
   },
   beerRow: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 78,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(245,241,230,0.07)',
     backgroundColor: 'rgba(17,17,17,0.58)',
     overflow: 'hidden',
   },
-  beerRowSpacing: {
-    marginBottom: spacing.xs,
+  beerRowDense: {
+    minHeight: 66,
+  },
+  beerRowPlaceholder: {
+    flex: 1,
   },
   beerRowSoldOut: {
     opacity: 0.58,
@@ -234,8 +233,35 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     padding: spacing.xs,
   },
-  beerArtworkSpacer: {
-    width: 72,
+  beerContentDense: {
+    gap: 5,
+    padding: 4,
+  },
+  artworkWrap: {
+    position: 'relative',
+    flexShrink: 0,
+  },
+  tapNumberBadge: {
+    position: 'absolute',
+    top: 2,
+    left: 2,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 3,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(8,8,8,0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,241,230,0.3)',
+  },
+  tapNumberText: {
+    ...typography.micro,
+    color: palette.text,
+    fontSize: 8,
+    lineHeight: 10,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   beerMain: {
     flex: 1,
@@ -245,43 +271,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: spacing.xs,
+    gap: 3,
   },
   beerName: {
-    ...typography.displayL,
+    ...typography.title,
     color: palette.text,
-    fontSize: 24,
-    lineHeight: 28,
+    fontSize: 14,
+    lineHeight: 17,
     flex: 1,
   },
+  beerNameDense: {
+    fontSize: 14,
+    lineHeight: 17,
+  },
   beerRightRail: {
-    minWidth: 50,
+    minWidth: 30,
     alignItems: 'flex-end',
     gap: spacing.xs,
   },
   beerCopy: {
     minWidth: 0,
   },
-  beerMeta: {
+  beerStyle: {
+    ...typography.caption,
+    color: '#D6B069',
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  brewery: {
     ...typography.caption,
     color: palette.muted,
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: spacing.xxs,
+    fontSize: 9,
+    lineHeight: 11,
+    marginTop: 1,
   },
   beerStats: {
     ...typography.label,
     color: palette.faint,
-    fontSize: 9,
-    lineHeight: 12,
-    marginTop: spacing.xxs,
+    fontSize: 8,
+    lineHeight: 10,
+    marginTop: 1,
+  },
+  price: {
+    ...typography.micro,
+    color: palette.muted,
+    fontSize: 8,
+    lineHeight: 10,
+    marginTop: 1,
   },
   statusBadge: {
     backgroundColor: 'rgba(159,122,61,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(159,122,61,0.24)',
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xxs,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
@@ -290,33 +335,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(117,111,101,0.14)',
     borderColor: 'rgba(117,111,101,0.18)',
   },
+  statusBadgeDense: {
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
   statusTag: {
     ...typography.label,
     color: palette.tungsten,
-    fontSize: 10,
-    lineHeight: 12,
+    fontSize: 8,
+    lineHeight: 10,
+  },
+  statusTagDense: {
+    fontSize: 8,
+    lineHeight: 10,
   },
   statusTagSoldOut: {
     color: palette.faint,
-  },
-  servingOptions: {
-    marginTop: spacing.xs,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xxs,
-  },
-  servingOptionTag: {
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(245,241,232,0.08)',
-    backgroundColor: 'rgba(17,17,17,0.28)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  servingOptionText: {
-    ...typography.micro,
-    color: palette.muted,
-    fontSize: 10,
-    lineHeight: 13,
   },
 })

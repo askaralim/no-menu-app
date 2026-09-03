@@ -45,6 +45,8 @@ export type PublicBarRow = {
   cover_image_url: string | null
   city: string
   country: string
+  latitude?: number | null
+  longitude?: number | null
   last_menu_updated_at: string | null
   status_counts?: PublicBarStatusCounts
   brewing_type?: BrewingType | null
@@ -369,6 +371,7 @@ export type MyDrinkInsights = {
   month: {
     month_start: string
     month_end: string
+    drink_count: number
     new_drink_count: number
     bar_count: number
     style_counts: Array<{ style: string; count: number }>

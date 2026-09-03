@@ -1,6 +1,6 @@
 import * as Sharing from 'expo-sharing'
-import { useState } from 'react'
-import { ActivityIndicator, Alert, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { ActivityIndicator, Alert, Image, InteractionManager, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { palette, spacing, typography } from '@/constants/design'
@@ -13,7 +13,30 @@ type Props = {
 
 export function ShareImagePreviewModal({ uri, onClose }: Props) {
   const insets = useSafeAreaInsets()
+  const pendingShareUri = useRef<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [sharing, setSharing] = useState(false)
+
+  const beginShare = () => {
+    if (!uri || sharing) return
+    pendingShareUri.current = uri
+    setSharing(true)
+    onClose()
+    if (Platform.OS !== 'ios') {
+      InteractionManager.runAfterInteractions(() => void sharePendingImage())
+    }
+  }
+
+  const sharePendingImage = async () => {
+    const shareUri = pendingShareUri.current
+    if (!shareUri) return
+    pendingShareUri.current = null
+    try {
+      await shareImage(shareUri)
+    } finally {
+      setSharing(false)
+    }
+  }
 
   const save = async () => {
     if (!uri || saving) return
@@ -32,7 +55,11 @@ export function ShareImagePreviewModal({ uri, onClose }: Props) {
   }
 
   return (
-    <Modal visible={Boolean(uri)} animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={Boolean(uri)}
+      animationType="slide"
+      onDismiss={() => void sharePendingImage()}
+      onRequestClose={onClose}>
       <View style={[styles.preview, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.md }]}>
         <View style={styles.header}>
           <Text style={styles.title}>分享图预览</Text>
@@ -40,7 +67,7 @@ export function ShareImagePreviewModal({ uri, onClose }: Props) {
         </View>
         {uri ? <Image source={{ uri }} resizeMode="contain" style={styles.image} /> : null}
         <View style={styles.actions}>
-          <Pressable style={styles.primary} onPress={() => uri && void Sharing.shareAsync(uri)}>
+          <Pressable disabled={sharing} style={styles.primary} onPress={beginShare}>
             <Text style={styles.primaryText}>分享图片</Text>
           </Pressable>
           <Pressable disabled={saving} style={styles.secondary} onPress={() => void save()}>
@@ -50,6 +77,18 @@ export function ShareImagePreviewModal({ uri, onClose }: Props) {
       </View>
     </Modal>
   )
+}
+
+async function shareImage(uri: string) {
+  try {
+    if (!await Sharing.isAvailableAsync()) {
+      Alert.alert('暂时无法分享', '当前设备无法打开系统分享面板。')
+      return
+    }
+    await Sharing.shareAsync(uri)
+  } catch {
+    Alert.alert('分享失败', '暂时无法打开分享面板，请稍后重试。')
+  }
 }
 
 const styles = StyleSheet.create({

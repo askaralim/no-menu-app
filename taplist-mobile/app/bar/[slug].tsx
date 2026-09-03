@@ -52,8 +52,9 @@ export default function BarDetailScreen() {
 
   const drinksQuery = useQuery({
     queryKey: ['taplist', 'drinks', tenant?.id],
-    queryFn: () => fetchPublicDrinks(tenant!.id),
+    queryFn: ({ signal }) => fetchPublicDrinks(tenant!.id, signal),
     enabled: configured && !!tenant?.id,
+    retry: false,
   })
 
   const eventsQuery = useQuery({
@@ -355,7 +356,12 @@ export default function BarDetailScreen() {
           ) : tenant ? (
             <>
               {drinksQuery.isError || drinkResult?.ok === false ? (
-                <EmptyState title="暂时无法加载酒单" body="请稍后重试，或以门店实际供应为准。" />
+                <EmptyState
+                  title="暂时无法加载酒单"
+                  body="网络连接较慢，请重新加载，或以门店实际供应为准。"
+                  actionLabel="重新加载"
+                  onAction={() => void drinksQuery.refetch()}
+                />
               ) : !hasAnyDrinks && !drinksQuery.isLoading ? (
                 <EmptyState title="暂无公开酒款" body="这家酒吧当前还没有发布可展示的酒单。" />
               ) : (
@@ -472,18 +478,15 @@ function BarEventsSection({ slug, events }: { slug: string; events: PublicEventR
 
   return (
     <View style={styles.eventsSection}>
-      <View style={styles.eventsHeader}>
-        <View>
-          <Text style={styles.eventsTitle}>EVENTS</Text>
-        </View>
-        {showMore ? (
+      {showMore ? (
+        <View style={styles.eventsHeader}>
           <Link href={{ pathname: '/bar/[slug]/events', params: { slug } }} asChild>
             <Pressable style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
               <Text style={styles.moreText}>更多 ›</Text>
             </Pressable>
           </Link>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -497,11 +500,29 @@ function BarEventsSection({ slug, events }: { slug: string; events: PublicEventR
   )
 }
 
-function EmptyState({ title, body }: { title: string; body: string }) {
+function EmptyState({
+  title,
+  body,
+  actionLabel,
+  onAction,
+}: {
+  title: string
+  body: string
+  actionLabel?: string
+  onAction?: () => void
+}) {
   return (
     <View style={styles.emptyState}>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyBody}>{body}</Text>
+      {actionLabel && onAction ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAction}
+          style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}>
+          <Text style={styles.retryButtonText}>{actionLabel}</Text>
+        </Pressable>
+      ) : null}
     </View>
   )
 }
@@ -693,16 +714,9 @@ const styles = StyleSheet.create({
   eventsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     gap: spacing.md,
     marginBottom: spacing.sm,
-  },
-  eventsTitle: {
-    ...typography.display,
-    color: palette.tungsten,
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: 0.8,
   },
   moreLink: {
     minHeight: 44,
@@ -747,6 +761,24 @@ const styles = StyleSheet.create({
   muted: {
     ...typography.caption,
     color: palette.muted,
+  },
+  retryButton: {
+    alignSelf: 'flex-start',
+    minHeight: 40,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.amber,
+  },
+  retryButtonPressed: {
+    opacity: 0.72,
+  },
+  retryButtonText: {
+    ...typography.caption,
+    color: palette.background,
+    fontWeight: '600',
   },
   tapListSection: {
     marginTop: spacing.lg,

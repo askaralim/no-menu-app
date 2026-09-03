@@ -36,6 +36,9 @@ export type AnalyticsProperties = Record<string, AnalyticsPrimitive | null | und
 export type AnalyticsEventName =
   | 'screen_viewed'
   | 'city_changed'
+  | 'nearby_sort_selected'
+  | 'nearby_sort_completed'
+  | 'nearby_sort_failed'
   | 'bar_opened'
   | 'beer_opened'
   | 'event_opened'

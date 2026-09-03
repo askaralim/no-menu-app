@@ -16,6 +16,12 @@ import {
   Alert,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated'
 import { TAPLIST_THEME as T, SERVING_TYPE_LABELS, EDITOR_STATUSES, statusVisual } from '../../lib/taplistTheme'
 import {
   type DraftDrink,
@@ -50,6 +56,66 @@ async function loadImagePicker(): Promise<ImagePickerModule> {
 }
 
 const SERVING_TYPES: ServingType[] = ['draft', 'can', 'bottle', 'flight', 'other']
+const IMAGE_PREVIEW_MAX_SCALE = 4
+
+function ZoomablePreviewImage({ uri }: { uri: string }) {
+  const scale = useSharedValue(1)
+  const savedScale = useSharedValue(1)
+  const translateX = useSharedValue(0)
+  const translateY = useSharedValue(0)
+  const savedTranslateX = useSharedValue(0)
+  const savedTranslateY = useSharedValue(0)
+
+  const reset = () => {
+    'worklet'
+    scale.value = withSpring(1)
+    savedScale.value = 1
+    translateX.value = withSpring(0)
+    translateY.value = withSpring(0)
+    savedTranslateX.value = 0
+    savedTranslateY.value = 0
+  }
+
+  const pinch = Gesture.Pinch()
+    .onUpdate((event) => {
+      scale.value = Math.min(IMAGE_PREVIEW_MAX_SCALE, Math.max(1, savedScale.value * event.scale))
+    })
+    .onEnd(() => {
+      savedScale.value = scale.value
+      if (scale.value <= 1) reset()
+    })
+
+  const pan = Gesture.Pan()
+    .onUpdate((event) => {
+      if (scale.value <= 1) return
+      translateX.value = savedTranslateX.value + event.translationX
+      translateY.value = savedTranslateY.value + event.translationY
+    })
+    .onEnd(() => {
+      savedTranslateX.value = translateX.value
+      savedTranslateY.value = translateY.value
+    })
+
+  const doubleTap = Gesture.Tap().numberOfTaps(2).onEnd(reset)
+  const gesture = Gesture.Simultaneous(pinch, pan, doubleTap)
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }))
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.Image
+        source={{ uri }}
+        style={[styles.imagePreviewFull, animatedStyle]}
+        resizeMode="contain"
+      />
+    </GestureDetector>
+  )
+}
 
 function findEnabledSameNameDrink(drinks: DraftDrink[], name: string): DraftDrink | undefined {
   const normalized = name.trim().toLowerCase()
@@ -105,6 +171,8 @@ export default function DrinkEditSheet({
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [pendingImage, setPendingImage] = useState<LocalImageAsset | null>(null)
+  const [showImagePreview, setShowImagePreview] = useState(false)
+  const [previewImageSize, setPreviewImageSize] = useState<{ width: number; height: number } | null>(null)
   const [abvText, setAbvText] = useState(
     drink?.profile.abv != null ? String(drink.profile.abv) : '',
   )
@@ -133,6 +201,8 @@ export default function DrinkEditSheet({
     setSearching(false)
     setUploadingImage(false)
     setPendingImage(null)
+    setShowImagePreview(false)
+    setPreviewImageSize(null)
     setAbvText(drink?.profile.abv != null ? String(drink.profile.abv) : '')
     setStatusEvents([])
   }, [drink, entryPoint, isCreate, categories])
@@ -198,6 +268,28 @@ export default function DrinkEditSheet({
     }, 250)
     return () => clearTimeout(timer)
   }, [nameQuery, visible, isCreate, linkedProductId])
+
+  const previewImageUri = pendingImage?.uri || local?.image_url || null
+
+  useEffect(() => {
+    if (!showImagePreview || !previewImageUri) {
+      setPreviewImageSize(null)
+      return
+    }
+    let cancelled = false
+    Image.getSize(
+      previewImageUri,
+      (width, height) => {
+        if (!cancelled) setPreviewImageSize({ width, height })
+      },
+      () => {
+        if (!cancelled) setPreviewImageSize(null)
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [previewImageUri, showImagePreview])
 
   if (!local) return null
 
@@ -537,7 +629,6 @@ export default function DrinkEditSheet({
   )
   const selectedCategoryId =
     local.category_id ?? selectableCategories.find((c) => c.enabled)?.id ?? null
-  const previewImageUri = pendingImage?.uri || local.image_url || null
   const directTapNumber =
     primaryIntent === 'save_and_add_to_tonight' ? suggestedTapNumber : null
   const primaryLabel = directTapNumber
@@ -708,6 +799,13 @@ export default function DrinkEditSheet({
               <View style={styles.imagePreviewRow}>
                 <Image source={{ uri: previewImageUri }} style={styles.imagePreview} />
                 <View style={styles.imageActions}>
+                  <TouchableOpacity
+                    onPress={() => setShowImagePreview(true)}
+                    style={styles.imageActionBtn}
+                  >
+                    <Ionicons name="expand-outline" size={18} color={T.gold} />
+                    <Text style={styles.imageActionText}>查看原图</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => void pickDrinkImage()}
                     style={styles.imageActionBtn}
@@ -1004,6 +1102,39 @@ export default function DrinkEditSheet({
             </TouchableOpacity>
           </View>
         </View>
+
+        <Modal
+          visible={showImagePreview}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setShowImagePreview(false)}
+        >
+          <GestureHandlerRootView style={styles.imagePreviewRoot}>
+            <TouchableOpacity
+              style={styles.imagePreviewBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowImagePreview(false)}
+            >
+              <TouchableOpacity activeOpacity={1} style={styles.imagePreviewContent}>
+                {showImagePreview && previewImageUri ? (
+                  <ZoomablePreviewImage uri={previewImageUri} />
+                ) : null}
+                {previewImageSize ? (
+                  <Text style={styles.imagePreviewSize}>
+                    {previewImageSize.width} × {previewImageSize.height} px
+                  </Text>
+                ) : null}
+                <TouchableOpacity
+                  style={styles.imagePreviewClose}
+                  onPress={() => setShowImagePreview(false)}
+                  hitSlop={10}
+                >
+                  <Ionicons name="close" size={28} color="#fff" />
+                </TouchableOpacity>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </GestureHandlerRootView>
+        </Modal>
       </KeyboardAvoidingView>
     </Modal>
   )
@@ -1120,11 +1251,23 @@ const styles = StyleSheet.create({
   },
   imagePreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
   imagePreview: { width: 72, height: 72, borderRadius: 8, backgroundColor: T.surfaceMuted },
-  imageActions: { flex: 1, gap: 10 },
+  imageActions: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14 },
   imageActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   imageActionText: { color: T.gold, fontSize: 14, fontWeight: '600' },
   clearImageBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   clearImageText: { color: T.danger, fontSize: 14 },
+  imagePreviewRoot: { flex: 1 },
+  imagePreviewBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  imagePreviewContent: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+  imagePreviewFull: { width: '100%', height: '85%' },
+  imagePreviewSize: { color: '#fff', fontSize: 13, marginTop: 12 },
+  imagePreviewClose: { position: 'absolute', top: 24, right: 4, padding: 8 },
   pickImageBtn: {
     flexDirection: 'row',
     alignItems: 'center',

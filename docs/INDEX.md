@@ -1,6 +1,6 @@
 # Documentation index (source of truth)
 
-Last updated: 2026-08-24 (Tonight `1.1.0` + consumer `1.3.0` App Store approved / live).
+Last updated: 2026-09-03 (Tonight `1.1.2` build 24 approved / live).
 
 Use this file to find the **canonical** doc for a topic. Prefer current ops docs over design-era `docs/` archives.
 
@@ -8,18 +8,20 @@ Use this file to find the **canonical** doc for a topic. Prefer current ops docs
 
 ---
 
-## Release status (2026-08-24)
+## Release status (2026-09-03)
 
 | Surface | Version | Status |
 |---------|---------|--------|
-| **No Menu Tonight** (POS) | App Store `1.1.0` (build ≥20) | **Approved / live** — fixed tap slots; use App Store install path for new owners |
-| **No Menu Tonight** (POS) | `1.0.0` (build ≥16) | Superseded by `1.1.0` — baseline metadata in [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md) |
-| **No Menu** (consumer) | App Store `1.3.0` (build ≥42) | **Approved / live** — private bar follow + optional new-tap iOS push |
+| **No Menu Tonight** (POS) | App Store `1.1.2` (build 24) | **Approved / live 2026-09-03** — original-image preview, editing polish, event creation fix and EAS Update |
+| **No Menu Tonight** (POS) | App Store `1.1.1` (build 23) | Superseded by `1.1.2` — 分享上新、高清图片下载、群文案和酒单筛选优化 |
+| **No Menu Tonight** (POS) | `1.1.0` (build ≥20) | Superseded by `1.1.1` — fixed tap slots release |
+| **No Menu Tonight** (POS) | `1.0.0` (build ≥16) | Superseded — baseline metadata in [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md) |
+| **No Menu** (consumer) | App Store `1.3.2` (build 48) | **Approved / live 2026-09-03** — Nearby sorting, event discovery, corrected monthly TAP activity and share-flow improvements |
 | Production DB | Migrations through `20260817130000_…` (incl. tap slots, follow/push, usernames, freshness, QR seeds) | **Applied** (operator-confirmed) |
 
 **Tonight live ops:** new owners → App Store 搜「No Menu Tonight」；微信用 [`OWNER_WECHAT_GUIDE.md`](../supabase/OWNER_WECHAT_GUIDE.md) 已上架模板；完整说明 [`OWNER_USER_GUIDE.md`](../supabase/OWNER_USER_GUIDE.md). Do not send TestFlight / 审核中 copy.
 
-**Consumer live ops:** App Store 搜「No Menu」；follow / new-tap push ops: [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md). Canonical ASC: [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md).
+**Consumer live ops:** App Store 搜「No Menu」；follow / new-tap push ops: [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md). Current live ASC record: [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md).
 
 **Admin web (concierge only, does not change POS/iOS binaries):** `/admin/taplist` 公开状态中文化 + 上新提示、封面空串误清保护；产品池关联门店酒文案；品牌别名合酿提示。Do **not** add follower analytics or push toggles to admin.
 
@@ -27,7 +29,7 @@ POS does **not** need new UI for new-tap push: enqueue is DB-triggered when a dr
 
 ---
 
-## POS next (after 1.1.0 live)
+## POS next (after 1.1.2 approval)
 
 ### Phase 1 — App Store live ops (now)
 
@@ -35,10 +37,12 @@ POS does **not** need new UI for new-tap push: enqueue is DB-triggered when a dr
 2. ~~App Store search install path~~ — current for new owners.
 3. Onboarding loop: provision → App Store install → 改密 → 今晚酒单；point at [`OWNER_USER_GUIDE.md`](../supabase/OWNER_USER_GUIDE.md).
 4. Optional: one-time cover restore ops if any bar still missing images from pre-`07170000` clears.
-5. ~~Ship Tonight `1.1.0` (fixed tap slots)~~ — **Approved / live**.
-6. ~~Consumer `1.3.0` ASC~~ — **Approved / live**.
+5. ~~Ship Tonight `1.1.0` (fixed tap slots)~~ — **Approved / superseded**.
+6. ~~Ship Tonight `1.1.1` (分享上新)~~ — **Approved / superseded by 1.1.2**.
+7. ~~Ship Tonight `1.1.2` (image preview + OTA)~~ — **Approved / live**.
+8. ~~Consumer `1.3.0` ASC~~ — **Approved / superseded by 1.3.1**.
 
-### Phase 2 — Next POS binary (post-1.1.0)
+### Phase 2 — Next POS binary (post-1.1.2)
 
 Ship when Phase 1 is calm and pilot owners report real gaps. Suggested order:
 
@@ -63,7 +67,9 @@ Not scheduled. Revisit when pilot bars hit real pain:
 - Reworking Tonight Control publish model unless a production bug forces it
 
 Canonical Tonight ASC docs:
-- [`mobile/docs/APP_STORE_CONNECT_1.1.0.md`](../mobile/docs/APP_STORE_CONNECT_1.1.0.md) — current live release
+- [`mobile/docs/APP_STORE_CONNECT_1.1.2.md`](../mobile/docs/APP_STORE_CONNECT_1.1.2.md) — current live release
+- [`mobile/docs/APP_STORE_CONNECT_1.1.1.md`](../mobile/docs/APP_STORE_CONNECT_1.1.1.md) — previous release
+- [`mobile/docs/APP_STORE_CONNECT_1.1.0.md`](../mobile/docs/APP_STORE_CONNECT_1.1.0.md) — previous release
 - [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md) — `1.0.0` baseline metadata
 - [`mobile/APP_STORE_CONNECT_SUBMISSION.md`](../mobile/APP_STORE_CONNECT_SUBMISSION.md) — `1.0.0` fill-in checklist
 
@@ -80,12 +86,16 @@ Canonical Tonight ASC docs:
 | Support requests / account deletion deploy | [`supabase/SUPPORT_REQUESTS_DEPLOYMENT.md`](../supabase/SUPPORT_REQUESTS_DEPLOYMENT.md) |
 | Multi-city backend deploy | [`supabase/DEPLOY_MULTI_CITY_BACKEND.md`](../supabase/DEPLOY_MULTI_CITY_BACKEND.md) |
 | Supabase: greenfield vs existing DB | [`supabase/README.md`](../supabase/README.md) · [`supabase/GREENFIELD.md`](../supabase/GREENFIELD.md) |
-| Tonight ASC `1.1.0` (current live) | [`mobile/docs/APP_STORE_CONNECT_1.1.0.md`](../mobile/docs/APP_STORE_CONNECT_1.1.0.md) |
+| Tonight ASC `1.1.2` (current live) | [`mobile/docs/APP_STORE_CONNECT_1.1.2.md`](../mobile/docs/APP_STORE_CONNECT_1.1.2.md) |
+| Tonight ASC `1.1.1` (previous) | [`mobile/docs/APP_STORE_CONNECT_1.1.1.md`](../mobile/docs/APP_STORE_CONNECT_1.1.1.md) |
+| Tonight ASC `1.1.0` (previous) | [`mobile/docs/APP_STORE_CONNECT_1.1.0.md`](../mobile/docs/APP_STORE_CONNECT_1.1.0.md) |
 | Tonight ASC listed v1 (`1.0.0` baseline) | [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md) |
 | Tonight ASC Connect fill-in checklist | [`mobile/APP_STORE_CONNECT_SUBMISSION.md`](../mobile/APP_STORE_CONNECT_SUBMISSION.md) |
 | Tonight agent / release notes | [`mobile/AGENTS.md`](../mobile/AGENTS.md) · [`mobile/README.md`](../mobile/README.md) |
 | Consumer No Menu app | [`taplist-mobile/README.md`](../taplist-mobile/README.md) |
 | Consumer agent rules | [`taplist-mobile/AGENTS.md`](../taplist-mobile/AGENTS.md) |
+| Consumer ASC 1.3.2 (current live) | [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md) |
+| Consumer ASC 1.3.1 (previous live release) | [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.1.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.1.md) |
 | Consumer ASC 1.3.0 (follow / 我的) | [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.0.md) |
 | New-tap push deploy | [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md) |
 | Parked product ideas | [`PRODUCT_BACKLOG.md`](./PRODUCT_BACKLOG.md) |
@@ -154,7 +164,7 @@ POS 1.0.0 round deliberately deferred these; do not treat as review blockers.
 
 | Surface | Path | Bundle / notes |
 |---------|------|----------------|
-| Tonight (POS / owner) | `mobile/` | `com.taklip.nomenuapp` — **1.1.0 App Store live** |
-| No Menu (consumer) | `taplist-mobile/` | `com.nomenuapp.taplist` — **1.3.0 App Store live** |
+| Tonight (POS / owner) | `mobile/` | `com.taklip.nomenuapp` — **1.1.2 (build 24) App Store live** |
+| No Menu (consumer) | `taplist-mobile/` | `com.nomenuapp.taplist` — **1.3.2 (build 48) App Store live** |
 | Admin / platform web | `app/` | Next static export |
 | Public web menu | `taplist-web/` (if present) | `/bar/{slug}`, `/tonight`, `/support` |

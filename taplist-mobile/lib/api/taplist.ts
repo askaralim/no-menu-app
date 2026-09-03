@@ -14,6 +14,8 @@ import type {
 } from '@/lib/types'
 import { partitionPublicDrinks } from '@/lib/types'
 
+const PUBLIC_DRINKS_TIMEOUT_MS = 10_000
+
 export async function fetchPublicCities() {
   const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_cities')
   if (error) throw error
@@ -38,12 +40,22 @@ export async function fetchPublicTenantBySlug(slug: string) {
   return data as PublicTaplistTenantRpc
 }
 
-export async function fetchPublicDrinks(tenantId: string) {
-  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_drinks', {
-    p_tenant_id: tenantId,
-  })
-  if (error) throw error
-  return data as PublicTaplistDrinksRpc
+export async function fetchPublicDrinks(tenantId: string, signal?: AbortSignal) {
+  const controller = new AbortController()
+  const abortRequest = () => controller.abort()
+  const timeout = setTimeout(abortRequest, PUBLIC_DRINKS_TIMEOUT_MS)
+  signal?.addEventListener('abort', abortRequest, { once: true })
+
+  try {
+    const { data, error } = await getTaplistSupabase()
+      .rpc('get_public_taplist_drinks', { p_tenant_id: tenantId })
+      .abortSignal(controller.signal)
+    if (error) throw error
+    return data as PublicTaplistDrinksRpc
+  } finally {
+    clearTimeout(timeout)
+    signal?.removeEventListener('abort', abortRequest)
+  }
 }
 
 function isMissingPublicDrinkRpc(error: { code?: string; message?: string }) {

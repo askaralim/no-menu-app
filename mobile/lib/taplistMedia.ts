@@ -1,4 +1,5 @@
 import * as ImageManipulator from 'expo-image-manipulator'
+import { Image } from 'react-native'
 import { supabase } from './supabase'
 
 export const TAPLIST_MEDIA_BUCKET = 'taplist-media'
@@ -91,9 +92,16 @@ export function translateImageUploadError(raw: unknown): string {
 }
 
 async function compressImage(uri: string): Promise<{ uri: string; width: number; height: number }> {
+  const sourceWidth = await new Promise<number>((resolve, reject) => {
+    Image.getSize(uri, (width) => resolve(width), reject)
+  })
+  const actions: ImageManipulator.Action[] =
+    sourceWidth > COMPRESS_MAX_DIMENSION
+      ? [{ resize: { width: COMPRESS_MAX_DIMENSION } }]
+      : []
   const result = await ImageManipulator.manipulateAsync(
     uri,
-    [{ resize: { width: COMPRESS_MAX_DIMENSION } }],
+    actions,
     { compress: COMPRESS_QUALITY, format: ImageManipulator.SaveFormat.JPEG },
   )
   return result

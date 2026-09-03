@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
+import FontAwesome from '@expo/vector-icons/FontAwesome'
+import { router } from 'expo-router'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { BackButton } from '@/components/taplist/BackButton'
 import { EventListSection } from '@/components/taplist/EventListSection'
 import { SPARSE_EVENT_LIST_THRESHOLD } from '@/components/taplist/railCardStyle'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
@@ -31,13 +32,28 @@ export default function EventsScreen() {
 
   return (
     <View style={styles.screen}>
-      <BackButton />
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xxxl }]}>
-        <Text style={styles.kicker}>NO MENU</Text>
-        <Text style={styles.title}>EVENTS</Text>
-        <Text style={styles.subtitle}>{selectedCity.label} · 近期活动</Text>
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 14 }]}>
+        <View style={styles.header}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="返回"
+            hitSlop={10}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back()
+              } else {
+                router.replace('/')
+              }
+            }}
+            style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}>
+            <FontAwesome name="chevron-left" size={16} color={palette.text} />
+          </Pressable>
+          <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+            {selectedCity.label} · 近期活动
+          </Text>
+        </View>
 
         {!configured ? (
           <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看公开活动。" />
@@ -54,7 +70,7 @@ export default function EventsScreen() {
           <>
             {tonightEvents.length > 0 ? (
               <EventListSection
-                title="TONIGHT"
+                title="进行中"
                 count={tonightEvents.length}
                 events={tonightEvents}
                 compact={sparseList}
@@ -63,7 +79,7 @@ export default function EventsScreen() {
             ) : null}
             {upcomingEvents.length > 0 ? (
               <EventListSection
-                title="UPCOMING"
+                title="即将开始"
                 count={upcomingEvents.length}
                 events={upcomingEvents}
                 compact={sparseList}
@@ -99,23 +115,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  kicker: {
-    ...typography.label,
-    color: palette.tungsten,
-    fontSize: 10,
-    lineHeight: 14,
-    marginBottom: spacing.xs,
+  header: {
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
-  title: {
-    ...typography.displayL,
-    color: palette.text,
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(17,17,17,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,241,230,0.14)',
+    flexShrink: 0,
   },
-  subtitle: {
-    ...typography.caption,
-    color: 'rgba(245,238,225,0.52)',
+  backButtonPressed: {
+    transform: [{ scale: 0.96 }],
+  },
+  headerTitle: {
+    ...typography.title,
+    color: palette.muted,
     fontSize: 17,
     lineHeight: 24,
-    marginTop: spacing.sm,
+    flex: 1,
+    minWidth: 0,
   },
   loading: {
     marginTop: spacing.xl,

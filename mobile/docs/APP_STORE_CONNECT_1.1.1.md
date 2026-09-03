@@ -1,7 +1,14 @@
 # No Menu Tonight 1.1.1 — App Store Connect 发布资料
 
-> Prepared: 2026-08-25 · Status: **准备 TestFlight / 尚未提交审核**  
-> 上一版：[`APP_STORE_CONNECT_1.1.0.md`](./APP_STORE_CONNECT_1.1.0.md)（Approved / live）
+> Prepared: 2026-08-25 · Status: **Approved / superseded by `1.1.2`（2026-09-03）**
+>
+> 历史线上版本：App Store `1.1.1`（build 23）
+>
+> 上一版：[`APP_STORE_CONNECT_1.1.0.md`](./APP_STORE_CONNECT_1.1.0.md)（已被 `1.1.1` 取代）
+
+## 状态
+
+**发布完成。**「分享上新」、分享图下载、默认酒款图与酒单顶部筛选优化均已通过 TestFlight 真机验证和 App Review，并已上线。本文件保留为 `1.1.1` 的 canonical ASC 发布记录；后续 POS 二进制请另开版本文档。
 
 ## 1. 版本与构建
 
@@ -10,11 +17,11 @@
 | App 名称 | `No Menu Tonight` |
 | Bundle ID | `com.taklip.nomenuapp` |
 | App Store 版本 | `1.1.1` |
-| 当前本地 Build | `22`（上传前以最终 EAS build 为准） |
+| 线上 Build | `23` |
 | 主语言 | 简体中文 |
 | 发布方式 | 手动发布 |
 
-当前 `app.json` 已设置为 `1.1.1 (22)`。`eas.json` 的 production profile 开启了 `autoIncrement`，如果构建时号码被递增，以 ASC / TestFlight 中实际处理完成的 build 为准。
+当前 `app.json` 与线上版本均为 `1.1.1 (23)`。
 
 ## 2. 此版本新增内容
 
@@ -97,45 +104,44 @@ ASC App Privacy 沿用 `1.1.0`，无需新增数据类型：
 
 ## 7. TestFlight 验收
 
-使用最终上传到 ASC 的同一 build 完成：
+以下项目已在最终 build 23 上完成验证：
 
-- [ ] App 内「门店 → 账号」显示 `No Menu Tonight 1.1.1 (最终 build)`
-- [ ] 审核账号无需 OTP，可直接登录
-- [ ] `ordering_enabled = false` 时不出现开台、订单、结账或营收入口
-- [ ] 1、2、3、4、5 款分别可正常生成图片
-- [ ] 每个酒款区块等高，图片与酒厂、酒名顶端对齐
-- [ ] 无介绍、无价格、无图片时排版仍正常
-- [ ] 单规格和多规格价格保持单行且可读
-- [ ] 长酒厂名、长酒名和长风格不会溢出画布
-- [ ] 门店关闭公开价格时，图片与文案都不显示价格
-- [ ] 点击「分享图片」后系统分享面板正常出现
-- [ ] 取消分享不会报错，重新分享仍正常
-- [ ] 配套群消息已复制，内容与所选酒款一致
-- [ ] 图片日期使用上海时区当天日期
-- [ ] Release build 无崩溃、空白图或字体缺失
+- [x] App 内「门店 → 账号」显示 `No Menu Tonight 1.1.1 (23)`
+- [x] 审核账号无需 OTP，可直接登录
+- [x] `ordering_enabled = false` 时不出现开台、订单、结账或营收入口
+- [x] 1、2、3、4、5 款分别可正常生成图片
+- [x] 每个酒款区块等高，图片与酒厂、酒名顶端对齐
+- [x] 无介绍、无价格、无图片时排版仍正常
+- [x] 单规格和多规格价格保持单行且可读
+- [x] 长酒厂名、长酒名和长风格不会溢出画布
+- [x] 门店关闭公开价格时，图片与文案都不显示价格
+- [x] 下载图片可保存到系统相册
+- [x] 点击「分享图片」后系统分享面板正常出现
+- [x] 取消分享不会报错，重新分享仍正常
+- [x] 配套群消息已复制，内容与所选酒款一致
+- [x] 图片日期使用上海时区当天日期
+- [x] Release build 无崩溃、空白图或字体缺失
 
 ## 8. 提交前 Go / No-Go
 
 | 项目 | 当前状态 |
 |---|---|
-| `app.json` 为 `1.1.1 (22)` | 已配置；最终 build 待确认 |
-| `npm run typecheck` | 已通过（2026-08-25） |
-| 功能相关代码独立提交且可追溯 | 待办 |
-| Production EAS build 成功并上传 ASC | 待办 |
-| TestFlight 验收清单全部通过 | 待办 |
-| 审核账号、联系人和支持 URL 有效 | 待确认 |
-| ASC 新建 `1.1.1` 版本并粘贴更新说明 | 待办 |
-| 选择最终 build、手动发布并提交审核 | 待办 |
+| `app.json` 为 `1.1.1 (23)` | 完成 |
+| `npm run typecheck` | 通过 |
+| 功能相关代码已合入并可追溯 | 完成 |
+| Production EAS build 成功并上传 ASC | 完成（build 23） |
+| TestFlight 验收清单全部通过 | 完成 |
+| 审核账号、联系人和支持 URL 有效 | 完成 |
+| ASC `1.1.1` 元数据 | 完成 |
+| App Review | Approved / live |
 
-当前依赖检查还提示现有 `expo-file-system@18.1.11` 与当前 Expo SDK 期望的 `~19.0.21` 不一致。它不是本功能引入的改动，但应在 production build 前确认或修复，不能忽略构建/运行风险。
+发布时的依赖与 production build 已通过实际构建、TestFlight 和 App Review 验证。
 
-## 9. 推荐提交顺序
+## 9. 已完成的提交顺序
 
-1. 只提交 `1.1.1` 功能和发布资料相关改动，排除工作区中其他未完成内容。
-2. 确认依赖兼容性并执行类型检查。
-3. 生成 production iOS build；记录实际 build number。
-4. 上传 ASC，等待处理完成后分发到 TestFlight。
-5. 使用审核账号完成第 7 节真机验收。
-6. 在 ASC 创建 `1.1.1`，粘贴第 2 节更新说明和第 4 节审核备注。
-7. 复核 App Privacy、年龄分级、出口合规、审核联系人及登录信息。
-8. 选择通过验收的 build，设为手动发布，提交 App Review。
+1. `1.1.1` 功能和发布资料相关改动独立提交。
+2. 完成依赖检查和类型检查。
+3. 生成并上传 production iOS build 23。
+4. 使用审核账号完成 TestFlight 真机验收。
+5. 完成 ASC 元数据、App Privacy、年龄分级、出口合规与审核信息。
+6. 提交 App Review，审核通过并上线。

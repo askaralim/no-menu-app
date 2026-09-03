@@ -21,6 +21,7 @@ export default function HouseStackLayout() {
       <Stack.Screen name="more" />
       <Stack.Screen name="staff" />
       <Stack.Screen name="account" />
+      <Stack.Screen name="switch-tenant" />
       <Stack.Screen name="change-password" />
       <Stack.Screen name="account-deletion" />
     </Stack>

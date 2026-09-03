@@ -175,6 +175,7 @@ function CatalogDrinkRow({
 
 export default function MenuScreen() {
   const { tenantId } = useAuth()
+  const tenantIdRef = useRef(tenantId)
   const [viewMode, setViewMode] = useState<ViewMode>('drinks')
   const [draft, setDraft] = useState<TaplistDraft | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -227,6 +228,20 @@ export default function MenuScreen() {
       void load()
     }, [load]),
   )
+
+  useEffect(() => {
+    if (tenantIdRef.current === tenantId) return
+    tenantIdRef.current = tenantId
+    setEditing(null)
+    setCreating(false)
+    setJoinDrink(null)
+    setMoreMenu(null)
+    setShowCategoryForm(false)
+    setDrinkSearchQuery('')
+    setDraft(null)
+    setCategories([])
+    setLoading(true)
+  }, [tenantId])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)

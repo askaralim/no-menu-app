@@ -60,14 +60,23 @@ export async function getMyDrinkInsights() {
     getMyDrinkHistory(null, 200),
   ])
   if (error) throw error
-  const insights = data as Omit<MyDrinkInsights, 'tonight'> & {
+  const insights = data as Omit<MyDrinkInsights, 'tonight' | 'month'> & {
     tonight: Omit<MyDrinkInsights['tonight'], 'drinks'> & {
       drinks: Array<Omit<MyDrinkInsights['tonight']['drinks'][number], 'bar_names'>>
     }
+    month: Omit<MyDrinkInsights['month'], 'drink_count' | 'drinks'> & {
+      drink_count?: number
+      activity_bar_count?: number
+      activity_drinks?: Array<Omit<MyDrinkInsights['month']['drinks'][number], 'bar_names'>>
+      drinks: Array<Omit<MyDrinkInsights['month']['drinks'][number], 'bar_names'>>
+    }
   }
+  const monthDrinks = insights.month.activity_drinks ?? insights.month.drinks
   const historyByLightId = new Map(history.map((item) => [item.light_id, item]))
   const businessDayStart = new Date(insights.tonight.business_day_start).getTime()
-  const normalizedStyleCounts = [...insights.month.drinks.reduce((counts, drink) => {
+  const monthStart = new Date(insights.month.month_start).getTime()
+  const monthEnd = new Date(insights.month.month_end).getTime()
+  const normalizedStyleCounts = [...monthDrinks.reduce((counts, drink) => {
     const style = normalizeBeerStyle(drink.beer_style)
     counts.set(style, (counts.get(style) ?? 0) + 1)
     return counts
@@ -90,11 +99,17 @@ export async function getMyDrinkInsights() {
     },
     month: {
       ...insights.month,
+      drink_count: insights.month.drink_count ?? monthDrinks.length,
+      bar_count: insights.month.activity_bar_count ?? insights.month.bar_count,
       style_counts: normalizedStyleCounts,
-      drinks: insights.month.drinks.map((drink) => ({
+      drinks: monthDrinks.map((drink) => ({
         ...drink,
         bar_names: [...new Set(
           (historyByLightId.get(drink.light_id)?.venues ?? [])
+            .filter((venue) => {
+              const drankAt = new Date(venue.first_drank_at).getTime()
+              return drankAt >= monthStart && drankAt < monthEnd
+            })
             .map((venue) => venue.tenant_name),
         )],
       })),

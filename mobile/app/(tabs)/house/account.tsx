@@ -80,6 +80,7 @@ export default function HouseAccountScreen() {
   const router = useRouter()
   const { role, user, tenantId, memberships } = useAuth()
   const tenant = memberships.find((m) => m.tenant_id === tenantId) ?? null
+  const canSwitchStore = memberships.length > 1
 
   const phone =
     formatPhone(user?.phone) ||
@@ -107,6 +108,12 @@ export default function HouseAccountScreen() {
         <InfoRow label="门店" value={tenant?.display_name || tenant?.name || '—'} />
         <View style={styles.divider} />
         <InfoRow label="角色" value={roleLabel(role || 'staff')} />
+        {canSwitchStore ? (
+          <>
+            <View style={styles.divider} />
+            <InfoRow label="绑定" value={`共 ${memberships.length} 家门店`} />
+          </>
+        ) : null}
         {displayName ? (
           <>
             <View style={styles.divider} />
@@ -132,6 +139,20 @@ export default function HouseAccountScreen() {
           </>
         ) : null}
       </Card>
+
+      {canSwitchStore ? (
+        <>
+          <SectionLabel>门店</SectionLabel>
+          <Card style={styles.actionCard}>
+            <ActionRow
+              label="切换门店"
+              icon="swap-horizontal-outline"
+              onPress={() => router.push('/(tabs)/house/switch-tenant')}
+              last
+            />
+          </Card>
+        </>
+      ) : null}
 
       <SectionLabel>安全</SectionLabel>
       <Card style={styles.actionCard}>

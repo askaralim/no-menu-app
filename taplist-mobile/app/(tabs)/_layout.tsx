@@ -51,13 +51,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="user-o" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="about"
-        options={{
-          title: '关于',
-          tabBarIcon: ({ color }) => <TabBarIcon name="info-circle" color={color} />,
-        }}
-      />
     </Tabs>
   );
 }

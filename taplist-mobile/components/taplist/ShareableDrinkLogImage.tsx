@@ -29,13 +29,13 @@ export const ShareableDrinkLogImage = forwardRef<
           <Text style={styles.headerSeparator}> · </Text>
           <Text style={styles.headerUsername}>{username}</Text>
           <Text style={styles.headerCopy}> 本月 </Text>
-          <Text style={styles.headerCount}>{month.new_drink_count}</Text>
+          <Text style={styles.headerCount}>{month.drink_count}</Text>
           <Text style={styles.headerCopy}> 款 </Text>
           <Text style={styles.headerTap}>TAP</Text>
         </Text>
         <View style={styles.headerRule} />
         <Text style={styles.contextLabel}>
-          {month.new_drink_count > drinks.length ? `最近 ${drinks.length} 款 · ` : ''}来自 {month.bar_count} 家酒吧
+          {month.drink_count > drinks.length ? `最近 ${drinks.length} 款 · ` : ''}新增 {month.new_drink_count} 款 · 来自 {month.bar_count} 家酒吧
         </Text>
         <View style={[styles.grid, columns < 3 && styles.gridCentered, drinks.length <= 2 && styles.gridSpacious]}>
           {drinks.map((drink) => (

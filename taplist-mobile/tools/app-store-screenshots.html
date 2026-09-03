@@ -339,7 +339,7 @@
     <div>
       <h1>No Menu App Store 截图生成器</h1>
       <p class="intro">
-        默认导出 6.9 英寸竖屏 PNG。当前故事对应 1.3.1：发现实时酒单、记录新 TAP、查看月度报告并生成分享图片；点击手机区域可替换为最终 TestFlight 截图。
+        默认导出 6.9 英寸竖屏 PNG。当前故事对应 1.3.2：按直线距离浏览附近酒吧、查看首页活动 Banner 与最近上新，再进入实时酒单和私人 TAP；点击手机区域可替换为 build 47 的最终 TestFlight 截图。
       </p>
     </div>
     <div class="controls">
@@ -348,6 +348,7 @@
         <select id="sizeSelect" onchange="setCanvasSize(this.value)">
           <option value="1320x2868" selected>6.9 英寸竖屏：1320 × 2868</option>
           <option value="1290x2796">6.9 英寸竖屏：1290 × 2796</option>
+          <option value="1260x2736">6.9 英寸竖屏：1260 × 2736</option>
           <option value="1242x2688">6.5 英寸竖屏：1242 × 2688</option>
         </select>
       </label>
@@ -359,21 +360,21 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>01 今晚首页</h2>
+          <h2>01 附近酒吧</h2>
           <span class="shot-status">待新截图</span>
         </div>
-        <button onclick="downloadImage('ss1', '01_今晚去哪喝.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss1', '01_附近酒吧.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss1">
             <div class="copy">
-              <div class="eyebrow">今晚去哪喝</div>
-              <h3 class="title">公开酒吧与上新酒款，一页看清</h3>
-              <p class="subtitle">打开 No Menu，快速浏览今晚可去的精酿酒吧</p>
+              <div class="eyebrow">附近酒吧</div>
+              <h3 class="title">离今晚更近一点</h3>
+              <p class="subtitle">使用当前位置，将所选城市的公开酒吧按直线距离排序</p>
             </div>
             <phone-frame
-              label="待上传：首页 TONIGHT 城市标题与发现内容"></phone-frame>
+              label="待上传：首页公开酒单区域，选中“附近”并显示距离"></phone-frame>
           </div>
         </div>
       </div>
@@ -382,21 +383,21 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>02 搜索发现</h2>
+          <h2>02 今晚活动</h2>
           <span class="shot-status">待高清截图</span>
         </div>
-        <button onclick="downloadImage('ss2', '02_搜索发现.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss2', '02_今晚活动.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss2">
             <div class="copy">
-              <div class="eyebrow">搜索发现</div>
-              <h3 class="title">不知道喝什么，从风格开始</h3>
-              <p class="subtitle">IPA、酸、世涛、拉格与小麦，点一下就能找</p>
+              <div class="eyebrow">今晚活动</div>
+              <h3 class="title">酒吧活动，打开首页就能看到</h3>
+              <p class="subtitle">左右滑动活动 Banner，查看进行中与即将开始的现场活动</p>
             </div>
             <phone-frame
-              label="待上传高清：搜索首页，包含风格、上新与酒厂"></phone-frame>
+              label="待上传：首页活动 Banner，使用真实公开活动"></phone-frame>
           </div>
         </div>
       </div>
@@ -405,14 +406,37 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>03 酒吧实时酒单</h2>
+          <h2>03 最近上新</h2>
           <span class="shot-status">待最终截图</span>
         </div>
-        <button onclick="downloadImage('ss3', '03_酒吧实时酒单.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss3', '03_最近上新.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss3">
+            <div class="copy">
+              <div class="eyebrow">最近上新</div>
+              <h3 class="title">新上了什么，先看这一排</h3>
+              <p class="subtitle">从首页直接发现新 TAP，并进入对应酒吧与酒款详情</p>
+            </div>
+            <phone-frame
+              label="待上传：首页“最近上新”横向酒款卡片"></phone-frame>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <div class="shot-tools">
+        <div class="shot-heading">
+          <h2>04 酒吧实时酒单</h2>
+          <span class="shot-status">待最终截图</span>
+        </div>
+        <button onclick="downloadImage('ss4', '04_酒吧实时酒单.png', this)">下载 PNG</button>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-scale">
+          <div class="canvas" id="ss4">
             <div class="copy">
               <div class="eyebrow">实时酒单</div>
               <h3 class="title">每家酒吧，今晚在售一眼看清</h3>
@@ -428,44 +452,21 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>04 记录新 TAP</h2>
-          <span class="shot-status">待最终截图</span>
-        </div>
-        <button onclick="downloadImage('ss4', '04_记录新TAP.png', this)">下载 PNG</button>
-      </div>
-      <div class="preview-frame">
-        <div class="preview-scale">
-          <div class="canvas" id="ss4">
-            <div class="copy">
-              <div class="eyebrow">我的新 TAP</div>
-              <h3 class="title">喝过这一杯，轻轻点亮</h3>
-              <p class="subtitle">酒款与酒吧自动进入私人记录，不需要写点评</p>
-            </div>
-            <phone-frame
-              label="待上传：酒吧酒款详情的“喝过”状态或成功弹框"></phone-frame>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="shot">
-      <div class="shot-tools">
-        <div class="shot-heading">
-          <h2>05 我的 TAP</h2>
+          <h2>05 活动详情</h2>
           <span class="shot-status">待新截图</span>
         </div>
-        <button onclick="downloadImage('ss5', '05_我的TAP.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss5', '05_活动详情.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss5">
             <div class="copy">
-              <div class="eyebrow">我的 TAP</div>
-              <h3 class="title">喝过的酒，留在自己的记录里</h3>
-              <p class="subtitle">按月份回看酒款，也能进入报告与分享</p>
+              <div class="eyebrow">活动详情</div>
+              <h3 class="title">时间、地点与活动内容，一页看清</h3>
+              <p class="subtitle">从首页进入活动详情，也能继续查看举办酒吧</p>
             </div>
             <phone-frame
-              label="待上传：我的页面，包含我的 TAP 与 TAP 记录入口"></phone-frame>
+              label="待上传：新版活动详情，包含真实活动图片和酒吧入口"></phone-frame>
           </div>
         </div>
       </div>
@@ -474,21 +475,21 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>06 月度 TAP 报告</h2>
+          <h2>06 搜索发现</h2>
           <span class="shot-status">待新截图</span>
         </div>
-        <button onclick="downloadImage('ss6', '06_月度TAP报告.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss6', '06_搜索发现.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss6">
             <div class="copy">
-              <div class="eyebrow">月度报告</div>
-              <h3 class="title">这个月喝过什么，一页回看</h3>
-              <p class="subtitle">按风格筛选本月 TAP，酒款与日期清楚呈现</p>
+              <div class="eyebrow">搜索发现</div>
+              <h3 class="title">不知道喝什么，从风格开始</h3>
+              <p class="subtitle">按酒款、酒厂、风格或酒吧，找到今晚想喝的</p>
             </div>
             <phone-frame
-              label="待上传：8 月 TAP 报告与风格筛选"></phone-frame>
+              label="待上传高清：搜索首页或真实搜索结果"></phone-frame>
           </div>
         </div>
       </div>
@@ -497,22 +498,21 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>07 今晚 TAP 分享</h2>
+          <h2>07 我的 TAP</h2>
           <span class="shot-status">待新截图</span>
         </div>
-        <button onclick="downloadImage('ss7', '07_今晚TAP分享.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss7', '07_我的TAP.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss7">
             <div class="copy">
-              <div class="eyebrow">今晚的 TAP</div>
-              <h3 class="title">今晚喝过的，自动排成一张图</h3>
-              <p class="subtitle">最近九款酒标、酒厂与酒吧，一次分享</p>
+              <div class="eyebrow">我的 TAP</div>
+              <h3 class="title">喝过的酒，留在自己的记录里</h3>
+              <p class="subtitle">私人记录按月份回看，也能进入报告与分享</p>
             </div>
             <phone-frame
-              label="待上传：今晚 TAP 分享图片预览"
-              fit="contain"></phone-frame>
+              label="待上传：我的页面，包含月度概览与最近记录"></phone-frame>
           </div>
         </div>
       </div>
@@ -521,22 +521,21 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>08 月度 TAP 分享</h2>
+          <h2>08 月度 TAP 报告</h2>
           <span class="shot-status">待新截图</span>
         </div>
-        <button onclick="downloadImage('ss8', '08_月度TAP分享.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss8', '08_月度TAP报告.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss8">
             <div class="copy">
-              <div class="eyebrow">本月 TAP</div>
-              <h3 class="title">一整月的新发现，也能干净分享</h3>
-              <p class="subtitle">展示本月最近九款 TAP 与酒吧足迹</p>
+              <div class="eyebrow">月度报告</div>
+              <h3 class="title">这个月喝过什么，一页回看</h3>
+              <p class="subtitle">本月 TAP、新增酒款、酒吧与风格分布清楚呈现</p>
             </div>
             <phone-frame
-              label="待上传：月度 TAP 分享图片预览"
-              fit="contain"></phone-frame>
+              label="待上传：当前月份 TAP 报告与风格筛选"></phone-frame>
           </div>
         </div>
       </div>
@@ -568,21 +567,21 @@
     <section class="shot">
       <div class="shot-tools">
         <div class="shot-heading">
-          <h2>10 单款 TAP 分享</h2>
+          <h2>10 TAP 分享</h2>
           <span class="shot-status">待新截图</span>
         </div>
-        <button onclick="downloadImage('ss10', '10_单款TAP分享.png', this)">下载 PNG</button>
+        <button onclick="downloadImage('ss10', '10_TAP分享.png', this)">下载 PNG</button>
       </div>
       <div class="preview-frame">
         <div class="preview-scale">
           <div class="canvas" id="ss10">
             <div class="copy">
-              <div class="eyebrow">单款分享</div>
-              <h3 class="title">这一杯和这家酒吧，都值得被看见</h3>
-              <p class="subtitle">酒标、酒厂、酒款与所在酒吧清楚呈现</p>
+              <div class="eyebrow">TAP 分享</div>
+              <h3 class="title">今晚与本月的新发现，排成一张图</h3>
+              <p class="subtitle">生成本地分享图片，不上传你的照片或私人记录</p>
             </div>
             <phone-frame
-              label="待上传：酒吧入口的新 TAP 单款分享图"
+              label="待上传：今晚或月度 TAP 分享图片预览"
               fit="contain"></phone-frame>
           </div>
         </div>
@@ -656,6 +655,7 @@
     async function loadImage(event) {
       const input = event.target;
       const screen = input.closest('.screen');
+      const shot = input.closest('.shot');
       const img = screen.querySelector('.uploaded');
       if (!input.files || !input.files[0]) return;
       screen.classList.remove('loaded');
@@ -665,6 +665,11 @@
         await waitForImage(img);
         if (img.decode) await img.decode();
         screen.classList.add('loaded');
+        const status = shot?.querySelector('.shot-status');
+        if (status) {
+          status.textContent = '已上传';
+          status.classList.add('ready');
+        }
       } catch (error) {
         console.error(error);
         alert('上传的截图图片无法读取，请重新导出 PNG 后再试。');
@@ -738,19 +743,24 @@
       button.disabled = true;
       button.innerText = '批量生成中...';
       const jobs = [
-        ['ss1', '01_今晚去哪喝.png'],
-        ['ss2', '02_搜索发现.png'],
-        ['ss3', '03_酒吧实时酒单.png'],
-        ['ss4', '04_记录新TAP.png'],
-        ['ss5', '05_我的TAP.png'],
-        ['ss6', '06_月度TAP报告.png'],
-        ['ss7', '07_今晚TAP分享.png'],
-        ['ss8', '08_月度TAP分享.png'],
+        ['ss1', '01_附近酒吧.png'],
+        ['ss2', '02_今晚活动.png'],
+        ['ss3', '03_最近上新.png'],
+        ['ss4', '04_酒吧实时酒单.png'],
+        ['ss5', '05_活动详情.png'],
+        ['ss6', '06_搜索发现.png'],
+        ['ss7', '07_我的TAP.png'],
+        ['ss8', '08_月度TAP报告.png'],
         ['ss9', '09_关注酒吧.png'],
-        ['ss10', '10_单款TAP分享.png'],
+        ['ss10', '10_TAP分享.png'],
       ];
       try {
-        for (const [id, filename] of jobs) {
+        const readyJobs = jobs.filter(([id]) => document.getElementById(id).querySelector('.screen.loaded'));
+        if (readyJobs.length === 0) {
+          alert('请先上传至少一张真实 TestFlight 截图。');
+          return;
+        }
+        for (const [id, filename] of readyJobs) {
           await downloadImage(id, filename, button);
           await new Promise((resolve) => setTimeout(resolve, 250));
         }

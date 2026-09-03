@@ -92,6 +92,7 @@ export default function TaplistScreen() {
   const [tapNumberHintVisible, setTapNumberHintVisible] = useState(false)
   const soldOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const tapNumberHintCheckedRef = useRef(false)
+  const tenantIdRef = useRef(tenantId)
 
   const clearSoldOutUndo = useCallback(() => {
     if (soldOutTimerRef.current) {
@@ -128,6 +129,28 @@ export default function TaplistScreen() {
       load()
     }, [load]),
   )
+
+  useEffect(() => {
+    if (tenantIdRef.current === tenantId) return
+    tenantIdRef.current = tenantId
+    clearSoldOutUndo()
+    setPreviewOpen(false)
+    setTapDrink(null)
+    setHistoryDrink(null)
+    setMoreMenu(null)
+    setPickerTapNumber(null)
+    setJoinDrink(null)
+    setJoinTapNumber(null)
+    setEditing(null)
+    setCreating(false)
+    setEditorTapNumber(null)
+    setSettingsOpen(false)
+    setTonightShareOpen(false)
+    setFilter('all')
+    setDraft(null)
+    setError(null)
+    setLoading(true)
+  }, [tenantId, clearSoldOutUndo])
 
   const tonightDrinks = useMemo(
     () => (draft ? draft.drinks.filter((d) => d.enabled && isOnTonight(d)) : []),
@@ -582,6 +605,9 @@ export default function TaplistScreen() {
               onAdd={() => openTapPicker(item.tapNumber)}
               onTapNumber={() => {
                 if (drink) setTapDrink(drink)
+              }}
+              onEdit={() => {
+                if (drink) openEditDrink(drink)
               }}
               onClear={() => {
                 if (drink) handleRemoveFromTonight(drink)

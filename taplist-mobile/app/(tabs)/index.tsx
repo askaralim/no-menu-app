@@ -1,17 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { Link, useFocusEffect } from 'expo-router'
-import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { BrewingBadgeFromType } from '@/components/taplist/BrewingBadge'
-import { EventCard } from '@/components/taplist/EventCards'
+import { HOME_EVENT_BANNER_HEIGHT, HomeEventBanner } from '@/components/taplist/HomeEventBanner'
 import { NewTapRailCard } from '@/components/taplist/NewTapRailCard'
+import { NearbyLocationSheet } from '@/components/taplist/NearbyLocationSheet'
 import {
-  EVENT_RAIL_CARD_HEIGHT,
   RAIL_CARD_GAP,
   RAIL_CARD_HEIGHT,
   RAIL_VENUE_PILL_BACKGROUND,
@@ -23,11 +24,16 @@ import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicBars, fetchPublicEvents, fetchPublicNewDrinks } from '@/lib/api/taplist'
 import { trackEvent } from '@/lib/analytics'
 import { formatRelativeUpdatedAt, sortPublicBarsByMenuUpdated } from '@/lib/formatTaplist'
+import { formatDistance, publicBarCoordinates, sortBarsByDistance, type Coordinates } from '@/lib/nearbyBars'
+import { fetchNearbyLocation, getNearbyPermissionState, requestNearbyPermission } from '@/lib/nearbyLocation'
 import { taplistCityMatches, useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicBarRow, PublicEventRow, PublicNewTapRow, PublicTaplistCity } from '@/lib/types'
 
 const HOME_STALE_TIME = 2 * 60_000
+const LOCATION_CACHE_TIME = 5 * 60_000
+
+type NearbyFailure = 'denied' | 'failed' | null
 
 export default function TonightScreen() {
   const insets = useSafeAreaInsets()
@@ -35,6 +41,17 @@ export default function TonightScreen() {
   const { selectedCity, cities, canSelectCity, selectCity } = useTaplistCity()
   const [cityPickerVisible, setCityPickerVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [sortMode, setSortMode] = useState<'latest' | 'nearby'>('latest')
+  const [nearbySheetVisible, setNearbySheetVisible] = useState(false)
+  const [nearbyLoading, setNearbyLoading] = useState(false)
+  const [nearbyOrigin, setNearbyOrigin] = useState<Coordinates | null>(null)
+  const [detectedCity, setDetectedCity] = useState<PublicTaplistCity | null>(null)
+  const [nearbyFailure, setNearbyFailure] = useState<NearbyFailure>(null)
+  const locationCacheRef = useRef<{
+    coordinates: Coordinates
+    detectedCity: PublicTaplistCity | null
+    expiresAt: number
+  } | null>(null)
   const selectedCityName = selectedCity.city
 
   const barsQuery = useQuery({
@@ -95,9 +112,90 @@ export default function TonightScreen() {
   }
 
   const bars = sortPublicBarsByMenuUpdated(barsQuery.data ?? [])
+  const nearbyAvailable = Platform.OS === 'ios' && bars.some((bar) => publicBarCoordinates(bar) !== null)
+  const displayedBars = useMemo(
+    () => sortMode === 'nearby' && nearbyOrigin
+      ? sortBarsByDistance(bars, nearbyOrigin)
+      : bars.map((bar) => ({ bar, distanceMeters: null })),
+    [bars, nearbyOrigin, sortMode],
+  )
   const newTaps = newTapsQuery.data ?? []
   const events = eventsQuery.data ?? []
   const firstEventsByTenant = firstEventByTenant(eventsQuery.isError ? [] : events)
+  const cityMismatch = detectedCity && !taplistCityMatches(detectedCity.city, selectedCity.city)
+
+  const loadNearbyLocation = async () => {
+    if (nearbyLoading) return
+    setNearbyLoading(true)
+    setNearbyFailure(null)
+    try {
+      const cached = locationCacheRef.current
+      const result = cached && cached.expiresAt > Date.now()
+        ? cached
+        : { ...(await fetchNearbyLocation(cities)), expiresAt: Date.now() + LOCATION_CACHE_TIME }
+      locationCacheRef.current = result
+      setNearbyOrigin(result.coordinates)
+      setDetectedCity(result.detectedCity)
+      setSortMode('nearby')
+      trackEvent('nearby_sort_completed', {
+        coordinate_bar_count: bars.filter((bar) => publicBarCoordinates(bar) !== null).length,
+        total_bar_count: bars.length,
+      })
+    } catch {
+      setSortMode('latest')
+      setNearbyFailure('failed')
+      trackEvent('nearby_sort_failed', { reason: 'location_unavailable' })
+    } finally {
+      setNearbyLoading(false)
+    }
+  }
+
+  const activateNearby = async () => {
+    if (!nearbyAvailable || nearbyLoading) return
+    trackEvent('nearby_sort_selected')
+    try {
+      const permission = await getNearbyPermissionState()
+      if (permission === 'undetermined') {
+        setNearbySheetVisible(true)
+        return
+      }
+      if (permission === 'denied') {
+        setSortMode('latest')
+        setNearbyFailure('denied')
+        trackEvent('nearby_sort_failed', { reason: 'permission_denied' })
+        return
+      }
+      await loadNearbyLocation()
+    } catch {
+      setSortMode('latest')
+      setNearbyFailure('failed')
+      trackEvent('nearby_sort_failed', { reason: 'permission_unavailable' })
+    }
+  }
+
+  const confirmNearbyPermission = async () => {
+    if (nearbyLoading) return
+    setNearbyLoading(true)
+    try {
+      const permission = await requestNearbyPermission()
+      if (permission !== 'granted') {
+        setNearbySheetVisible(false)
+        setSortMode('latest')
+        setNearbyFailure('denied')
+        trackEvent('nearby_sort_failed', { reason: 'permission_denied' })
+        return
+      }
+      setNearbySheetVisible(false)
+    } catch {
+      setNearbySheetVisible(false)
+      setNearbyFailure('failed')
+      trackEvent('nearby_sort_failed', { reason: 'permission_unavailable' })
+      return
+    } finally {
+      setNearbyLoading(false)
+    }
+    await loadNearbyLocation()
+  }
 
   return (
     <ScrollView
@@ -126,9 +224,6 @@ export default function TonightScreen() {
         ) : (
           <Text style={styles.city}>{selectedCity.label}</Text>
         )}
-        {bars.length > 0 ? (
-          <Text style={styles.headerMeta}>{bars.length} 家精酿酒吧公开酒单</Text>
-        ) : null}
       </View>
       <CityPickerModal
         visible={cityPickerVisible}
@@ -143,6 +238,13 @@ export default function TonightScreen() {
           void selectCity(city)
         }}
       />
+      <NearbyLocationSheet
+        visible={nearbySheetVisible}
+        cityLabel={selectedCity.label}
+        loading={nearbyLoading}
+        onClose={() => setNearbySheetVisible(false)}
+        onContinue={() => void confirmNearbyPermission()}
+      />
 
       {barsQuery.isLoading ? (
         <View style={styles.loading}>
@@ -152,11 +254,96 @@ export default function TonightScreen() {
       ) : null}
 
       {events.length > 0 && !eventsQuery.isError ? (
-        <TonightEventsSection events={events.slice(0, 5)} />
+        <TonightEventsSection
+          compactBottom={newTaps.length === 0 || newTapsQuery.isError}
+          events={events.slice(0, 5)}
+        />
       ) : null}
 
       {newTaps.length > 0 && !newTapsQuery.isError ? (
         <NewTapTodaySection drinks={newTaps} />
+      ) : null}
+
+      {bars.length > 0 ? (
+        <View style={styles.barListHeader}>
+          <View style={styles.barListToolbar}>
+            <Text style={styles.barListTitle}>公开酒单 · {bars.length} 家</Text>
+            {nearbyAvailable ? (
+              <View style={styles.sortActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="按最新酒单排序"
+                  accessibilityState={{ selected: sortMode === 'latest' }}
+                  onPress={() => {
+                    setSortMode('latest')
+                    setNearbyFailure(null)
+                  }}
+                  style={({ pressed }) => [
+                    styles.sortAction,
+                    sortMode === 'latest' && styles.sortActionSelected,
+                    pressed && styles.cityButtonPressed,
+                  ]}>
+                  <Text style={[styles.sortActionText, sortMode === 'latest' && styles.sortActionTextSelected]}>
+                    最新
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="按附近距离排序"
+                  accessibilityState={{ selected: sortMode === 'nearby', busy: nearbyLoading }}
+                  onPress={() => void activateNearby()}
+                  style={({ pressed }) => [
+                    styles.sortAction,
+                    sortMode === 'nearby' && styles.sortActionSelected,
+                    pressed && styles.cityButtonPressed,
+                  ]}>
+                  {nearbyLoading ? (
+                    <ActivityIndicator size="small" color={palette.amber} />
+                  ) : (
+                    <FontAwesome name="location-arrow" size={12} color={sortMode === 'nearby' ? palette.amber : palette.faint} />
+                  )}
+                  <Text style={[styles.sortActionText, sortMode === 'nearby' && styles.sortActionTextSelected]}>
+                    附近
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+          {cityMismatch && detectedCity ? (
+            <View style={styles.nearbyNoticeRow}>
+              <Text style={styles.nearbyNoticeText} numberOfLines={2}>
+                当前浏览{selectedCity.label} · 你可能在{detectedCity.label}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  trackEvent('city_changed', { from_city: selectedCity.city, to_city: detectedCity.city })
+                  void selectCity(detectedCity)
+                }}
+                style={({ pressed }) => pressed && styles.cityButtonPressed}>
+                <Text style={styles.nearbyNoticeAction}>切换城市</Text>
+              </Pressable>
+            </View>
+          ) : nearbyFailure ? (
+            <View style={styles.nearbyNoticeRow}>
+              <Text accessibilityRole="alert" style={styles.nearbyNoticeText} numberOfLines={2}>
+                {nearbyFailure === 'denied'
+                  ? '未获得位置权限，已按最新酒单展示。'
+                  : '暂时无法获取位置，已按最新酒单展示。'}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => nearbyFailure === 'denied'
+                  ? void Linking.openSettings()
+                  : void activateNearby()}
+                style={({ pressed }) => pressed && styles.cityButtonPressed}>
+                <Text style={styles.nearbyNoticeAction}>
+                  {nearbyFailure === 'denied' ? '前往设置' : '重试'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
       ) : null}
 
       {!configured ? (
@@ -172,9 +359,14 @@ export default function TonightScreen() {
       ) : bars.length === 0 && !barsQuery.isLoading ? (
         <EmptyState title="暂无公开酒吧" body="当前城市还没有已发布的公开酒单。" />
       ) : (
-        <View style={[styles.feed, newTaps.length > 0 && !newTapsQuery.isError && styles.feedAfterNewTaps]}>
-          {bars.map((bar) => (
-            <BarFeedCard key={bar.id} bar={bar} event={firstEventsByTenant[bar.id] ?? null} />
+        <View style={styles.feed}>
+          {displayedBars.map(({ bar, distanceMeters }) => (
+            <BarFeedCard
+              key={bar.id}
+              bar={bar}
+              distanceMeters={distanceMeters}
+              event={firstEventsByTenant[bar.id] ?? null}
+            />
           ))}
         </View>
       )}
@@ -243,13 +435,36 @@ function CityPickerModal({
   )
 }
 
-function TonightEventsSection({ events }: { events: PublicEventRow[] }) {
+function TonightEventsSection({
+  compactBottom = false,
+  events,
+}: {
+  compactBottom?: boolean
+  events: PublicEventRow[]
+}) {
+  const scrollRef = useRef<ScrollView>(null)
+  const [pageWidth, setPageWidth] = useState(0)
+  const [currentPage, setCurrentPage] = useState(0)
+  const eventIds = events.map((event) => event.id).join(':')
+
+  useEffect(() => {
+    setCurrentPage(0)
+    scrollRef.current?.scrollTo({ x: 0, animated: false })
+  }, [eventIds, pageWidth])
+
+  const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (pageWidth <= 0) return
+    const nextPage = Math.max(0, Math.min(events.length - 1, Math.round(event.nativeEvent.contentOffset.x / pageWidth)))
+    setCurrentPage(nextPage)
+  }
+
   return (
-    <View style={[styles.discoverySection, styles.eventsDiscoverySection]}>
-      <View style={styles.discoveryHeaderRow}>
-        <View>
-          <Text style={styles.discoveryTitle}>EVENTS</Text>
-        </View>
+    <View style={[
+      styles.discoverySection,
+      styles.eventsDiscoverySection,
+      compactBottom && styles.eventsDiscoverySectionCompact,
+    ]}>
+      <View style={[styles.discoveryHeaderRow, styles.eventsDiscoveryHeaderRow]}>
         <Link href="/events" asChild>
           <Pressable
             hitSlop={{ top: 10, right: 4, bottom: 10, left: 12 }}
@@ -258,15 +473,47 @@ function TonightEventsSection({ events }: { events: PublicEventRow[] }) {
           </Pressable>
         </Link>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={[styles.discoveryScrollView, styles.eventRailScrollView]}
-        contentContainerStyle={styles.discoveryScroller}>
-        {events.map((event) => (
-          <EventCard key={event.id} event={event} compact source="home_event" />
-        ))}
-      </ScrollView>
+      <View
+        onLayout={(event) => setPageWidth(event.nativeEvent.layout.width)}
+        style={styles.eventCarouselViewport}>
+        {pageWidth > 0 ? (
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            snapToInterval={pageWidth}
+            decelerationRate="fast"
+            disableIntervalMomentum
+            onMomentumScrollEnd={handleMomentumScrollEnd}
+            showsHorizontalScrollIndicator={false}
+            style={styles.eventCarousel}
+            contentContainerStyle={styles.eventCarouselContent}>
+            {events.map((event, index) => (
+              <HomeEventBanner
+                key={event.id}
+                event={event}
+                width={pageWidth}
+                index={index}
+                total={events.length}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
+        {events.length > 1 ? (
+          <View
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            pointerEvents="none"
+            style={styles.eventPageDots}>
+            {events.map((event, index) => (
+              <View
+                key={event.id}
+                style={[styles.eventPageDot, index === currentPage && styles.eventPageDotActive]}
+              />
+            ))}
+          </View>
+        ) : null}
+      </View>
     </View>
   )
 }
@@ -275,7 +522,7 @@ function NewTapTodaySection({ drinks }: { drinks: PublicNewTapRow[] }) {
   return (
     <View style={styles.discoverySection}>
       <View style={styles.discoveryHeaderRow}>
-        <Text style={styles.discoveryTitle}>NEW ON TAP</Text>
+        <Text style={styles.discoveryTitle}>最近上新</Text>
       </View>
       <ScrollView
         horizontal
@@ -292,14 +539,17 @@ function NewTapTodaySection({ drinks }: { drinks: PublicNewTapRow[] }) {
 
 function BarFeedCard({
   bar,
+  distanceMeters,
   event,
 }: {
   bar: PublicBarRow
+  distanceMeters: number | null
   event: PublicEventRow | null
 }) {
   const location = shortBarLocation(bar)
   const feedStatus = compactStatusCounts(bar)
   const updatedLabel = formatRelativeUpdatedAt(bar.last_menu_updated_at)
+  const distanceLabel = formatDistance(distanceMeters)
 
   return (
     <Link href={`/bar/${bar.slug}`} asChild>
@@ -325,7 +575,14 @@ function BarFeedCard({
               <Text style={styles.barMeta} numberOfLines={1} ellipsizeMode="tail">
                 {location}
               </Text>
-              {feedStatus ? <Text style={styles.barStatus}>{feedStatus}</Text> : null}
+              {distanceLabel ? (
+                <View style={styles.barFooterRow}>
+                  {feedStatus ? <Text style={[styles.barStatus, styles.barStatusInline]}>{feedStatus}</Text> : <View />}
+                  <Text accessibilityLabel={distanceLabel} style={styles.barDistance}>
+                    {distanceLabel}
+                  </Text>
+                </View>
+              ) : feedStatus ? <Text style={styles.barStatus}>{feedStatus}</Text> : null}
             </View>
           </AtmosphereImage>
           {updatedLabel ? (
@@ -422,7 +679,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   city: {
     ...typography.title,
@@ -451,17 +708,80 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.displayXL,
+    fontSize: 62,
+    lineHeight: 62,
     color: palette.text,
     textAlign: 'center',
     textShadowColor: 'rgba(245,241,230,0.12)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 18,
   },
-  headerMeta: {
+  barListHeader: {
+    marginBottom: spacing.md,
+  },
+  barListToolbar: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  barListTitle: {
     ...typography.caption,
     color: palette.muted,
-    marginTop: spacing.sm,
-    textAlign: 'center',
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '400',
+  },
+  sortActions: {
+    minHeight: 38,
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: palette.line,
+    borderRadius: 10,
+    backgroundColor: palette.panel,
+    padding: 2,
+    gap: 2,
+    overflow: 'hidden',
+  },
+  sortAction: {
+    minWidth: 68,
+    minHeight: 32,
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: 8,
+  },
+  sortActionSelected: {
+    backgroundColor: palette.bgSoft,
+  },
+  sortActionText: {
+    ...typography.caption,
+    color: palette.faint,
+    fontWeight: '500',
+  },
+  sortActionTextSelected: {
+    color: palette.amber,
+  },
+  nearbyNoticeRow: {
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  nearbyNoticeText: {
+    ...typography.caption,
+    color: palette.muted,
+    flex: 1,
+  },
+  nearbyNoticeAction: {
+    ...typography.caption,
+    color: palette.amber,
+    fontWeight: '600',
   },
   cityModalBackdrop: {
     flex: 1,
@@ -553,6 +873,9 @@ const styles = StyleSheet.create({
   eventsDiscoverySection: {
     marginBottom: spacing.xxl,
   },
+  eventsDiscoverySectionCompact: {
+    marginBottom: spacing.lg,
+  },
   discoveryHeaderRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -560,14 +883,20 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginBottom: spacing.xxs,
   },
+  eventsDiscoveryHeaderRow: {
+    justifyContent: 'flex-end',
+  },
   discoveryTitle: {
-    ...typography.display,
+    ...typography.title,
     color: palette.tungsten,
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: 0.8,
+    fontSize: 18,
+    lineHeight: 25,
+    letterSpacing: 0,
+    fontWeight: '500',
   },
   moreLink: {
+    marginLeft: 'auto',
+    alignSelf: 'flex-end',
     paddingLeft: spacing.md,
     paddingRight: 2,
     justifyContent: 'center',
@@ -586,8 +915,41 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.lg,
     marginTop: 0,
   },
-  eventRailScrollView: {
-    height: EVENT_RAIL_CARD_HEIGHT,
+  eventCarouselViewport: {
+    width: '100%',
+    height: HOME_EVENT_BANNER_HEIGHT,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 16,
+  },
+  eventCarousel: {
+    width: '100%',
+    height: HOME_EVENT_BANNER_HEIGHT,
+  },
+  eventCarouselContent: {
+    alignItems: 'flex-start',
+  },
+  eventPageDots: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  eventPageDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: palette.faint,
+    opacity: 0.7,
+  },
+  eventPageDotActive: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: palette.amber,
+    opacity: 1,
   },
   newTapRailScrollView: {
     height: RAIL_CARD_HEIGHT,
@@ -600,9 +962,6 @@ const styles = StyleSheet.create({
   },
   feed: {
     gap: spacing.xl,
-  },
-  feedAfterNewTaps: {
-    marginTop: spacing.md,
   },
   feedCard: {
     borderRadius: 8,
@@ -691,7 +1050,24 @@ const styles = StyleSheet.create({
     color: palette.tungsten,
     fontSize: 10,
     lineHeight: 14,
+  },
+  barFooterRow: {
+    width: '100%',
     marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  barStatusInline: {
+    marginTop: 0,
+  },
+  barDistance: {
+    ...typography.caption,
+    color: palette.tungsten,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '500',
   },
   emptyState: {
     borderTopWidth: 1,

@@ -38,7 +38,7 @@ export default function HouseStaffScreen() {
   const [addingStaff, setAddingStaff] = useState(false)
 
   const fetchStaff = useCallback(async () => {
-    if (!isOwner) return
+    if (!isOwner || !tenantId) return
     setStaffLoading(true)
     try {
       const { data, error } = await supabase.rpc('list_staff')
@@ -49,7 +49,7 @@ export default function HouseStaffScreen() {
     } finally {
       setStaffLoading(false)
     }
-  }, [isOwner])
+  }, [isOwner, tenantId])
 
   useEffect(() => {
     void fetchStaff()

@@ -1,13 +1,14 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useLocalSearchParams } from 'expo-router'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useState } from 'react'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BackButton } from '@/components/taplist/BackButton'
-import { CachedImageBackground } from '@/components/taplist/CachedImage'
-import { eventMetaLine } from '@/components/taplist/EventCards'
+import { CachedImage, CachedImageBackground } from '@/components/taplist/CachedImage'
+import { eventDateLabel, eventMetaLine } from '@/components/taplist/EventCards'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicEvent } from '@/lib/api/taplist'
@@ -18,8 +19,10 @@ const EVENT_INFORMATION_DISCLAIMER = '活动信息由门店提供，时间、内
 
 export default function EventDetailScreen() {
   const insets = useSafeAreaInsets()
+  const router = useRouter()
   const { eventId } = useLocalSearchParams<{ slug: string; eventId: string }>()
   const configured = useTaplistSupabaseReady()
+  const [imageViewerVisible, setImageViewerVisible] = useState(false)
 
   const eventQuery = useQuery({
     queryKey: ['taplist', 'event', eventId],
@@ -29,6 +32,7 @@ export default function EventDetailScreen() {
 
   const result = eventQuery.data
   const event = result?.ok ? result.event : null
+  const dateLabel = event ? eventDateLabel(event) : null
 
   return (
     <View style={styles.screen}>
@@ -47,70 +51,115 @@ export default function EventDetailScreen() {
         ) : event ? (
           <>
             {event.image_url ? (
-              <CachedImageBackground source={event.image_url} style={styles.cover}>
-                <LinearGradient
-                  colors={['rgba(13,13,13,0.04)', 'rgba(13,13,13,0.30)', 'rgba(13,13,13,1)']}
-                  locations={[0, 0.52, 1]}
-                  style={styles.coverScrim}
-                />
-              </CachedImageBackground>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`查看活动图片：${event.title}`}
+                accessibilityHint="打开完整图片"
+                onPress={() => setImageViewerVisible(true)}
+                style={({ pressed }) => [styles.cover, pressed && styles.coverPressed]}>
+                <CachedImageBackground
+                  contentPosition="top"
+                  source={event.image_url}
+                  style={styles.coverFill}>
+                  <LinearGradient
+                    colors={['rgba(13,13,13,0.04)', 'rgba(13,13,13,0.30)', 'rgba(13,13,13,1)']}
+                    locations={[0, 0.52, 1]}
+                    style={styles.coverScrim}
+                  />
+                </CachedImageBackground>
+              </Pressable>
             ) : null}
 
             <View style={event.image_url ? styles.paddedContent : undefined}>
-              {!event.image_url ? (
-                <View style={styles.textStateBadge}>
-                  <Text style={styles.stateText}>{eventMetaLine(event)}</Text>
-                </View>
-              ) : null}
-            <Text style={styles.typeLabel}>{eventMetaLine(event)}</Text>
-            <Text style={styles.title}>{event.title}</Text>
-            {event.subtitle ? <Text style={styles.subtitle}>{event.subtitle}</Text> : null}
-
-            <View style={styles.metaBlock}>
-              {event.display_time ? (
-                <View style={styles.metaRow}>
-                  <FontAwesome name="clock-o" size={14} color={palette.tungsten} />
-                  <Text style={styles.metaText}>{event.display_time}</Text>
-                </View>
-              ) : null}
-              <View style={styles.metaRow}>
-                <FontAwesome name="map-marker" size={14} color={palette.tungsten} />
-                <Text style={styles.metaText}>
-                  {[event.tenant_display_name, event.tenant_address || event.tenant_district].filter(Boolean).join(' · ')}
-                </Text>
+              <View style={styles.stateBadge}>
+                <Text style={styles.typeLabel}>{eventMetaLine(event)}</Text>
               </View>
-            </View>
+              <Text style={styles.title}>{event.title}</Text>
+              {event.subtitle ? <Text style={styles.subtitle}>{event.subtitle}</Text> : null}
 
-            {event.description ? <Text style={styles.description}>{event.description}</Text> : null}
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel={`查看${event.tenant_display_name}酒吧详情`}
+                onPress={() => {
+                  trackEvent('bar_opened', {
+                    tenant_id: event.tenant_id,
+                    tenant_slug: event.tenant_slug,
+                    source: 'bar_event',
+                  })
+                  router.push({ pathname: '/bar/[slug]', params: { slug: event.tenant_slug } })
+                }}
+                style={({ pressed }) => [styles.venueLink, pressed && styles.venueLinkPressed]}>
+                <FontAwesome name="map-marker" size={15} color={palette.tungsten} />
+                <Text style={styles.venueLinkName} numberOfLines={1} ellipsizeMode="tail">
+                  {event.tenant_display_name}
+                </Text>
+                <FontAwesome name="chevron-right" size={11} color={palette.faint} />
+              </Pressable>
 
-            <View style={styles.venueSection}>
-              <Link href={{ pathname: '/bar/[slug]', params: { slug: event.tenant_slug } }} asChild>
-                <Pressable
-                  onPress={() =>
-                    trackEvent('bar_opened', {
-                      tenant_id: event.tenant_id,
-                      tenant_slug: event.tenant_slug,
-                      source: 'bar_event',
-                    })
-                  }
-                  style={({ pressed }) => [styles.venueCard, pressed && styles.venueCardPressed]}>
-                  <Text style={styles.venueName}>{event.tenant_display_name}</Text>
-                  <Text style={styles.venueMeta} numberOfLines={1} ellipsizeMode="tail">
-                    {event.tenant_address || event.tenant_district || '查看实时酒单'}
-                  </Text>
-                  <Text style={styles.venueLinkHint}>查看今晚酒单 ›</Text>
-                </Pressable>
-              </Link>
-            </View>
+              {dateLabel || event.time_label || event.display_time ? (
+                <View style={styles.metaBlock}>
+                  <View style={styles.metaRow}>
+                    <FontAwesome name="clock-o" size={14} color={palette.tungsten} />
+                    <View style={styles.metaCopy}>
+                      {dateLabel ? <Text style={styles.metaText}>{dateLabel}</Text> : null}
+                      {event.time_label ? <Text style={styles.metaSecondary}>{event.time_label}</Text> : null}
+                      {!dateLabel && !event.time_label && event.display_time ? (
+                        <Text style={styles.metaText}>{event.display_time}</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                </View>
+              ) : null}
 
-            <View style={styles.complianceFooter}>
-              <Text style={styles.eventDisclaimer}>{EVENT_INFORMATION_DISCLAIMER}</Text>
-              <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
-            </View>
+              {event.description ? (
+                <View style={styles.descriptionSection}>
+                  <Text style={styles.sectionLabel}>活动介绍</Text>
+                  <Text style={styles.description}>{event.description}</Text>
+                </View>
+              ) : null}
+
+              <View style={styles.complianceFooter}>
+                <Text style={styles.eventDisclaimer}>{EVENT_INFORMATION_DISCLAIMER}</Text>
+                <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
+              </View>
             </View>
           </>
         ) : null}
       </ScrollView>
+      {event?.image_url ? (
+        <Modal
+          animationType="fade"
+          onRequestClose={() => setImageViewerVisible(false)}
+          presentationStyle="fullScreen"
+          statusBarTranslucent
+          visible={imageViewerVisible}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="关闭完整图片"
+            onPress={() => setImageViewerVisible(false)}
+            style={styles.imageViewer}>
+            <CachedImage
+              accessibilityLabel={`活动完整图片：${event.title}`}
+              contentFit="contain"
+              pointerEvents="none"
+              source={event.image_url}
+              style={styles.fullImage}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="关闭完整图片"
+              hitSlop={10}
+              onPress={() => setImageViewerVisible(false)}
+              style={({ pressed }) => [
+                styles.imageViewerClose,
+                { top: insets.top + spacing.sm },
+                pressed && styles.imageViewerClosePressed,
+              ]}>
+              <FontAwesome name="close" size={18} color={palette.text} />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : null}
     </View>
   )
 }
@@ -142,32 +191,54 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     width: '100%',
   },
+  coverFill: {
+    flex: 1,
+  },
+  coverPressed: {
+    opacity: 0.92,
+  },
   coverScrim: {
     flex: 1,
   },
-  textStateBadge: {
+  imageViewer: {
+    flex: 1,
+    backgroundColor: palette.background,
+  },
+  fullImage: {
+    flex: 1,
+    width: '100%',
+  },
+  imageViewerClose: {
+    position: 'absolute',
+    right: spacing.md,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.panel,
+    borderWidth: 1,
+    borderColor: palette.line,
+  },
+  imageViewerClosePressed: {
+    opacity: 0.72,
+  },
+  stateBadge: {
     alignSelf: 'flex-start',
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(211,154,69,0.46)',
-    backgroundColor: 'rgba(8,8,8,0.72)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginBottom: spacing.md,
-  },
-  stateText: {
-    ...typography.label,
-    color: palette.amber,
-    fontSize: 10,
-    lineHeight: 13,
-    letterSpacing: 1.2,
+    borderColor: palette.goldMuted,
+    backgroundColor: palette.panel,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxs,
+    marginBottom: spacing.sm,
   },
   typeLabel: {
     ...typography.label,
     color: palette.tungsten,
     fontSize: 10,
-    lineHeight: 14,
-    marginBottom: spacing.sm,
+    lineHeight: 13,
+    letterSpacing: 1,
   },
   title: {
     ...typography.headline,
@@ -179,6 +250,27 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: palette.muted,
     marginTop: spacing.xs,
+  },
+  venueLink: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    paddingRight: spacing.xs,
+  },
+  venueLinkPressed: {
+    opacity: 0.72,
+  },
+  venueLinkName: {
+    ...typography.title,
+    color: palette.tungsten,
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '600',
+    flexShrink: 1,
   },
   metaBlock: {
     marginTop: spacing.lg,
@@ -193,44 +285,31 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
   },
+  metaCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.xxs,
+  },
   metaText: {
     ...typography.caption,
     color: palette.muted,
-    flex: 1,
+  },
+  metaSecondary: {
+    ...typography.caption,
+    color: palette.faint,
+  },
+  descriptionSection: {
+    marginTop: spacing.xl,
+  },
+  sectionLabel: {
+    ...typography.caption,
+    color: palette.tungsten,
+    fontWeight: '500',
+    marginBottom: spacing.sm,
   },
   description: {
     ...typography.body,
     color: palette.text,
-    marginTop: spacing.lg,
-  },
-  venueSection: {
-    marginTop: spacing.xl,
-  },
-  venueCard: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: palette.line,
-    backgroundColor: palette.panel,
-    padding: spacing.md,
-  },
-  venueCardPressed: {
-    opacity: 0.78,
-  },
-  venueName: {
-    ...typography.title,
-    color: palette.text,
-  },
-  venueMeta: {
-    ...typography.caption,
-    color: palette.muted,
-    marginTop: spacing.xxs,
-  },
-  venueLinkHint: {
-    ...typography.label,
-    color: palette.tungsten,
-    fontSize: 10,
-    lineHeight: 14,
-    marginTop: spacing.md,
   },
   loadingText: {
     ...typography.caption,

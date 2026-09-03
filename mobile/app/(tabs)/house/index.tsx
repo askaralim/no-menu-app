@@ -46,6 +46,7 @@ export default function HouseHubScreen() {
   const router = useRouter()
   const { tenantId, role, memberships, refreshMembership } = useAuth()
   const tenant = memberships.find((m) => m.tenant_id === tenantId) ?? null
+  const canSwitchStore = memberships.length > 1
 
   const [priceMode, setPriceMode] = useState<PublicPriceMode>('hide')
   const [priceModeLoading, setPriceModeLoading] = useState(false)
@@ -202,7 +203,22 @@ export default function HouseHubScreen() {
 
   return (
     <Screen scroll>
-      <Title>{tenant?.display_name || tenant?.name || '我的门店'}</Title>
+      {canSwitchStore ? (
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/house/switch-tenant')}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="切换门店"
+        >
+          <Title>{tenant?.display_name || tenant?.name || '我的门店'}</Title>
+          <View style={styles.switchRow}>
+            <Text style={styles.switchText}>切换门店 · 共 {memberships.length} 家</Text>
+            <Ionicons name="chevron-down" size={16} color={THEME.gold} />
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <Title>{tenant?.display_name || tenant?.name || '我的门店'}</Title>
+      )}
 
       {!publicVisible ? (
         <View style={styles.warnBanner}>
@@ -324,6 +340,14 @@ export default function HouseHubScreen() {
 }
 
 const styles = StyleSheet.create({
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: -8,
+    marginBottom: SPACING.md,
+  },
+  switchText: { color: THEME.gold, fontSize: 13, fontWeight: '600' },
   warnBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',

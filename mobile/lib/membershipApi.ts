@@ -50,6 +50,8 @@ function translate(message: string): string {
   if (m.includes('Only owner')) return '仅店主可邀请员工'
   if (m.includes('Forbidden')) return '没有权限'
   if (m.includes('Not authenticated')) return '请先登录'
+  if (m.includes('Tenant is not active')) return '该门店已停用'
+  if (m.includes('Tenant not found')) return '未找到门店'
   return m
 }
 
@@ -62,6 +64,16 @@ export async function getMyTenants(): Promise<MyTenant[]> {
   const { data, error } = await supabase.rpc('get_my_tenants')
   if (error) throw new Error(translate(error.message))
   return (data as MyTenant[]) ?? []
+}
+
+export async function setActiveTenant(tenantId: string): Promise<void> {
+  const { error } = await supabase.rpc('set_active_tenant', { p_tenant_id: tenantId })
+  if (!error) return
+  const raw = error.message || ''
+  if (raw.includes('Could not find the function')) {
+    throw new Error('后台尚未开通切店，请先更新后再试')
+  }
+  throw new Error(translate(raw))
 }
 
 export async function createTenantInvite(input: {

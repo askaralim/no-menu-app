@@ -152,6 +152,28 @@ body::after {
   text-align: center;
 }
 
+.menu-section.has-subsections .section-title {
+  margin-bottom: 28px;
+}
+
+.menu-subsections {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.subsection-title {
+  font-family: 'Inter', 'PingFang SC', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  color: var(--gold);
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--glass-border);
+  text-align: left;
+}
+
 /* =========================
    酒品列表
    ========================= */
@@ -298,6 +320,11 @@ body::after {
   border-bottom: 2px solid rgba(0, 0, 0, 0.2);
 }
 
+.theme-minimal .subsection-title {
+  color: rgba(0, 0, 0, 0.55);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
 .theme-minimal .drink-name {
   color: #000000;
 }
@@ -335,6 +362,11 @@ body::after {
 .theme-luxury .section-title {
   color: #fbbf24;
   border-bottom: 2px solid rgba(251, 191, 36, 0.4);
+}
+
+.theme-luxury .subsection-title {
+  color: #fbbf24;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.25);
 }
 
 .theme-luxury .drink-name {
@@ -859,6 +891,20 @@ input:checked + .toggle-slider:hover {
     font-size: 28px;
     margin-bottom: 24px;
     padding-bottom: 12px;
+  }
+
+  .menu-section.has-subsections .section-title {
+    margin-bottom: 20px;
+  }
+
+  .menu-subsections {
+    gap: 24px;
+  }
+
+  .subsection-title {
+    font-size: 13px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
   }
 
   .drink-list {

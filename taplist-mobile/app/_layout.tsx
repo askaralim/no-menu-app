@@ -84,6 +84,7 @@ function RootLayoutNav() {
         <Stack.Screen name="tap-report" options={{ headerShown: false }} />
         <Stack.Screen name="followed-bars" options={{ headerShown: false }} />
         <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+        <Stack.Screen name="about" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

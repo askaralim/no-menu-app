@@ -1,6 +1,7 @@
 'use client'
 
 import { Drink } from '@/lib/types'
+import { getDisplayGroupMode, groupDisplayDrinks } from '@/lib/displayMenuGroups'
 import DrinkItem from './DrinkItem'
 
 interface CategorySectionProps {
@@ -8,21 +9,39 @@ interface CategorySectionProps {
   drinks: Drink[]
 }
 
+function DrinkList({ drinks }: { drinks: Drink[] }) {
+  return (
+    <ul className="drink-list">
+      {drinks.map((drink) => (
+        <DrinkItem key={drink.id} drink={drink} disabled={!drink.enabled} />
+      ))}
+    </ul>
+  )
+}
+
 export default function CategorySection({ name, drinks }: CategorySectionProps) {
-  // 只显示已启用的酒品（禁用饮品已在数据层过滤）
   if (drinks.length === 0) {
     return null
   }
 
+  const groups = groupDisplayDrinks(name, drinks)
+  const showSubsections = getDisplayGroupMode(name) !== 'none'
+
   return (
-    <section className="menu-section">
+    <section className={`menu-section${showSubsections ? ' has-subsections' : ''}`}>
       <h2 className="section-title">{name}</h2>
-      <ul className="drink-list">
-        {drinks.map((drink) => (
-          <DrinkItem key={drink.id} drink={drink} disabled={!drink.enabled} />
-        ))}
-      </ul>
+      {showSubsections ? (
+        <div className="menu-subsections">
+          {groups.map((group) => (
+            <div key={group.key} className="menu-subsection">
+              <h3 className="subsection-title">{group.title}</h3>
+              <DrinkList drinks={group.drinks} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <DrinkList drinks={groups[0]?.drinks ?? drinks} />
+      )}
     </section>
   )
 }
-

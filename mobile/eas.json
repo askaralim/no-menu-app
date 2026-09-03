@@ -7,18 +7,21 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "environment": "development"
+      "environment": "development",
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
-      "environment": "preview"
+      "environment": "preview",
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "environment": "production",
       "env": {
         "EAS_BUILD_NO_EXPO_GO_WARNING": "1"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

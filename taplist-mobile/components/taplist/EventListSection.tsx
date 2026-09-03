@@ -92,12 +92,12 @@ const styles = StyleSheet.create({
     marginTop: 28,
   },
   groupTitle: {
-    ...typography.display,
-    color: '#D6B069',
-    fontSize: 32,
-    lineHeight: 38,
-    letterSpacing: 2,
-    fontWeight: '700',
+    ...typography.title,
+    color: palette.tungsten,
+    fontSize: 18,
+    lineHeight: 25,
+    letterSpacing: 0,
+    fontWeight: '500',
   },
   groupSub: {
     ...typography.caption,

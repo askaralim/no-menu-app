@@ -8,14 +8,14 @@ The product is a Chinese-first real-time craft beer discovery app for supported 
 combines public bar tap lists with a private personal drink history called **我的 TAP**.
 
 Monorepo ops index: [`../docs/INDEX.md`](../docs/INDEX.md).  
-Sibling POS (**No Menu Tonight**, `mobile/`) App Store `1.1.0` is **approved / live** — do not confuse ASC docs with this consumer app.
+Sibling POS (**No Menu Tonight**, `mobile/`) App Store `1.1.2` is **approved / live** — do not confuse ASC docs with this consumer app.
 
 ## Release status
 
-**App Store `1.3.0` (build ≥42) is approved / live** (public availability reconfirmed 2026-08-24) — private bar follow + optional new-tap iOS push + 我的 hub polish.  
+**App Store `1.3.2` (build 48) is approved / live** (confirmed 2026-09-03) — user-triggered iOS nearby sorting, event discovery improvements, corrected monthly TAP activity, share-flow stability fixes, and a simplified three-tab navigation with About under Mine.
 Prefer production RPC / Edge Function hotfixes when no new binary is needed. Ship a new build only for user-visible changes or Apple-requested fixes.
 
-Canonical ASC: [`docs/APP_STORE_CONNECT_1.3.0.md`](./docs/APP_STORE_CONNECT_1.3.0.md).  
+Canonical ASC: [`docs/APP_STORE_CONNECT_1.3.2.md`](./docs/APP_STORE_CONNECT_1.3.2.md).
 Push deploy / kill-switches: [`../supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md).
 
 ## Commands
@@ -38,11 +38,13 @@ Note: `npm run web` may fail on some local Node / Expo CLI combinations with por
 - `app/(tabs)/index.tsx` - Tonight home feed
 - `app/(tabs)/search.tsx` - Search (drinks + bars where supported)
 - `app/(tabs)/mine.tsx` - Private hub: Apple protection, followed-bars entry, 我的 TAP grid + share
-- `app/(tabs)/about.tsx` - About / compliance
+- `app/about.tsx` - About / compliance (opened from the fixed top action in Mine)
+- `app/events.tsx` - City activity list
 - `app/followed-bars.tsx` - Private followed bars + per-bar notify toggles (iOS)
 - `app/edit-profile.tsx` - Private NoMenuist username
 - `app/bar/[slug].tsx` - Bar detail and live tap list (compact follow control on hero meta row)
 - `app/bar/[slug]/beer/[drinkId].tsx` - Beer detail
+- `app/bar/[slug]/event/[eventId].tsx` - Activity detail and full-poster viewer
 - `app/drink-log/[lightId].tsx` - One drink's private venue history
 - `components/taplist/` - Tap List-specific UI components
 - `components/taplist/DrinkLightSection.tsx` - Drink-lighting state and action
@@ -80,8 +82,8 @@ Current approved consumer surfaces include:
 
 Do not add:
 
-- Map
-- GPS / nearby sorting
+- General map or map-first discovery
+- Automatic or background GPS discovery
 - Ratings
 - Collections
 - Social feed
@@ -94,6 +96,17 @@ Do not add:
 - Payments
 - Delivery
 - Reservations
+
+Approved iOS nearby-sorting exception:
+
+- Nearby sorting is user-triggered from Tonight and defaults back to latest on every cold start.
+- Request foreground location only after a custom explanation; never request background location.
+- Keep device coordinates in memory only, never upload or persist them, and treat failures as soft.
+- Rank existing public bars by straight-line distance using verified No Menu coordinates; bars without
+  coordinates stay visible at the end without a distance label.
+- Do not embed a map or claim travel time, route distance, fastest, or optimal ordering.
+- If the selected city differs from Apple's on-device city result, keep the selected city and offer a
+  manual city switch. Android and web remain unchanged in v1.
 
 Allowed private subscription exception:
 

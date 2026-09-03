@@ -84,11 +84,80 @@ export function shouldGroupEventsByVenue(events: PublicEventRow[]) {
 }
 
 export function eventDisplayStateLabel(state: PublicEventRow['display_state']) {
-  return state === 'ONGOING' ? 'TONIGHT' : state
+  return state === 'UPCOMING' ? '即将开始' : '进行中'
 }
 
 export function eventMetaLine(event: PublicEventRow) {
   return eventDisplayStateLabel(event.display_state)
+}
+
+export function eventDateLabel(event: PublicEventRow) {
+  const start = eventCalendarDateParts(event.start_at)
+  const end = eventCalendarDateParts(event.end_at)
+
+  if (start && end) {
+    const startLabel = fullCalendarDateLabel(start)
+    const endLabel = fullCalendarDateLabel(end)
+    return startLabel === endLabel ? startLabel : `${startLabel}—${endLabel}`
+  }
+  if (start) return fullCalendarDateLabel(start)
+
+  return fallbackEventDateLabel(event)
+}
+
+export function compactEventDateLabel(event: PublicEventRow) {
+  const start = eventCalendarDateParts(event.start_at)
+  const end = eventCalendarDateParts(event.end_at)
+
+  if (start && end) {
+    if (start.year !== end.year) {
+      return `${fullCalendarDateLabel(start)}—${fullCalendarDateLabel(end)}`
+    }
+
+    const startLabel = fullCalendarDateLabel(start)
+    const endLabel = shortCalendarDateLabel(end)
+    return start.month === end.month && start.day === end.day ? startLabel : `${startLabel}—${endLabel}`
+  }
+  if (start) return fullCalendarDateLabel(start)
+
+  return fallbackEventDateLabel(event)
+}
+
+function fallbackEventDateLabel(event: PublicEventRow) {
+  const label = event.date_label?.trim()
+  if (!label) return null
+
+  const range = label.split(/\s*[—–]\s*/)
+  return range.length === 2 && range[0] === range[1] ? range[0] : label
+}
+
+type EventCalendarDateParts = { year: string; month: string; day: string }
+
+function eventCalendarDateParts(value: string | null): EventCalendarDateParts | null {
+  if (!value) return null
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(date)
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+
+  return year && month && day ? { year, month, day } : null
+}
+
+function fullCalendarDateLabel(date: EventCalendarDateParts) {
+  return `${date.year}.${date.month.padStart(2, '0')}.${date.day.padStart(2, '0')}`
+}
+
+function shortCalendarDateLabel(date: EventCalendarDateParts) {
+  return `${date.month.padStart(2, '0')}.${date.day.padStart(2, '0')}`
 }
 
 export function EventCard({ event, compact = false, showVenue = true, source = 'direct' }: EventCardProps) {

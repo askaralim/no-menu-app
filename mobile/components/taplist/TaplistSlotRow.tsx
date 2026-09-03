@@ -18,6 +18,7 @@ type Props = {
   busy?: boolean
   onAdd: () => void
   onTapNumber: () => void
+  onEdit: () => void
   onClear: () => void
   onReplace: () => void
   onMore: (anchor: AnchorRect) => void
@@ -29,6 +30,7 @@ export default function TaplistSlotRow({
   busy = false,
   onAdd,
   onTapNumber,
+  onEdit,
   onClear,
   onReplace,
   onMore,
@@ -39,7 +41,7 @@ export default function TaplistSlotRow({
     return (
       <TouchableOpacity style={styles.emptyRow} onPress={onAdd} activeOpacity={0.78}>
         <View style={[styles.tapButton, styles.tapButtonEmpty]}>
-          <Text style={[styles.tapNumber, styles.tapNumberEmpty]}>{tapNumber}</Text>
+          <Text style={[styles.tapNumber, styles.tapNumberEmpty]}>#{tapNumber}</Text>
         </View>
         <Text style={styles.emptyLabel}>空酒头</Text>
         <View style={styles.addAction}>
@@ -63,19 +65,24 @@ export default function TaplistSlotRow({
         disabled={busy}
         accessibilityLabel={`枪号 ${tapNumber}，点按调整枪号`}
       >
-        <Text style={styles.tapNumber}>{tapNumber}</Text>
-        <Ionicons
-          name="pencil-outline"
-          size={11}
-          color={T.goldSoft}
-          style={styles.tapEditIcon}
-        />
+        <Text style={styles.tapNumber}>#{tapNumber}</Text>
       </TouchableOpacity>
 
-      <BeerArtworkImage
-        imageUrl={drink.image_url}
-        style={styles.image}
-      />
+      <TouchableOpacity
+        onPress={onEdit}
+        disabled={busy}
+        activeOpacity={0.72}
+        accessibilityLabel={`编辑酒款 ${name}`}
+        style={styles.imageButton}
+      >
+        <BeerArtworkImage
+          imageUrl={drink.image_url}
+          style={styles.image}
+        />
+        <View style={styles.imageEditBadge} pointerEvents="none">
+          <Ionicons name="pencil" size={10} color={T.background} />
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.body}>
         <View style={styles.titleLine}>
@@ -194,9 +201,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tapEditIcon: { position: 'absolute', right: 3, bottom: 3 },
   tapButtonEmpty: { backgroundColor: 'transparent', borderColor: T.border },
-  tapNumber: { color: T.gold, fontSize: 19, fontWeight: '800' },
+  tapNumber: { color: T.gold, fontSize: 18, fontWeight: '800' },
   tapNumberEmpty: { color: T.faint },
   image: {
     width: 54,
@@ -205,6 +211,20 @@ const styles = StyleSheet.create({
     backgroundColor: T.surfaceMuted,
     borderWidth: 1,
     borderColor: T.goldBorder,
+  },
+  imageButton: { position: 'relative' },
+  imageEditBadge: {
+    position: 'absolute',
+    right: -3,
+    bottom: -3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: T.gold,
+    borderWidth: 2,
+    borderColor: T.background,
   },
   body: { flex: 1, minWidth: 0, paddingTop: 1 },
   titleLine: { flexDirection: 'row', alignItems: 'baseline', minWidth: 0 },

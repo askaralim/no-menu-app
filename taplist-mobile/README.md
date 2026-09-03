@@ -13,8 +13,8 @@ consumer app must not depend on POS UI or mutate POS workflows.
 
 Monorepo doc index: [`../docs/INDEX.md`](../docs/INDEX.md).  
 
-**Status (2026-08-24):** App Store `1.3.0` (build ≥42) **Approved / live** — follow bars + optional new-tap push. ASC: [`docs/APP_STORE_CONNECT_1.3.0.md`](docs/APP_STORE_CONNECT_1.3.0.md).  
-Tonight POS `1.1.0` is also **Approved / live** — see `mobile/docs/APP_STORE_CONNECT_1.1.0.md`.
+**Status (2026-09-03):** App Store `1.3.2` (build 48) is **Approved / live** — optional Nearby sorting, single-banner event discovery with full-poster viewing, corrected monthly TAP activity, and redesigned bar tap-list share images with complete public pricing. ASC: [`docs/APP_STORE_CONNECT_1.3.2.md`](docs/APP_STORE_CONNECT_1.3.2.md).
+Tonight POS `1.1.2` is also **Approved / live** — see `mobile/docs/APP_STORE_CONNECT_1.1.2.md`.
 
 ## Setup
 
@@ -43,7 +43,7 @@ repository-level `supabase/migrations/` before expecting corresponding RPCs to w
 - `今晚`: city feed, public bars, events, and new taps
 - `搜索`: public beer and bar discovery
 - `我的`: private 我的 TAP, followed bars entry, Apple protection, sharing, and account deletion
-- `关于`: product, privacy, compliance, and analytics controls
+- `关于`: product, privacy, compliance, and analytics controls, opened from the fixed top action in `我的`
 - Bar detail: live public tap list + compact private follow control
 - Beer detail: beer information, serving prices, sharing, and `喝过`
 - Followed bars: private list + per-bar iOS new-tap notification toggles
@@ -81,8 +81,10 @@ See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_ST
 | `app/(tabs)/index.tsx` | Tonight feed |
 | `app/(tabs)/search.tsx` | Search (drinks + bars) |
 | `app/(tabs)/mine.tsx` | Private 我的 TAP |
-| `app/(tabs)/about.tsx` | About / compliance |
+| `app/about.tsx` | About / compliance (Stack screen opened from Mine) |
+| `app/events.tsx` | City activity list |
 | `app/bar/[slug].tsx` | Bar detail and live tap list |
+| `app/bar/[slug]/event/[eventId].tsx` | Activity detail and full-poster viewer |
 | `app/bar/[slug]/beer/[drinkId].tsx` | Beer detail and record action |
 | `app/drink-log/[lightId].tsx` | One drink's venue history |
 | `components/taplist/ShareableDrinkLogImage.tsx` | 我的 TAP monthly summary export |

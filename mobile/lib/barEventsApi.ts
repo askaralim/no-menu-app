@@ -58,7 +58,7 @@ export const POS_EVENT_TYPES = [
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
-function newEventId(): string {
+export function newEventId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
     return globalThis.crypto.randomUUID()
   }

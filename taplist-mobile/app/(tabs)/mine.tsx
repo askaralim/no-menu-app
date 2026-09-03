@@ -98,8 +98,8 @@ export default function MineScreen() {
   const summary = summaryQuery.data
   const hasDrinks = Boolean(summary && summary.drink_count > 0)
   const month = insightsQuery.data?.month
-  const tapCardMeta = month?.new_drink_count
-    ? `${formatMonthName(month.month_start)}新增 ${month.new_drink_count} 款 · 来自 ${month.bar_count} 家酒吧`
+  const tapCardMeta = month?.drink_count
+    ? `${formatMonthName(month.month_start)}TAP ${month.drink_count} 款 · 来自 ${month.bar_count} 家酒吧`
     : '查看月度报告与分享记录'
 
   return (
@@ -128,6 +128,13 @@ export default function MineScreen() {
               onPress={() => router.push('/edit-profile' as Href)}
               style={({ pressed }) => [styles.editProfileButton, pressed && styles.pressed]}>
               <FontAwesome name="pencil" size={20} color={palette.amber} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="关于 No Menu"
+              onPress={() => router.push('/about' as Href)}
+              style={({ pressed }) => [styles.aboutButton, pressed && styles.pressed]}>
+              <FontAwesome name="info-circle" size={21} color={palette.faint} />
             </Pressable>
           </View>
 
@@ -328,6 +335,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     marginLeft: spacing.sm,
+  },
+  aboutButton: {
+    width: 44,
+    height: 44,
+    flexShrink: 0,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginLeft: spacing.xxs,
   },
   protectionRow: {
     width: '100%',

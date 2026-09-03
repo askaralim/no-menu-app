@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback } f
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import { ensureUserProfile, getMyTenants, type MyTenant } from './membershipApi'
+import { ensureUserProfile, getMyTenants, setActiveTenant, type MyTenant } from './membershipApi'
 import type { UserRole } from './types'
 
 const ACTIVE_TENANT_KEY = 'nomenu.activeTenantId'
@@ -71,6 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const stored = await AsyncStorage.getItem(ACTIVE_TENANT_KEY)
     const chosen = pickInitialTenant(rows, stored)
     if (chosen) {
+      try {
+        await setActiveTenant(chosen.tenant_id)
+      } catch (e) {
+        console.warn('set_active_tenant failed', e)
+      }
       setTenantId(chosen.tenant_id)
       setRole(chosen.role)
       setOrderingEnabled(resolveOrdering(chosen))
@@ -124,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setNeedsTenantSelection(true)
       return
     }
+    await setActiveTenant(nextId)
     await AsyncStorage.setItem(ACTIVE_TENANT_KEY, nextId)
     setTenantId(row.tenant_id)
     setRole(row.role)

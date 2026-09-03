@@ -1,4 +1,6 @@
-# Tap List — TestFlight (mirror `mobile/` workflow)
+# No Menu Consumer — TestFlight and ASC handoff
+
+> Current live release: `1.3.2` build `48`, approved and confirmed available on the App Store on 2026-09-03. Canonical release record: [APP_STORE_CONNECT_1.3.2.md](./APP_STORE_CONNECT_1.3.2.md).
 
 Consumer app in `taplist-mobile/`. POS staff app is `mobile/` — **separate** bundle, App Store Connect app, and EAS Expo project.
 
@@ -19,7 +21,7 @@ Consumer app in `taplist-mobile/`. POS staff app is `mobile/` — **separate** b
 |--|----------------|----------------------------|
 | Bundle ID | `com.taklip.nomenuapp` | `com.nomenuapp.taplist` |
 | EAS project | `25370b31-037e-42a1-b6ce-16bf661e1ccc` | `470f9d09-531f-4478-a32c-6a2217b79a87` |
-| Auth | Staff login | Anon public RPCs only |
+| Auth | Staff login | Public browsing + private anonymous / optional Apple protection |
 | Expo slug | `nomenu` | `no-menu-app` |
 
 ---
@@ -28,13 +30,13 @@ Consumer app in `taplist-mobile/`. POS staff app is `mobile/` — **separate** b
 
 - [x] `eas.json` aligned with `mobile/` (`appVersionSource: local`, secrets via dashboard, `ascAppId` in submit)
 - [x] `app.config.ts` — `EXPO_PUBLIC_*` / `NEXT_PUBLIC_*` bridge, encryption plist, `extra` for Supabase + privacy URL
-- [x] `app.json` — bundle `com.nomenuapp.taplist`, `buildNumber: 1`, EAS `projectId`
+- [x] `app.json` — version `1.3.2`, build `48`, bundle `com.nomenuapp.taplist`, EAS `projectId`
 - [x] `npm run preflight` — typecheck + web export
 - [x] This doc + updated [APP_STORE_SUBMISSION.md](./APP_STORE_SUBMISSION.md)
 
 ---
 
-## You — before first `eas build`
+## Before a production `eas build`
 
 ### 1. App Store Connect
 
@@ -73,13 +75,13 @@ cd taplist-mobile
 eas build --platform ios --profile production
 ```
 
-First build: Apple credentials / distribution cert (same flow as POS `mobile/`).
+Apple credentials and the distribution certificate remain separate from the POS `mobile/` app.
 
 ### 6. TestFlight
 
 1. App Store Connect → Tap List app → **TestFlight**
 2. Add **internal** testers
-3. Manual smoke: [APP_STORE_SUBMISSION.md §9](./APP_STORE_SUBMISSION.md#9-pre-submission-manual-smoke-5-min)
+3. Manual smoke: [APP_STORE_CONNECT_1.3.2.md §7](./APP_STORE_CONNECT_1.3.2.md#7-最终提交检查)
 
 ---
 

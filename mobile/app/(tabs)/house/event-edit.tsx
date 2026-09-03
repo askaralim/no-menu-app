@@ -19,6 +19,7 @@ import {
   POS_EVENT_TYPES,
   getBarEvent,
   saveBarEvent,
+  newEventId,
   shanghaiTodayYmd,
   toShanghaiYmd,
   uploadBarEventImage,
@@ -59,11 +60,7 @@ export default function EventEditScreen() {
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [draftId] = useState(() =>
-    typeof globalThis.crypto?.randomUUID === 'function'
-      ? globalThis.crypto.randomUUID()
-      : `draft-${Date.now()}`,
-  )
+  const [draftId] = useState(newEventId)
 
   const resolvedId = eventId || draftId
 
