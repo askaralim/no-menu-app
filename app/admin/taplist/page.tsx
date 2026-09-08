@@ -22,6 +22,7 @@ import {
 import { BeerBulkImportPanel } from '@/components/admin/BeerBulkImportPanel'
 import { ProductPoolLinkSection } from '@/components/admin/ProductPoolLinkSection'
 import { uploadTaplistCover, uploadTaplistDrinkImage } from '@/lib/taplistStorage'
+import { withOssImageStyle, type OssImageStyle } from '@/lib/ossImageUrl'
 import type { Category, Drink } from '@/lib/types'
 
 type UserRole = 'owner' | 'staff' | 'super_admin' | null
@@ -673,6 +674,7 @@ function TaplistAdminPageInner() {
             busy={uploadingCover}
             disabled={storefrontSaveBlocked}
             previewUrl={tenantForm.cover_image_url || null}
+            previewStyle="nm-cover"
             inputRef={coverFileRef}
             onFileSelected={handleCoverFile}
           />
@@ -1184,6 +1186,7 @@ function DrinkTaplistPanel({
               hint="JPEG / PNG / WebP，最大 2MB"
               busy={uploadingImage}
               previewUrl={form.image_url || null}
+              previewStyle="nm-card"
               inputRef={drinkImageFileRef}
               onFileSelected={handleDrinkImageFile}
             />
@@ -1567,6 +1570,7 @@ function TaplistImageUploadField({
   busy,
   disabled = false,
   previewUrl,
+  previewStyle,
   inputRef,
   onFileSelected,
 }: {
@@ -1575,6 +1579,7 @@ function TaplistImageUploadField({
   busy: boolean
   disabled?: boolean
   previewUrl: string | null
+  previewStyle: OssImageStyle
   inputRef: React.RefObject<HTMLInputElement>
   onFileSelected: (file: File) => void | Promise<void>
 }) {
@@ -1586,7 +1591,7 @@ function TaplistImageUploadField({
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={previewUrl}
+            src={withOssImageStyle(previewUrl, previewStyle) || previewUrl}
             alt=""
             style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }}
           />

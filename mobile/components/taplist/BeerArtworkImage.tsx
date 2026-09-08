@@ -6,12 +6,14 @@ import {
   type StyleProp,
 } from 'react-native'
 import { defaultBeerArtwork } from './defaultBeerArtwork'
+import { withOssImageStyle, type OssImageStyle } from '../../lib/ossImageUrl'
 
 type Props = {
   imageUrl?: string | null
   resizeMode?: ImageResizeMode
   style: StyleProp<ImageStyle>
   onLoadEnd?: () => void
+  ossStyle?: OssImageStyle
 }
 
 export function BeerArtworkImage({
@@ -19,8 +21,9 @@ export function BeerArtworkImage({
   resizeMode = 'cover',
   style,
   onLoadEnd,
+  ossStyle = 'nm-thumb',
 }: Props) {
-  const normalizedUrl = imageUrl?.trim() || null
+  const normalizedUrl = withOssImageStyle(imageUrl, ossStyle)
   const [failed, setFailed] = useState(false)
   const useRemote = !!normalizedUrl && !failed
 

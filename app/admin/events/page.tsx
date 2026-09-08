@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 import { supabase } from '@/lib/supabaseClient'
 import { uploadTaplistEventImage } from '@/lib/taplistStorage'
+import { withOssImageStyle } from '@/lib/ossImageUrl'
 
 type UserRole = 'owner' | 'staff' | 'super_admin' | null
 
@@ -618,7 +619,7 @@ function EventImageUploadField({
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={previewUrl}
+            src={withOssImageStyle(previewUrl, 'nm-card') || previewUrl}
             alt=""
             style={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' }}
           />

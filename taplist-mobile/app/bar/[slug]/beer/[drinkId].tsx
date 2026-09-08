@@ -186,7 +186,7 @@ export default function BeerDetailScreen() {
         style={styles.screen}
         contentContainerStyle={artworkUrl ? styles.scrollContent : [styles.paddedContent, { paddingTop: insets.top + spacing.xxxl, paddingBottom: spacing.xxl }]}>
         {artworkUrl ? (
-          <AtmosphereImage source={artworkUrl} aspectRatio={1} overlayOpacity={0.18} scrimOpacity={1} borderRadius={0} />
+          <AtmosphereImage source={artworkUrl} ossStyle="nm-detail" aspectRatio={1} overlayOpacity={0.18} scrimOpacity={1} borderRadius={0} />
         ) : null}
 
         <View style={artworkUrl ? styles.paddedContent : undefined}>

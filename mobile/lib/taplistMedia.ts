@@ -22,11 +22,8 @@ export type LocalImageAsset = {
   fileSize?: number | null
 }
 
-function sanitizeImageFileName(name: string): string {
-  const base = name.replace(/[/\\]/g, '').replace(/\.\./g, '').trim()
-  const safe = base.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const trimmed = safe.slice(0, 120)
-  return trimmed || `image-${Date.now()}.jpg`
+function createUploadId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
 }
 
 function extensionForMime(mime: string): string {
@@ -160,7 +157,7 @@ async function uploadTaplistImageFromAsset(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        tenantId: uploadPath.split('/', 1)[0],
+        tenantId: uploadPath.split('/')[2],
         objectPath: uploadPath,
         contentType: 'image/jpeg',
         contentLength: bytes.byteLength,
@@ -190,7 +187,7 @@ async function uploadTaplistImageFromAsset(
 
 /**
  * Upload a local gallery image to taplist-media and return its public URL.
- * Path: {tenantId}/drinks/{drinkId}/{file}
+ * Path: prod/tenants/{tenantId}/drinks/{drinkId}/{uploadId}.jpg
  */
 export async function uploadDrinkImageFromAsset(
   tenantId: string,
@@ -199,13 +196,12 @@ export async function uploadDrinkImageFromAsset(
 ): Promise<string> {
   const mime = assertImageAsset(asset)
   const ext = extensionForMime(mime)
-  const base = sanitizeImageFileName(asset.fileName || `drink-${Date.now()}`).replace(/\.[^.]+$/, '')
-  const path = `${tenantId}/drinks/${drinkId}/${base}.${ext}`
+  const path = `prod/tenants/${tenantId}/drinks/${drinkId}/${createUploadId()}.${ext}`
   return uploadTaplistImageFromAsset(path, asset)
 }
 
 /**
- * Path: {tenantId}/events/{eventId}/{file}
+ * Path: prod/events/{tenantId}/{eventId}/{uploadId}.jpg
  */
 export async function uploadEventImageFromAsset(
   tenantId: string,
@@ -214,7 +210,6 @@ export async function uploadEventImageFromAsset(
 ): Promise<string> {
   const mime = assertImageAsset(asset)
   const ext = extensionForMime(mime)
-  const base = sanitizeImageFileName(asset.fileName || `event-${Date.now()}`).replace(/\.[^.]+$/, '')
-  const path = `${tenantId}/events/${eventId}/${base}.${ext}`
+  const path = `prod/events/${tenantId}/${eventId}/${createUploadId()}.${ext}`
   return uploadTaplistImageFromAsset(path, asset)
 }

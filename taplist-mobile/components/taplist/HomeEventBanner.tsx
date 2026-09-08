@@ -76,7 +76,7 @@ export function HomeEventBanner({ event, width, index, total }: HomeEventBannerP
       }}
       style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}>
       {event.image_url ? (
-        <CachedImageBackground source={event.image_url} style={styles.fill} imageStyle={styles.image}>
+        <CachedImageBackground source={event.image_url} ossStyle="nm-card" style={styles.fill} imageStyle={styles.image}>
           <LinearGradient
             colors={RAIL_IMAGE_SCRIM_COLORS}
             locations={RAIL_IMAGE_SCRIM_LOCATIONS}

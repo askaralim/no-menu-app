@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useAuth } from '../../../lib/authProvider'
 import { THEME, SPACING, RADIUS } from '../../../lib/theme'
+import { withOssImageStyle } from '../../../lib/ossImageUrl'
 import { Screen, SectionLabel, Card, Button, Loading } from '../../../components/ui'
 import { HouseSubheader } from '../../../components/house/HouseSubheader'
 import {
@@ -131,7 +132,7 @@ export default function EventsScreen() {
           style={styles.rowMain}
         >
           {row.image_url ? (
-            <Image source={{ uri: row.image_url }} style={styles.thumb} />
+            <Image source={{ uri: withOssImageStyle(row.image_url, 'nm-thumb') || row.image_url }} style={styles.thumb} />
           ) : (
             <View style={[styles.thumb, styles.thumbEmpty]}>
               <Ionicons name="image-outline" size={22} color={THEME.faint} />

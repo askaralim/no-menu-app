@@ -205,6 +205,7 @@ export function EventCard({ event, compact = false, showVenue = true, source = '
       {hasImage ? (
         <CachedImageBackground
           source={event.image_url as string}
+          ossStyle="nm-card"
           style={styles.imageFill}
           imageStyle={styles.imageRadius}>
           <LinearGradient
@@ -266,6 +267,7 @@ export function EventListCard({
             <View style={[listCapsuleCardStyles.artworkFrame, { width: artworkWidth }]}>
               <CachedImage
                 source={event.image_url as string}
+                ossStyle="nm-card"
                 style={listCapsuleCardStyles.artwork}
               />
             </View>

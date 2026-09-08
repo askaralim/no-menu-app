@@ -15,6 +15,7 @@ export function BeerArtwork({ name, source, size = 64 }: BeerArtworkProps) {
   return (
     <CachedImage
       accessibilityLabel={source ? `${name}酒款图片` : `${name}默认酒款图片`}
+      ossStyle={size <= 96 ? 'nm-thumb' : 'nm-card'}
       source={source || defaultBeerArtwork}
       style={[styles.image, { width: size, height: size }]}
     />

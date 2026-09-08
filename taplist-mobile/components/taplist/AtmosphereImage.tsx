@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 
 import { CachedImageBackground } from '@/components/taplist/CachedImage'
 import { palette, spacing } from '@/constants/design'
+import type { OssImageStyle } from '@/lib/ossImageUrl'
 
 type AtmosphereImageProps = {
   source?: string | null
@@ -12,6 +13,7 @@ type AtmosphereImageProps = {
   scrimOpacity?: number
   children?: React.ReactNode
   borderRadius?: number
+  ossStyle?: OssImageStyle
 }
 
 export function AtmosphereImage({
@@ -22,6 +24,7 @@ export function AtmosphereImage({
   scrimOpacity = 1,
   children,
   borderRadius = 8,
+  ossStyle = 'nm-cover',
 }: AtmosphereImageProps) {
   const frameStyle = [
     styles.frame,
@@ -48,7 +51,7 @@ export function AtmosphereImage({
   }
 
   return (
-    <CachedImageBackground source={source} style={frameStyle} imageStyle={{ borderRadius }}>
+    <CachedImageBackground source={source} ossStyle={ossStyle} style={frameStyle} imageStyle={{ borderRadius }}>
       <LinearGradient
         colors={[
           `rgba(75,54,31,${overlayOpacity})`,

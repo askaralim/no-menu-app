@@ -10,11 +10,11 @@ const MEDIA_API_BASE_URL = (process.env.NEXT_PUBLIC_MEDIA_API_BASE_URL || 'https
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
-export function sanitizeImageFileName(name: string): string {
-  const base = name.replace(/[/\\]/g, '').replace(/\.\./g, '').trim()
-  const safe = base.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const trimmed = safe.slice(0, 120)
-  return trimmed || `image-${Date.now()}.webp`
+function createUploadId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
 }
 
 export function assertImageFile(file: File, maxBytes = TAPLIST_IMAGE_MAX_BYTES): void {
@@ -50,7 +50,7 @@ async function uploadTaplistObject(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      tenantId: objectPath.split('/', 1)[0],
+      tenantId: objectPath.split('/')[2],
       objectPath,
       contentType: file.type,
       contentLength: file.size,
@@ -81,8 +81,7 @@ export async function uploadTaplistCover(
   file: File
 ): Promise<string> {
   const ext = extensionForMime(file.type)
-  const base = sanitizeImageFileName(file.name).replace(/\.[^.]+$/, '')
-  const path = `${tenantId}/cover/${base}.${ext}`
+  const path = `prod/tenants/${tenantId}/covers/${createUploadId()}.${ext}`
   return uploadTaplistObject(supabase, path, file)
 }
 
@@ -93,8 +92,7 @@ export async function uploadTaplistDrinkImage(
   file: File
 ): Promise<string> {
   const ext = extensionForMime(file.type)
-  const base = sanitizeImageFileName(file.name).replace(/\.[^.]+$/, '')
-  const path = `${tenantId}/drinks/${drinkId}/${base}.${ext}`
+  const path = `prod/tenants/${tenantId}/drinks/${drinkId}/${createUploadId()}.${ext}`
   return uploadTaplistObject(supabase, path, file)
 }
 
@@ -105,7 +103,6 @@ export async function uploadTaplistEventImage(
   file: File
 ): Promise<string> {
   const ext = extensionForMime(file.type)
-  const base = sanitizeImageFileName(file.name).replace(/\.[^.]+$/, '')
-  const path = `${tenantId}/events/${eventId}/${base}.${ext}`
+  const path = `prod/events/${tenantId}/${eventId}/${createUploadId()}.${ext}`
   return uploadTaplistObject(supabase, path, file)
 }

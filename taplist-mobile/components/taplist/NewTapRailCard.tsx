@@ -82,6 +82,7 @@ export function NewTapRailCard({
       ]}>
       <CachedImageBackground
         source={artworkSource}
+        ossStyle="nm-card"
         style={styles.newTapImageFill}
         imageStyle={styles.newTapImageRadius}>
         <LinearGradient

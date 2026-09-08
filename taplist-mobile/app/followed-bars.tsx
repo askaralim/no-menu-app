@@ -119,7 +119,7 @@ export default function FollowedBarsScreen() {
                     onPress={() => router.push(`/bar/${bar.tenant_slug}`)}
                     style={({ pressed }) => [styles.barLink, pressed && styles.pressed]}>
                     <View style={styles.artSlot}>
-                      {bar.cover_image_url ? <CachedImage source={bar.cover_image_url} style={styles.art} /> : null}
+                      {bar.cover_image_url ? <CachedImage source={bar.cover_image_url} ossStyle="nm-thumb" style={styles.art} /> : null}
                     </View>
                     <View style={styles.copy}>
                       <Text style={styles.barName} numberOfLines={1}>{bar.tenant_display_name}</Text>

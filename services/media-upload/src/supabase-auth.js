@@ -44,9 +44,32 @@ export function createSupabaseAuthorizer(config, fetchImpl = fetch) {
     }
 
     const tenants = await parseJson(tenantResponse)
-    const allowed = Array.isArray(tenants) && tenants.some((tenant) =>
+    let allowed = Array.isArray(tenants) && tenants.some((tenant) =>
       String(tenant?.tenant_id || '').toLowerCase() === tenantId,
     )
+
+    // Platform super admins are intentionally linked only to the internal
+    // __platform__ tenant, which get_my_tenants excludes. Reuse the database's
+    // existing authorization helper for that established access path.
+    if (!allowed) {
+      const accessResponse = await fetchImpl(
+        `${config.supabaseUrl}/rest/v1/rpc/taplist_can_view_tenant`,
+        {
+          method: 'POST',
+          headers: {
+            ...headersFor(accessToken),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ p_tenant_id: tenantId }),
+          signal: AbortSignal.timeout(8_000),
+        },
+      )
+      if (!accessResponse.ok) {
+        throw new RequestError(502, 'tenant_lookup_failed', '无法验证门店权限')
+      }
+      allowed = (await parseJson(accessResponse)) === true
+    }
+
     if (!allowed) {
       throw new RequestError(403, 'forbidden', '没有该门店的图片上传权限')
     }

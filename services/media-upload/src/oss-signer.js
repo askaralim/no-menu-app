@@ -19,6 +19,7 @@ export function createOssSigner(config) {
       stsToken: temporary.securityToken,
       bucket: config.ossBucket,
       region: config.ossRegion,
+      secure: true,
       authorizationV4: true,
     })
 

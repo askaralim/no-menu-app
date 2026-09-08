@@ -249,6 +249,7 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
                 <View collapsable={false} style={styles.singleArtFrame}>
                   <BeerArtworkImage
                     imageUrl={rows[0].drink.image_url}
+                    ossStyle="nm-poster"
                     style={styles.singleArt}
                     resizeMode="cover"
                     onLoadEnd={() => markLoaded(rows[0].drink.id)}
@@ -291,6 +292,7 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
                   >
                     <BeerArtworkImage
                       imageUrl={drink.image_url}
+                      ossStyle="nm-poster"
                       style={{ width: artworkSize, height: artworkSize }}
                       resizeMode="cover"
                       onLoadEnd={() => markLoaded(drink.id)}

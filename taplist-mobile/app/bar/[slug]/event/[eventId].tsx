@@ -60,6 +60,7 @@ export default function EventDetailScreen() {
                 <CachedImageBackground
                   contentPosition="top"
                   source={event.image_url}
+                  ossStyle="nm-poster"
                   style={styles.coverFill}>
                   <LinearGradient
                     colors={['rgba(13,13,13,0.04)', 'rgba(13,13,13,0.30)', 'rgba(13,13,13,1)']}
@@ -143,6 +144,7 @@ export default function EventDetailScreen() {
               contentFit="contain"
               pointerEvents="none"
               source={event.image_url}
+              ossStyle="nm-poster"
               style={styles.fullImage}
             />
             <Pressable

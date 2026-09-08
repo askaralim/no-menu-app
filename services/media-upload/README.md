@@ -16,13 +16,13 @@ Body:
 ```json
 {
   "tenantId": "tenant UUID",
-  "objectPath": "tenant UUID/drinks/drink UUID/image.jpg",
+  "objectPath": "prod/tenants/tenant UUID/drinks/drink UUID/upload UUID.jpg",
   "contentType": "image/jpeg",
   "contentLength": 123456
 }
 ```
 
-The service accepts JPEG, PNG, and WebP paths under `cover`, `drinks/{uuid}`, or `events/{uuid}`, up to 2MB as declared by the client. The returned PUT request must include the exact `Content-Type` header.
+The service accepts JPEG, PNG, and WebP paths under `prod/tenants/{tenantId}/covers`, `prod/tenants/{tenantId}/drinks/{drinkId}`, or `prod/events/{tenantId}/{eventId}`, up to 2MB as declared by the client. Legacy tenant-rooted paths remain accepted while older clients are in circulation. The returned PUT request must include the exact `Content-Type` header.
 
 ## ECS configuration
 

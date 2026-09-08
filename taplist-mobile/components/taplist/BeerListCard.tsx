@@ -58,6 +58,7 @@ export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
           <View style={listCapsuleCardStyles.artworkFrame}>
             <CachedImage
               source={drink.image_url || defaultBeerArtwork}
+              ossStyle="nm-thumb"
               style={listCapsuleCardStyles.artwork}
             />
           </View>

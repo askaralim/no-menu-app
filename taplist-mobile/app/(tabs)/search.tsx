@@ -433,6 +433,7 @@ function SearchNewTapTile({
       ]}>
       <CachedImageBackground
         source={artworkSource}
+        ossStyle="nm-card"
         style={styles.newTapTileImage}
         imageStyle={styles.newTapTileImageRadius}>
         <LinearGradient

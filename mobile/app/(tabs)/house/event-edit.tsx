@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useAuth } from '../../../lib/authProvider'
 import { THEME, SPACING, RADIUS } from '../../../lib/theme'
+import { withOssImageStyle } from '../../../lib/ossImageUrl'
 import { Screen, SectionLabel, Card, Button, Field } from '../../../components/ui'
 import { HouseSubheader } from '../../../components/house/HouseSubheader'
 import {
@@ -240,7 +241,7 @@ export default function EventEditScreen() {
       <SectionLabel>海报</SectionLabel>
       <Card>
         {form.image_url ? (
-          <Image source={{ uri: form.image_url }} style={styles.poster} resizeMode="cover" />
+          <Image source={{ uri: withOssImageStyle(form.image_url, 'nm-poster') || form.image_url }} style={styles.poster} resizeMode="cover" />
         ) : (
           <View style={[styles.poster, styles.posterEmpty]}>
             <Ionicons name="image-outline" size={28} color={THEME.faint} />
