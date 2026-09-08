@@ -1,0 +1,22 @@
+[Unit]
+Description=No Menu OSS media upload URL service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nomenu-media
+Group=nomenu-media
+WorkingDirectory=/opt/nomenu-media-upload
+EnvironmentFile=/etc/nomenu-media-upload.env
+ExecStart=/usr/local/bin/node /opt/nomenu-media-upload/src/server.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/nomenu-media-upload
+
+[Install]
+WantedBy=multi-user.target

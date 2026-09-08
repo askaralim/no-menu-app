@@ -8,6 +8,8 @@ export const TAPLIST_MEDIA_BUCKET = 'taplist-media'
 export const TAPLIST_IMAGE_MAX_BYTES = 2 * 1024 * 1024
 
 const UPLOAD_TIMEOUT_MS = 30_000
+const MEDIA_API_BASE_URL = (process.env.EXPO_PUBLIC_MEDIA_API_BASE_URL || 'https://nomenuapp.com')
+  .replace(/\/+$/, '')
 const COMPRESS_MAX_DIMENSION = 1200
 const COMPRESS_QUALITY = 0.75
 
@@ -146,18 +148,41 @@ async function uploadTaplistImageFromAsset(
     }
 
     const uploadPath = path.replace(/\.[^.]+$/, '.jpg')
-    const { error } = await withTimeout(
-      supabase.storage.from(TAPLIST_MEDIA_BUCKET).upload(uploadPath, bytes, {
-        upsert: true,
-        contentType: 'image/jpeg',
-      }),
-      UPLOAD_TIMEOUT_MS,
-    )
-    if (error) throw new Error(error.message || '图片上传失败')
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError) throw sessionError
+    const accessToken = sessionData.session?.access_token
+    if (!accessToken) throw new Error('登录已过期，请重新登录')
 
-    const { data } = supabase.storage.from(TAPLIST_MEDIA_BUCKET).getPublicUrl(uploadPath)
-    if (!data?.publicUrl) throw new Error('无法生成图片公开 URL')
-    return data.publicUrl
+    const signingResponse = await withTimeout(fetch(`${MEDIA_API_BASE_URL}/api/media/upload-url`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tenantId: uploadPath.split('/', 1)[0],
+        objectPath: uploadPath,
+        contentType: 'image/jpeg',
+        contentLength: bytes.byteLength,
+      }),
+    }), UPLOAD_TIMEOUT_MS)
+    const signingBody = await signingResponse.json().catch(() => null) as {
+      uploadUrl?: string
+      cdnUrl?: string
+      requiredHeaders?: Record<string, string>
+      message?: string
+    } | null
+    if (!signingResponse.ok || !signingBody?.uploadUrl || !signingBody.cdnUrl) {
+      throw new Error(signingBody?.message || '无法生成图片上传地址')
+    }
+
+    const uploadResponse = await withTimeout(fetch(signingBody.uploadUrl, {
+      method: 'PUT',
+      headers: signingBody.requiredHeaders || { 'Content-Type': 'image/jpeg' },
+      body: bytes,
+    }), UPLOAD_TIMEOUT_MS)
+    if (!uploadResponse.ok) throw new Error('图片上传失败')
+    return signingBody.cdnUrl
   } catch (e) {
     throw new Error(translateImageUploadError(e))
   }

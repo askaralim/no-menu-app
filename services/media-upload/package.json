@@ -1,0 +1,17 @@
+{
+  "name": "@nomenu/media-upload",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@alicloud/credentials": "2.4.7",
+    "ali-oss": "6.23.0"
+  }
+}

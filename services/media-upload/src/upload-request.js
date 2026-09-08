@@ -1,0 +1,66 @@
+export const MAX_IMAGE_BYTES = 2 * 1024 * 1024
+
+const MIME_EXTENSIONS = new Map([
+  ['image/jpeg', new Set(['jpg', 'jpeg'])],
+  ['image/png', new Set(['png'])],
+  ['image/webp', new Set(['webp'])],
+])
+
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+const SAFE_FILE = '[A-Za-z0-9_-][A-Za-z0-9._-]{0,119}'
+const OBJECT_PATH = new RegExp(
+  `^(${UUID})/(?:cover/${SAFE_FILE}|(?:drinks|events)/${UUID}/${SAFE_FILE})$`,
+  'i',
+)
+
+export class RequestError extends Error {
+  constructor(status, code, message) {
+    super(message)
+    this.status = status
+    this.code = code
+  }
+}
+
+export function parseBearerToken(header) {
+  const match = /^Bearer ([^\s]+)$/i.exec(header || '')
+  if (!match || match[1].length > 8192) {
+    throw new RequestError(401, 'unauthorized', '需要有效的登录凭证')
+  }
+  return match[1]
+}
+
+export function validateUploadRequest(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new RequestError(400, 'invalid_request', '请求格式无效')
+  }
+
+  const tenantId = typeof body.tenantId === 'string' ? body.tenantId.trim().toLowerCase() : ''
+  const objectPath = typeof body.objectPath === 'string' ? body.objectPath.trim() : ''
+  const contentType = typeof body.contentType === 'string' ? body.contentType.trim().toLowerCase() : ''
+  const contentLength = body.contentLength
+
+  if (!OBJECT_PATH.test(objectPath) || objectPath.split('/', 1)[0].toLowerCase() !== tenantId) {
+    throw new RequestError(400, 'invalid_object_path', '图片路径无效')
+  }
+  if (!MIME_EXTENSIONS.has(contentType)) {
+    throw new RequestError(400, 'invalid_content_type', '仅支持 JPEG、PNG、WebP 图片')
+  }
+  if (!Number.isSafeInteger(contentLength) || contentLength <= 0 || contentLength > MAX_IMAGE_BYTES) {
+    throw new RequestError(400, 'invalid_content_length', '图片不能超过 2MB')
+  }
+
+  const extension = objectPath.slice(objectPath.lastIndexOf('.') + 1).toLowerCase()
+  if (!MIME_EXTENSIONS.get(contentType).has(extension)) {
+    throw new RequestError(400, 'extension_mismatch', '图片扩展名与格式不一致')
+  }
+
+  return { tenantId, objectPath, contentType, contentLength }
+}
+
+export function hasTenantAccess(tenants, tenantId) {
+  return Array.isArray(tenants) && tenants.some((tenant) =>
+    typeof tenant === 'object' &&
+    tenant !== null &&
+    String(tenant.tenant_id || '').toLowerCase() === tenantId,
+  )
+}
