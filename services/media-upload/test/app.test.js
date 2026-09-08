@@ -77,3 +77,38 @@ test('serves the public health check path', async () => {
     assert.deepEqual(await response.json(), { ok: true })
   })
 })
+
+test('promotes a product image after admin authorization and persists its CDN URL', async () => {
+  const calls = []
+  await withServer({
+    authorizeTenant: async () => {},
+    signPutUrl: async () => 'unused',
+    authorizeProductAdmin: async (token) => { calls.push(['authorize', token]) },
+    promoteProductImage: async (input) => {
+      calls.push(['promote', input])
+      return {
+        objectPath: `prod/products/${tenantId}/upload.jpg`,
+        cdnUrl: `https://img.nomenuapp.com/prod/products/${tenantId}/upload.jpg`,
+      }
+    },
+    setProductImage: async (...args) => { calls.push(['persist', ...args]) },
+  }, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/media/promote-product-image`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer access-token',
+        'Content-Type': 'application/json',
+        Origin: 'https://nomenuapp.com',
+      },
+      body: JSON.stringify({
+        productId: tenantId,
+        sourceImageUrl: 'https://img.nomenuapp.com/prod/tenants/a/drinks/b/source.jpg',
+      }),
+    })
+    assert.equal(response.status, 200)
+    assert.equal(calls[0][0], 'authorize')
+    assert.equal(calls[1][0], 'promote')
+    assert.equal(calls[2][0], 'persist')
+    assert.equal(calls[2][2], tenantId)
+  })
+})

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createSupabaseAuthorizer } from '../src/supabase-auth.js'
+import { createSupabaseAuthorizer, createSupabaseProductService } from '../src/supabase-auth.js'
 
 const tenantId = '00000000-0000-0000-0000-000000000001'
 const config = {
@@ -50,4 +50,20 @@ test('rejects when neither membership nor the authorization helper allows access
   })
 
   await assert.rejects(() => authorize('token', tenantId), /没有该门店/)
+})
+
+test('authorizes a product admin and persists the canonical product image URL', async () => {
+  const calls = []
+  const productService = createSupabaseProductService(config, async (url, options = {}) => {
+    calls.push([url, options])
+    if (url.endsWith('/rpc/is_super_admin')) return jsonResponse(true)
+    return jsonResponse({ ok: true })
+  })
+  const imageUrl = `https://img.nomenuapp.com/prod/products/${tenantId}/upload.jpg`
+
+  await productService.authorizeAdmin('token')
+  await productService.setProductImage('token', tenantId, imageUrl)
+
+  assert.equal(calls.length, 2)
+  assert.equal(calls[1][1].body, JSON.stringify({ p_product_id: tenantId, p_image_url: imageUrl }))
 })

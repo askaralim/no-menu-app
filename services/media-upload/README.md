@@ -24,6 +24,15 @@ Body:
 
 The service accepts JPEG, PNG, and WebP paths under `prod/tenants/{tenantId}/covers`, `prod/tenants/{tenantId}/drinks/{drinkId}`, or `prod/events/{tenantId}/{eventId}`, up to 2MB as declared by the client. Legacy tenant-rooted paths remain accepted while older clients are in circulation. The returned PUT request must include the exact `Content-Type` header.
 
+`POST /api/media/promote-product-image` is restricted to platform super admins. It copies a merchant drink image from OSS, or imports a legacy image from this project's public Supabase Storage, into `prod/products/{productId}/{uploadId}.{ext}` and updates `drink_products.image_url` through the authenticated `admin_set_drink_product_image` RPC.
+
+```json
+{
+  "productId": "product UUID",
+  "sourceImageUrl": "https://img.nomenuapp.com/prod/tenants/.../drinks/.../source.jpg"
+}
+```
+
 ## ECS configuration
 
 Copy `.env.example` to `/etc/nomenu-media-upload.env`, set production values, and restrict it to root (`chmod 600`). Set `CORS_ORIGINS` to every Web Admin origin, comma-separated. The service binds only to `127.0.0.1`; expose it through the checked-in Nginx location.
