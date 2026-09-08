@@ -106,3 +106,29 @@ export async function uploadTaplistEventImage(
   const path = `prod/events/${tenantId}/${eventId}/${createUploadId()}.${ext}`
   return uploadTaplistObject(supabase, path, file)
 }
+
+export async function promoteProductImage(
+  supabase: SupabaseClient,
+  productId: string,
+  sourceImageUrl: string
+): Promise<string> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) throw new Error('登录已过期，请重新登录')
+
+  const response = await fetch(`${MEDIA_API_BASE_URL}/api/media/promote-product-image`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ productId, sourceImageUrl }),
+  })
+  const body = await response.json().catch(() => null) as { cdnUrl?: string; message?: string } | null
+  if (!response.ok || !body?.cdnUrl) {
+    const detail = body?.message ? `：${body.message}` : ''
+    throw new Error(`商品已创建，但图片归档失败${detail}`)
+  }
+  return body.cdnUrl
+}

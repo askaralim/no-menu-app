@@ -77,3 +77,38 @@ export function createSupabaseAuthorizer(config, fetchImpl = fetch) {
     return { userId: user.id }
   }
 }
+
+export function createSupabaseProductService(config, fetchImpl = fetch) {
+  const headersFor = (accessToken) => ({
+    apikey: config.supabaseAnonKey,
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  })
+
+  return {
+    async authorizeAdmin(accessToken) {
+      const response = await fetchImpl(`${config.supabaseUrl}/rest/v1/rpc/is_super_admin`, {
+        method: 'POST',
+        headers: headersFor(accessToken),
+        body: '{}',
+        signal: AbortSignal.timeout(8_000),
+      })
+      if (!response.ok || (await parseJson(response)) !== true) {
+        throw new RequestError(403, 'forbidden', '只有平台管理员可以归档商品图片')
+      }
+    },
+
+    async setProductImage(accessToken, productId, imageUrl) {
+      const response = await fetchImpl(`${config.supabaseUrl}/rest/v1/rpc/admin_set_drink_product_image`, {
+        method: 'POST',
+        headers: headersFor(accessToken),
+        body: JSON.stringify({ p_product_id: productId, p_image_url: imageUrl }),
+        signal: AbortSignal.timeout(8_000),
+      })
+      if (!response.ok) {
+        const error = await parseJson(response)
+        throw new RequestError(400, 'product_image_update_failed', error?.message || '无法更新商品池图片')
+      }
+    },
+  }
+}

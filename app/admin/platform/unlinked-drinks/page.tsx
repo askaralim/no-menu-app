@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { ProductPoolLinkSection } from '@/components/admin/ProductPoolLinkSection'
 import { supabase } from '@/lib/supabaseClient'
+import { promoteProductImage } from '@/lib/taplistStorage'
 import type { AdminUnlinkedDrinkRow, Drink, TenantInfo, UserRole } from '@/lib/types'
 
 type Filters = {
@@ -339,6 +340,11 @@ export default function UnlinkedDrinksInboxPage() {
       if (rpcError) throw rpcError
       const payload = (data ?? {}) as { ok?: boolean; product_id?: string }
       if (!payload.ok && !payload.product_id) throw new Error('创建失败')
+      if (!payload.product_id) throw new Error('创建失败')
+      const sourceImageUrl = form?.image_url.trim() || row.image_url?.trim()
+      if (sourceImageUrl) {
+        await promoteProductImage(supabase, payload.product_id, sourceImageUrl)
+      }
       await Promise.all([loadDrinks(), loadStats()])
       if (selectedId === row.id) {
         setDrawerOpen(false)

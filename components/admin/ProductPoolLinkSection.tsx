@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '@/lib/supabaseClient'
+import { promoteProductImage } from '@/lib/taplistStorage'
 import type { Drink } from '@/lib/types'
 
 export type DrinkProductSearchRow = {
@@ -281,6 +282,10 @@ export function ProductPoolLinkSection({
       const payload = (data ?? {}) as { ok?: boolean; product_id?: string }
       if (!payload.product_id) throw new Error('创建失败')
 
+      if (createForm.image_url.trim()) {
+        await promoteProductImage(supabase, payload.product_id, createForm.image_url.trim())
+      }
+
       if (autoLink) {
         const { error: linkError } = await supabase.rpc('link_drink_to_product', {
           p_drink_id: drink.id,
@@ -307,11 +312,16 @@ export function ProductPoolLinkSection({
     if (!confirm('从当前酒款数据创建商品池酒款并自动关联？')) return
     setBusy(true)
     try {
-      const { error } = await supabase.rpc('admin_create_drink_product_from_drink', {
+      const { data, error } = await supabase.rpc('admin_create_drink_product_from_drink', {
         p_drink_id: drink.id,
         p_auto_link: true,
       })
       if (error) throw error
+      const payload = (data ?? {}) as { product_id?: string }
+      if (!payload.product_id) throw new Error('创建失败')
+      if (drink.image_url?.trim()) {
+        await promoteProductImage(supabase, payload.product_id, drink.image_url.trim())
+      }
       alert('已从当前酒款创建商品池记录并关联')
       onLinked()
     } catch (err) {

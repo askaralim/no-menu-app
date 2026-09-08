@@ -42,7 +42,15 @@ function corsHeaders(origin, allowedOrigins) {
   }
 }
 
-export function createMediaUploadServer({ config, authorizeTenant, signPutUrl, logger = console }) {
+export function createMediaUploadServer({
+  config,
+  authorizeTenant,
+  signPutUrl,
+  authorizeProductAdmin,
+  promoteProductImage,
+  setProductImage,
+  logger = console,
+}) {
   return createServer(async (request, response) => {
     const url = new URL(request.url || '/', 'http://localhost')
 
@@ -50,7 +58,9 @@ export function createMediaUploadServer({ config, authorizeTenant, signPutUrl, l
       return json(response, 200, { ok: true })
     }
 
-    if (url.pathname !== '/api/media/upload-url') {
+    const isUploadUrl = url.pathname === '/api/media/upload-url'
+    const isProductPromotion = url.pathname === '/api/media/promote-product-image'
+    if (!isUploadUrl && !isProductPromotion) {
       return json(response, 404, { error: 'not_found', message: '接口不存在' })
     }
 
@@ -71,6 +81,18 @@ export function createMediaUploadServer({ config, authorizeTenant, signPutUrl, l
 
     try {
       const accessToken = parseBearerToken(request.headers.authorization)
+      if (isProductPromotion) {
+        const body = await readJson(request)
+        const productId = typeof body?.productId === 'string' ? body.productId.trim().toLowerCase() : ''
+        const sourceImageUrl = typeof body?.sourceImageUrl === 'string' ? body.sourceImageUrl.trim() : ''
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(productId) || !sourceImageUrl) {
+          throw new RequestError(400, 'invalid_request', '商品或图片地址无效')
+        }
+        await authorizeProductAdmin(accessToken)
+        const promoted = await promoteProductImage({ productId, sourceImageUrl })
+        await setProductImage(accessToken, productId, promoted.cdnUrl)
+        return json(response, 200, promoted, cors)
+      }
       const upload = validateUploadRequest(await readJson(request))
       await authorizeTenant(accessToken, upload.tenantId)
       const uploadUrl = await signPutUrl(upload)
@@ -87,7 +109,7 @@ export function createMediaUploadServer({ config, authorizeTenant, signPutUrl, l
       if (error instanceof RequestError) {
         return json(response, error.status, { error: error.code, message: error.message }, cors)
       }
-      logger.error('media upload URL generation failed', error)
+      logger.error('media operation failed', error)
       return json(response, 500, { error: 'internal_error', message: '暂时无法生成上传地址' }, cors)
     }
   })
