@@ -3,18 +3,8 @@ export type OpeningHourJson = {
   close: string
 }
 
-type AmPm = 'AM' | 'PM'
-
 function pad2(n: number) {
   return String(n).padStart(2, '0')
-}
-
-function from24h(hour24: number): { hour12: number; period: AmPm } {
-  const h = ((hour24 % 24) + 24) % 24
-  if (h === 0) return { hour12: 12, period: 'AM' }
-  if (h < 12) return { hour12: h, period: 'AM' }
-  if (h === 12) return { hour12: 12, period: 'PM' }
-  return { hour12: h - 12, period: 'PM' }
 }
 
 function parseHm(value: string): { hour: number; minute: number } | null {
@@ -26,20 +16,41 @@ function parseHm(value: string): { hour: number; minute: number } | null {
   return { hour, minute }
 }
 
-function formatHmEn(hm: string): string | null {
+function formatHm24(hm: string): string | null {
   const parsed = parseHm(hm)
   if (!parsed) return null
-  const { hour12, period } = from24h(parsed.hour)
-  const suffix = period.toLowerCase()
-  if (parsed.minute === 0) return `${hour12} ${suffix}`
-  return `${hour12}:${pad2(parsed.minute)} ${suffix}`
+  return `${pad2(parsed.hour)}:${pad2(parsed.minute)}`
 }
 
-/** e.g. `2 pm - 2 am` (lowercase am/pm, omits `:00` minutes) */
+/** e.g. `16:00–01:00` */
 export function formatOpeningHourLabel(value: OpeningHourJson | null | undefined): string | null {
   if (!value?.open || !value?.close) return null
-  const open = formatHmEn(value.open)
-  const close = formatHmEn(value.close)
+  const open = formatHm24(value.open)
+  const close = formatHm24(value.close)
   if (!open || !close) return null
-  return `${open} - ${close}`
+  return `${open}–${close}`
+}
+
+export function formatRoadmapHoursLabel(stop: {
+  isOpenNow?: boolean | null
+  todayOpensAt?: string | null
+  todayClosesAt?: string | null
+  opensLaterToday?: boolean | null
+}): string | null {
+  if (stop.isOpenNow == null && !stop.todayOpensAt && !stop.todayClosesAt) return null
+
+  const range = formatOpeningHourLabel(
+    stop.todayOpensAt && stop.todayClosesAt
+      ? { open: stop.todayOpensAt, close: stop.todayClosesAt }
+      : null,
+  )
+
+  if (stop.isOpenNow === true) {
+    return range ? `营业中 · ${range}` : '营业中'
+  }
+  if (stop.opensLaterToday === true) {
+    const open = stop.todayOpensAt ? formatHm24(stop.todayOpensAt) : null
+    return open ? `${open} 营业` : range
+  }
+  return range
 }

@@ -34,12 +34,31 @@ Deno.test('haversineDistanceM returns positive distance for nearby points', () =
   assertEquals(d > 0 && d < 500, true)
 })
 
-Deno.test('rankRoutes rejects legs over 1.5km cap', () => {
+Deno.test('rankRoutes falls back to two stops when a third cannot be chained', () => {
   const start = tenant('a', 31.2304, 121.4737)
   const near = tenant('b', 31.2310, 121.4740)
   const far = tenant('c', 31.2500, 121.5000)
   const result = rankRoutes(start, [near, far])
+  assertNotEquals(result, null)
+  assertEquals(result!.stops.length, 2)
+  assertEquals(result!.stops[1].tenantId, 'b')
+})
+
+Deno.test('rankRoutes rejects when every destination is over 1.5km', () => {
+  const start = tenant('a', 31.2304, 121.4737)
+  const far1 = tenant('c', 31.2500, 121.5000)
+  const far2 = tenant('d', 31.2600, 121.5100)
+  const result = rankRoutes(start, [far1, far2])
   assertEquals(result, null)
+})
+
+Deno.test('rankRoutes prefers three stops when a valid chain exists', () => {
+  const start = tenant('start', 31.2304, 121.4737)
+  const b1 = tenant('b1', 31.2310, 121.4740)
+  const b2 = tenant('b2', 31.2312, 121.4742)
+  const result = rankRoutes(start, [b1, b2])
+  assertNotEquals(result, null)
+  assertEquals(result!.stops.length, 3)
 })
 
 Deno.test('rankRoutes picks shortest total distance', () => {
@@ -105,6 +124,14 @@ Deno.test('rankRoutes tie-breaks on stable tenant IDs', () => {
   assertNotEquals(result, null)
   assertEquals(result!.stops[1].tenantId, bLow.tenantId)
   assertEquals(result!.stops[2].tenantId, cLow.tenantId)
+})
+
+Deno.test('rankRoutes returns two stops for a single nearby neighbor', () => {
+  const start = tenant('start', 31.2304, 121.4737)
+  const near = tenant('near', 31.2310, 121.4740)
+  const result = rankRoutes(start, [near])
+  assertNotEquals(result, null)
+  assertEquals(result!.stops.map((stop) => stop.tenantId), ['start', 'near'])
 })
 
 Deno.test('LEG_MAX_DISTANCE_M is 1500', () => {

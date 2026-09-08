@@ -6,12 +6,20 @@ import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-nati
 import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicBeerRoadmap } from '@/lib/api/taplist'
 import { navigationUrlForLeg } from '@/lib/navigationLinks'
+import { formatRoadmapHoursLabel } from '@/lib/openingHour'
 import type { BeerRoadmapLeg, BeerRoadmapRoute, BeerRoadmapStop } from '@/lib/types'
 import { trackEvent } from '@/lib/analytics'
 
 type BeerRoadmapSectionProps = {
   startTenantId: string | null | undefined
   enabled: boolean
+}
+
+function isRenderableRoute(route: BeerRoadmapRoute | null | undefined): route is BeerRoadmapRoute {
+  if (!route || !Array.isArray(route.stops)) return false
+  if (route.stops.length < 2 || route.stops.length > 3) return false
+  if (!route.stops[0]?.displayName || !route.stops[0]?.tenantId) return false
+  return route.stops.every((stop) => Boolean(stop?.tenantId && stop.displayName))
 }
 
 export function BeerRoadmapSection({ startTenantId, enabled }: BeerRoadmapSectionProps) {
@@ -24,31 +32,33 @@ export function BeerRoadmapSection({ startTenantId, enabled }: BeerRoadmapSectio
   })
 
   const payload = roadmapQuery.data
-  if (!payload || payload.ok !== true) return null
+  if (!payload || payload.ok !== true || !isRenderableRoute(payload.route)) return null
 
   return <BeerRoadmapRouteCard route={payload.route} />
 }
 
 function BeerRoadmapRouteCard({ route }: { route: BeerRoadmapRoute }) {
   const startBarName = route.stops[0].displayName
+  const legs = Array.isArray(route.legs) ? route.legs : []
 
   return (
     <View style={styles.section}>
       <View style={styles.header}>
         <Text style={styles.title}>TONIGHT'S BEER ROUTE</Text>
         <Text style={styles.subtitle} numberOfLines={2}>
-          从「{startBarName}」开始，看看附近两家
+          从「{startBarName}」开始，看看附近
         </Text>
       </View>
 
       <View style={styles.stopStack}>
         {route.stops.map((stop, index) => {
-          const leg = index === 0 ? null : route.legs[index - 1]
+          const leg = index === 0 ? null : legs[index - 1] ?? null
           return (
             <RoadmapStopRow
               key={stop.tenantId}
               stop={stop}
               stopNumber={index + 1}
+              stopCount={route.stops.length}
               leg={leg}
               stops={route.stops}
               isStart={index === 0}
@@ -63,17 +73,20 @@ function BeerRoadmapRouteCard({ route }: { route: BeerRoadmapRoute }) {
 function RoadmapStopRow({
   stop,
   stopNumber,
+  stopCount,
   leg,
   stops,
   isStart,
 }: {
   stop: BeerRoadmapStop
   stopNumber: number
+  stopCount: number
   leg: BeerRoadmapLeg | null
   stops: BeerRoadmapStop[]
   isStart: boolean
 }) {
   const router = useRouter()
+  const hoursLabel = formatRoadmapHoursLabel(stop)
   const navigationUrl =
     Platform.OS === 'ios' && leg ? navigationUrlForLeg(stops, leg) : null
   const showActions = !isStart
@@ -102,11 +115,12 @@ function RoadmapStopRow({
     <View style={styles.stopRow}>
       <View style={styles.stopNumberColumn}>
         <Text style={styles.stopNumber}>{String(stopNumber).padStart(2, '0')}</Text>
-        {stopNumber < 3 ? <View style={styles.stopLine} /> : null}
+        {stopNumber < stopCount ? <View style={styles.stopLine} /> : null}
       </View>
 
       <View style={[styles.stopContent, isStart && styles.startStopContent]}>
         <Text style={styles.stopName}>{stop.displayName}</Text>
+        {hoursLabel ? <Text style={styles.hoursLabel}>{hoursLabel}</Text> : null}
 
         {showActions ? (
           <View style={styles.actionRow}>
@@ -200,6 +214,11 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 19,
     lineHeight: 25,
+  },
+  hoursLabel: {
+    ...typography.caption,
+    color: 'rgba(245,238,225,0.56)',
+    marginTop: spacing.xxs,
   },
   actionRow: {
     flexDirection: 'row',

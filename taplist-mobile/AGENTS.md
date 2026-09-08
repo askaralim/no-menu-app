@@ -158,12 +158,13 @@ Beer Route is allowed when all of the following are true:
 
 - Anchored to the **viewed bar** only — no device GPS, no live location permission, no nearby sorting from phone position
 - No embedded map panel and no map-first UI
-- Editorial three-stop ordering from No Menu database data only (straight-line distance ranking; no AMap/Baidu server routing or route caching)
+- Editorial 2–3 stop ordering from No Menu database data only (straight-line distance ranking; prefer three stops, fall back to two; no AMap/Baidu server routing or route caching)
+- Open-now and today's hours are per-stop status, not a display gate. Taplist freshness for route eligibility is 7 days.
 - Per-leg navigation via **iOS Apple Maps deep links** only (`打开 Apple Maps`); no Android/web navigation handoff in v1
-- Optional module on bar detail and beer detail; silent omit while loading or on any failure
+- Optional module on bar detail and beer detail; silent omit while loading, on any failure, or when fewer than two eligible stops can be chained within 1.5 km
 - Global kill switch defaults off until pilot sign-off, coordinate verification, privacy/legal review, and explicit enablement
 - Consumer-facing copy may call the feature `精酿地图`, but implementation must remain a bar-anchored editorial route module, not a general map feature
-- Public/marketing copy may describe the ranking at a high level: eligible public bars are filtered by route participation, verified coordinates, opening/menu availability, then ordered using No Menu's own position data. Do not claim fastest, nearest, optimal, GPS-based, or provider-calculated routes
+- Public/marketing copy may describe the ranking at a high level: eligible public bars are filtered by route participation, verified coordinates, structured hours, and a taplist updated within 7 days, then ordered using No Menu's own position data. Do not claim fastest, nearest, optimal, GPS-based, or provider-calculated routes
 
 Do not add a general map feature, user-location-based discovery, or route personalization in Beer Route v1.
 

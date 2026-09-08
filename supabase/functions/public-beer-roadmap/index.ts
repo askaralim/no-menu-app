@@ -27,11 +27,16 @@ type BeerRoadmapStop = {
   latitude: number
   longitude: number
   qualifyingNewTapCount: number
+  isOpenNow?: boolean
+  todayOpensAt?: string | null
+  todayClosesAt?: string | null
+  closesNextDay?: boolean
+  opensLaterToday?: boolean
 }
 
 type BeerRoadmapLeg = {
-  fromStopIndex: 0 | 1
-  toStopIndex: 1 | 2
+  fromStopIndex: number
+  toStopIndex: number
 }
 
 type BeerRoadmapSuccess = {
@@ -39,8 +44,8 @@ type BeerRoadmapSuccess = {
   route: {
     routeId: string
     startTenantId: string
-    stops: [BeerRoadmapStop, BeerRoadmapStop, BeerRoadmapStop]
-    legs: [BeerRoadmapLeg, BeerRoadmapLeg]
+    stops: BeerRoadmapStop[]
+    legs: BeerRoadmapLeg[]
     generatedAt: string
   }
 }
@@ -65,20 +70,39 @@ function parseStartTenantId(body: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null
 }
 
+function asOptionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined
+}
+
+function asOptionalTime(value: unknown): string | null | undefined {
+  if (value === null) return null
+  if (typeof value === 'string' && /^\d{1,2}:\d{2}$/.test(value.trim())) return value.trim()
+  return undefined
+}
+
+function asCoordinate(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return null
+}
+
 function toEligibleTenant(raw: unknown): EligibleTenant | null {
   if (!raw || typeof raw !== 'object') return null
   const row = raw as Record<string, unknown>
   const tenantId = row.tenantId
   const tenantSlug = row.tenantSlug
   const displayName = row.displayName
-  const latitude = row.latitude
-  const longitude = row.longitude
+  const latitude = asCoordinate(row.latitude)
+  const longitude = asCoordinate(row.longitude)
   const taplistVerifiedAt = row.taplistVerifiedAt
 
   if (typeof tenantId !== 'string' || !UUID_RE.test(tenantId)) return null
   if (typeof tenantSlug !== 'string' || tenantSlug.length === 0) return null
   if (typeof displayName !== 'string' || displayName.length === 0) return null
-  if (typeof latitude !== 'number' || typeof longitude !== 'number') return null
+  if (latitude === null || longitude === null) return null
   if (typeof taplistVerifiedAt !== 'string') return null
 
   return {
@@ -92,6 +116,11 @@ function toEligibleTenant(raw: unknown): EligibleTenant | null {
     taplistVerifiedAt,
     qualifyingNewTapCount:
       typeof row.qualifyingNewTapCount === 'number' ? row.qualifyingNewTapCount : 0,
+    isOpenNow: asOptionalBoolean(row.isOpenNow),
+    todayOpensAt: asOptionalTime(row.todayOpensAt),
+    todayClosesAt: asOptionalTime(row.todayClosesAt),
+    closesNextDay: asOptionalBoolean(row.closesNextDay),
+    opensLaterToday: asOptionalBoolean(row.opensLaterToday),
   }
 }
 
@@ -105,7 +134,20 @@ function toStop(tenant: EligibleTenant): BeerRoadmapStop {
     latitude: tenant.latitude,
     longitude: tenant.longitude,
     qualifyingNewTapCount: tenant.qualifyingNewTapCount,
+    isOpenNow: tenant.isOpenNow,
+    todayOpensAt: tenant.todayOpensAt,
+    todayClosesAt: tenant.todayClosesAt,
+    closesNextDay: tenant.closesNextDay,
+    opensLaterToday: tenant.opensLaterToday,
   }
+}
+
+function toLegs(stopCount: number): BeerRoadmapLeg[] {
+  const legs: BeerRoadmapLeg[] = []
+  for (let i = 0; i < stopCount - 1; i += 1) {
+    legs.push({ fromStopIndex: i, toStopIndex: i + 1 })
+  }
+  return legs
 }
 
 Deno.serve(async (req) => {
@@ -197,20 +239,16 @@ Deno.serve(async (req) => {
   }
 
   const destinations = eligible.filter((t) => t.tenantId !== startTenantId)
-  if (destinations.length < 2) {
+  if (destinations.length < 1) {
     return jsonResponse({ ok: false, code: 'INSUFFICIENT_CANDIDATES' })
   }
 
   const ranked = rankRoutes(start, destinations)
-  if (!ranked) {
+  if (!ranked || ranked.stops.length < 2) {
     return jsonResponse({ ok: false, code: 'NO_VALID_ROUTE' })
   }
 
-  const stops: [BeerRoadmapStop, BeerRoadmapStop, BeerRoadmapStop] = [
-    toStop(ranked.stops[0]),
-    toStop(ranked.stops[1]),
-    toStop(ranked.stops[2]),
-  ]
+  const stops = ranked.stops.map(toStop)
 
   return jsonResponse({
     ok: true,
@@ -218,10 +256,7 @@ Deno.serve(async (req) => {
       routeId: crypto.randomUUID(),
       startTenantId,
       stops,
-      legs: [
-        { fromStopIndex: 0, toStopIndex: 1 },
-        { fromStopIndex: 1, toStopIndex: 2 },
-      ],
+      legs: toLegs(stops.length),
       generatedAt: new Date().toISOString(),
     },
   })

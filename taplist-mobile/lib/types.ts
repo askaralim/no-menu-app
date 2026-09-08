@@ -267,18 +267,23 @@ export type BeerRoadmapStop = {
   latitude: number
   longitude: number
   qualifyingNewTapCount: number
+  isOpenNow?: boolean
+  todayOpensAt?: string | null
+  todayClosesAt?: string | null
+  closesNextDay?: boolean
+  opensLaterToday?: boolean
 }
 
 export type BeerRoadmapLeg = {
-  fromStopIndex: 0 | 1
-  toStopIndex: 1 | 2
+  fromStopIndex: number
+  toStopIndex: number
 }
 
 export type BeerRoadmapRoute = {
   routeId: string
   startTenantId: string
-  stops: [BeerRoadmapStop, BeerRoadmapStop, BeerRoadmapStop]
-  legs: [BeerRoadmapLeg, BeerRoadmapLeg]
+  stops: BeerRoadmapStop[]
+  legs: BeerRoadmapLeg[]
   generatedAt: string
 }
 

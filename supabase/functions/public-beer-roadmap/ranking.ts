@@ -10,10 +10,15 @@ export type EligibleTenant = {
   longitude: number
   taplistVerifiedAt: string
   qualifyingNewTapCount: number
+  isOpenNow?: boolean
+  todayOpensAt?: string | null
+  todayClosesAt?: string | null
+  closesNextDay?: boolean
+  opensLaterToday?: boolean
 }
 
 export type RankedRoute = {
-  stops: [EligibleTenant, EligibleTenant, EligibleTenant]
+  stops: EligibleTenant[]
   totalDistanceM: number
 }
 
@@ -40,14 +45,14 @@ function distanceBetween(a: EligibleTenant, b: EligibleTenant): number {
   return haversineDistanceM(a.latitude, a.longitude, b.latitude, b.longitude)
 }
 
-function destinationNewTapScore(stop: EligibleTenant): number {
+function destinationNewTapScore(stop: EligibleTenant | undefined): number {
+  if (!stop) return 0
   return stop.qualifyingNewTapCount > 0 ? 1 : 0
 }
 
-function routeFreshnessMs(stopB: EligibleTenant, stopC: EligibleTenant): number {
-  const bMs = Date.parse(stopB.taplistVerifiedAt)
-  const cMs = Date.parse(stopC.taplistVerifiedAt)
-  return Math.min(bMs, cMs)
+function routeFreshnessMs(destinations: EligibleTenant[]): number {
+  const times = destinations.map((stop) => Date.parse(stop.taplistVerifiedAt))
+  return Math.min(...times)
 }
 
 function compareRoutes(a: RankedRoute, b: RankedRoute): number {
@@ -55,34 +60,30 @@ function compareRoutes(a: RankedRoute, b: RankedRoute): number {
     return a.totalDistanceM - b.totalDistanceM
   }
 
-  const aNewTapDestCount =
-    destinationNewTapScore(a.stops[1]) + destinationNewTapScore(a.stops[2])
-  const bNewTapDestCount =
-    destinationNewTapScore(b.stops[1]) + destinationNewTapScore(b.stops[2])
+  const aDestinations = a.stops.slice(1)
+  const bDestinations = b.stops.slice(1)
+  const aNewTapDestCount = aDestinations.reduce((sum, stop) => sum + destinationNewTapScore(stop), 0)
+  const bNewTapDestCount = bDestinations.reduce((sum, stop) => sum + destinationNewTapScore(stop), 0)
   if (aNewTapDestCount !== bNewTapDestCount) {
     return bNewTapDestCount - aNewTapDestCount
   }
 
-  const aFreshness = routeFreshnessMs(a.stops[1], a.stops[2])
-  const bFreshness = routeFreshnessMs(b.stops[1], b.stops[2])
+  const aFreshness = routeFreshnessMs(aDestinations)
+  const bFreshness = routeFreshnessMs(bDestinations)
   if (aFreshness !== bFreshness) {
     return bFreshness - aFreshness
   }
 
-  const aB = a.stops[1].tenantId
-  const aC = a.stops[2].tenantId
-  const bB = b.stops[1].tenantId
-  const bC = b.stops[2].tenantId
-  if (aB !== bB) return aB < bB ? -1 : 1
-  if (aC !== bC) return aC < bC ? -1 : 1
-  return 0
+  const aIds = aDestinations.map((stop) => stop.tenantId).join(':')
+  const bIds = bDestinations.map((stop) => stop.tenantId).join(':')
+  if (aIds === bIds) return 0
+  return aIds < bIds ? -1 : 1
 }
 
-export function rankRoutes(
+function rankThreeStopRoutes(
   start: EligibleTenant,
-  destinations: EligibleTenant[],
+  candidates: EligibleTenant[],
 ): RankedRoute | null {
-  const candidates = destinations.filter((d) => d.tenantId !== start.tenantId)
   if (candidates.length < 2) return null
 
   const valid: RankedRoute[] = []
@@ -104,7 +105,36 @@ export function rankRoutes(
   }
 
   if (valid.length === 0) return null
-
   valid.sort(compareRoutes)
   return valid[0] ?? null
+}
+
+function rankTwoStopRoute(
+  start: EligibleTenant,
+  candidates: EligibleTenant[],
+): RankedRoute | null {
+  const valid: RankedRoute[] = []
+
+  for (const stopB of candidates) {
+    const leg1 = distanceBetween(start, stopB)
+    if (leg1 > LEG_MAX_DISTANCE_M) continue
+    valid.push({
+      stops: [start, stopB],
+      totalDistanceM: leg1,
+    })
+  }
+
+  if (valid.length === 0) return null
+  valid.sort(compareRoutes)
+  return valid[0] ?? null
+}
+
+export function rankRoutes(
+  start: EligibleTenant,
+  destinations: EligibleTenant[],
+): RankedRoute | null {
+  const candidates = destinations.filter((d) => d.tenantId !== start.tenantId)
+  if (candidates.length < 1) return null
+
+  return rankThreeStopRoutes(start, candidates) ?? rankTwoStopRoute(start, candidates)
 }
