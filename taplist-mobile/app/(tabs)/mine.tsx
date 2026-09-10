@@ -242,7 +242,11 @@ function DrinkGridItem({ item }: { item: MyDrinkHistoryRow }) {
       <Link href={href} asChild>
         <Pressable style={({ pressed }) => [styles.gridPressable, pressed && styles.pressed]}>
           <View style={styles.artSlot}>
-            <CachedImage source={item.image_url || defaultBeerArtwork} style={styles.art} />
+            <CachedImage
+              source={item.image_url || defaultBeerArtwork}
+              ossStyle="nm-card"
+              style={styles.art}
+            />
           </View>
           <Text numberOfLines={2} style={styles.drinkName}>{item.name}</Text>
           <Text numberOfLines={1} style={styles.drinkMeta}>{item.brewery || item.beer_style || '精酿啤酒'}</Text>

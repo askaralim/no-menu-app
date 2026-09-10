@@ -26,6 +26,8 @@ The service accepts JPEG, PNG, and WebP paths under `prod/tenants/{tenantId}/cov
 
 `POST /api/media/promote-product-image` is restricted to platform super admins. It copies a merchant drink image from OSS, or imports a legacy image from this project's public Supabase Storage, into `prod/products/{productId}/{uploadId}.{ext}` and updates `drink_products.image_url` through the authenticated `admin_set_drink_product_image` RPC.
 
+`POST /api/media/promote-tenant-cover` is also restricted to platform super admins. It imports a legacy Supabase Storage cover into `prod/tenants/{tenantId}/covers/{uploadId}.{ext}` and updates `tenants.cover_image_url` through `admin_set_tenant_cover_image`.
+
 ```json
 {
   "productId": "product UUID",

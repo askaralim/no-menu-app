@@ -52,7 +52,7 @@ test('rejects when neither membership nor the authorization helper allows access
   await assert.rejects(() => authorize('token', tenantId), /没有该门店/)
 })
 
-test('authorizes a product admin and persists the canonical product image URL', async () => {
+test('authorizes a product admin and persists canonical product and tenant images', async () => {
   const calls = []
   const productService = createSupabaseProductService(config, async (url, options = {}) => {
     calls.push([url, options])
@@ -63,7 +63,10 @@ test('authorizes a product admin and persists the canonical product image URL', 
 
   await productService.authorizeAdmin('token')
   await productService.setProductImage('token', tenantId, imageUrl)
+  const coverUrl = `https://img.nomenuapp.com/prod/tenants/${tenantId}/covers/upload.jpg`
+  await productService.setTenantCover('token', tenantId, coverUrl)
 
-  assert.equal(calls.length, 2)
+  assert.equal(calls.length, 3)
   assert.equal(calls[1][1].body, JSON.stringify({ p_product_id: tenantId, p_image_url: imageUrl }))
+  assert.equal(calls[2][1].body, JSON.stringify({ p_tenant_id: tenantId, p_image_url: coverUrl }))
 })

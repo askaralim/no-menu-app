@@ -47,6 +47,7 @@ const CANONICAL_TENANT_DRINK = new RegExp(
   'i',
 )
 const LEGACY_TENANT_DRINK = new RegExp(`^${UUID}/drinks/${UUID}/${SAFE_FILE}$`, 'i')
+const LEGACY_TENANT_COVER = new RegExp(`^${UUID}/cover/${SAFE_FILE}$`, 'i')
 
 function ossClient(config, temporary) {
   return new OSS({
@@ -140,5 +141,45 @@ export function createProductImagePromoter(config, fetchImpl = fetch) {
       objectPath,
       cdnUrl: `${config.ossCdnBaseUrl}/${objectPath}`,
     }
+  }
+}
+
+export function createTenantCoverPromoter(config, fetchImpl = fetch) {
+  const credential = new Credential({
+    type: 'ecs_ram_role',
+    roleName: config.ossRamRoleName,
+    disableIMDSv1: true,
+  })
+  const supabaseHost = new URL(config.supabaseUrl).hostname
+
+  return async function promoteTenantCover({ tenantId, sourceImageUrl }) {
+    let sourceUrl
+    try {
+      sourceUrl = new URL(sourceImageUrl)
+    } catch {
+      throw new RequestError(400, 'invalid_source_image', '图片地址无效')
+    }
+    if (
+      sourceUrl.hostname !== supabaseHost
+      || !sourceUrl.pathname.startsWith('/storage/v1/object/public/taplist-media/')
+    ) {
+      throw new RequestError(400, 'invalid_source_image', '只能迁移 Supabase 店铺封面')
+    }
+    const sourceKey = decodeURIComponent(
+      sourceUrl.pathname.slice('/storage/v1/object/public/taplist-media/'.length),
+    )
+    if (!LEGACY_TENANT_COVER.test(sourceKey) || !sourceKey.toLowerCase().startsWith(`${tenantId}/`)) {
+      throw new RequestError(400, 'invalid_source_image', '店铺封面路径无效')
+    }
+    const response = await fetchImpl(sourceUrl, { redirect: 'error', signal: AbortSignal.timeout(15_000) })
+    if (!response.ok) throw new RequestError(400, 'source_image_unavailable', '无法读取原店铺封面')
+    const image = validatedImage(response.headers.get('content-type'), response.headers.get('content-length'))
+    const body = Buffer.from(await response.arrayBuffer())
+    if (body.length > MAX_IMAGE_BYTES) throw new RequestError(400, 'invalid_source_image', '店铺封面不能超过 2MB')
+
+    const objectPath = `prod/tenants/${tenantId}/covers/${randomUUID()}.${image.extension}`
+    const temporary = await credential.getCredential()
+    await ossClient(config, temporary).put(objectPath, body, { headers: { 'Content-Type': image.mime } })
+    return { objectPath, cdnUrl: `${config.ossCdnBaseUrl}/${objectPath}` }
   }
 }

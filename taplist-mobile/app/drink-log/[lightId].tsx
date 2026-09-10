@@ -76,7 +76,11 @@ export default function DrinkLogDetailScreen() {
         ) : (
           <>
             <View style={styles.heroSection}>
-              <CachedImage source={item.image_url || defaultBeerArtwork} style={styles.hero} />
+              <CachedImage
+                source={item.image_url || defaultBeerArtwork}
+                ossStyle="nm-detail"
+                style={styles.hero}
+              />
               <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72} style={styles.identityLine}>
                 {item.brewery ? <Text style={styles.identityBrewery}>{item.brewery} · </Text> : null}
                 <Text style={styles.identityName}>{item.name}</Text>

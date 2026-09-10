@@ -49,6 +49,8 @@ export function createMediaUploadServer({
   authorizeProductAdmin,
   promoteProductImage,
   setProductImage,
+  promoteTenantCover,
+  setTenantCover,
   logger = console,
 }) {
   return createServer(async (request, response) => {
@@ -60,7 +62,8 @@ export function createMediaUploadServer({
 
     const isUploadUrl = url.pathname === '/api/media/upload-url'
     const isProductPromotion = url.pathname === '/api/media/promote-product-image'
-    if (!isUploadUrl && !isProductPromotion) {
+    const isTenantCoverPromotion = url.pathname === '/api/media/promote-tenant-cover'
+    if (!isUploadUrl && !isProductPromotion && !isTenantCoverPromotion) {
       return json(response, 404, { error: 'not_found', message: '接口不存在' })
     }
 
@@ -91,6 +94,18 @@ export function createMediaUploadServer({
         await authorizeProductAdmin(accessToken)
         const promoted = await promoteProductImage({ productId, sourceImageUrl })
         await setProductImage(accessToken, productId, promoted.cdnUrl)
+        return json(response, 200, promoted, cors)
+      }
+      if (isTenantCoverPromotion) {
+        const body = await readJson(request)
+        const tenantId = typeof body?.tenantId === 'string' ? body.tenantId.trim().toLowerCase() : ''
+        const sourceImageUrl = typeof body?.sourceImageUrl === 'string' ? body.sourceImageUrl.trim() : ''
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(tenantId) || !sourceImageUrl) {
+          throw new RequestError(400, 'invalid_request', '店铺或封面地址无效')
+        }
+        await authorizeProductAdmin(accessToken)
+        const promoted = await promoteTenantCover({ tenantId, sourceImageUrl })
+        await setTenantCover(accessToken, tenantId, promoted.cdnUrl)
         return json(response, 200, promoted, cors)
       }
       const upload = validateUploadRequest(await readJson(request))

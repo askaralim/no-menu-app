@@ -110,5 +110,18 @@ export function createSupabaseProductService(config, fetchImpl = fetch) {
         throw new RequestError(400, 'product_image_update_failed', error?.message || '无法更新商品池图片')
       }
     },
+
+    async setTenantCover(accessToken, tenantId, imageUrl) {
+      const response = await fetchImpl(`${config.supabaseUrl}/rest/v1/rpc/admin_set_tenant_cover_image`, {
+        method: 'POST',
+        headers: headersFor(accessToken),
+        body: JSON.stringify({ p_tenant_id: tenantId, p_image_url: imageUrl }),
+        signal: AbortSignal.timeout(8_000),
+      })
+      if (!response.ok) {
+        const error = await parseJson(response)
+        throw new RequestError(400, 'tenant_cover_update_failed', error?.message || '无法更新店铺封面')
+      }
+    },
   }
 }

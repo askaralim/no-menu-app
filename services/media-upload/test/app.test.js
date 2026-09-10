@@ -112,3 +112,34 @@ test('promotes a product image after admin authorization and persists its CDN UR
     assert.equal(calls[2][2], tenantId)
   })
 })
+
+test('promotes a tenant cover after admin authorization and persists its CDN URL', async () => {
+  const calls = []
+  await withServer({
+    authorizeTenant: async () => {},
+    signPutUrl: async () => 'unused',
+    authorizeProductAdmin: async (token) => { calls.push(['authorize', token]) },
+    promoteTenantCover: async (input) => {
+      calls.push(['promote', input])
+      return {
+        objectPath: `prod/tenants/${tenantId}/covers/upload.jpg`,
+        cdnUrl: `https://img.nomenuapp.com/prod/tenants/${tenantId}/covers/upload.jpg`,
+      }
+    },
+    setTenantCover: async (...args) => { calls.push(['persist', ...args]) },
+  }, async (baseUrl) => {
+    const sourceImageUrl = `https://project.supabase.co/storage/v1/object/public/taplist-media/${tenantId}/cover/source.jpg`
+    const response = await fetch(`${baseUrl}/api/media/promote-tenant-cover`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer access-token',
+        'Content-Type': 'application/json',
+        Origin: 'https://nomenuapp.com',
+      },
+      body: JSON.stringify({ tenantId, sourceImageUrl }),
+    })
+    assert.equal(response.status, 200)
+    assert.deepEqual(calls.map((call) => call[0]), ['authorize', 'promote', 'persist'])
+    assert.equal(calls[2][2], tenantId)
+  })
+})

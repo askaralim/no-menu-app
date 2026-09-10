@@ -42,6 +42,7 @@ export const ShareableDrinkLogImage = forwardRef<
             <View key={drink.light_id} style={[styles.item, { width: itemWidth }]}>
               <CachedImage
                 source={drink.image_url || defaultBeerArtwork}
+                ossStyle="nm-card"
                 style={[styles.art, { width: artSize, height: artSize }]}
               />
               <Text numberOfLines={1} style={styles.name}>

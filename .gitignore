@@ -72,6 +72,9 @@ Desktop.ini
 # Supabase CLI cache
 supabase/.temp/
 
+# Local recoverable media migration state (may contain production object URLs)
+.nomenu-*-migration-*.state.json
+
 # Cloudflare Pages
 .cfpages/
 
@@ -107,4 +110,3 @@ supabase/.temp/
 # Use /docs so mobile/docs/ (ASC listed v1) is not ignored.
 /docs/*
 !/docs/INDEX.md
-

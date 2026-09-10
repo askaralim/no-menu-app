@@ -29,6 +29,7 @@ function parseArgs(argv) {
     else if (value === '--project-ref') args.projectRef = argv[++index]
     else if (value === '--media-api') args.mediaApi = argv[++index]
     else if (value === '--state-file') args.stateFile = argv[++index]
+    else if (value === '--save-plan') args.savePlan = argv[++index]
     else if (value === '--help' || value === '-h') args.help = true
     else throw new Error(`Unknown argument: ${value}`)
   }
@@ -39,6 +40,10 @@ function usage() {
   return `Usage:
   node supabase/tools/migrate-product-images-to-oss.mjs --tenant-id <uuid> [--limit 10]
   node supabase/tools/migrate-product-images-to-oss.mjs --global [--limit 25]
+
+Lock a reviewed dry-run plan for a later apply:
+  node supabase/tools/migrate-product-images-to-oss.mjs \
+    --global --limit 50 --save-plan <path>
 
 Dry-run is the default and never writes to Supabase or OSS.
 
@@ -59,8 +64,11 @@ function requireValidArgs(args) {
     throw new Error('Choose exactly one scope: --global or --tenant-id <uuid>')
   }
   if (args.tenantId && !UUID_PATTERN.test(args.tenantId)) throw new Error('--tenant-id must be a UUID')
-  if (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 100) {
-    throw new Error('--limit must be an integer from 1 to 100')
+  if (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 400) {
+    throw new Error('--limit must be an integer from 1 to 400')
+  }
+  if (args.apply && args.savePlan) {
+    throw new Error('--save-plan is only valid for a dry-run')
   }
   if (args.apply) {
     if (args.global && args.confirmGlobal !== 'MIGRATE-PRODUCT-IMAGES') {
@@ -165,6 +173,17 @@ export function selectGlobalCandidates({ drinks, products, projectRef, limit }) 
     .slice(0, limit)
 }
 
+export function annotatePublicVisibility(candidates, publicDrinkIds, tenants) {
+  const tenantById = new Map(tenants.map((tenant) => [tenant.id, tenant]))
+  return candidates.map((candidate) => {
+    const matchingUsages = candidate.matchingUsages || candidate.matchingTenantUsages
+    const publicMatchingUsages = matchingUsages
+      .filter((drink) => publicDrinkIds.has(drink.id))
+      .map((drink) => ({ ...drink, tenant: tenantById.get(drink.tenant_id) || null }))
+    return { ...candidate, publicMatchingUsages }
+  })
+}
+
 function isProductOssUrl(url, productId) {
   try {
     const parsed = new URL(url)
@@ -215,6 +234,51 @@ async function restAll(baseUrl, key, path) {
     rows.push(...page)
     if (page.length < pageSize) return rows
   }
+}
+
+async function mapWithConcurrency(values, concurrency, task) {
+  const results = new Array(values.length)
+  let nextIndex = 0
+  async function worker() {
+    while (nextIndex < values.length) {
+      const index = nextIndex
+      nextIndex += 1
+      results[index] = await task(values[index], index)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, values.length) }, worker))
+  return results
+}
+
+async function annotatePlanPublicVisibility(baseUrl, key, candidates) {
+  const matchingUsages = candidates.flatMap(
+    (candidate) => candidate.matchingUsages || candidate.matchingTenantUsages,
+  )
+  const tenantIds = [...new Set(matchingUsages.map((drink) => drink.tenant_id))]
+  if (tenantIds.length === 0) return annotatePublicVisibility(candidates, new Set(), [])
+
+  const tenantFilter = encodeURIComponent(`(${tenantIds.join(',')})`)
+  const tenants = await restJson(
+    baseUrl,
+    key,
+    `/tenants?select=id,name,display_name,slug,status,is_public_visible&id=in.${tenantFilter}`,
+  )
+  const payloads = await mapWithConcurrency(tenantIds, 6, (tenantId) => restJson(
+    baseUrl,
+    key,
+    '/rpc/get_public_taplist_drinks',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_tenant_id: tenantId }),
+    },
+  ))
+  const publicDrinkIds = new Set(payloads.flatMap((payload) => [
+    ...(payload?.drinks || []),
+    ...(payload?.coming_soon || []),
+    ...(payload?.recently_sold_out || []),
+  ]).map((drink) => drink.id))
+  return annotatePublicVisibility(candidates, publicDrinkIds, tenants)
 }
 
 async function inspectSource(url) {
@@ -270,7 +334,13 @@ async function loadGlobalPlan({ projectRef, limit, key }) {
   for (const candidate of candidates) {
     inspected.push({ ...candidate, source: await inspectSource(candidate.product.image_url) })
   }
-  return { candidates: inspected, productCount: products.length, drinkCount: drinks.length }
+  return {
+    candidates: await annotatePlanPublicVisibility(baseUrl, key, inspected),
+    productCount: products.length,
+    drinkCount: drinks.length,
+    remainingCandidateCount: products.filter((product) =>
+      isSupabaseDrinkImage(product.image_url, projectRef)).length,
+  }
 }
 
 async function promote(mediaApi, accessToken, product) {
@@ -402,6 +472,7 @@ async function main() {
     if (args.global) {
       console.log(`${args.apply ? 'APPLY' : 'DRY-RUN'} scope: global product pool`)
       console.log(`Scanned products: ${plan.productCount}; linked drinks: ${plan.drinkCount}`)
+      console.log(`Remaining eligible product images: ${plan.remainingCandidateCount}`)
     } else {
       console.log(`${args.apply ? 'APPLY' : 'DRY-RUN'} tenant: ${plan.tenant.display_name || plan.tenant.name} (${plan.tenant.id})`)
     }
@@ -415,6 +486,11 @@ async function main() {
     )
     console.log(`Drink URLs to sync: ${matchingUsages.length}`)
     console.log(`Affected tenants: ${new Set(matchingUsages.map((drink) => drink.tenant_id)).size}`)
+    const publicMatchingUsages = plan.candidates.flatMap(
+      (candidate) => candidate.publicMatchingUsages || [],
+    )
+    console.log(`Currently visible Taplist drinks: ${publicMatchingUsages.length}`)
+    console.log(`Non-public matching drinks: ${matchingUsages.length - publicMatchingUsages.length}`)
     console.log(`Products without matching drink URLs: ${plan.candidates.filter((candidate) =>
       (candidate.matchingUsages || candidate.matchingTenantUsages).length === 0).length}`)
   }
@@ -426,11 +502,29 @@ async function main() {
     const matchingUsages = candidate.matchingUsages || candidate.matchingTenantUsages
     console.log(`   matching drinks: ${matchingUsages.map((drink) => drink.id).join(', ') || 'none'}`)
     console.log(`   affected tenants: ${new Set(matchingUsages.map((drink) => drink.tenant_id)).size}`)
+    const publicLabels = (candidate.publicMatchingUsages || []).map((drink) => {
+      const tenantName = drink.tenant?.display_name || drink.tenant?.name || drink.tenant_id
+      const tenantSlug = drink.tenant?.slug ? ` (${drink.tenant.slug})` : ''
+      return `${tenantName}${tenantSlug}: ${drink.name}`
+    })
+    console.log(`   public Taplist matches: ${publicLabels.join('; ') || 'none'}`)
   }
 
   const invalid = (plan?.candidates || []).filter((candidate) => !candidate.source.ok)
   if (invalid.length) throw new Error(`${invalid.length} candidate source image(s) failed validation`)
   if (!args.apply) {
+    if (args.savePlan) {
+      const planFile = resolve(args.savePlan)
+      if (await readState(planFile)) throw new Error(`Plan file already exists: ${planFile}`)
+      await writeState(planFile, stateFromPlan({
+        projectRef,
+        mediaApi,
+        scope,
+        tenantId: args.tenantId,
+        candidates: plan.candidates,
+      }))
+      console.log(`\nLocked migration plan: ${planFile}`)
+    }
     console.log('\nDRY-RUN complete. No Supabase or OSS writes were made.')
     return
   }

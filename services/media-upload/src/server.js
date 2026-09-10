@@ -1,6 +1,6 @@
 import { createMediaUploadServer } from './app.js'
 import { loadConfig } from './config.js'
-import { createOssSigner, createProductImagePromoter } from './oss-signer.js'
+import { createOssSigner, createProductImagePromoter, createTenantCoverPromoter } from './oss-signer.js'
 import { createSupabaseAuthorizer, createSupabaseProductService } from './supabase-auth.js'
 
 const config = loadConfig()
@@ -12,6 +12,8 @@ const server = createMediaUploadServer({
   authorizeProductAdmin: productService.authorizeAdmin,
   promoteProductImage: createProductImagePromoter(config),
   setProductImage: productService.setProductImage,
+  promoteTenantCover: createTenantCoverPromoter(config),
+  setTenantCover: productService.setTenantCover,
 })
 
 server.listen(config.port, '127.0.0.1', () => {

@@ -33,7 +33,11 @@ export const ShareableDrinkHistoryImage = forwardRef<
         </View>
 
         <View style={styles.artFrame}>
-          <CachedImage source={item.image_url || defaultBeerArtwork} style={styles.art} />
+          <CachedImage
+            source={item.image_url || defaultBeerArtwork}
+            ossStyle="nm-detail"
+            style={styles.art}
+          />
         </View>
 
         <View style={styles.copy}>

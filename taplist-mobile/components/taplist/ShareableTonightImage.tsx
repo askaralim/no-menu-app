@@ -38,7 +38,11 @@ export const ShareableTonightImage = forwardRef<
           {drinks.map((drink) => (
             <View key={drink.light_id} style={[styles.item, { width: itemWidth }]}>
               <View style={[styles.artSlot, { width: artSize, height: artSize }]}>
-                <CachedImage source={drink.image_url || defaultBeerArtwork} style={styles.art} />
+                <CachedImage
+                  source={drink.image_url || defaultBeerArtwork}
+                  ossStyle="nm-card"
+                  style={styles.art}
+                />
               </View>
               <Text numberOfLines={1} style={styles.name}>
                 {[drink.brewery, drink.name].filter(Boolean).join(' · ')}

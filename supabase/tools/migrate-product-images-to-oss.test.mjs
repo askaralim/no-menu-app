@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  annotatePublicVisibility,
   resumeAction,
   selectCandidates,
   selectGlobalCandidates,
@@ -78,6 +79,25 @@ test('global selection skips external and already migrated product images', () =
     },
   ]
   assert.deepEqual(selectGlobalCandidates({ drinks: [], products, projectRef, limit: 25 }), [])
+})
+
+test('annotates only drinks actually returned by the public Taplist RPC', () => {
+  const candidates = [{
+    product: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', image_url: sourceUrl },
+    matchingUsages: [
+      { id: 'visible', tenant_id: tenantId, name: '公开酒款' },
+      { id: 'hidden', tenant_id: tenantId, name: '隐藏酒款' },
+    ],
+  }]
+  const tenants = [{ id: tenantId, display_name: '测试门店', slug: 'test-bar' }]
+  const annotated = annotatePublicVisibility(candidates, new Set(['visible']), tenants)
+
+  assert.deepEqual(annotated[0].publicMatchingUsages, [{
+    id: 'visible',
+    tenant_id: tenantId,
+    name: '公开酒款',
+    tenant: tenants[0],
+  }])
 })
 
 test('resumes drink synchronization after promotion was recorded', () => {
