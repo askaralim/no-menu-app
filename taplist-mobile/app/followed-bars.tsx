@@ -112,6 +112,10 @@ export default function FollowedBarsScreen() {
               const busy = busyState?.tenantId === bar.tenant_id
               const updatingNotification = busy && busyState.action === 'notification'
               const removingFollow = busy && busyState.action === 'unfollow'
+              const locationLabel = bar.tenant_district?.trim()
+                || bar.tenant_city_label?.trim()
+                || bar.tenant_city?.trim()
+                || '地区未标注'
               return (
                 <View key={bar.tenant_id} style={[styles.row, removingFollow && styles.rowBusy]}>
                   <Pressable
@@ -124,7 +128,7 @@ export default function FollowedBarsScreen() {
                     <View style={styles.copy}>
                       <Text style={styles.barName} numberOfLines={1}>{bar.tenant_display_name}</Text>
                       <Text style={styles.meta} numberOfLines={1}>
-                      {bar.tenant_district || '上海'} · {bar.notify_new_taps ? '通知已开启' : '通知已关闭'}
+                      {locationLabel} · {bar.notify_new_taps ? '通知已开启' : '通知已关闭'}
                       </Text>
                     </View>
                   </Pressable>

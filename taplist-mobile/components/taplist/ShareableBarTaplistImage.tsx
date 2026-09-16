@@ -73,7 +73,9 @@ function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boo
     drink.brand_name,
   )
   const abv = typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null
-  const priceLine = servingOptions.map(servingOptionLine).filter(Boolean).join(' / ')
+  const priceLines = servingOptions
+    .map((option) => ({ id: option.id, line: servingOptionLine(option) }))
+    .filter((item): item is { id: string; line: string } => Boolean(item.line))
   const tapNumber = drink.public_sort_order > 0 ? drink.public_sort_order : null
 
   return (
@@ -105,7 +107,7 @@ function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boo
               ) : null}
             </View>
           </View>
-          {beerStyle || brewery || abv || priceLine ? (
+          {beerStyle || brewery || abv || priceLines.length > 0 ? (
             <View style={styles.beerCopy}>
               {beerStyle ? (
                 <Text style={styles.beerStyle} numberOfLines={1} ellipsizeMode="tail">
@@ -118,7 +120,11 @@ function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boo
                 </Text>
               ) : null}
               {abv ? <Text style={styles.beerStats}>{abv}</Text> : null}
-              {priceLine ? <Text style={styles.price}>{priceLine}</Text> : null}
+              {priceLines.map((item) => (
+                <Text key={item.id} style={styles.price} numberOfLines={1} ellipsizeMode="tail">
+                  {item.line}
+                </Text>
+              ))}
             </View>
           ) : null}
         </View>

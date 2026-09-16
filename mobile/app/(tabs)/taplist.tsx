@@ -456,6 +456,13 @@ export default function TaplistScreen() {
     setEditorTapNumber(null)
   }
 
+  const replaceEditingDrink = () => {
+    const tapNumber = editing?.public_sort_order
+    if (!tapNumber) return
+    closeEditor()
+    openTapPicker(tapNumber)
+  }
+
   const handlePickLocalDrink = (drink: DraftDrink) => {
     setCreating(false)
     setEditing(drink)
@@ -762,6 +769,7 @@ export default function TaplistScreen() {
         suggestedTapNumber={editorTapNumber}
         catalogDrinks={draft.drinks}
         onPickLocalDrink={handlePickLocalDrink}
+        onReplaceDrink={!creating && editing?.public_sort_order ? replaceEditingDrink : undefined}
         onClose={closeEditor}
         onSaved={handleEditorSaved}
       />

@@ -76,3 +76,44 @@ Focused inspection was performed on the activity banner, `最近上新` heading,
 - Confirmed the activity card remained navigable and both screens rendered without layout overflow.
 
 final result: passed
+
+---
+
+# City picker hierarchy QA
+
+- Source visual truth: `/Users/askar/.codex/generated_images/01a0a3cd-8872-73a2-8b24-96d2d81e4426/exec-c8a35d4b-d982-4de8-8b5a-28ae441241ed.png`
+- Implementation screenshot: unavailable
+- Intended viewport/state: iOS portrait, city picker open, Shanghai selected
+- Source dimensions: 853 × 1844 px
+- Implementation dimensions / CSS size / density normalization: unavailable
+
+## Full-view comparison evidence
+
+Blocked. The exported web app builds successfully, but the configured Supabase endpoint is not reachable from the local browser preview. The city catalog therefore falls back to Shanghai only, which intentionally disables the city-picker trigger; a truthful rendered picker screenshot cannot be captured from the real catalog in this environment.
+
+## Focused region comparison evidence
+
+Blocked for the same reason. No visual conclusion was inferred from code alone.
+
+## Findings
+
+- The source establishes the requested hierarchy: municipalities and province headings share the top level; province cities are slightly indented; no alphabet index is displayed.
+- The implementation uses a fixed 560-point panel with a 72% small-screen cap, a non-scrolling header, and an independently scrolling list body.
+- Counts share the city row and align to the right; selection is represented with the existing amber text/check treatment.
+- Pinyin collation was checked separately for the current catalog order, but fonts, exact spacing, divider contrast, and scroll feel still require a same-state iOS screenshot comparison.
+
+## Comparison history
+
+- The prior city-only list was replaced with province grouping and municipality top-level rows.
+- The first implementation used a viewport-relative panel height; it was tightened to a fixed 560-point height with a small-screen cap after code review.
+- No valid rendered comparison iteration was possible because the real city catalog could not load locally.
+
+## Implementation checklist
+
+1. Open a production-data iOS development or TestFlight build.
+2. Confirm the visible order is 北京 → 吉林/长春 → 辽宁/沈阳 → 山东/滨州/青岛 → 上海 → 天津 for the current catalog.
+3. Confirm the title and close action stay fixed while only the list body scrolls.
+4. Confirm Shanghai remains selected by default for a fresh install, and an existing persisted city remains respected.
+5. Capture the modal and compare it with the source at a normalized portrait size.
+
+final result: blocked

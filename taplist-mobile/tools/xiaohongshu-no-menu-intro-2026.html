@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>No Menu · 2026 产品介绍</title>
+  <style>
+    @font-face {
+      font-family: "Bebas Neue Local";
+      src: url("../node_modules/@expo-google-fonts/bebas-neue/400Regular/BebasNeue_400Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    :root {
+      --black: #070806;
+      --panel: #11120f;
+      --paper: #f0ede6;
+      --muted: #aaa294;
+      --faint: #716b61;
+      --gold: #dda23d;
+      --soft-gold: #c9aa70;
+      --line: #3a3022;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      background: #171814;
+      color: var(--paper);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
+    }
+    h1, h2, p { margin: 0; }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 20px;
+      background: #10110f;
+      border-bottom: 1px solid #302a22;
+    }
+    .toolbar button {
+      padding: 9px 16px;
+      color: var(--paper);
+      background: #211c15;
+      border: 1px solid #6d542f;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .toolbar span { color: #8f887b; font-size: 13px; }
+
+    #slides {
+      display: grid;
+      justify-content: center;
+      gap: 30px;
+      padding: 30px;
+    }
+
+    .slide {
+      position: relative;
+      width: 1080px;
+      height: 1440px;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 86% 4%, rgba(92, 67, 28, .18), transparent 27%),
+        var(--black);
+      border: 1px solid #29231b;
+    }
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      pointer-events: none;
+      opacity: .13;
+      background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 100% 5px;
+      mix-blend-mode: screen;
+    }
+    .frame {
+      position: absolute;
+      inset: 40px;
+      z-index: 28;
+      pointer-events: none;
+      border: 1px solid rgba(221, 162, 61, .27);
+    }
+    .brand {
+      position: absolute;
+      left: 72px;
+      top: 66px;
+      z-index: 20;
+      color: var(--soft-gold);
+      font: 700 29px/1 "Bebas Neue Local", "Arial Narrow", sans-serif;
+      letter-spacing: 5px;
+    }
+    .section-mark {
+      color: var(--soft-gold);
+      font: 400 24px/1 "Bebas Neue Local", "Arial Narrow", sans-serif;
+      letter-spacing: 4px;
+    }
+    .gold { color: var(--gold); }
+
+    .screen {
+      position: absolute;
+      overflow: hidden;
+      background: #090a08;
+      border: 1px solid rgba(201, 170, 112, .36);
+      border-radius: 28px;
+      box-shadow: 0 34px 90px rgba(0, 0, 0, .62);
+    }
+    .screen img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+    }
+
+    /* 01 · 定位 */
+    .intro .orbit {
+      position: absolute;
+      z-index: 0;
+      right: -360px;
+      top: -470px;
+      width: 1050px;
+      height: 1050px;
+      border: 1px solid rgba(201, 170, 112, .18);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 82px rgba(0,0,0,0),
+        0 0 0 83px rgba(201,170,112,.13),
+        0 0 0 172px rgba(0,0,0,0),
+        0 0 0 173px rgba(201,170,112,.1),
+        0 0 0 266px rgba(0,0,0,0),
+        0 0 0 267px rgba(201,170,112,.08);
+    }
+    .intro .copy {
+      position: absolute;
+      left: 72px;
+      top: 160px;
+      z-index: 18;
+      width: 860px;
+    }
+    .intro h1 {
+      margin-top: 22px;
+      font-size: 104px;
+      line-height: 1.08;
+      font-weight: 650;
+      letter-spacing: -6px;
+    }
+    .intro .summary {
+      margin-top: 31px;
+      color: #bab2a6;
+      font-size: 27px;
+      letter-spacing: 2px;
+    }
+    .intro .home {
+      left: 70px;
+      top: 590px;
+      width: 510px;
+      height: 770px;
+      transform: rotate(-1.8deg);
+    }
+    .intro .home img { object-position: 50% 7%; }
+    .intro .mine {
+      right: 63px;
+      top: 535px;
+      width: 455px;
+      height: 825px;
+      transform: rotate(2deg);
+    }
+    .intro .mine img { object-position: 50% 4%; }
+    .intro .fade {
+      position: absolute;
+      left: 38px;
+      right: 38px;
+      bottom: 38px;
+      height: 360px;
+      z-index: 12;
+      pointer-events: none;
+      background: linear-gradient(0deg, #070806 0%, rgba(7,8,6,.64) 48%, transparent 100%);
+    }
+
+    /* 02 · 附近 */
+    .nearby .copy {
+      position: absolute;
+      left: 72px;
+      top: 175px;
+      z-index: 20;
+      width: 460px;
+    }
+    .nearby h2 {
+      margin-top: 23px;
+      font-size: 91px;
+      line-height: 1.06;
+      font-weight: 650;
+      letter-spacing: -6px;
+    }
+    .nearby .nearby-screen {
+      right: 50px;
+      top: 76px;
+      width: 615px;
+      height: 1300px;
+      transform: rotate(.7deg);
+    }
+    .nearby .nearby-screen img { object-position: 50% 21%; }
+    .nearby .veil {
+      position: absolute;
+      inset: 0 auto 0 0;
+      z-index: 12;
+      width: 610px;
+      background: linear-gradient(90deg, #070806 0%, #070806 51%, rgba(7,8,6,.84) 69%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* 03 · 实时酒单 */
+    .taplist .copy {
+      position: absolute;
+      left: 72px;
+      top: 170px;
+      z-index: 20;
+      width: 500px;
+    }
+    .taplist h2 {
+      margin-top: 23px;
+      font-size: 88px;
+      line-height: 1.07;
+      font-weight: 650;
+      letter-spacing: -6px;
+    }
+    .taplist .bar-screen {
+      right: 44px;
+      top: 55px;
+      width: 645px;
+      height: 1335px;
+      transform: rotate(-.65deg);
+    }
+    .taplist .bar-screen img { object-position: 50% 10%; }
+    .taplist .veil {
+      position: absolute;
+      inset: 0 auto 0 0;
+      z-index: 12;
+      width: 630px;
+      background: linear-gradient(90deg, #070806 0%, #070806 52%, rgba(7,8,6,.86) 72%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* 04 · 我的 TAP */
+    .mytap .copy {
+      position: absolute;
+      left: 72px;
+      top: 145px;
+      z-index: 20;
+      width: 790px;
+    }
+    .mytap h2 {
+      margin-top: 23px;
+      font-size: 86px;
+      line-height: 1.08;
+      font-weight: 650;
+      letter-spacing: -6px;
+    }
+    .mytap .sub {
+      margin-top: 23px;
+      color: #b8b0a4;
+      font-size: 25px;
+      letter-spacing: 1px;
+    }
+    .mytap .recorded-screen {
+      left: 57px;
+      top: 525px;
+      width: 490px;
+      height: 865px;
+      transform: rotate(-1.4deg);
+    }
+    .mytap .recorded-screen img { object-position: 50% 9%; }
+    .mytap .report-screen {
+      right: 55px;
+      top: 430px;
+      width: 500px;
+      height: 960px;
+      transform: rotate(1.7deg);
+    }
+    .mytap .report-screen img { object-position: 50% 4%; }
+
+    /* 05 · 商家端 */
+    .merchant .copy {
+      position: absolute;
+      left: 72px;
+      top: 165px;
+      z-index: 20;
+      width: 510px;
+    }
+    .merchant h2 {
+      margin-top: 23px;
+      font-size: 85px;
+      line-height: 1.07;
+      font-weight: 650;
+      letter-spacing: -6px;
+    }
+    .merchant .merchant-screen {
+      right: 44px;
+      top: 58px;
+      width: 665px;
+      height: 1330px;
+      transform: rotate(.8deg);
+    }
+    .merchant .merchant-screen img { object-position: 50% 9%; }
+    .merchant .veil {
+      position: absolute;
+      inset: 0 auto 0 0;
+      z-index: 12;
+      width: 650px;
+      background: linear-gradient(90deg, #070806 0%, #070806 52%, rgba(7,8,6,.85) 72%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* 06 · 城市 */
+    .cities .orbit {
+      position: absolute;
+      z-index: 0;
+      right: -390px;
+      top: -350px;
+      width: 980px;
+      height: 980px;
+      border: 1px solid rgba(201,170,112,.18);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 90px rgba(0,0,0,0),
+        0 0 0 91px rgba(201,170,112,.13),
+        0 0 0 190px rgba(0,0,0,0),
+        0 0 0 191px rgba(201,170,112,.1),
+        0 0 0 300px rgba(0,0,0,0),
+        0 0 0 301px rgba(201,170,112,.07);
+    }
+    .cities .copy {
+      position: absolute;
+      left: 72px;
+      top: 160px;
+      z-index: 20;
+      width: 850px;
+    }
+    .cities h2 {
+      margin-top: 23px;
+      font-size: 92px;
+      line-height: 1.06;
+      font-weight: 650;
+      letter-spacing: -6px;
+    }
+    .cities .city-grid {
+      position: absolute;
+      left: 72px;
+      right: 72px;
+      top: 600px;
+      z-index: 18;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+    .cities .city {
+      min-height: 155px;
+      display: flex;
+      align-items: center;
+      padding: 28px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      color: #e9e4da;
+      font-size: 43px;
+      font-weight: 560;
+      letter-spacing: 2px;
+    }
+    .cities .city.primary { color: var(--gold); }
+    .cities .invite {
+      position: absolute;
+      left: 72px;
+      bottom: 125px;
+      z-index: 18;
+      padding-top: 25px;
+      width: 760px;
+      border-top: 2px solid var(--gold);
+      color: #d3ccbf;
+      font-size: 34px;
+      font-weight: 540;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" onclick="window.print()">打印 / 导出</button>
+    <span>6 张画布，1080 × 1440。使用 ?slide=1 单张预览。</span>
+  </div>
+
+  <main id="slides">
+    <section class="slide intro">
+      <div class="orbit"></div>
+      <span class="brand">NO MENU</span>
+      <div class="copy">
+        <h1>现在的<br><span class="gold">No Menu</span></h1>
+        <p class="summary">看实时酒单，也记录喝过的酒</p>
+      </div>
+      <div class="screen home"><img src="../output/xiaohongshu-intro-refresh/sources/home.png" alt="今晚首页" /></div>
+      <div class="screen mine"><img src="../output/xiaohongshu-intro-refresh/sources/mine.png" alt="我的 TAP" /></div>
+      <div class="fade"></div>
+      <div class="frame"></div>
+    </section>
+
+    <section class="slide nearby">
+      <div class="screen nearby-screen"><img src="../output/xiaohongshu-intro-refresh/sources/nearby.png" alt="附近酒吧" /></div>
+      <div class="veil"></div>
+      <span class="brand">NO MENU</span>
+      <div class="copy">
+        <h2>离今晚<br><span class="gold">更近一点</span></h2>
+      </div>
+      <div class="frame"></div>
+    </section>
+
+    <section class="slide taplist">
+      <div class="screen bar-screen"><img src="../output/xiaohongshu-intro-refresh/sources/bar-detail.png" alt="酒吧实时酒单" /></div>
+      <div class="veil"></div>
+      <span class="brand">NO MENU</span>
+      <div class="copy">
+        <h2>酒吧现在<br><span class="gold">有什么酒</span></h2>
+      </div>
+      <div class="frame"></div>
+    </section>
+
+    <section class="slide mytap">
+      <span class="brand">NO MENU</span>
+      <div class="copy">
+        <div class="section-mark">MY TAP</div>
+        <h2>记录喝过的酒</h2>
+        <p class="sub">按月份回看，仅自己可见</p>
+      </div>
+      <div class="screen recorded-screen"><img src="../output/xiaohongshu-intro-refresh/sources/recorded.png" alt="记录成功" /></div>
+      <div class="screen report-screen"><img src="../output/xiaohongshu-intro-refresh/sources/report.png" alt="月度 TAP 报告" /></div>
+      <div class="frame"></div>
+    </section>
+
+    <section class="slide merchant">
+      <div class="screen merchant-screen"><img src="../output/xiaohongshu-intro-refresh/sources/merchant.png" alt="No Menu Tonight 商家端" /></div>
+      <div class="veil"></div>
+      <span class="brand">NO MENU TONIGHT</span>
+      <div class="copy">
+        <h2>合作酒吧<br><span class="gold">自己更新酒单</span></h2>
+      </div>
+      <div class="frame"></div>
+    </section>
+
+    <section class="slide cities">
+      <div class="orbit"></div>
+      <span class="brand">NO MENU</span>
+      <div class="copy">
+        <h2>还想在哪座城市<br><span class="gold">看到 No Menu？</span></h2>
+      </div>
+      <div class="city-grid" aria-label="No Menu 当前城市">
+        <div class="city primary">上海</div>
+        <div class="city">北京</div>
+        <div class="city">天津</div>
+        <div class="city">青岛</div>
+        <div class="city">沈阳</div>
+        <div class="city">长春</div>
+        <div class="city">滨州</div>
+      </div>
+      <p class="invite">告诉我们城市和酒吧名字</p>
+      <div class="frame"></div>
+    </section>
+  </main>
+
+  <script>
+    const slideNumber = Number(new URLSearchParams(location.search).get("slide"));
+    if (slideNumber) {
+      document.querySelector(".toolbar")?.remove();
+      document.body.style.background = "#070806";
+      document.querySelector("#slides").style.padding = "0";
+      document.querySelectorAll(".slide").forEach((slide, index) => {
+        slide.style.display = index === slideNumber - 1 ? "block" : "none";
+      });
+    }
+  </script>
+</body>
+</html>

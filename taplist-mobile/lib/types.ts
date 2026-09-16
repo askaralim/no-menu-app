@@ -29,6 +29,9 @@ export type PublicTaplistCity = {
   city: string
   label: string
   country: string
+  /** Optional province-level metadata from the city catalog. */
+  region_code?: string | null
+  region_label?: string | null
   sort_order: number
   bar_count: number
 }
@@ -410,6 +413,8 @@ export type FollowedBarRow = {
   tenant_slug: string
   tenant_display_name: string
   tenant_district: string | null
+  tenant_city: string | null
+  tenant_city_label: string | null
   cover_image_url: string | null
   notify_new_taps: boolean
   followed_at: string

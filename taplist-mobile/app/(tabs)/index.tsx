@@ -35,6 +35,78 @@ const LOCATION_CACHE_TIME = 5 * 60_000
 
 type NearbyFailure = 'denied' | 'failed' | null
 
+type CityRegionMeta = {
+  key: string
+  label: string
+}
+
+type CityPickerEntry =
+  | { kind: 'city'; city: PublicTaplistCity }
+  | { kind: 'region'; key: string; label: string; cities: PublicTaplistCity[] }
+
+const MUNICIPALITY_CITY_KEYS = new Set(['beijing', 'chongqing', 'shanghai', 'tianjin'])
+
+function cityPickerKey(value: string | null | undefined) {
+  return value?.trim().toLowerCase() ?? ''
+}
+
+function comparePickerSortKeys(a: string, b: string) {
+  return a.localeCompare(b, 'zh-CN-u-co-pinyin', { sensitivity: 'base' })
+}
+
+function cityRegionMeta(city: PublicTaplistCity): CityRegionMeta | null {
+  const cityKey = cityPickerKey(city.city)
+  if (MUNICIPALITY_CITY_KEYS.has(cityKey)) return null
+
+  const regionLabel = city.region_label?.trim()
+  if (!regionLabel) return null
+
+  return {
+    key: cityPickerKey(city.region_code) || regionLabel,
+    label: regionLabel,
+  }
+}
+
+function buildCityPickerEntries(cities: PublicTaplistCity[]): CityPickerEntry[] {
+  const entries: CityPickerEntry[] = []
+  const regions = new Map<string, Extract<CityPickerEntry, { kind: 'region' }>>()
+
+  cities.forEach((city) => {
+    const region = cityRegionMeta(city)
+    if (!region) {
+      entries.push({ kind: 'city', city })
+      return
+    }
+
+    const existing = regions.get(region.key)
+    if (existing) {
+      existing.cities.push(city)
+      return
+    }
+
+    const nextRegion: Extract<CityPickerEntry, { kind: 'region' }> = {
+      kind: 'region',
+      key: region.key,
+      label: region.label,
+      cities: [city],
+    }
+    regions.set(region.key, nextRegion)
+    entries.push(nextRegion)
+  })
+
+  entries.forEach((entry) => {
+    if (entry.kind === 'region') {
+      entry.cities.sort((a, b) => comparePickerSortKeys(a.label, b.label))
+    }
+  })
+
+  return entries.sort((a, b) => {
+    const aLabel = a.kind === 'city' ? a.city.label : a.label
+    const bLabel = b.kind === 'city' ? b.city.label : b.label
+    return comparePickerSortKeys(aLabel, bLabel)
+  })
+}
+
 export default function TonightScreen() {
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
@@ -391,10 +463,48 @@ function CityPickerModal({
   onClose: () => void
   onSelect: (city: PublicTaplistCity) => void
 }) {
+  const entries = useMemo(() => buildCityPickerEntries(cities), [cities])
+
+  const renderCity = (city: PublicTaplistCity, nested = false, separated = false) => {
+    const selected = taplistCityMatches(city.city, selectedCity.city)
+    return (
+      <Pressable
+        key={city.city}
+        accessibilityRole="button"
+        accessibilityLabel={`切换到${city.label}`}
+        accessibilityState={{ selected }}
+        onPress={() => onSelect(city)}
+        style={({ pressed }) => [
+          styles.cityOption,
+          nested && styles.cityOptionNested,
+          separated && styles.cityOptionSibling,
+          selected && styles.cityOptionSelected,
+          pressed && styles.cityOptionPressed,
+        ]}>
+        <Text
+          numberOfLines={1}
+          style={[styles.cityOptionLabel, selected && styles.cityOptionLabelSelected]}>
+          {city.label}
+        </Text>
+        <View style={styles.cityOptionTrailing}>
+          <Text numberOfLines={1} style={styles.cityOptionMeta}>
+            {city.bar_count} 家公开酒吧
+          </Text>
+          <View style={styles.cityOptionStatus}>
+            {selected ? <FontAwesome name="check" size={15} color={palette.amber} /> : null}
+          </View>
+        </View>
+      </Pressable>
+    )
+  }
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.cityModalBackdrop} onPress={onClose}>
-        <View style={styles.cityModalPanel} onStartShouldSetResponder={() => true}>
+        <View
+          accessibilityViewIsModal
+          style={styles.cityModalPanel}
+          onStartShouldSetResponder={() => true}>
           <View style={styles.cityModalHeader}>
             <Text style={styles.cityModalTitle}>选择城市</Text>
             <Pressable
@@ -406,29 +516,30 @@ function CityPickerModal({
               <FontAwesome name="times" size={16} color={palette.faint} />
             </Pressable>
           </View>
-          {cities.map((city) => {
-            const selected = taplistCityMatches(city.city, selectedCity.city)
-            return (
-              <Pressable
-                key={city.city}
-                accessibilityRole="button"
-                accessibilityLabel={`切换到${city.label}`}
-                onPress={() => onSelect(city)}
-                style={({ pressed }) => [
-                  styles.cityOption,
-                  selected && styles.cityOptionSelected,
-                  pressed && styles.cityOptionPressed,
-                ]}>
-                <View style={styles.cityOptionCopy}>
-                  <Text style={[styles.cityOptionLabel, selected && styles.cityOptionLabelSelected]}>
-                    {city.label}
+          <ScrollView
+            style={styles.cityModalList}
+            contentContainerStyle={styles.cityModalListContent}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator>
+            {entries.map((entry) => {
+              if (entry.kind === 'city') {
+                return (
+                  <View key={entry.city.city} style={styles.cityTopLevelEntry}>
+                    {renderCity(entry.city)}
+                  </View>
+                )
+              }
+
+              return (
+                <View key={entry.key} style={styles.cityTopLevelEntry}>
+                  <Text accessibilityRole="header" style={styles.cityRegionLabel}>
+                    {entry.label}
                   </Text>
-                  <Text style={styles.cityOptionMeta}>{city.bar_count} 家公开酒吧</Text>
+                  {entry.cities.map((city, index) => renderCity(city, true, index > 0))}
                 </View>
-                {selected ? <FontAwesome name="check" size={15} color={palette.amber} /> : null}
-              </Pressable>
-            )
-          })}
+              )
+            })}
+          </ScrollView>
         </View>
       </Pressable>
     </Modal>
@@ -792,19 +903,24 @@ const styles = StyleSheet.create({
   },
   cityModalPanel: {
     width: '100%',
+    height: 560,
     maxWidth: 360,
+    maxHeight: '72%',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: palette.hairline,
     backgroundColor: palette.panelElevated,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+    overflow: 'hidden',
   },
   cityModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
-    marginBottom: spacing.xs,
+    paddingBottom: spacing.xs,
   },
   cityModalTitle: {
     ...typography.label,
@@ -819,38 +935,70 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: -spacing.xs,
   },
-  cityOption: {
-    minHeight: 58,
+  cityModalList: {
+    flex: 1,
+  },
+  cityModalListContent: {
+    paddingBottom: spacing.md,
+  },
+  cityTopLevelEntry: {
     borderTopWidth: 1,
     borderTopColor: palette.line,
+  },
+  cityRegionLabel: {
+    ...typography.label,
+    color: palette.tungsten,
+    fontSize: 11,
+    lineHeight: 16,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xxs,
+  },
+  cityOption: {
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.md,
+    gap: spacing.sm,
+  },
+  cityOptionNested: {
+    paddingLeft: spacing.sm,
+  },
+  cityOptionSibling: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: palette.line,
   },
   cityOptionSelected: {
-    borderTopColor: 'rgba(211,154,69,0.38)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(211,154,69,0.38)',
   },
   cityOptionPressed: {
     opacity: 0.78,
-  },
-  cityOptionCopy: {
-    flex: 1,
-    minWidth: 0,
   },
   cityOptionLabel: {
     ...typography.title,
     color: palette.text,
     fontSize: 18,
     lineHeight: 24,
+    flex: 1,
+    minWidth: 0,
   },
   cityOptionLabelSelected: {
     color: palette.amber,
   },
+  cityOptionTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
   cityOptionMeta: {
     ...typography.micro,
     color: palette.faint,
-    marginTop: 2,
+    textAlign: 'right',
+  },
+  cityOptionStatus: {
+    width: 23,
+    marginLeft: spacing.xs,
+    alignItems: 'flex-end',
   },
   loading: {
     borderWidth: 1,
