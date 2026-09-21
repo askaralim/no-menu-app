@@ -21,6 +21,7 @@ import {
 } from '@/lib/barTags'
 import { BeerBulkImportPanel } from '@/components/admin/BeerBulkImportPanel'
 import { ProductPoolLinkSection } from '@/components/admin/ProductPoolLinkSection'
+import { TaplistDrinkCreateForm } from '@/components/admin/TaplistDrinkCreateForm'
 import { uploadTaplistCover, uploadTaplistDrinkImage } from '@/lib/taplistStorage'
 import { withOssImageStyle, type OssImageStyle } from '@/lib/ossImageUrl'
 import type { Category, Drink } from '@/lib/types'
@@ -728,8 +729,22 @@ function TaplistAdminPageInner() {
       <div className="admin-section">
         <h2>分类与酒款（Tap List）</h2>
         <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-          仅显示 POS 已启用（enabled）的酒款。未启用的酒请在「酒品管理」中上架。售价与容量以「供应规格」为准。
+          可在本页直接新增酒款，或从商品池匹配后自动填充。售价与容量以「供应规格」为准。
         </p>
+        <TaplistDrinkCreateForm
+          tenantId={tenantId}
+          categories={categories}
+          drinks={drinks}
+          onDrinkReady={async (drinkId) => {
+            await Promise.all([loadDrinks(tenantId), loadCategories(tenantId)])
+            setExpandedDrinkId(drinkId)
+            window.setTimeout(() => {
+              document
+                .getElementById(`taplist-drink-${drinkId}`)
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }, 80)
+          }}
+        />
         {categories.length === 0 ? (
           <p style={{ color: '#6b7280' }}>暂无分类，请先在「分类管理」中添加。</p>
         ) : (
@@ -770,7 +785,7 @@ function TaplistAdminPageInner() {
                   </p>
                 ) : (
                   catDrinks.map((d) => (
-                    <div key={d.id} style={{ marginLeft: 8, marginBottom: 8 }}>
+                    <div id={`taplist-drink-${d.id}`} key={d.id} style={{ marginLeft: 8, marginBottom: 8 }}>
                       <div
                         style={{
                           display: 'flex',

@@ -1568,3 +1568,68 @@ input:checked + .toggle-slider:hover {
   color: #374151;
   cursor: pointer;
 }
+
+.taplist-create-suggest {
+  margin-top: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.taplist-create-suggest-title {
+  padding: 8px 12px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.taplist-create-suggest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.taplist-create-suggest-row:hover {
+  background: #f3f4f6;
+}
+
+.taplist-create-suggest-row strong {
+  display: block;
+  font-size: 13px;
+  color: #111827;
+}
+
+.taplist-create-suggest-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.taplist-create-suggest-action {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #2563eb;
+}
+
+.taplist-create-linked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 13px;
+}
