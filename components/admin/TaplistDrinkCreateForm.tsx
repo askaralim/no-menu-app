@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { supabase } from '@/lib/supabaseClient'
 import { withOssImageStyle } from '@/lib/ossImageUrl'
+import { assertImageFile, uploadTaplistDrinkImage } from '@/lib/taplistStorage'
 import type { Category, Drink } from '@/lib/types'
 import type { DrinkProductDetail, DrinkProductSearchRow } from '@/components/admin/ProductPoolLinkSection'
 
@@ -168,6 +169,15 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
   const [searchDone, setSearchDone] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null)
+  const imageFileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl)
+    }
+  }, [pendingPreviewUrl])
 
   useEffect(() => {
     setForm((prev) => (prev.category_id || !firstCategoryId ? prev : { ...prev, category_id: firstCategoryId }))
@@ -236,11 +246,36 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
     return () => window.clearTimeout(timer)
   }, [form.product_id, nameQuery])
 
+  const clearPendingImage = () => {
+    setPendingPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
+    setPendingFile(null)
+    if (imageFileRef.current) imageFileRef.current.value = ''
+  }
+
   const resetForm = () => {
     setForm(emptyForm(form.category_id || firstCategoryId))
     setPoolResults([])
     setSearchDone(false)
     setSearchError(null)
+    clearPendingImage()
+  }
+
+  const handleImageFile = (file: File) => {
+    try {
+      assertImageFile(file)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '图片不符合要求')
+      if (imageFileRef.current) imageFileRef.current.value = ''
+      return
+    }
+    setPendingFile(file)
+    setPendingPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return URL.createObjectURL(file)
+    })
   }
 
   const applyProduct = async (row: DrinkProductSearchRow) => {
@@ -248,7 +283,10 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
     setSearchDone(false)
     setSearching(false)
     setSearchError(null)
-    setForm((prev) => applyProductToForm(prev, row))
+    setForm((prev) => {
+      const next = applyProductToForm(prev, row)
+      return pendingFile ? { ...next, image_url: prev.image_url } : next
+    })
     try {
       const { data, error } = await supabase
         .from('drink_products')
@@ -259,7 +297,11 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
         .maybeSingle()
       if (error) throw error
       if (data) {
-        setForm((prev) => (prev.product_id === row.id ? applyProductToForm(prev, data as DrinkProductDetail) : prev))
+        setForm((prev) => {
+          if (prev.product_id !== row.id) return prev
+          const next = applyProductToForm(prev, data as DrinkProductDetail)
+          return pendingFile ? { ...next, image_url: prev.image_url } : next
+        })
       }
     } catch (err) {
       console.error(err)
@@ -359,6 +401,21 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
         if (linkError) throw linkError
       }
 
+      let imageWarning = ''
+      if (pendingFile) {
+        try {
+          const publicUrl = await uploadTaplistDrinkImage(supabase, tenantId, drinkId, pendingFile)
+          const { error: imageError } = await supabase
+            .from('drinks')
+            .update({ image_url: publicUrl })
+            .eq('id', drinkId)
+          if (imageError) throw imageError
+        } catch (imageErr) {
+          console.error(imageErr)
+          imageWarning = imageErr instanceof Error ? imageErr.message : '图片上传失败'
+        }
+      }
+
       if (tap) {
         const { data: listing, error: listingError } = await supabase.rpc('set_drink_taplist_listing', {
           p_drink_id: drinkId,
@@ -372,7 +429,11 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
         }
       }
 
-      alert(form.product_id ? '已从商品池填充并新增酒款' : '酒款已新增')
+      if (imageWarning) {
+        alert(`酒款已新增，但图片上传失败：${imageWarning}。请在下方编辑里重试。`)
+      } else {
+        alert(form.product_id ? '已从商品池填充并新增酒款' : '酒款已新增')
+      }
       resetForm()
       await onDrinkReady(drinkId)
       await loadCatalog()
@@ -393,6 +454,9 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
     !searchError &&
     localMatches.length === 0 &&
     poolResults.length === 0
+
+  const previewSrc =
+    pendingPreviewUrl || (form.image_url ? withOssImageStyle(form.image_url, 'nm-card') || form.image_url : null)
 
   return (
     <div className="taplist-drink-panel" style={{ marginTop: 0, marginBottom: 16 }}>
@@ -559,30 +623,65 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
             />
           </div>
           <div className="taplist-field taplist-field-span-2">
-            <label htmlFor="taplist-create-image">图片 URL</label>
+            <label>酒款图片</label>
+            <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+              JPEG / PNG / WebP，最大 2MB。本地图片会在保存后上传。
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', marginTop: 6 }}>
+              {previewSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previewSrc}
+                  alt=""
+                  style={{
+                    width: 120,
+                    height: 68,
+                    objectFit: 'cover',
+                    borderRadius: 6,
+                    border: '1px solid #e5e7eb',
+                    background: '#fff',
+                  }}
+                />
+              ) : null}
+              <label
+                className="admin-button admin-button-secondary"
+                style={{ cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
+              >
+                <input
+                  ref={imageFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={saving}
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleImageFile(file)
+                  }}
+                />
+                {pendingFile ? '更换图片' : '上传图片'}
+              </label>
+              {pendingFile || form.image_url ? (
+                <button
+                  type="button"
+                  className="admin-button admin-button-secondary"
+                  disabled={saving}
+                  onClick={() => {
+                    clearPendingImage()
+                    setForm({ ...form, image_url: '' })
+                  }}
+                >
+                  清除图片
+                </button>
+              ) : null}
+            </div>
             <input
               id="taplist-create-image"
               className="admin-input"
+              style={{ marginTop: 8 }}
               placeholder="商品池命中后会自动带入，也可粘贴外链"
               value={form.image_url}
               onChange={(e) => setForm({ ...form, image_url: e.target.value })}
             />
-            {form.image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={withOssImageStyle(form.image_url, 'nm-card') || form.image_url}
-                alt=""
-                style={{
-                  width: 72,
-                  height: 72,
-                  objectFit: 'cover',
-                  borderRadius: 6,
-                  marginTop: 6,
-                  border: '1px solid #e5e7eb',
-                  background: '#fff',
-                }}
-              />
-            ) : null}
           </div>
         </div>
 
