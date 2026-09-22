@@ -59,7 +59,7 @@ function emptyForm(categoryId: string): CreateForm {
     image_url: '',
     product_id: null,
     serving_type: 'draft',
-    serving_label: '杯',
+    serving_label: '',
     volume_ml: '',
     price: '',
     public_status: 'new',
@@ -169,6 +169,7 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
   const [searchDone, setSearchDone] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [includeServing, setIncludeServing] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null)
   const imageFileRef = useRef<HTMLInputElement>(null)
@@ -260,6 +261,7 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
     setPoolResults([])
     setSearchDone(false)
     setSearchError(null)
+    setIncludeServing(false)
     clearPendingImage()
   }
 
@@ -355,8 +357,7 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
 
     setSaving(true)
     try {
-      const volume = intOrNull(form.volume_ml)
-      const payload = {
+      const payload: Record<string, unknown> = {
         category_id: form.category_id || undefined,
         name,
         brand_name: form.brewery.trim() || undefined,
@@ -369,17 +370,19 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
           country: form.country.trim() || null,
           description: form.description.trim() || null,
         },
-        servings: [
+      }
+      if (includeServing) {
+        payload.servings = [
           {
             serving_type: form.serving_type,
             label: form.serving_label.trim() || '杯',
-            volume_ml: volume,
+            volume_ml: intOrNull(form.volume_ml),
             price: numOrNull(form.price) ?? 0,
             is_default: true,
             is_active: true,
             public_sort_order: 0,
           },
-        ],
+        ]
       }
 
       const { data, error } = await supabase.rpc('upsert_drink_product', {
@@ -686,58 +689,75 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
         </div>
 
         <div className="taplist-panel-grid" style={{ width: '100%' }}>
-          <div className="taplist-field">
-            <label htmlFor="taplist-create-serving-type">规格类型</label>
-            <select
-              id="taplist-create-serving-type"
-              className="admin-input"
-              value={form.serving_type}
-              onChange={(e) =>
-                setForm({ ...form, serving_type: e.target.value as (typeof SERVING_TYPES)[number] })
-              }
-            >
-              {SERVING_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+          <div className="taplist-field taplist-field-span-2">
+            <label className="admin-label-checkbox" style={{ marginTop: 4 }}>
+              <input
+                type="checkbox"
+                checked={includeServing}
+                onChange={(e) => setIncludeServing(e.target.checked)}
+              />
+              <span>同时添加规格 / 价格</span>
+            </label>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>
+              默认不写入规格，可在添加后展开酒款再填。
+            </p>
           </div>
-          <div className="taplist-field">
-            <label htmlFor="taplist-create-serving-label">价格单位</label>
-            <input
-              id="taplist-create-serving-label"
-              className="admin-input"
-              placeholder="杯 / 品脱"
-              value={form.serving_label}
-              onChange={(e) => setForm({ ...form, serving_label: e.target.value })}
-            />
-          </div>
-          <div className="taplist-field">
-            <label htmlFor="taplist-create-volume">容量 (ml)</label>
-            <input
-              id="taplist-create-volume"
-              className="admin-input"
-              type="number"
-              min={0}
-              placeholder="可选"
-              value={form.volume_ml}
-              onChange={(e) => setForm({ ...form, volume_ml: e.target.value })}
-            />
-          </div>
-          <div className="taplist-field">
-            <label htmlFor="taplist-create-price">价格</label>
-            <input
-              id="taplist-create-price"
-              className="admin-input"
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder="0"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-            />
-          </div>
+          {includeServing ? (
+            <>
+              <div className="taplist-field">
+                <label htmlFor="taplist-create-serving-type">规格类型</label>
+                <select
+                  id="taplist-create-serving-type"
+                  className="admin-input"
+                  value={form.serving_type}
+                  onChange={(e) =>
+                    setForm({ ...form, serving_type: e.target.value as (typeof SERVING_TYPES)[number] })
+                  }
+                >
+                  {SERVING_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="taplist-field">
+                <label htmlFor="taplist-create-serving-label">价格单位</label>
+                <input
+                  id="taplist-create-serving-label"
+                  className="admin-input"
+                  placeholder="杯 / 品脱"
+                  value={form.serving_label}
+                  onChange={(e) => setForm({ ...form, serving_label: e.target.value })}
+                />
+              </div>
+              <div className="taplist-field">
+                <label htmlFor="taplist-create-volume">容量 (ml)</label>
+                <input
+                  id="taplist-create-volume"
+                  className="admin-input"
+                  type="number"
+                  min={0}
+                  placeholder="可选"
+                  value={form.volume_ml}
+                  onChange={(e) => setForm({ ...form, volume_ml: e.target.value })}
+                />
+              </div>
+              <div className="taplist-field">
+                <label htmlFor="taplist-create-price">价格</label>
+                <input
+                  id="taplist-create-price"
+                  className="admin-input"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="可选"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                />
+              </div>
+            </>
+          ) : null}
           <div className="taplist-field">
             <label htmlFor="taplist-create-tap">酒头编号（今晚）</label>
             <input
