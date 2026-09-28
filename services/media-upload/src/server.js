@@ -10,6 +10,7 @@ const server = createMediaUploadServer({
   authorizeTenant: createSupabaseAuthorizer(config),
   signPutUrl: createOssSigner(config),
   authorizeProductAdmin: productService.authorizeAdmin,
+  authorizeCompanyLogo: productService.authorizeCompanyLogo,
   promoteProductImage: createProductImagePromoter(config),
   setProductImage: productService.setProductImage,
   promoteTenantCover: createTenantCoverPromoter(config),

@@ -47,6 +47,7 @@ export function createMediaUploadServer({
   authorizeTenant,
   signPutUrl,
   authorizeProductAdmin,
+  authorizeCompanyLogo,
   promoteProductImage,
   setProductImage,
   promoteTenantCover,
@@ -109,7 +110,14 @@ export function createMediaUploadServer({
         return json(response, 200, promoted, cors)
       }
       const upload = validateUploadRequest(await readJson(request))
-      await authorizeTenant(accessToken, upload.tenantId)
+      if (upload.kind === 'company_logo') {
+        if (typeof authorizeCompanyLogo !== 'function') {
+          throw new RequestError(500, 'internal_error', '暂时无法生成上传地址')
+        }
+        await authorizeCompanyLogo(accessToken)
+      } else {
+        await authorizeTenant(accessToken, upload.tenantId)
+      }
       const uploadUrl = await signPutUrl(upload)
       const cdnUrl = `${config.ossCdnBaseUrl}/${upload.objectPath.split('/').map(encodeURIComponent).join('/')}`
 

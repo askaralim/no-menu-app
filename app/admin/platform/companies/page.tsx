@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { withOssImageStyle } from '@/lib/ossImageUrl'
 import { supabase } from '@/lib/supabaseClient'
+import { assertImageFile, uploadCompanyLogo } from '@/lib/taplistStorage'
 import type {
   AdminDrinkCompanyAliasRow,
   AdminDrinkCompanyRow,
@@ -176,6 +178,12 @@ export default function PlatformCompaniesPage() {
   const [aliasForm, setAliasForm] = useState<AliasForm>(EMPTY_ALIAS_FORM)
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [normalizedKeyTouched, setNormalizedKeyTouched] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null)
+  const [pendingLogoPreview, setPendingLogoPreview] = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const logoFileRef = useRef<HTMLInputElement>(null)
+  const pendingPreviewRef = useRef<string | null>(null)
 
   const loadCompanies = useCallback(async () => {
     const { data, error: rpcError } = await supabase.rpc('admin_list_drink_companies', {
@@ -204,14 +212,26 @@ export default function PlatformCompaniesPage() {
     setAliases(payload.aliases)
   }, [])
 
+  const clearPendingLogo = useCallback(() => {
+    if (pendingPreviewRef.current) {
+      URL.revokeObjectURL(pendingPreviewRef.current)
+      pendingPreviewRef.current = null
+    }
+    setPendingLogoFile(null)
+    setPendingLogoPreview(null)
+    if (logoFileRef.current) logoFileRef.current.value = ''
+  }, [])
+
   const resetForm = useCallback(() => {
     setEditingId(null)
     setForm(EMPTY_FORM)
+    setLogoUrl(null)
+    clearPendingLogo()
     setAliases([])
     setAliasForm(EMPTY_ALIAS_FORM)
     setEditingAliasId(null)
     setNormalizedKeyTouched(false)
-  }, [])
+  }, [clearPendingLogo])
 
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false)
@@ -267,13 +287,13 @@ export default function PlatformCompaniesPage() {
   useEffect(() => {
     if (!drawerOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !saving && !aliasSaving) {
+      if (event.key === 'Escape' && !saving && !aliasSaving && !uploadingLogo) {
         closeDrawer()
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [drawerOpen, saving, aliasSaving, closeDrawer])
+  }, [drawerOpen, saving, aliasSaving, uploadingLogo, closeDrawer])
 
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : ''
@@ -316,6 +336,8 @@ export default function PlatformCompaniesPage() {
       source_note: company.source_note ?? '',
       status: company.status,
     })
+    setLogoUrl(company.logo_url)
+    clearPendingLogo()
     setNormalizedKeyTouched(true)
     setAliasForm(EMPTY_ALIAS_FORM)
     setEditingAliasId(null)
@@ -381,6 +403,27 @@ export default function PlatformCompaniesPage() {
       const result = data as { ok?: boolean; id?: string }
       const savedId = result?.id ?? editingId
       const wasCreate = !editingId
+
+      if (savedId && pendingLogoFile) {
+        try {
+          const cdnUrl = await uploadCompanyLogo(supabase, savedId, pendingLogoFile)
+          const { error: logoError } = await supabase.rpc('admin_set_drink_company_logo', {
+            p_company_id: savedId,
+            p_logo_url: cdnUrl,
+          })
+          if (logoError) throw new Error(logoError.message)
+          setLogoUrl(cdnUrl)
+          clearPendingLogo()
+        } catch (logoErr: unknown) {
+          if (wasCreate) {
+            setEditingId(savedId)
+            setNormalizedKeyTouched(true)
+          }
+          await loadCompanies()
+          const detail = logoErr instanceof Error ? logoErr.message : '请稍后重试'
+          throw new Error(wasCreate ? `品牌/酒厂已创建，但 Logo 上传失败：${detail}` : `Logo 上传失败：${detail}`)
+        }
+      }
 
       if (!editingId && savedId) {
         setEditingId(savedId)
@@ -503,6 +546,69 @@ export default function PlatformCompaniesPage() {
       alert(err instanceof Error ? err.message : '删除别名失败')
     } finally {
       setAliasSaving(false)
+    }
+  }
+
+  const rememberLogo = (companyId: string, nextLogoUrl: string | null) => {
+    setLogoUrl(nextLogoUrl)
+    setCompanies((prev) => prev.map((company) => (
+      company.id === companyId ? { ...company, logo_url: nextLogoUrl } : company
+    )))
+  }
+
+  const handleLogoFile = async (file: File) => {
+    try {
+      assertImageFile(file)
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '图片无效')
+      if (logoFileRef.current) logoFileRef.current.value = ''
+      return
+    }
+
+    if (!editingId) {
+      clearPendingLogo()
+      const preview = URL.createObjectURL(file)
+      pendingPreviewRef.current = preview
+      setPendingLogoFile(file)
+      setPendingLogoPreview(preview)
+      return
+    }
+
+    setUploadingLogo(true)
+    try {
+      const cdnUrl = await uploadCompanyLogo(supabase, editingId, file)
+      const { error: rpcError } = await supabase.rpc('admin_set_drink_company_logo', {
+        p_company_id: editingId,
+        p_logo_url: cdnUrl,
+      })
+      if (rpcError) throw rpcError
+      rememberLogo(editingId, cdnUrl)
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Logo 上传失败')
+    } finally {
+      setUploadingLogo(false)
+      if (logoFileRef.current) logoFileRef.current.value = ''
+    }
+  }
+
+  const handleClearLogo = async () => {
+    if (pendingLogoFile) {
+      clearPendingLogo()
+      return
+    }
+    if (!editingId || !logoUrl) return
+    setUploadingLogo(true)
+    try {
+      const { error: rpcError } = await supabase.rpc('admin_set_drink_company_logo', {
+        p_company_id: editingId,
+        p_logo_url: null,
+      })
+      if (rpcError) throw rpcError
+      rememberLogo(editingId, null)
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '移除 Logo 失败')
+    } finally {
+      setUploadingLogo(false)
     }
   }
 
@@ -663,12 +769,24 @@ export default function PlatformCompaniesPage() {
                         background: isSelected ? '#eff6ff' : undefined,
                       }}>
                       <td style={tdStyle}>
-                        <strong style={{ fontSize: '0.92rem' }}>{company.display_name}</strong>
-                        {company.canonical_name_en ? (
-                          <div style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: 2 }}>
-                            {company.canonical_name_en}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {company.logo_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={withOssImageStyle(company.logo_url, 'nm-thumb') || company.logo_url}
+                              alt=""
+                              style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}
+                            />
+                          ) : null}
+                          <div>
+                            <strong style={{ fontSize: '0.92rem' }}>{company.display_name}</strong>
+                            {company.canonical_name_en ? (
+                              <div style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: 2 }}>
+                                {company.canonical_name_en}
+                              </div>
+                            ) : null}
                           </div>
-                        ) : null}
+                        </div>
                       </td>
                       <td style={tdStyle}>
                         <code style={codeStyle}>{company.normalized_key}</code>
@@ -745,7 +863,13 @@ export default function PlatformCompaniesPage() {
 
       {drawerOpen ? (
         <>
-          <div style={drawerBackdropStyle} onClick={closeDrawer} aria-hidden="true" />
+          <div
+            style={drawerBackdropStyle}
+            onClick={() => {
+              if (!saving && !aliasSaving && !uploadingLogo) closeDrawer()
+            }}
+            aria-hidden="true"
+          />
           <aside style={drawerPanelStyle} role="dialog" aria-modal="true" aria-label={drawerTitle}>
             <div style={drawerHeaderStyle}>
               <div style={{ minWidth: 0, flex: 1 }}>
@@ -754,7 +878,12 @@ export default function PlatformCompaniesPage() {
                 </p>
                 <h2 style={{ margin: '4px 0 0', fontSize: '1.15rem', lineHeight: 1.3 }}>{drawerTitle}</h2>
               </div>
-              <button type="button" onClick={closeDrawer} style={drawerCloseStyle} aria-label="关闭">
+              <button
+                type="button"
+                onClick={closeDrawer}
+                style={drawerCloseStyle}
+                aria-label="关闭"
+                disabled={saving || aliasSaving || uploadingLogo}>
                 ✕
               </button>
             </div>
@@ -794,6 +923,53 @@ export default function PlatformCompaniesPage() {
                     onChange={(e) => setForm({ ...form, display_name: e.target.value })}
                   />
                 </Field>
+                <div>
+                  <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 4 }}>
+                    Logo
+                  </span>
+                  <span style={{ display: 'block', fontSize: '0.75rem', color: '#9ca3af', marginBottom: 4 }}>
+                    {editingId ? 'JPEG / PNG / WebP，最大 2MB，上传后写入 OSS' : 'JPEG / PNG / WebP，最大 2MB。创建后上传到 OSS'}
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+                    {pendingLogoPreview || logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={pendingLogoPreview || withOssImageStyle(logoUrl, 'nm-thumb') || logoUrl || ''}
+                        alt=""
+                        style={{ width: 72, height: 72, objectFit: 'contain', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff' }}
+                      />
+                    ) : (
+                      <div style={{ width: 72, height: 72, borderRadius: 8, border: '1px dashed #d1d5db', background: '#f9fafb' }} />
+                    )}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <label
+                        className="admin-button admin-button-secondary"
+                        style={{ cursor: uploadingLogo || saving ? 'not-allowed' : 'pointer', opacity: uploadingLogo || saving ? 0.6 : 1 }}>
+                        <input
+                          ref={logoFileRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          disabled={uploadingLogo || saving}
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) void handleLogoFile(file)
+                          }}
+                        />
+                        {uploadingLogo ? '上传中…' : '上传 Logo'}
+                      </label>
+                      {pendingLogoFile || logoUrl ? (
+                        <button
+                          type="button"
+                          className="admin-button admin-button-secondary"
+                          disabled={uploadingLogo || saving}
+                          onClick={() => void handleClearLogo()}>
+                          移除
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
                 <div style={{ display: 'grid', gap: 10, gridTemplateColumns: '1fr 1fr' }}>
                   <Field label="类型">
                     <select
@@ -894,14 +1070,14 @@ export default function PlatformCompaniesPage() {
                   />
                 </Field>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
-                  <button type="submit" className="admin-button admin-button-primary" disabled={saving || aliasSaving}>
+                  <button type="submit" className="admin-button admin-button-primary" disabled={saving || aliasSaving || uploadingLogo}>
                     {saving ? '保存中…' : editingId ? '保存修改' : '创建'}
                   </button>
                   <button
                     type="button"
                     className="admin-button admin-button-secondary"
                     onClick={closeDrawer}
-                    disabled={saving || aliasSaving}>
+                    disabled={saving || aliasSaving || uploadingLogo}>
                     关闭
                   </button>
                 </div>

@@ -32,10 +32,15 @@ function extensionForMime(mime: string): string {
   return 'jpg'
 }
 
-async function uploadTaplistObject(
+async function uploadSignedObject(
   supabase: SupabaseClient,
-  objectPath: string,
-  file: File
+  file: File,
+  body: {
+    tenantId?: string
+    objectPath: string
+    contentType: string
+    contentLength: number
+  }
 ): Promise<string> {
   assertImageFile(file)
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
@@ -49,12 +54,7 @@ async function uploadTaplistObject(
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      tenantId: objectPath.split('/')[2],
-      objectPath,
-      contentType: file.type,
-      contentLength: file.size,
-    }),
+    body: JSON.stringify(body),
   })
   const signingBody = await signingResponse.json().catch(() => null) as {
     uploadUrl?: string
@@ -73,6 +73,33 @@ async function uploadTaplistObject(
   })
   if (!uploadResponse.ok) throw new Error('图片上传失败，请稍后再试')
   return signingBody.cdnUrl
+}
+
+async function uploadTaplistObject(
+  supabase: SupabaseClient,
+  objectPath: string,
+  file: File
+): Promise<string> {
+  return uploadSignedObject(supabase, file, {
+    tenantId: objectPath.split('/')[2],
+    objectPath,
+    contentType: file.type,
+    contentLength: file.size,
+  })
+}
+
+export async function uploadCompanyLogo(
+  supabase: SupabaseClient,
+  companyId: string,
+  file: File
+): Promise<string> {
+  const ext = extensionForMime(file.type)
+  const objectPath = `prod/companies/${companyId.toLowerCase()}/${createUploadId()}.${ext}`
+  return uploadSignedObject(supabase, file, {
+    objectPath,
+    contentType: file.type,
+    contentLength: file.size,
+  })
 }
 
 export async function uploadTaplistCover(

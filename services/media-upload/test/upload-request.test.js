@@ -12,6 +12,7 @@ test('accepts a canonical tenant drink image request', () => {
     contentType: 'image/jpeg',
     contentLength: MAX_IMAGE_BYTES,
   }), {
+    kind: 'tenant',
     tenantId,
     objectPath: `prod/tenants/${tenantId}/drinks/${drinkId}/upload-id.jpg`,
     contentType: 'image/jpeg',
@@ -75,6 +76,30 @@ test('rejects oversized images and mismatched extensions', () => {
     contentType: 'image/webp',
     contentLength: 10,
   }), /扩展名/)
+})
+
+test('accepts a company logo path without a tenant id', () => {
+  const companyId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+  assert.deepEqual(validateUploadRequest({
+    objectPath: `prod/companies/${companyId}/logo.png`,
+    contentType: 'image/png',
+    contentLength: 10,
+  }), {
+    kind: 'company_logo',
+    companyId,
+    tenantId: null,
+    objectPath: `prod/companies/${companyId}/logo.png`,
+    contentType: 'image/png',
+    contentLength: 10,
+  })
+})
+
+test('rejects company logo paths outside the OSS prefix', () => {
+  assert.throws(() => validateUploadRequest({
+    objectPath: 'prod/companies/../secret.png',
+    contentType: 'image/png',
+    contentLength: 10,
+  }), /图片路径无效/)
 })
 
 test('requires a strict bearer token', () => {

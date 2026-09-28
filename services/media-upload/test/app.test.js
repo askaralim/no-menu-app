@@ -51,6 +51,32 @@ test('authorizes tenant and returns PUT/CDN URLs', async () => {
   })
 })
 
+test('signs a company logo upload only after platform-admin authorization', async () => {
+  let tenantAuthorized = false
+  let adminAuthorized = false
+  const companyId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+  await withServer({
+    authorizeTenant: async () => { tenantAuthorized = true },
+    authorizeCompanyLogo: async (token) => { adminAuthorized = token },
+    signPutUrl: async () => 'https://bucket.oss-cn-shanghai.aliyuncs.com/signed',
+  }, async (baseUrl) => {
+    const objectPath = `prod/companies/${companyId}/logo.png`
+    const response = await fetch(`${baseUrl}/api/media/upload-url`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer access-token',
+        'Content-Type': 'application/json',
+        Origin: 'https://nomenuapp.com',
+      },
+      body: JSON.stringify({ objectPath, contentType: 'image/png', contentLength: 100 }),
+    })
+    assert.equal(response.status, 200)
+    assert.equal(tenantAuthorized, false)
+    assert.equal(adminAuthorized, 'access-token')
+    assert.equal((await response.json()).cdnUrl, `https://img.nomenuapp.com/${objectPath}`)
+  })
+})
+
 test('rejects unapproved browser origins before authorization', async () => {
   let called = false
   await withServer({

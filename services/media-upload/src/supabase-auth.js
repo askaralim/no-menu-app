@@ -85,17 +85,25 @@ export function createSupabaseProductService(config, fetchImpl = fetch) {
     'Content-Type': 'application/json',
   })
 
+  async function assertSuperAdmin(accessToken, message) {
+    const response = await fetchImpl(`${config.supabaseUrl}/rest/v1/rpc/is_super_admin`, {
+      method: 'POST',
+      headers: headersFor(accessToken),
+      body: '{}',
+      signal: AbortSignal.timeout(8_000),
+    })
+    if (!response.ok || (await parseJson(response)) !== true) {
+      throw new RequestError(403, 'forbidden', message)
+    }
+  }
+
   return {
-    async authorizeAdmin(accessToken) {
-      const response = await fetchImpl(`${config.supabaseUrl}/rest/v1/rpc/is_super_admin`, {
-        method: 'POST',
-        headers: headersFor(accessToken),
-        body: '{}',
-        signal: AbortSignal.timeout(8_000),
-      })
-      if (!response.ok || (await parseJson(response)) !== true) {
-        throw new RequestError(403, 'forbidden', '只有平台管理员可以归档商品图片')
-      }
+    authorizeAdmin(accessToken) {
+      return assertSuperAdmin(accessToken, '只有平台管理员可以归档商品图片')
+    },
+
+    authorizeCompanyLogo(accessToken) {
+      return assertSuperAdmin(accessToken, '只有平台管理员可以上传酒厂 Logo')
     },
 
     async setProductImage(accessToken, productId, imageUrl) {

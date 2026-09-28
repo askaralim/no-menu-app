@@ -181,6 +181,7 @@ export interface AdminDrinkCompanyRow {
   source: string | null
   source_note: string | null
   status: DrinkCompanyStatus
+  logo_url: string | null
   created_at: string
   updated_at: string
   alias_count: number

@@ -24,6 +24,8 @@ Body:
 
 The service accepts JPEG, PNG, and WebP paths under `prod/tenants/{tenantId}/covers`, `prod/tenants/{tenantId}/drinks/{drinkId}`, or `prod/events/{tenantId}/{eventId}`, up to 2MB as declared by the client. Legacy tenant-rooted paths remain accepted while older clients are in circulation. The returned PUT request must include the exact `Content-Type` header.
 
+`prod/companies/{companyId}/{file}` is a platform logo path. It does not take `tenantId`. The service checks `is_super_admin` before signing, and Web Admin stores the returned CDN URL with `admin_set_drink_company_logo`.
+
 `POST /api/media/promote-product-image` is restricted to platform super admins. It copies a merchant drink image from OSS, or imports a legacy image from this project's public Supabase Storage, into `prod/products/{productId}/{uploadId}.{ext}` and updates `drink_products.image_url` through the authenticated `admin_set_drink_product_image` RPC.
 
 `POST /api/media/promote-tenant-cover` is also restricted to platform super admins. It imports a legacy Supabase Storage cover into `prod/tenants/{tenantId}/covers/{uploadId}.{ext}` and updates `tenants.cover_image_url` through `admin_set_tenant_cover_image`.
