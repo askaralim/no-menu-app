@@ -7,6 +7,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 const LOCAL_DEFAULT_URL = 'http://127.0.0.1:54321'
 const LOCAL_DEFAULT_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+const HOSTED_SUPABASE_URL = 'https://agtujigvxxdppngirqtu.supabase.co'
+const PRODUCTION_PROXY_URL = 'https://nomenuapp.com/api/supabase'
 const PRODUCTION_AUTH_STORAGE_KEY = 'sb-agtujigvxxdppngirqtu-auth-token'
 
 /** Placeholder so createClient never throws at import time in a broken production build. */
@@ -30,8 +32,14 @@ const rawKey = (
   ''
 ).trim()
 
+/** Keep the SDK 54 EAS runtime stable while routing its existing hosted URL through ECS. */
+function resolveSupabaseClientUrl(url: string): string {
+  return url.replace(/\/+$/, '') === HOSTED_SUPABASE_URL ? PRODUCTION_PROXY_URL : url
+}
+
 const useDevFallback = __DEV__ && (!rawUrl || !rawKey)
-const supabaseUrl = rawUrl || (useDevFallback ? LOCAL_DEFAULT_URL : '')
+const configuredUrl = rawUrl || (useDevFallback ? LOCAL_DEFAULT_URL : '')
+const supabaseUrl = resolveSupabaseClientUrl(configuredUrl)
 const supabaseAnonKey = rawKey || (useDevFallback ? LOCAL_DEFAULT_ANON_KEY : '')
 
 function resolveAuthStorageKey(url: string): string | undefined {

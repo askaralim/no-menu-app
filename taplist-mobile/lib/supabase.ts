@@ -10,6 +10,8 @@ import { Platform } from 'react-native'
 const LOCAL_DEFAULT_URL = 'http://127.0.0.1:54321'
 const LOCAL_DEFAULT_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+const HOSTED_SUPABASE_URL = 'https://agtujigvxxdppngirqtu.supabase.co'
+const PRODUCTION_PROXY_URL = 'https://nomenuapp.com/api/supabase'
 const PRODUCTION_AUTH_STORAGE_KEY = 'sb-agtujigvxxdppngirqtu-auth-token'
 
 type Extra = { supabaseUrl?: string; supabaseAnonKey?: string }
@@ -48,6 +50,11 @@ function resolveAuthStorageKey(url: string): string | undefined {
   return undefined
 }
 
+/** Keep the SDK 54 EAS runtime stable while routing its existing hosted URL through ECS. */
+function resolveSupabaseClientUrl(url: string): string {
+  return url.replace(/\/+$/, '') === HOSTED_SUPABASE_URL ? PRODUCTION_PROXY_URL : url
+}
+
 /**
  * Expo Web at `http://127.0.0.1:8081` cannot use a stale LAN IP in `.env` to reach Supabase on the
  * same machine — the browser must call `http://127.0.0.1:54321`. Hosted URLs are left unchanged.
@@ -75,7 +82,9 @@ export function resolveTaplistConfig(): { url: string; key: string } {
   const rawUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL || extra?.supabaseUrl || '').trim()
   const rawKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || extra?.supabaseAnonKey || '').trim()
   const useDevFallback = __DEV__ && (!rawUrl || !rawKey)
-  const url = resolveUrlForWebLocalhost(rawUrl) || (useDevFallback ? LOCAL_DEFAULT_URL : '')
+  const configuredUrl =
+    resolveUrlForWebLocalhost(rawUrl) || (useDevFallback ? LOCAL_DEFAULT_URL : '')
+  const url = resolveSupabaseClientUrl(configuredUrl)
   const key = rawKey || (useDevFallback ? LOCAL_DEFAULT_ANON_KEY : '')
   return { url, key }
 }
