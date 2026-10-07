@@ -112,7 +112,7 @@ body::after {
   flex-direction: column;
   gap: 40px;
   padding: 0 24px 80px;
-  max-width: 900px;
+  max-width: 1080px;
   margin: 0 auto;
   position: relative;
   z-index: 10;
@@ -187,15 +187,6 @@ body::after {
   gap: 20px;
 }
 
-/* iPad Mini / Table overrides for drinks */
-@media (min-width: 768px) {
-  .drink-list {
-    grid-template-columns: repeat(2, 1fr);
-    column-gap: 64px;
-    row-gap: 24px;
-  }
-}
-
 .drink-row {
   display: flex;
   justify-content: space-between;
@@ -206,6 +197,24 @@ body::after {
   position: relative;
   overflow: hidden;
   border-bottom: 1px solid var(--line-soft);
+  gap: 12px;
+}
+
+.drink-thumb {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  align-self: center;
+}
+
+.drink-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 
 .drink-row:hover {
@@ -250,6 +259,66 @@ body::after {
   font-size: 20px;
   letter-spacing: 1px;
   white-space: nowrap;
+}
+
+/* Two columns stay. Type tightens so the fixed thumb does not crush the name. */
+@media (min-width: 768px) {
+  .drink-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 28px;
+    row-gap: 16px;
+  }
+
+  .drink-row {
+    padding: 10px 8px;
+    gap: 10px;
+  }
+
+  .drink-thumb {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+
+  .drink-name {
+    font-size: 18px;
+    padding-right: 8px;
+  }
+
+  .drink-price,
+  .drink-price-cup,
+  .drink-price-bottle {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .drink-list {
+    column-gap: 48px;
+    row-gap: 20px;
+  }
+
+  .drink-row {
+    padding: 12px 12px;
+    gap: 12px;
+  }
+
+  .drink-thumb {
+    width: 56px;
+    height: 56px;
+    flex-basis: 56px;
+  }
+
+  .drink-name {
+    font-size: 22px;
+    padding-right: 16px;
+  }
+
+  .drink-price,
+  .drink-price-cup,
+  .drink-price-bottle {
+    font-size: 20px;
+  }
 }
 
 /* =========================

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Drink, DrinkServingOption } from '@/lib/types'
 
 interface DrinkItemProps {
@@ -49,9 +50,20 @@ export default function DrinkItem({ drink, disabled }: DrinkItemProps) {
   const beerStyle = (drink.beer_style || '').trim()
   const styleAlreadyInName =
     beerStyle !== '' && displayName.toLowerCase().includes(beerStyle.toLowerCase())
+  const [imageFailed, setImageFailed] = useState(false)
+  const imageUrl = imageFailed ? '' : (drink.image_url || '').trim()
 
   return (
     <li className={`drink-row ${disabled ? 'disabled' : ''}`}>
+      <span className="drink-thumb">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt=""
+            onError={() => setImageFailed(true)}
+          />
+        ) : null}
+      </span>
       <span className="drink-name">
         {displayName}
         {beerStyle && !styleAlreadyInName ? (
