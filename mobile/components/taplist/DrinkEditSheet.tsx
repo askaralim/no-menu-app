@@ -699,21 +699,14 @@ export default function DrinkEditSheet({
             <Text style={[styles.sectionLabel, selectableCategories.length === 0 && { marginTop: 0 }]}>
               基本信息
             </Text>
-            {linkedProductId ? (
-              <View style={styles.poolNotice}>
-                <Ionicons name="lock-closed-outline" size={18} color={T.gold} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.poolNoticeTitle}>商品信息来自商品池</Text>
-                  <Text style={styles.poolNoticeText}>
-                    酒款名称、酒厂、风格、酒精度等信息不可在这里修改；图片、分类和规格价格仍可更新。
-                  </Text>
-                  {!isCreate && onReplaceDrink ? (
-                    <TouchableOpacity style={styles.replaceDrinkBtn} onPress={onReplaceDrink}>
-                      <Ionicons name="swap-horizontal-outline" size={16} color={T.gold} />
-                      <Text style={styles.replaceDrinkText}>换酒</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
+            {linkedProductId && !isCreate && onReplaceDrink ? (
+              <View style={styles.linkRow}>
+                <Text style={[styles.hintText, { flex: 1, marginTop: 0, marginBottom: 0 }]}>
+                  已关联商品池
+                </Text>
+                <TouchableOpacity onPress={onReplaceDrink} hitSlop={8}>
+                  <Text style={styles.unlinkText}>换酒</Text>
+                </TouchableOpacity>
               </View>
             ) : null}
             {isCreate ? (
@@ -721,18 +714,13 @@ export default function DrinkEditSheet({
                 <Text style={styles.fieldLabel}>酒款名称</Text>
                 <View style={styles.searchRow}>
                   <TextInput
-                    style={[
-                      styles.input,
-                      { flex: 1, marginBottom: 0 },
-                      linkedProductId && styles.inputReadOnly,
-                    ]}
+                    style={[styles.input, { flex: 1, marginBottom: 0 }]}
                     value={local.name}
                     onChangeText={onChangeName}
                     placeholder="输入酒名，可匹配已有或商品池"
                     placeholderTextColor={T.faint}
                     autoCapitalize="none"
                     returnKeyType="search"
-                    editable={!linkedProductId}
                   />
                   {searching ? (
                     <ActivityIndicator size="small" color={T.gold} style={{ width: 28 }} />
@@ -815,12 +803,7 @@ export default function DrinkEditSheet({
                 )}
               </View>
             ) : (
-              <Field
-                label="酒款名称"
-                value={local.name}
-                onChange={(t) => patch({ name: t })}
-                editable={!linkedProductId}
-              />
+              <Field label="酒款名称" value={local.name} onChange={(t) => patch({ name: t })} />
             )}
 
             {/* 3. Image */}
@@ -888,7 +871,6 @@ export default function DrinkEditSheet({
               label="酒厂"
               value={local.profile.brewery}
               onChange={(t) => patchProfile({ brewery: t })}
-              editable={!linkedProductId}
             />
             {(local.profile.collab_breweries ?? []).map((name, idx) => (
               <View key={`collab-${idx}`} style={styles.collabRow}>
@@ -902,24 +884,21 @@ export default function DrinkEditSheet({
                       patchProfile({ collab_breweries: next })
                     }}
                     placeholder="请填写合酿酒厂"
-                    editable={!linkedProductId}
                   />
                 </View>
-                {!linkedProductId ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      const next = (local.profile.collab_breweries ?? []).filter((_, i) => i !== idx)
-                      patchProfile({ collab_breweries: next })
-                    }}
-                    style={styles.collabRemove}
-                    hitSlop={8}
-                  >
-                    <Ionicons name="close-circle-outline" size={22} color={T.danger} />
-                  </TouchableOpacity>
-                ) : null}
+                <TouchableOpacity
+                  onPress={() => {
+                    const next = (local.profile.collab_breweries ?? []).filter((_, i) => i !== idx)
+                    patchProfile({ collab_breweries: next })
+                  }}
+                  style={styles.collabRemove}
+                  hitSlop={8}
+                >
+                  <Ionicons name="close-circle-outline" size={22} color={T.danger} />
+                </TouchableOpacity>
               </View>
             ))}
-            {!linkedProductId && (local.profile.collab_breweries ?? []).length < 3 ? (
+            {(local.profile.collab_breweries ?? []).length < 3 ? (
               <TouchableOpacity
                 style={styles.addCollabBtn}
                 onPress={() =>
@@ -935,14 +914,13 @@ export default function DrinkEditSheet({
               label="风格"
               value={local.profile.beer_style}
               onChange={(t) => patchProfile({ beer_style: t })}
-              editable={!linkedProductId}
             />
             <View style={styles.row2}>
               <View style={{ flex: 1 }}>
                 <View style={{ marginBottom: 12 }}>
                   <Text style={styles.fieldLabel}>酒精度 %</Text>
                   <TextInput
-                    style={[styles.input, { marginBottom: 0 }, linkedProductId && styles.inputReadOnly]}
+                    style={[styles.input, { marginBottom: 0 }]}
                     value={abvText}
                     onChangeText={(t) => {
                       if (t !== '' && !/^\d*\.?\d*$/.test(t)) return
@@ -957,7 +935,6 @@ export default function DrinkEditSheet({
                     keyboardType="decimal-pad"
                     placeholderTextColor={T.faint}
                     placeholder="例如 5.5"
-                    editable={!linkedProductId}
                   />
                 </View>
               </View>
@@ -967,7 +944,6 @@ export default function DrinkEditSheet({
                   label="产地"
                   value={local.profile.country}
                   onChange={(t) => patchProfile({ country: t })}
-                  editable={!linkedProductId}
                 />
               </View>
             </View>
@@ -976,7 +952,6 @@ export default function DrinkEditSheet({
               value={local.profile.description}
               onChange={(t) => patchProfile({ description: t })}
               multiline
-              editable={!linkedProductId}
             />
 
             {/* 6. Status — only when editing from tonight listing flow (not catalog) */}
@@ -1197,7 +1172,6 @@ function Field({
   keyboard,
   multiline,
   placeholder,
-  editable = true,
 }: {
   label: string
   value: string | null | undefined
@@ -1205,7 +1179,6 @@ function Field({
   keyboard?: 'default' | 'number-pad' | 'decimal-pad'
   multiline?: boolean
   placeholder?: string
-  editable?: boolean
 }) {
   return (
     <View style={{ marginBottom: 12 }}>
@@ -1215,7 +1188,6 @@ function Field({
           styles.input,
           { marginBottom: 0 },
           multiline && { height: 80, textAlignVertical: 'top' },
-          !editable && styles.inputReadOnly,
         ]}
         value={value ?? ''}
         onChangeText={onChange}
@@ -1223,7 +1195,6 @@ function Field({
         placeholder={placeholder}
         placeholderTextColor={T.faint}
         multiline={multiline}
-        editable={editable}
       />
     </View>
   )
@@ -1281,28 +1252,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
-  poolNotice: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    padding: 12,
-    marginBottom: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: T.goldBorder,
-    backgroundColor: T.goldFill,
-  },
-  poolNoticeTitle: { color: T.text, fontSize: 14, fontWeight: '700', marginBottom: 4 },
-  poolNoticeText: { color: T.muted, fontSize: 12, lineHeight: 18 },
-  replaceDrinkBtn: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 10,
-    paddingVertical: 5,
-  },
-  replaceDrinkText: { color: T.gold, fontSize: 13, fontWeight: '700' },
   fieldLabel: { color: T.muted, fontSize: 13, marginBottom: 6 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   row2: { flexDirection: 'row', alignItems: 'flex-start' },
@@ -1328,10 +1277,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: T.border,
     marginBottom: 12,
-  },
-  inputReadOnly: {
-    color: T.muted,
-    backgroundColor: T.surface,
   },
   imagePreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
   imagePreview: { width: 72, height: 72, borderRadius: 8, backgroundColor: T.surfaceMuted },

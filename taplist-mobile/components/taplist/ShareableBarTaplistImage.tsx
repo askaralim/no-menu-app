@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Image, StyleSheet, Text, View } from 'react-native'
 import ViewShot from 'react-native-view-shot'
 
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
@@ -56,6 +56,9 @@ export const ShareableBarTaplistImage = forwardRef<
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>No Menu · {generatedAtLabel}</Text>
+          {tenant.qr_image_url ? (
+            <Image source={{ uri: tenant.qr_image_url }} resizeMode="contain" style={styles.qrImage} />
+          ) : null}
         </View>
       </View>
     </ViewShot>
@@ -207,12 +210,21 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
+    minHeight: 48,
     borderTopWidth: 1,
     borderTopColor: palette.hairline,
+    justifyContent: 'flex-end',
   },
   footerText: {
     ...typography.micro,
     color: palette.faint,
+  },
+  qrImage: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 42,
+    height: 42,
   },
   beerRow: {
     flex: 1,

@@ -48,7 +48,7 @@ Expo dashboard → project **no-menu-app** → **Secrets** → environment **pro
 
 | Secret | Example |
 |--------|---------|
-| `EXPO_PUBLIC_SUPABASE_URL` | `https://<project>.supabase.co` |
+| `EXPO_PUBLIC_SUPABASE_URL` | `https://nomenuapp.com/api/supabase` |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | anon / publishable key |
 | `EXPO_PUBLIC_PRIVACY_POLICY_URL` | `https://nomenuapp.com/privacy` |
 

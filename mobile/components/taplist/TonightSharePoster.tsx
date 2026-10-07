@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Image, Platform, StyleSheet, Text, View } from 'react-native'
 import ViewShot from 'react-native-view-shot'
 import type { DraftDrink } from '../../lib/taplistOwnerApi'
 import {
@@ -9,7 +9,7 @@ import {
   posterDate,
   posterTapLabel,
   sharePrices,
-  styleAndAbv,
+  styleAndAbvValue,
 } from '../../lib/tonightShare'
 import { BeerArtworkImage } from './BeerArtworkImage'
 
@@ -21,168 +21,151 @@ type Props = {
   barName: string
   drinks: DraftDrink[]
   showPrices: boolean
+  qrImageUrl?: string | null
   onReadyChange?: (ready: boolean) => void
+  onQrLoadError?: () => void
 }
 
 const POSTER_WIDTH = 390
 const POSTER_HEIGHT = 520
 const CAPTURE_WIDTH = 1080
 const CAPTURE_HEIGHT = 1440
-const HEADER_HEIGHT = 70
-const FOOTER_HEIGHT = 38
+const HEADER_HEIGHT = 51
+const FOOTER_HEIGHT = 57
 const LIST_HEIGHT = POSTER_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT
-const LIST_PAD_X = 20
-const NUMBER_COL_WIDTH = 52
-const COPY_PAD_LEFT = 13
-const COPY_MIN_WIDTH = 148
+const LIST_PAD_X = 18
+const NUMBER_COL_WIDTH = 40
+const COPY_GAP = 11
+const QR_SIZE = 56
+const SINGLE_ART_SIZE = 258
+
+const SANS_FONT = Platform.select({
+  ios: 'PingFangSC-Regular',
+  android: 'sans-serif',
+  default: 'sans-serif',
+})
+const SANS_MEDIUM_FONT = Platform.select({
+  ios: 'PingFangSC-Medium',
+  android: 'sans-serif-medium',
+  default: 'sans-serif',
+})
+const LATIN_DISPLAY_FONT = Platform.select({
+  ios: 'Georgia',
+  android: 'serif',
+  default: 'serif',
+})
 
 type TypeScale = {
-  gutter: number
-  artMax: number
+  artSize: number
   number: number
   numberLH: number
   brewery: number
   breweryLH: number
   name: number
   nameLH: number
+  nameLines: number
   meta: number
   metaLH: number
-  metaLines: number
   desc: number
   descLH: number
-  descMargin: number
+  descLines: number
   prices: number
   pricesLH: number
 }
 
-const TYPE_BY_COUNT: Record<1 | 2 | 3 | 4 | 5, TypeScale> = {
-  1: {
-    gutter: 24,
-    artMax: 148,
-    number: 24,
-    numberLH: 30,
-    brewery: 12,
-    breweryLH: 16,
-    name: 23,
-    nameLH: 29,
-    meta: 12,
-    metaLH: 16,
-    metaLines: 2,
-    desc: 12,
-    descLH: 17,
-    descMargin: 6,
-    prices: 12,
-    pricesLH: 16,
-  },
+const TYPE_BY_COUNT: Record<2 | 3 | 4 | 5, TypeScale> = {
   2: {
-    gutter: 16,
-    artMax: 108,
-    number: 22,
-    numberLH: 28,
+    artSize: 164,
+    number: 17,
+    numberLH: 22,
     brewery: 11,
-    breweryLH: 14,
-    name: 20,
-    nameLH: 25,
-    meta: 11,
-    metaLH: 15,
-    metaLines: 1,
-    desc: 11,
-    descLH: 15,
-    descMargin: 5,
-    prices: 11,
-    pricesLH: 14,
-  },
-  3: {
-    gutter: 12,
-    artMax: 118,
-    number: 22,
-    numberLH: 28,
-    brewery: 10,
-    breweryLH: 13,
-    name: 19,
-    nameLH: 24,
-    meta: 10,
-    metaLH: 14,
-    metaLines: 1,
-    desc: 10,
-    descLH: 14,
-    descMargin: 4,
-    prices: 10,
-    pricesLH: 13,
-  },
-  4: {
-    gutter: 10,
-    artMax: 88,
-    number: 20,
-    numberLH: 26,
-    brewery: 10,
-    breweryLH: 12,
+    breweryLH: 15,
     name: 16,
     nameLH: 21,
+    nameLines: 2,
     meta: 10,
-    metaLH: 13,
-    metaLines: 1,
-    desc: 10,
+    metaLH: 14,
+    desc: 9,
     descLH: 13,
-    descMargin: 3,
-    prices: 10,
+    descLines: 2,
+    prices: 9,
     pricesLH: 13,
   },
-  5: {
-    gutter: 8,
-    artMax: 70,
-    number: 18,
-    numberLH: 23,
-    brewery: 9,
-    breweryLH: 11,
+  3: {
+    artSize: 118,
+    number: 16,
+    numberLH: 21,
+    brewery: 10.5,
+    breweryLH: 14,
     name: 15,
     nameLH: 19,
-    meta: 9,
-    metaLH: 12,
-    metaLines: 1,
-    desc: 9,
+    nameLines: 2,
+    meta: 9.5,
+    metaLH: 13,
+    desc: 8.5,
     descLH: 12,
-    descMargin: 3,
-    prices: 9,
+    descLines: 1,
+    prices: 8.5,
     pricesLH: 12,
+  },
+  4: {
+    artSize: 88,
+    number: 15.5,
+    numberLH: 20,
+    brewery: 9.5,
+    breweryLH: 12.5,
+    name: 13.5,
+    nameLH: 17,
+    nameLines: 1,
+    meta: 8.5,
+    metaLH: 11.5,
+    desc: 0,
+    descLH: 0,
+    descLines: 0,
+    prices: 8,
+    pricesLH: 11,
+  },
+  5: {
+    artSize: 74,
+    number: 15,
+    numberLH: 19,
+    brewery: 9,
+    breweryLH: 12,
+    name: 12.5,
+    nameLH: 16,
+    nameLines: 1,
+    meta: 8,
+    metaLH: 10.5,
+    desc: 0,
+    descLH: 0,
+    descLines: 0,
+    prices: 7.5,
+    pricesLH: 10,
   },
 }
 
 function typeForCount(count: number): TypeScale {
-  const n = Math.min(5, Math.max(1, count)) as 1 | 2 | 3 | 4 | 5
-  return TYPE_BY_COUNT[n]
-}
-
-function descriptionLineCount(
-  copyHeight: number,
-  type: TypeScale,
-  hasPrices: boolean,
-  hasDescription: boolean,
-  maxLines: number,
-) {
-  if (!hasDescription) return 0
-  const reservedTop =
-    type.breweryLH + type.nameLH + type.metaLines * type.metaLH + type.descMargin
-  const reservedBottom = hasPrices ? type.pricesLH : 0
-  return Math.max(0, Math.min(maxLines, Math.floor((copyHeight - reservedTop - reservedBottom) / type.descLH)))
+  const normalized = Math.min(5, Math.max(2, count)) as 2 | 3 | 4 | 5
+  return TYPE_BY_COUNT[normalized]
 }
 
 export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
-  function TonightSharePoster({ barName, drinks, showPrices, onReadyChange }, ref) {
+  function TonightSharePoster(
+    { barName, drinks, showPrices, qrImageUrl, onReadyChange, onQrLoadError },
+    ref,
+  ) {
     const shotRef = useRef<ViewShot>(null)
     const loadedIds = useRef(new Set<string>())
     const drinkIdsRef = useRef(new Set<string>())
     const [loadedCount, setLoadedCount] = useState(0)
-    const drinkKey = drinks.map((drink) => drink.id).join('|')
-    const count = Math.max(1, drinks.length)
-    const type = typeForCount(drinks.length)
-    const rowHeight = LIST_HEIGHT / count
-    const maxArtByWidth =
-      POSTER_WIDTH - LIST_PAD_X * 2 - NUMBER_COL_WIDTH - COPY_PAD_LEFT - COPY_MIN_WIDTH
-    const artworkSize = Math.min(type.artMax, Math.max(48, rowHeight - type.gutter), maxArtByWidth)
-    const copyHeight = artworkSize
-    const contentInset = (rowHeight - artworkSize) / 2
+    const [loadedQrUrl, setLoadedQrUrl] = useState<string | null>(null)
+    const [qrFailed, setQrFailed] = useState(false)
+    const drinkKey = drinks.map((drink) => `${drink.id}:${drink.image_url || ''}`).join('|')
     const single = drinks.length === 1
+    const rowHeight = LIST_HEIGHT / Math.max(1, drinks.length)
+    const type = typeForCount(drinks.length)
+    const artSize = Math.min(type.artSize, rowHeight - 7)
+    const qrReady = !qrImageUrl || loadedQrUrl === qrImageUrl || qrFailed
     drinkIdsRef.current = new Set(drinks.map((drink) => drink.id))
 
     useEffect(() => {
@@ -191,14 +174,18 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
         if (!drink.image_url?.trim()) loadedIds.current.add(drink.id)
       })
       setLoadedCount(loadedIds.current.size)
-      onReadyChange?.(drinks.length > 0 && loadedIds.current.size >= drinks.length)
-      // drinks is keyed by drinkKey
+      // drinks is keyed by drinkKey so artwork URL changes also reset readiness.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [drinkKey, onReadyChange])
+    }, [drinkKey])
 
     useEffect(() => {
-      onReadyChange?.(drinks.length > 0 && loadedCount >= drinks.length)
-    }, [loadedCount, drinks.length, onReadyChange])
+      setQrFailed(false)
+      setLoadedQrUrl(null)
+    }, [qrImageUrl])
+
+    useEffect(() => {
+      onReadyChange?.(drinks.length > 0 && loadedCount >= drinks.length && qrReady)
+    }, [drinks.length, loadedCount, onReadyChange, qrReady])
 
     const markLoaded = (id: string) => {
       if (!drinkIdsRef.current.has(id) || loadedIds.current.has(id)) return
@@ -212,20 +199,16 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
 
     const rows = useMemo(
       () =>
-        drinks.map((drink, index) => {
-          const description = drinkShareDescription(drink)
-          const prices = sharePrices(drink, showPrices)
-          const lines = descriptionLineCount(
-            copyHeight,
-            type,
-            prices.length > 0,
-            !!description,
-            8,
-          )
-          return { drink, index, description, prices, lines }
-        }),
-      [copyHeight, drinks, showPrices, type],
+        drinks.map((drink, index) => ({
+          drink,
+          index,
+          description: drinkShareDescription(drink),
+          prices: sharePrices(drink, showPrices),
+        })),
+      [drinks, showPrices],
     )
+    const singleNameLines =
+      rows[0] && displayDrinkName(rows[0].drink).length > 18 ? 2 : 1
 
     return (
       <ViewShot
@@ -234,10 +217,16 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
       >
         <View collapsable={false} style={styles.poster}>
           <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <Text style={styles.barName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>
-                {barName}
-              </Text>
+            <Text
+              style={styles.barName}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.68}
+            >
+              {barName}
+            </Text>
+            <View style={styles.headerMeta}>
+              <Text style={styles.date}>{posterDate()}</Text>
               <Text style={styles.heading}>今晚上新</Text>
             </View>
             <View style={styles.headerRule} />
@@ -246,38 +235,60 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
           <View style={styles.list}>
             {single && rows[0] ? (
               <View style={styles.singleBody}>
-                <View collapsable={false} style={styles.singleArtFrame}>
-                  <BeerArtworkImage
-                    imageUrl={rows[0].drink.image_url}
-                    ossStyle="nm-poster"
-                    style={styles.singleArt}
-                    resizeMode="cover"
-                    onLoadEnd={() => markLoaded(rows[0].drink.id)}
-                  />
+                <View style={styles.singleHero}>
+                  <View style={styles.singleNumberColumn}>
+                    <Text style={styles.singleNumber} numberOfLines={1}>
+                      {posterTapLabel(rows[0].drink, 0)}
+                    </Text>
+                  </View>
+                  <View collapsable={false} style={styles.singleArtFrame}>
+                    <BeerArtworkImage
+                      imageUrl={rows[0].drink.image_url}
+                      ossStyle="nm-poster"
+                      style={styles.singleArt}
+                      resizeMode="cover"
+                      onLoadEnd={() => markLoaded(rows[0].drink.id)}
+                    />
+                  </View>
                 </View>
-                <Text style={styles.singleKicker} numberOfLines={1}>
-                  {posterTapLabel(rows[0].drink, 0)} · {breweryName(rows[0].drink)}
-                </Text>
-                <Text style={styles.singleName} numberOfLines={1}>
-                  {displayDrinkName(rows[0].drink)}
-                </Text>
-                <Text style={styles.singleMeta} numberOfLines={1}>
-                  {styleAndAbv(rows[0].drink) || ' '}
-                </Text>
-                {rows[0].description ? (
-                  <Text style={styles.singleDescription} numberOfLines={3}>
-                    {rows[0].description}
+                <View style={styles.singleInfo}>
+                  <Text style={styles.singleBrewery} numberOfLines={1}>
+                    {breweryName(rows[0].drink)}
                   </Text>
-                ) : null}
-                {rows[0].prices.length ? (
-                  <Text style={styles.singlePrices} numberOfLines={1}>
-                    {rows[0].prices.join(' / ')}
+                  <Text style={styles.singleName} numberOfLines={2}>
+                    {displayDrinkName(rows[0].drink)}
                   </Text>
-                ) : null}
+                  <Text style={styles.singleMeta} numberOfLines={1}>
+                    {styleAndAbvValue(rows[0].drink) || ' '}
+                  </Text>
+                  {rows[0].description ? (
+                    <>
+                      <View style={styles.singleCopyRule} />
+                      <Text
+                        style={styles.singleDescription}
+                        numberOfLines={singleNameLines === 2 ? 2 : 3}
+                      >
+                        {rows[0].description}
+                      </Text>
+                    </>
+                  ) : null}
+                  {rows[0].prices.length ? (
+                    <Text style={styles.singlePrices} numberOfLines={2}>
+                      {rows[0].prices.join(' / ')}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             ) : (
-              rows.map(({ drink, index, description, prices, lines }) => (
-                <View key={drink.id} style={[styles.row, { height: rowHeight }]}>
+              rows.map(({ drink, index, description, prices }) => (
+                <View
+                  key={drink.id}
+                  style={[
+                    styles.row,
+                    index < rows.length - 1 && styles.rowDivider,
+                    { height: rowHeight },
+                  ]}
+                >
                   <View style={styles.numberColumn}>
                     <Text
                       style={[styles.number, { fontSize: type.number, lineHeight: type.numberLH }]}
@@ -288,22 +299,20 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
                   </View>
                   <View
                     collapsable={false}
-                    style={[styles.artworkFrame, { width: artworkSize, height: artworkSize }]}
+                    style={[
+                      styles.artworkFrame,
+                      { width: artSize, height: artSize },
+                    ]}
                   >
                     <BeerArtworkImage
                       imageUrl={drink.image_url}
                       ossStyle="nm-poster"
-                      style={{ width: artworkSize, height: artworkSize }}
+                      style={{ width: artSize, height: artSize }}
                       resizeMode="cover"
                       onLoadEnd={() => markLoaded(drink.id)}
                     />
                   </View>
-                  <View
-                    style={[
-                      styles.copy,
-                      { height: copyHeight, marginTop: contentInset, marginBottom: contentInset },
-                    ]}
-                  >
+                  <View style={[styles.copy, { minHeight: artSize }]}>
                     <Text
                       style={[styles.brewery, { fontSize: type.brewery, lineHeight: type.breweryLH }]}
                       numberOfLines={1}
@@ -312,34 +321,25 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
                     </Text>
                     <Text
                       style={[styles.drinkName, { fontSize: type.name, lineHeight: type.nameLH }]}
-                      numberOfLines={1}
+                      numberOfLines={type.nameLines}
+                      adjustsFontSizeToFit={type.nameLines === 1}
+                      minimumFontScale={0.68}
                     >
                       {displayDrinkName(drink)}
                     </Text>
                     <Text
-                      style={[
-                        styles.meta,
-                        {
-                          fontSize: type.meta,
-                          lineHeight: type.metaLH,
-                          minHeight: type.metaLines * type.metaLH,
-                        },
-                      ]}
-                      numberOfLines={type.metaLines}
+                      style={[styles.meta, { fontSize: type.meta, lineHeight: type.metaLH }]}
+                      numberOfLines={1}
                     >
-                      {styleAndAbv(drink) || ' '}
+                      {styleAndAbvValue(drink) || ' '}
                     </Text>
-                    {description && lines > 0 ? (
+                    {description && type.descLines > 0 ? (
                       <Text
                         style={[
                           styles.description,
-                          {
-                            fontSize: type.desc,
-                            lineHeight: type.descLH,
-                            marginTop: type.descMargin,
-                          },
+                          { fontSize: type.desc, lineHeight: type.descLH },
                         ]}
-                        numberOfLines={lines}
+                        numberOfLines={type.descLines}
                       >
                         {description}
                       </Text>
@@ -350,7 +350,7 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
                           styles.prices,
                           { fontSize: type.prices, lineHeight: type.pricesLH },
                         ]}
-                        numberOfLines={1}
+                        numberOfLines={2}
                       >
                         {prices.join(' / ')}
                       </Text>
@@ -362,7 +362,22 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>No Menu · {posterDate()}</Text>
+            <View style={[styles.footerRule, !qrImageUrl && styles.footerRuleWithoutQr]} />
+            <Text style={styles.footerText}>No Menu</Text>
+            {qrImageUrl && !qrFailed ? (
+              <View style={styles.qrFrame}>
+                <Image
+                  source={{ uri: qrImageUrl }}
+                  style={styles.qrImage}
+                  resizeMode="contain"
+                  onLoad={() => setLoadedQrUrl(qrImageUrl)}
+                  onError={() => {
+                    setQrFailed(true)
+                    onQrLoadError?.()
+                  }}
+                />
+              </View>
+            ) : null}
           </View>
         </View>
       </ViewShot>
@@ -370,51 +385,193 @@ export const TonightSharePoster = forwardRef<TonightSharePosterHandle, Props>(
   },
 )
 
-const PAPER = '#F4EFE5'
-const INK = '#16130F'
-const ACCENT = '#B84A24'
-const RULE = 'rgba(22,19,15,0.32)'
+const PAPER = '#FFFFFF'
+const INK = '#171512'
+const ACCENT = '#8A641F'
+const RELEASE_RED = '#B94A31'
+const RULE = '#DDDAD4'
+const FOOTER_GRAY = '#89857E'
+const FRAME_RULE = 'rgba(119,115,107,0.58)'
 
 const styles = StyleSheet.create({
-  poster: { width: POSTER_WIDTH, height: POSTER_HEIGHT, backgroundColor: PAPER, overflow: 'hidden' },
-  header: { height: HEADER_HEIGHT, paddingHorizontal: 20, paddingTop: 15 },
-  headerTitleRow: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },
-  barName: { flex: 1, color: INK, fontSize: 28, lineHeight: 35, fontWeight: '800' },
-  headerRule: { height: 1, backgroundColor: INK, marginTop: 7 },
-  heading: { flexShrink: 0, color: ACCENT, fontSize: 13, lineHeight: 18, letterSpacing: 3, fontWeight: '700' },
+  poster: {
+    width: POSTER_WIDTH,
+    height: POSTER_HEIGHT,
+    backgroundColor: PAPER,
+    overflow: 'hidden',
+  },
+  header: {
+    height: HEADER_HEIGHT,
+    paddingHorizontal: 18,
+    paddingTop: 11,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  barName: {
+    flex: 1,
+    color: INK,
+    fontFamily: SANS_MEDIUM_FONT,
+    fontSize: 23,
+    lineHeight: 30,
+    letterSpacing: -0.35,
+    paddingRight: 10,
+  },
+  headerMeta: {
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 7,
+    paddingTop: 8,
+  },
+  date: {
+    color: INK,
+    fontFamily: LATIN_DISPLAY_FONT,
+    fontSize: 7.2,
+    lineHeight: 10,
+    letterSpacing: 1.9,
+  },
+  heading: {
+    color: RELEASE_RED,
+    fontFamily: SANS_MEDIUM_FONT,
+    fontSize: 11.5,
+    lineHeight: 17,
+    letterSpacing: 1.6,
+  },
+  headerRule: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    bottom: 4,
+    height: 1,
+    backgroundColor: FRAME_RULE,
+  },
   list: { height: LIST_HEIGHT, paddingHorizontal: LIST_PAD_X },
-  row: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: RULE },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: RULE,
+  },
   numberColumn: {
     width: NUMBER_COL_WIDTH,
     alignItems: 'flex-start',
     justifyContent: 'center',
     alignSelf: 'stretch',
   },
-  number: { color: INK, fontWeight: '700' },
-  artworkFrame: { flexShrink: 0, overflow: 'hidden', backgroundColor: '#E7DFD1', borderWidth: 1, borderColor: RULE },
-  copy: { flex: 1, minWidth: COPY_MIN_WIDTH, paddingLeft: COPY_PAD_LEFT, overflow: 'hidden' },
-  singleBody: { flex: 1, paddingTop: 10, paddingBottom: 6 },
-  singleArtFrame: {
-    width: 220,
-    height: 220,
-    alignSelf: 'center',
+  number: { color: ACCENT, fontFamily: SANS_MEDIUM_FONT },
+  artworkFrame: {
+    flexShrink: 0,
     overflow: 'hidden',
-    backgroundColor: '#E7DFD1',
-    borderWidth: 1,
-    borderColor: RULE,
-    marginBottom: 12,
+    backgroundColor: PAPER,
   },
-  singleArt: { width: 220, height: 220 },
-  singleKicker: { color: ACCENT, fontSize: 12, lineHeight: 16, fontWeight: '700' },
-  singleName: { color: INK, fontSize: 24, lineHeight: 30, fontWeight: '800', marginTop: 3 },
-  singleMeta: { color: INK, fontSize: 12, lineHeight: 16, fontWeight: '600', marginTop: 3 },
-  singleDescription: { color: INK, fontSize: 12, lineHeight: 17, marginTop: 8 },
-  singlePrices: { color: ACCENT, textAlign: 'right', fontSize: 14, lineHeight: 18, fontWeight: '800', marginTop: 10 },
-  brewery: { color: ACCENT, fontWeight: '700' },
-  drinkName: { color: INK, fontWeight: '800' },
-  meta: { color: INK, fontWeight: '600' },
-  description: { color: INK, paddingRight: 2 },
-  prices: { marginTop: 'auto', maxWidth: '100%', color: ACCENT, textAlign: 'right', fontWeight: '800', alignSelf: 'flex-end' },
-  footer: { height: FOOTER_HEIGHT, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  footerText: { color: 'rgba(22,19,15,0.56)', fontSize: 8, letterSpacing: 0.2 },
+  copy: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: COPY_GAP,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  singleBody: { flex: 1, paddingTop: 5, paddingBottom: 2 },
+  singleHero: {
+    height: SINGLE_ART_SIZE,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  singleNumberColumn: {
+    width: 45,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  singleNumber: {
+    color: ACCENT,
+    fontFamily: SANS_MEDIUM_FONT,
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  singleArtFrame: {
+    width: SINGLE_ART_SIZE,
+    height: SINGLE_ART_SIZE,
+    flexShrink: 0,
+    overflow: 'hidden',
+    backgroundColor: PAPER,
+  },
+  singleArt: { width: SINGLE_ART_SIZE, height: SINGLE_ART_SIZE },
+  singleInfo: { marginTop: 8 },
+  singleBrewery: {
+    color: ACCENT,
+    fontFamily: SANS_FONT,
+    fontSize: 10.5,
+    lineHeight: 14,
+  },
+  singleName: {
+    color: INK,
+    fontFamily: SANS_MEDIUM_FONT,
+    fontSize: 17,
+    lineHeight: 21,
+    marginTop: 1,
+  },
+  singleMeta: {
+    color: INK,
+    fontFamily: SANS_FONT,
+    fontSize: 10.5,
+    lineHeight: 15,
+    marginTop: 1,
+  },
+  singleCopyRule: {
+    width: '78%',
+    height: 1,
+    backgroundColor: 'rgba(74,77,81,0.42)',
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  singleDescription: {
+    width: '88%',
+    color: INK,
+    fontFamily: SANS_FONT,
+    fontSize: 9,
+    lineHeight: 12,
+  },
+  singlePrices: {
+    color: ACCENT,
+    fontFamily: SANS_FONT,
+    fontSize: 8.5,
+    lineHeight: 12,
+    marginTop: 7,
+  },
+  brewery: { color: ACCENT, fontFamily: SANS_FONT },
+  drinkName: { color: INK, fontFamily: SANS_MEDIUM_FONT, marginTop: 1 },
+  meta: { color: INK, fontFamily: SANS_FONT, marginTop: 1 },
+  description: { color: 'rgba(23,21,18,0.75)', fontFamily: SANS_FONT, marginTop: 2 },
+  prices: { color: ACCENT, fontFamily: SANS_FONT, marginTop: 3, maxWidth: '100%' },
+  footer: { height: FOOTER_HEIGHT, marginHorizontal: 18, position: 'relative' },
+  footerRule: {
+    position: 'absolute',
+    left: 0,
+    right: QR_SIZE + 11,
+    top: QR_SIZE / 2,
+    height: 1,
+    backgroundColor: FRAME_RULE,
+  },
+  footerRuleWithoutQr: { right: 0 },
+  footerText: {
+    position: 'absolute',
+    left: 0,
+    top: QR_SIZE / 2 + 7,
+    color: FOOTER_GRAY,
+    fontFamily: LATIN_DISPLAY_FONT,
+    fontSize: 8.2,
+    lineHeight: 12,
+  },
+  qrFrame: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: QR_SIZE,
+    height: QR_SIZE,
+    padding: 2,
+    backgroundColor: '#FFFFFF',
+  },
+  qrImage: { width: QR_SIZE - 4, height: QR_SIZE - 4 },
 })

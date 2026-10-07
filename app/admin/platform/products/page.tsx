@@ -3,6 +3,10 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import {
+  isPromotableProductImageSource,
+  promoteProductImage,
+} from '@/lib/taplistStorage'
 import type {
   AdminDrinkCompanyRow,
   AdminDrinkProductRow,
@@ -337,6 +341,11 @@ export default function PlatformProductsPage() {
 
     setSaving(true)
     try {
+      const sourceImageUrl = form.image_url.trim()
+      const shouldPromoteImage = isPromotableProductImageSource(sourceImageUrl)
+      const promotedImageUrl = editingId && shouldPromoteImage
+        ? await promoteProductImage(supabase, editingId, sourceImageUrl)
+        : null
       const payload = {
         p_id: editingId,
         p_name: name,
@@ -350,7 +359,7 @@ export default function PlatformProductsPage() {
         p_ibu: form.ibu.trim() ? Number.parseInt(form.ibu, 10) : null,
         p_country: form.country.trim() || null,
         p_origin_region: form.origin_region.trim() || null,
-        p_image_url: form.image_url.trim() || null,
+        p_image_url: promotedImageUrl || (shouldPromoteImage ? null : sourceImageUrl || null),
         p_description: form.description.trim() || null,
         p_tasting_note: form.tasting_note.trim() || null,
         p_company_id: form.company_id || null,
@@ -373,6 +382,10 @@ export default function PlatformProductsPage() {
       if (!editingId && savedId) {
         setEditingId(savedId)
         setNormalizedKeyTouched(true)
+      }
+
+      if (wasCreate && savedId && shouldPromoteImage) {
+        await promoteProductImage(supabase, savedId, sourceImageUrl)
       }
 
       await loadProducts()

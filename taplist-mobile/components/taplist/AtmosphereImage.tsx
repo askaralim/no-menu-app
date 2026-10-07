@@ -11,6 +11,7 @@ type AtmosphereImageProps = {
   aspectRatio?: number
   overlayOpacity?: number
   scrimOpacity?: number
+  topScrimOpacity?: number
   children?: React.ReactNode
   borderRadius?: number
   ossStyle?: OssImageStyle
@@ -22,6 +23,7 @@ export function AtmosphereImage({
   aspectRatio,
   overlayOpacity = 0.36,
   scrimOpacity = 1,
+  topScrimOpacity = 0,
   children,
   borderRadius = 8,
   ossStyle = 'nm-cover',
@@ -44,6 +46,13 @@ export function AtmosphereImage({
           ]}
           style={styles.tint}>
           <View pointerEvents="none" style={styles.grain} />
+          {topScrimOpacity > 0 ? (
+            <LinearGradient
+              pointerEvents="none"
+              colors={[`rgba(13,13,13,${topScrimOpacity})`, 'rgba(13,13,13,0)']}
+              style={styles.topScrim}
+            />
+          ) : null}
           {children}
         </LinearGradient>
       </View>
@@ -60,6 +69,13 @@ export function AtmosphereImage({
         ]}
         style={styles.tint}>
         <View pointerEvents="none" style={styles.grain} />
+        {topScrimOpacity > 0 ? (
+          <LinearGradient
+            pointerEvents="none"
+            colors={[`rgba(13,13,13,${topScrimOpacity})`, 'rgba(13,13,13,0)']}
+            style={styles.topScrim}
+          />
+        ) : null}
         {children}
       </LinearGradient>
     </CachedImageBackground>
@@ -89,5 +105,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245,241,232,0.03)',
     borderWidth: 1,
     borderColor: 'rgba(245,241,232,0.04)',
+  },
+  topScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '34%',
   },
 })

@@ -23,6 +23,36 @@ export function shareableTonightDrinks(draft: TaplistDraft): DraftDrink[] {
     .sort((a, b) => (a.public_sort_order ?? 0) - (b.public_sort_order ?? 0))
 }
 
+export function shareableFullTaplistDrinks(draft: TaplistDraft): DraftDrink[] {
+  const visibleCategoryIds = new Set(
+    draft.categories
+      .filter((category) => category.enabled && category.is_public_visible)
+      .map((category) => category.id),
+  )
+  const groupOrder: Record<DraftDrink['public_status'], number> = {
+    new: 0,
+    available: 0,
+    low: 0,
+    coming_soon: 1,
+    sold_out: 2,
+  }
+
+  return draft.drinks
+    .filter(
+      (drink) =>
+        drink.enabled &&
+        drink.is_public_visible &&
+        typeof drink.public_sort_order === 'number' &&
+        drink.public_sort_order >= 1 &&
+        (!drink.category_id || visibleCategoryIds.has(drink.category_id)),
+    )
+    .sort((a, b) => {
+      const groupDifference = groupOrder[a.public_status] - groupOrder[b.public_status]
+      if (groupDifference) return groupDifference
+      return (a.public_sort_order ?? 0) - (b.public_sort_order ?? 0)
+    })
+}
+
 export function breweryName(drink: DraftDrink): string {
   const primary = (drink.profile.brewery || drink.brand_name || '').trim()
   const collabs = (drink.profile.collab_breweries ?? [])
@@ -45,10 +75,10 @@ export function drinkShareDescription(drink: DraftDrink): string {
   return (drink.display_description || drink.profile.description || '').trim()
 }
 
-export function styleAndAbv(drink: DraftDrink): string {
+export function styleAndAbvValue(drink: DraftDrink): string {
   return [
     drink.profile.beer_style?.trim() || null,
-    typeof drink.profile.abv === 'number' ? `ABV ${formatNumber(drink.profile.abv)}%` : null,
+    typeof drink.profile.abv === 'number' ? `${formatNumber(drink.profile.abv)}%` : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -81,7 +111,7 @@ export function buildTonightShareText(
   const lines = [barName.trim(), '今晚上新', '']
   drinks.forEach((drink, index) => {
     lines.push(`${posterTapLabel(drink, index)} ${breweryName(drink)} · ${displayDrinkName(drink)}`)
-    const meta = styleAndAbv(drink)
+    const meta = styleAndAbvValue(drink)
     if (meta) lines.push(meta)
     const description = drinkShareDescription(drink)
     if (description) lines.push(description)

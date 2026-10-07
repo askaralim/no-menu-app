@@ -216,9 +216,9 @@ try render("01-positioning.png") {
   drawBrand()
   drawText("现在的", x: 72, y: 170, width: 900, size: 103, weight: .semibold, kern: -5)
   drawText("No Menu", x: 72, y: 285, width: 900, size: 103, weight: .semibold, color: gold, kern: -4)
-  drawText("看实时酒单，也记录喝过的酒", x: 72, y: 416, width: 760, size: 28, color: muted, kern: 1)
-  drawRoundedImage(home, x: 70, y: 550, width: 510, height: 810, radius: 28, focusFromTop: 0.29)
-  drawRoundedImage(mine, x: 568, y: 610, width: 440, height: 750, radius: 28, focusFromTop: 0.32)
+  drawText("看实时酒单，记录喝过的 TAP", x: 72, y: 416, width: 760, size: 28, color: muted, kern: 1)
+  drawRoundedImage(home, x: 55, y: 500, width: 430, height: 930, radius: 28, focusFromTop: 0.5)
+  drawRoundedImage(mine, x: 635, y: 560, width: 390, height: 844, radius: 28, focusFromTop: 0.5)
 }
 
 try render("02-nearby.png") {
@@ -233,15 +233,14 @@ try render("03-live-taplist.png") {
   drawRoundedImage(barDetail, x: 405, y: 55, width: 625, height: 1330, radius: 30, focusFromTop: 0.48)
   drawLeftVeil(width: 650)
   drawBrand()
-  drawText("酒吧现在", x: 72, y: 205, width: 520, size: 87, weight: .semibold, kern: -5)
-  drawText("有什么酒", x: 72, y: 305, width: 520, size: 87, weight: .semibold, color: gold, kern: -5)
+  drawText("酒吧实时", x: 72, y: 205, width: 520, size: 87, weight: .semibold, kern: -5)
+  drawText("TAP", x: 72, y: 305, width: 520, size: 87, weight: .semibold, color: gold, kern: -5)
 }
 
 try render("04-my-tap.png") {
   drawBrand()
-  drawSection("MY TAP", y: 145)
-  drawText("记录喝过的酒", x: 72, y: 205, width: 850, size: 86, weight: .semibold, kern: -5)
-  drawText("按月份回看，仅自己可见", x: 72, y: 318, width: 850, size: 25, color: muted, kern: 1)
+  drawText("记录喝过的 TAP", x: 72, y: 170, width: 850, size: 86, weight: .semibold, kern: -5)
+  drawText("按月份回看，仅自己可见", x: 72, y: 283, width: 850, size: 25, color: muted, kern: 1)
   drawRoundedImage(recorded, x: 55, y: 535, width: 485, height: 850, radius: 28, focusFromTop: 0.59)
   drawRoundedImage(report, x: 555, y: 465, width: 475, height: 920, radius: 28, focusFromTop: 0.36)
 }
@@ -260,7 +259,7 @@ try render("06-more-cities.png") {
   drawText("还想在哪座城市", x: 72, y: 195, width: 900, size: 84, weight: .semibold, kern: -5)
   drawText("看到 No Menu？", x: 72, y: 295, width: 900, size: 84, weight: .semibold, color: gold, kern: -4)
 
-  let cities = ["上海", "北京", "天津", "青岛", "沈阳", "长春", "滨州"]
+  let cities = ["上海", "北京", "天津", "青岛", "沈阳", "长春", "滨州", "西安", "更多..."]
   let gridX: CGFloat = 72
   let gridY: CGFloat = 590
   let columnWidth: CGFloat = 312

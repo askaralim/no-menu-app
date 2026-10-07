@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
-import { useQuery } from '@tanstack/react-query'
-import { Link, useRouter } from 'expo-router'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { Link, type Href, useRouter } from 'expo-router'
 import {
   ActivityIndicator,
   BackHandler,
@@ -21,25 +21,32 @@ import {
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { BeerArtwork } from '@/components/taplist/BeerArtwork'
-import { CachedImageBackground } from '@/components/taplist/CachedImage'
+import { CachedImage, CachedImageBackground } from '@/components/taplist/CachedImage'
 import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
-import { fetchPublicNewDrinks, fetchPublicTaplistBreweries, searchPublicTaplist } from '@/lib/api/taplist'
+import { fetchPublicNewDrinks, fetchPublicTaplistBreweries, searchMiniProducts } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
-import type { PublicNewTapRow, PublicTaplistBreweryDiscoveryRow, PublicTaplistSearchResult } from '@/lib/types'
+import type { MiniProductSearchResult, PublicNewTapRow, PublicTaplistBreweryDiscoveryRow } from '@/lib/types'
 import { trackEvent } from '@/lib/analytics'
 import { formatPrimaryBrewery } from '@/lib/formatTaplist'
 
 const searchPresets = [
-  { label: 'IPA', query: 'IPA' },
-  { label: '酸', query: '酸' },
-  { label: '世涛', query: '世涛' },
-  { label: '拉格', query: '拉格' },
-  { label: '小麦', query: '小麦' },
-  { label: '西打', query: '西打' },
-  { label: '果泥', query: '果泥' },
+  'IPA',
+  '酸啤',
+  '世涛',
+  '拉格',
+  '小麦',
+  '西打',
+  '果泥',
+]
+const expandedSearchPresets = [
+  ...searchPresets,
+  '赛松 / 农舍',
+  '比利时艾尔',
+  '艾尔',
+  '蜂蜜酒',
+  '其他',
 ]
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -54,29 +61,33 @@ export default function SearchScreen() {
   const configured = useTaplistSupabaseReady()
   const { selectedCity } = useTaplistCity()
   const inputRef = useRef<TextInputType>(null)
-  const queryKindRef = useRef<'preset' | 'custom'>('custom')
+  const queryKindRef = useRef<'style' | 'custom'>('custom')
   const trackedSearchRef = useRef<string | null>(null)
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [selectedStyle, setSelectedStyle] = useState<string | null>(null)
   const [pullOffset, setPullOffset] = useState(0)
   const trimmedQuery = query.trim()
   const selectedCityName = selectedCity.city
-  const isSearching = trimmedQuery.length > 0
-  const isDebouncing = isSearching && debouncedQuery !== trimmedQuery
+  const isSearching = trimmedQuery.length > 0 || selectedStyle !== null
+  const isDebouncing = trimmedQuery.length > 0 && debouncedQuery !== trimmedQuery
   const pullReady = pullOffset >= PULL_BACK_THRESHOLD
 
   const clearSearch = () => {
     setQuery('')
     setDebouncedQuery('')
+    setSelectedStyle(null)
     setPullOffset(0)
     trackedSearchRef.current = null
     inputRef.current?.blur()
     Keyboard.dismiss()
   }
 
-  const selectDiscoveryQuery = (nextQuery: string) => {
-    queryKindRef.current = 'preset'
-    setQuery(nextQuery)
+  const selectStyle = (style: string) => {
+    queryKindRef.current = 'style'
+    setQuery('')
+    setDebouncedQuery('')
+    setSelectedStyle(style)
   }
 
   useEffect(() => {
@@ -102,9 +113,18 @@ export default function SearchScreen() {
   }, [isSearching])
 
   const handleSearchScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (!isSearching || Platform.OS !== 'ios') return
-    const y = event.nativeEvent.contentOffset.y
-    setPullOffset(y < 0 ? -y : 0)
+    if (!isSearching) return
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
+    if (Platform.OS === 'ios') {
+      setPullOffset(contentOffset.y < 0 ? -contentOffset.y : 0)
+    }
+    if (
+      contentSize.height - layoutMeasurement.height - contentOffset.y < 240 &&
+      drinksQuery.hasNextPage &&
+      !drinksQuery.isFetchingNextPage
+    ) {
+      void drinksQuery.fetchNextPage()
+    }
   }
 
   const handleSearchScrollEndDrag = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -116,10 +136,19 @@ export default function SearchScreen() {
     setPullOffset(0)
   }
 
-  const drinksQuery = useQuery({
-    queryKey: ['taplist', 'search', selectedCityName, debouncedQuery],
-    queryFn: () => searchPublicTaplist(selectedCityName, debouncedQuery),
-    enabled: configured && debouncedQuery.length > 0,
+  const drinksQuery = useInfiniteQuery({
+    queryKey: ['taplist', 'search', selectedCityName, debouncedQuery, selectedStyle],
+    initialPageParam: 0,
+    queryFn: ({ pageParam, signal }) =>
+      searchMiniProducts({
+        city: selectedCityName,
+        query: debouncedQuery,
+        style: selectedStyle,
+        offset: pageParam,
+        signal,
+      }),
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+    enabled: configured && (debouncedQuery.length > 0 || selectedStyle !== null),
   })
 
   const newTapsQuery = useQuery({
@@ -134,24 +163,27 @@ export default function SearchScreen() {
     enabled: configured,
   })
 
-  const drinkResults = drinksQuery.data ?? []
+  const drinkResults = dedupeSearchResults(
+    drinksQuery.data?.pages.flatMap((page) => page.results) ?? [],
+  )
   const newTaps = newTapsQuery.data ?? []
   const breweries = breweriesQuery.data ?? []
 
   const showDrinkSection = isSearching
 
   useEffect(() => {
-    if (!drinksQuery.isSuccess || !debouncedQuery) return
-    const searchKey = `${selectedCityName}:${debouncedQuery}`
+    if (!drinksQuery.isSuccess || (!debouncedQuery && !selectedStyle)) return
+    const searchKey = `${selectedCityName}:${selectedStyle ?? ''}:${debouncedQuery}`
     if (trackedSearchRef.current === searchKey) return
     trackedSearchRef.current = searchKey
     trackEvent('search_completed', {
       query_kind: queryKindRef.current,
       query_length: debouncedQuery.length,
+      style: selectedStyle,
       result_count: drinkResults.length,
       has_results: drinkResults.length > 0,
     })
-  }, [debouncedQuery, drinkResults.length, drinksQuery.isSuccess, selectedCityName])
+  }, [debouncedQuery, drinkResults.length, drinksQuery.isSuccess, selectedCityName, selectedStyle])
 
   return (
     <View style={styles.screen}>
@@ -216,20 +248,22 @@ export default function SearchScreen() {
         <TextInput
           ref={inputRef}
           accessibilityLabel="搜索公开酒单"
-          accessibilityHint="可搜索酒款、酒厂、风格、酒吧或区域"
-          placeholder="搜索酒款、酒厂、风格或酒吧"
+          accessibilityHint="可搜索酒款、酒厂或风格"
+          placeholder="搜索风格 / 酒款 / 酒厂"
           placeholderTextColor={palette.faint}
           style={styles.input}
           selectionColor={palette.amber}
           value={query}
           onChangeText={(value) => {
             queryKindRef.current = 'custom'
+            setSelectedStyle(null)
             setQuery(value)
           }}
           autoCorrect={false}
           autoCapitalize="none"
           clearButtonMode="never"
           returnKeyType="search"
+          onSubmitEditing={() => setDebouncedQuery(trimmedQuery)}
         />
         {query.length > 0 ? (
           <Pressable
@@ -246,8 +280,11 @@ export default function SearchScreen() {
       {!isSearching ? (
         <SearchGuide
           breweries={breweriesQuery.isError ? [] : breweries}
+          breweriesError={breweriesQuery.isError}
+          breweriesLoading={breweriesQuery.isLoading}
+          onRetryBreweries={() => void breweriesQuery.refetch()}
           newTaps={newTapsQuery.isError ? [] : newTaps}
-          onSelect={selectDiscoveryQuery}
+          onSelectStyle={selectStyle}
         />
       ) : null}
 
@@ -266,17 +303,30 @@ export default function SearchScreen() {
           ) : drinksQuery.isError ? (
             <EmptyState
               title="酒款搜索不可用"
-              body="请在 Supabase 执行 search_public_taplist 迁移后重试。"
-            />
+              body="暂时无法读取公开酒款目录，请稍后重试。">
+              <RetryButton label="重新搜索" onPress={() => void drinksQuery.refetch()} />
+            </EmptyState>
           ) : drinkResults.length === 0 ? (
-            <EmptyState title="没有匹配的酒款" body="试试酒厂名、风格、酒款中文名或酒吧名称。">
+            <EmptyState title="没有匹配的酒款" body="试试酒厂名、风格或酒款的中英文名。">
               <View style={styles.emptyRecovery}>
                 <Text style={styles.emptyRecoveryLabel}>换个风格试试</Text>
-                <PresetSearches onSelect={selectDiscoveryQuery} />
+                <PresetSearches onSelect={selectStyle} />
               </View>
             </EmptyState>
           ) : (
-            drinkResults.map((drink) => <DrinkResult key={drink.drink_id} drink={drink} />)
+            <>
+              {drinkResults.map((drink) => (
+                <DrinkResult key={drink.key} drink={drink} />
+              ))}
+              {drinksQuery.isFetchingNextPage ? (
+                <View style={styles.loadingMore}>
+                  <ActivityIndicator size="small" color={palette.amber} />
+                  <Text style={styles.muted}>正在加载更多...</Text>
+                </View>
+              ) : !drinksQuery.hasNextPage ? (
+                <Text style={styles.listEnd}>已显示全部结果</Text>
+              ) : null}
+            </>
           )}
         </>
       ) : null}
@@ -288,14 +338,21 @@ export default function SearchScreen() {
 
 function SearchGuide({
   breweries,
+  breweriesError,
+  breweriesLoading,
   newTaps,
-  onSelect,
+  onRetryBreweries,
+  onSelectStyle,
 }: {
   breweries: PublicTaplistBreweryDiscoveryRow[]
+  breweriesError: boolean
+  breweriesLoading: boolean
   newTaps: PublicNewTapRow[]
-  onSelect: (query: string) => void
+  onRetryBreweries: () => void
+  onSelectStyle: (style: string) => void
 }) {
   const [gridWidth, setGridWidth] = useState(0)
+  const [showAllStyles, setShowAllStyles] = useState(false)
   const gap = GRID_GAP
   const tileWidth =
     gridWidth > 0 ? (gridWidth - gap * (GRID_COLS - 1)) / GRID_COLS : 0
@@ -308,18 +365,41 @@ function SearchGuide({
         setGridWidth((current) => (Math.abs(current - nextWidth) > 0.5 ? nextWidth : current))
       }}>
       <View style={styles.guideSection}>
-        <Text style={styles.sectionTitle}>风格</Text>
-        <PresetSearches onSelect={onSelect} />
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionTitle}>风格</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowAllStyles((visible) => !visible)}
+            hitSlop={8}>
+            <Text style={styles.moreStyles}>{showAllStyles ? '收起' : '更多'}</Text>
+          </Pressable>
+        </View>
+        <PresetSearches
+          presets={showAllStyles ? expandedSearchPresets : searchPresets}
+          onSelect={onSelectStyle}
+        />
       </View>
 
       {newTaps.length > 0 && tileWidth > 0 ? (
         <SearchNewTaps drinks={newTaps.slice(0, 9)} tileWidth={tileWidth} gap={gap} />
       ) : null}
 
-      {breweries.length > 0 && tileWidth > 0 ? (
+      {breweriesLoading ? (
+        <View style={styles.guideSection}>
+          <Text style={styles.sectionTitle}>酒厂</Text>
+          <View style={styles.inlineLoading}>
+            <ActivityIndicator size="small" color={palette.amber} />
+            <Text style={styles.muted}>加载中</Text>
+          </View>
+        </View>
+      ) : breweriesError ? (
+        <View style={styles.guideSection}>
+          <Text style={styles.sectionTitle}>酒厂</Text>
+          <RetryButton label="酒厂加载失败，点击重试" onPress={onRetryBreweries} />
+        </View>
+      ) : breweries.length > 0 && tileWidth > 0 ? (
         <BreweryDiscovery
           breweries={breweries.slice(0, 9)}
-          onSelect={onSelect}
           tileWidth={tileWidth}
           gap={gap}
         />
@@ -328,18 +408,24 @@ function SearchGuide({
   )
 }
 
-function PresetSearches({ onSelect }: { onSelect: (query: string) => void }) {
+function PresetSearches({
+  onSelect,
+  presets = searchPresets,
+}: {
+  onSelect: (query: string) => void
+  presets?: string[]
+}) {
   return (
     <View style={styles.presetRow}>
-      {searchPresets.map((preset) => (
+      {presets.map((preset) => (
         <Pressable
-          key={preset.label}
+          key={preset}
           accessibilityRole="button"
-          accessibilityLabel={`搜索${preset.label}`}
+          accessibilityLabel={`筛选${preset}`}
           accessibilityHint="显示当前公开酒单中的匹配酒款"
-          onPress={() => onSelect(preset.query)}
+          onPress={() => onSelect(preset)}
           style={({ pressed }) => [styles.presetPill, pressed && styles.presetPillPressed]}>
-          <Text style={styles.presetLabel}>{preset.label}</Text>
+          <Text style={styles.presetLabel}>{preset}</Text>
         </Pressable>
       ))}
     </View>
@@ -457,16 +543,16 @@ function chunkRows<T>(items: T[], size: number) {
 
 function BreweryDiscovery({
   breweries,
-  onSelect,
   tileWidth,
   gap,
 }: {
   breweries: PublicTaplistBreweryDiscoveryRow[]
-  onSelect: (query: string) => void
   tileWidth: number
   gap: number
 }) {
+  const router = useRouter()
   const rows = chunkRows(breweries, GRID_COLS)
+  const tileHeight = tileWidth
 
   return (
     <View style={styles.guideSection}>
@@ -477,24 +563,34 @@ function BreweryDiscovery({
             {row.map((brewery) => (
               <Pressable
                 key={brewery.brewery_name}
-                accessibilityRole="button"
-                accessibilityLabel={`搜索${brewery.brewery_name}`}
-                accessibilityHint="显示当前公开酒单中的匹配酒款"
-                onPress={() => onSelect(brewery.brewery_name)}
+                accessibilityRole="link"
+                accessibilityLabel={`查看${brewery.brewery_name}酒厂`}
+                accessibilityHint="打开酒厂页"
+                onPress={() => router.push(`/brewery/${encodeURIComponent(brewery.brewery_name)}` as Href)}
                 style={({ pressed }) => [
-                  styles.breweryCard,
-                  { width: tileWidth },
-                  pressed && styles.breweryCardPressed,
+                  styles.newTapTile,
+                  { width: tileWidth, height: tileHeight },
+                  pressed && styles.newTapTilePressed,
                 ]}>
-                <Text style={styles.breweryName} numberOfLines={1} ellipsizeMode="tail">
-                  {brewery.brewery_name}
-                </Text>
-                <Text style={styles.breweryCount}>{brewery.tap_count} 款</Text>
+                {brewery.logo_url ? (
+                  <CachedImageBackground
+                    accessibilityLabel={`${brewery.brewery_name}酒厂 Logo`}
+                    ossStyle="nm-card"
+                    source={brewery.logo_url}
+                    style={styles.newTapTileImage}
+                    imageStyle={styles.newTapTileImageRadius}>
+                    <BreweryTileCopy brewery={brewery} />
+                  </CachedImageBackground>
+                ) : (
+                  <View style={styles.newTapTileImage}>
+                    <BreweryTileCopy brewery={brewery} />
+                  </View>
+                )}
               </Pressable>
             ))}
             {row.length < GRID_COLS
               ? Array.from({ length: GRID_COLS - row.length }).map((_, index) => (
-                  <View key={`spacer-${rowIndex}-${index}`} style={{ width: tileWidth }} />
+                  <View key={`spacer-${rowIndex}-${index}`} style={{ width: tileWidth, height: tileHeight }} />
                 ))
               : null}
           </View>
@@ -504,56 +600,71 @@ function BreweryDiscovery({
   )
 }
 
-function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
-  const brewery = formatPrimaryBrewery(drink.brewery, drink.brand_name)
-  const styleLine = [drink.beer_style, typeof drink.abv === 'number' ? `${drink.abv}%` : null]
+function BreweryTileCopy({ brewery }: { brewery: PublicTaplistBreweryDiscoveryRow }) {
+  return (
+    <LinearGradient
+      colors={['rgba(13,13,13,0.02)', 'rgba(13,13,13,0.38)', 'rgba(13,13,13,0.92)']}
+      locations={[0, 0.5, 1]}
+      style={styles.newTapTileScrim}>
+      <View style={styles.newTapTileCopy}>
+        <Text style={styles.newTapTileName} numberOfLines={2} ellipsizeMode="tail">
+          {brewery.brewery_name}
+        </Text>
+        <Text style={styles.newTapTileBrewery}>{brewery.tap_count} 款</Text>
+      </View>
+    </LinearGradient>
+  )
+}
+
+function DrinkResult({ drink }: { drink: MiniProductSearchResult }) {
+  const styleLine = [drink.brewery, drink.beer_style, typeof drink.abv === 'number' ? `ABV ${drink.abv}%` : null]
     .filter(Boolean)
     .join(' · ')
-  const servingLine = searchServingLine(drink.default_serving)
-  const isSoldOut = drink.public_status === '售罄'
+  const hasSupply = drink.venue_count > 0
 
   return (
-    <View style={[styles.resultItem, isSoldOut && styles.resultItemMuted]}>
-      <Link href={`/bar/${drink.tenant_slug}/beer/${drink.drink_id}`} asChild>
+    <View style={styles.resultItem}>
+      <Link href={`/product/${encodeURIComponent(drink.key)}` as Href} asChild>
         <Pressable
           onPress={() =>
             trackEvent('beer_opened', {
-              tenant_id: drink.tenant_id,
+              product_id: drink.product_id,
               drink_id: drink.drink_id,
               source: 'search_result',
             })
           }
           style={({ pressed }) => [styles.drinkPressable, pressed && styles.pressed]}>
           <View style={styles.drinkRowInner}>
-            <BeerArtwork name={drink.name} source={drink.image_url} size={72} />
+            <View style={styles.searchArtwork}>
+              {drink.image_url ? (
+                <CachedImage
+                  accessibilityLabel={`${drink.name}酒标`}
+                  source={drink.image_url}
+                  ossStyle="nm-thumb"
+                  style={styles.searchArtworkImage}
+                />
+              ) : null}
+            </View>
             <View style={styles.drinkCopy}>
               <Text style={styles.resultName} numberOfLines={2}>
                 {drink.name}
               </Text>
-              {brewery ? <Text style={styles.resultMeta}>{brewery}</Text> : null}
               {styleLine ? <Text style={styles.drinkStyle}>{styleLine}</Text> : null}
-              <Text style={styles.drinkVenue}>
-                {drink.tenant_display_name}
-                {drink.tenant_address
-                  ? ` · ${drink.tenant_address}`
-                  : drink.tenant_district
-                    ? ` · ${drink.tenant_district}`
-                    : ''}
+              <Text style={[styles.supplyLine, hasSupply && styles.supplyLineAvailable]}>
+                {hasSupply ? `本城 ${drink.venue_count} 家有售` : '当前城市暂无供应'}
               </Text>
-              <View style={styles.resultDetailBlock}>
-                {drink.public_status ? (
-                  <View style={[styles.statusBadge, isSoldOut && styles.statusBadgeMuted]}>
-                    <Text style={[styles.statusText, isSoldOut && styles.statusTextMuted]}>
-                      {drink.public_status}
-                    </Text>
-                  </View>
-                ) : null}
-                {servingLine ? (
-                  <View style={styles.servingPill}>
-                    <Text style={styles.servingLine}>{servingLine}</Text>
-                  </View>
-                ) : null}
-              </View>
+              {drink.venues.length > 0 ? (
+                <View style={styles.venuePills}>
+                  {drink.venues.slice(0, 2).map((venue) => (
+                    <View key={venue.id} style={styles.venuePill}>
+                      <Text style={styles.venuePillText} numberOfLines={1}>{venue.name}</Text>
+                    </View>
+                  ))}
+                  {drink.venue_count > 2 ? (
+                    <Text style={styles.moreVenues}>+{drink.venue_count - 2}</Text>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
           </View>
         </Pressable>
@@ -562,16 +673,24 @@ function DrinkResult({ drink }: { drink: PublicTaplistSearchResult }) {
   )
 }
 
-function searchServingLine(serving: PublicTaplistSearchResult['default_serving']) {
-  if (!serving) return null
-  if (!(typeof serving.price === 'number' && serving.price > 0)) return null
-  const parts = [
-    serving.label,
-    serving.volume_ml ? `${serving.volume_ml}ml` : null,
-    `¥${serving.price}`,
-  ].filter(Boolean)
+function dedupeSearchResults(results: MiniProductSearchResult[]) {
+  const seen = new Set<string>()
+  return results.filter((result) => {
+    if (seen.has(result.key)) return false
+    seen.add(result.key)
+    return true
+  })
+}
 
-  return parts.length > 0 ? parts.join(' · ') : null
+function RetryButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
+      <Text style={styles.retryButtonText}>{label}</Text>
+    </Pressable>
+  )
 }
 
 function EmptyState({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
@@ -684,6 +803,15 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: '500',
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  moreStyles: {
+    ...typography.caption,
+    color: palette.amber,
+  },
   presetRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -774,34 +902,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
   },
-  breweryCard: {
-    minHeight: 68,
-    borderRadius: DISCOVERY_RADIUS,
-    borderWidth: 1,
-    borderColor: 'rgba(198,168,117,0.16)',
-    backgroundColor: 'rgba(20,18,16,0.55)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    justifyContent: 'center',
-    gap: 2,
-  },
-  breweryCardPressed: {
-    borderColor: 'rgba(211,154,69,0.40)',
-    backgroundColor: 'rgba(184,138,61,0.12)',
-    opacity: 0.88,
-  },
-  breweryName: {
-    ...typography.caption,
-    color: palette.text,
-    fontWeight: '500',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  breweryCount: {
-    ...typography.micro,
-    color: palette.faint,
-    lineHeight: 15,
-  },
   loading: {
     borderTopWidth: 1,
     borderTopColor: palette.hairline,
@@ -814,14 +914,30 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: palette.muted,
   },
+  inlineLoading: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  loadingMore: {
+    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  listEnd: {
+    ...typography.micro,
+    color: palette.faint,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
   resultItem: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(245,241,230,0.12)',
     paddingBottom: spacing.lg,
     marginBottom: spacing.lg,
-  },
-  resultItemMuted: {
-    opacity: 0.52,
   },
   drinkPressable: {
     paddingTop: spacing.sm,
@@ -830,6 +946,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.lg,
     alignItems: 'flex-start',
+  },
+  searchArtwork: {
+    width: 72,
+    height: 72,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: palette.black,
+  },
+  searchArtworkImage: {
+    width: '100%',
+    height: '100%',
   },
   pressed: {
     opacity: 0.78,
@@ -844,64 +971,45 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 28,
   },
-  resultMeta: {
-    ...typography.caption,
-    color: palette.muted,
-    marginTop: spacing.xxs,
-    lineHeight: 19,
-  },
   drinkStyle: {
     ...typography.caption,
     color: palette.faint,
     marginTop: spacing.xxs,
     lineHeight: 18,
   },
-  drinkVenue: {
+  supplyLine: {
     ...typography.micro,
-    color: palette.tungsten,
-    marginTop: 3,
+    color: palette.faint,
+    marginTop: spacing.xs,
     lineHeight: 16,
   },
-  resultDetailBlock: {
-    alignItems: 'flex-start',
+  supplyLineAvailable: {
+    color: palette.amber,
+  },
+  venuePills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.xs,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: 4,
+  venuePill: {
+    maxWidth: '100%',
+    borderRadius: 5,
     borderWidth: 1,
-    borderColor: 'rgba(159,122,61,0.24)',
-    backgroundColor: 'rgba(159,122,61,0.14)',
+    borderColor: 'rgba(198,168,117,0.24)',
     paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xxs,
+    paddingVertical: 2,
   },
-  statusBadgeMuted: {
-    borderColor: 'rgba(117,111,101,0.18)',
-    backgroundColor: 'rgba(117,111,101,0.14)',
-  },
-  statusText: {
-    ...typography.label,
-    color: palette.tungsten,
-    fontSize: 10,
-    lineHeight: 12,
-  },
-  statusTextMuted: {
-    color: palette.faint,
-  },
-  servingPill: {
-    alignSelf: 'flex-start',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(245,241,232,0.08)',
-    backgroundColor: 'rgba(17,17,17,0.38)',
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xxs,
-  },
-  servingLine: {
+  venuePillText: {
     ...typography.micro,
     color: palette.muted,
-    lineHeight: 16,
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  moreVenues: {
+    ...typography.micro,
+    color: palette.faint,
+    alignSelf: 'center',
   },
   emptyState: {
     borderTopWidth: 1,
@@ -926,5 +1034,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 15,
     marginBottom: spacing.sm,
+  },
+  retryButton: {
+    alignSelf: 'flex-start',
+    minHeight: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(198,168,117,0.30)',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  },
+  retryButtonText: {
+    ...typography.caption,
+    color: palette.tungsten,
   },
 })

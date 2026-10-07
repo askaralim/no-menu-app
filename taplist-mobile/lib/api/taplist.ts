@@ -1,9 +1,13 @@
 import { getTaplistSupabase } from '@/lib/supabase'
 import type {
   BeerRoadmapResponse,
+  MiniProductSearchRpc,
+  MiniProductDetailRpc,
+  MiniBreweryRpc,
   PublicBarRow,
   PublicTaplistCitiesRpc,
   PublicTaplistBreweriesRpc,
+  PublicTaplistBreweryRpc,
   PublicTaplistEventRpc,
   PublicTaplistEventsRpc,
   PublicTaplistNewDrinksRpc,
@@ -33,11 +37,18 @@ export async function fetchPublicBars(city?: string | null) {
 }
 
 export async function fetchPublicTenantBySlug(slug: string) {
-  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_tenant', {
+  const client = getTaplistSupabase()
+  const { data, error } = await client.rpc('get_public_taplist_tenant', {
     p_slug: slug,
   })
   if (error) throw error
-  return data as PublicTaplistTenantRpc
+  const payload = data as PublicTaplistTenantRpc
+  if (payload?.ok && !payload.tenant.qr_image_url && payload.tenant.qr_image_path) {
+    payload.tenant.qr_image_url = client.storage
+      .from('taplist-media')
+      .getPublicUrl(payload.tenant.qr_image_path).data.publicUrl
+  }
+  return payload
 }
 
 export async function fetchPublicDrinks(tenantId: string, signal?: AbortSignal) {
@@ -99,13 +110,34 @@ export async function fetchPublicNewDrinks(city?: string | null) {
 }
 
 export async function fetchPublicTaplistBreweries(city?: string | null) {
-  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_breweries', {
+  const { data, error } = await getTaplistSupabase().rpc('get_mini_breweries', {
     p_city: city ?? null,
   })
   if (error) throw error
   const payload = data as PublicTaplistBreweriesRpc
   if (!payload || payload.ok !== true) return []
-  return payload.results ?? []
+  return (payload.results ?? []).map((brewery) => ({
+    brewery_name: brewery.brewery,
+    tap_count: brewery.product_count,
+    logo_url: brewery.logo_url,
+  }))
+}
+
+export async function fetchPublicBrewery(brewery: string, city?: string | null) {
+  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_brewery', {
+    p_city: city ?? null,
+    p_brewery: brewery,
+  })
+  if (error) throw error
+  return data as PublicTaplistBreweryRpc
+}
+
+export async function fetchMiniBrewery(name: string) {
+  const { data, error } = await getTaplistSupabase().rpc('get_mini_brewery', {
+    p_name: name,
+  })
+  if (error) throw error
+  return data as MiniBreweryRpc
 }
 
 export async function fetchPublicEvents(city?: string | null) {
@@ -149,6 +181,58 @@ export async function searchPublicTaplist(city: string | null, query: string) {
   const payload = data as PublicTaplistSearchRpc
   if (!payload || payload.ok !== true) return []
   return payload.results ?? []
+}
+
+export async function searchMiniProducts({
+  city,
+  query = '',
+  style = null,
+  brewery = null,
+  offset = 0,
+  signal,
+}: {
+  city: string | null
+  query?: string
+  style?: string | null
+  brewery?: string | null
+  offset?: number
+  signal?: AbortSignal
+}) {
+  let request = getTaplistSupabase().rpc('search_mini_products', {
+    p_city: city ?? null,
+    p_query: query,
+    p_style: style,
+    p_brewery: brewery,
+    p_offset: offset,
+  })
+  if (signal) request = request.abortSignal(signal)
+  const { data, error } = await request
+  if (error) throw error
+  const payload = data as MiniProductSearchRpc
+  if (!payload || payload.ok !== true) {
+    return { results: [], nextOffset: null }
+  }
+  return {
+    results: payload.results ?? [],
+    nextOffset: payload.next_offset ?? null,
+  }
+}
+
+export async function fetchMiniProduct(key: string, city: string | null) {
+  const separator = key.indexOf(':')
+  const kind = separator > 0 ? key.slice(0, separator) : ''
+  const id = separator > 0 ? key.slice(separator + 1) : ''
+  if (!id || (kind !== 'product' && kind !== 'drink')) {
+    return { ok: false, code: 'invalid_key' } as const
+  }
+  const { data, error } = await getTaplistSupabase().rpc('get_mini_product', {
+    p_product_id: kind === 'product' ? id : null,
+    p_drink_id: kind === 'drink' ? id : null,
+    p_city: city,
+    p_source_slug: null,
+  })
+  if (error) throw error
+  return data as MiniProductDetailRpc
 }
 
 export async function fetchPublicBeerRoadmap(startTenantId: string) {

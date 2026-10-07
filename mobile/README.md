@@ -13,11 +13,16 @@ ASC docs: [`docs/APP_STORE_CONNECT_1.1.2.md`](./docs/APP_STORE_CONNECT_1.1.2.md)
 
 ```bash
 cd mobile
-eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value https://YOUR_PROJECT.supabase.co --environment production --visibility plaintext
+eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value https://nomenuapp.com/api/supabase --environment production --visibility plaintext
 eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value YOUR_ANON_KEY --environment production --visibility sensitive
 # or set the same names in Expo dashboard → Project → Environment variables → production
 eas env:list --environment production
 ```
+
+Production routes Supabase Auth, REST, Realtime, Functions, and Storage through the shared
+ECS proxy. Local development continues to use the Supabase CLI URL from `.env.local.example`.
+To roll back, restore the hosted `https://<project-ref>.supabase.co` URL and publish a new
+production update; the fixed auth storage key preserves existing POS sessions.
 
 Then:
 

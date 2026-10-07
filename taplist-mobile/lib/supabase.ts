@@ -10,6 +10,7 @@ import { Platform } from 'react-native'
 const LOCAL_DEFAULT_URL = 'http://127.0.0.1:54321'
 const LOCAL_DEFAULT_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+const PRODUCTION_AUTH_STORAGE_KEY = 'sb-agtujigvxxdppngirqtu-auth-token'
 
 type Extra = { supabaseUrl?: string; supabaseAnonKey?: string }
 
@@ -37,6 +38,14 @@ function authStorage() {
     return typeof window === 'undefined' ? noopAuthStorage : AsyncStorage
   }
   return secureAuthStorage
+}
+
+function resolveAuthStorageKey(url: string): string | undefined {
+  const hostname = new URL(url).hostname
+  if (hostname === 'agtujigvxxdppngirqtu.supabase.co' || hostname === 'nomenuapp.com') {
+    return PRODUCTION_AUTH_STORAGE_KEY
+  }
+  return undefined
 }
 
 /**
@@ -104,9 +113,11 @@ export function getTaplistSupabase(): SupabaseClient {
   if (!cachedClient || cachedUrl !== url || cachedKey !== key) {
     cachedUrl = url
     cachedKey = key
+    const storageKey = resolveAuthStorageKey(url)
     cachedClient = createClient(url, key, {
       auth: {
         storage: authStorage(),
+        ...(storageKey ? { storageKey } : {}),
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,

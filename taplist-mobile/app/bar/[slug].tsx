@@ -19,7 +19,7 @@ import {
   type ShareableBarTaplistImageHandle,
 } from '@/components/taplist/ShareableBarTaplistImage'
 import { palette, spacing, typography } from '@/constants/design'
-import { formatOpeningHourLabel } from '@/lib/openingHour'
+import { formatOpeningStatusLabel } from '@/lib/openingHour'
 import { buildAppleMapsPlaceUrl } from '@/lib/navigationLinks'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicDrinks, fetchPublicTenantBySlug, fetchPublicTenantEvents } from '@/lib/api/taplist'
@@ -67,7 +67,7 @@ export default function BarDetailScreen() {
   const followQuery = useQuery({
     queryKey: ['bar-follow', tenant?.id],
     queryFn: () => getMyBarFollowState(tenant!.id),
-    enabled: Platform.OS === 'ios' && configured && !!tenant?.id,
+    enabled: configured && !!tenant?.id,
   })
 
   useEffect(() => {
@@ -80,12 +80,13 @@ export default function BarDetailScreen() {
     ? partitionPublicDrinks(drinkResult)
     : { drinks: [], comingSoon: [], recentlySoldOut: [], allForLookup: [] }
   const drinks = partitions.drinks
+  const newDrinkCount = drinks.filter((drink) => drink.public_status === '上新').length
   const comingSoon = partitions.comingSoon
   const recentlySoldOut = partitions.recentlySoldOut
   const events = eventsQuery.data ?? []
   const shareDrinks = [...drinks, ...comingSoon]
   const hasAnyDrinks = shareDrinks.length > 0 || recentlySoldOut.length > 0
-  const openingHoursLabel = tenant ? formatOpeningHourLabel(tenant.opening_hour) : null
+  const openingHoursLabel = tenant ? formatOpeningStatusLabel(tenant) : null
   const canSaveTaplist = Boolean(tenant && shareDrinks.length > 0 && !isSavingTaplist)
   const appleMapsUrl =
     Platform.OS === 'ios' &&
@@ -271,7 +272,7 @@ export default function BarDetailScreen() {
                   brewingLabel={tenant.brewing_label}
                   variant="hero"
                 />
-                {(tenant.address || openingHoursLabel || Platform.OS === 'ios') ? (
+                {tenant ? (
                   <View style={[styles.heroMetaBar, styles.heroMetaAfterTitle]}>
                     <View style={styles.heroMeta}>
                       {tenant.address ? (
@@ -302,26 +303,24 @@ export default function BarDetailScreen() {
                         </View>
                       ) : null}
                     </View>
-                    {Platform.OS === 'ios' ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={followQuery.data?.followed ? '取消关注这家酒吧' : '关注这家酒吧'}
-                        disabled={followBusy || followQuery.isLoading}
-                        onPress={followQuery.data?.followed ? handleUnfollow : () => void handleFollow()}
-                        style={({ pressed }) => [
-                          styles.followButton,
-                          followQuery.data?.followed && styles.followButtonActive,
-                          pressed && styles.followButtonPressed,
-                        ]}>
-                        {followBusy ? (
-                          <ActivityIndicator size="small" color={palette.amber} />
-                        ) : (
-                          <Text style={[styles.followButtonText, followQuery.data?.followed && styles.followButtonTextActive]}>
-                            {followQuery.data?.followed ? '✓ 已关注' : '＋ 关注'}
-                          </Text>
-                        )}
-                      </Pressable>
-                    ) : null}
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={followQuery.data?.followed ? '取消关注这家酒吧' : '关注这家酒吧'}
+                      disabled={followBusy || followQuery.isLoading}
+                      onPress={followQuery.data?.followed ? handleUnfollow : () => void handleFollow()}
+                      style={({ pressed }) => [
+                        styles.followButton,
+                        followQuery.data?.followed && styles.followButtonActive,
+                        pressed && styles.followButtonPressed,
+                      ]}>
+                      {followBusy ? (
+                        <ActivityIndicator size="small" color={palette.amber} />
+                      ) : (
+                        <Text style={[styles.followButtonText, followQuery.data?.followed && styles.followButtonTextActive]}>
+                          {followQuery.data?.followed ? '✓ 已关注' : '＋ 关注'}
+                        </Text>
+                      )}
+                    </Pressable>
                   </View>
                 ) : null}
               </View>
@@ -367,7 +366,10 @@ export default function BarDetailScreen() {
               ) : (
                 <>
                   {drinks.length > 0 ? (
-                    <TapListSection title={`今晚 ${drinks.length} 款`}>
+                    <TapListSection
+                      title={newDrinkCount > 0
+                        ? `${drinks.length} 在售 · ${newDrinkCount} 上新`
+                        : `${drinks.length} 在售`}>
                       {drinks.map((drink) => (
                         <BeerListCard
                           key={drink.id}

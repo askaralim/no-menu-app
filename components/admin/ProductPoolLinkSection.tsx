@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '@/lib/supabaseClient'
-import { promoteProductImage } from '@/lib/taplistStorage'
+import {
+  isPromotableProductImageSource,
+  promoteProductImage,
+} from '@/lib/taplistStorage'
 import type { Drink } from '@/lib/types'
 
 export type DrinkProductSearchRow = {
@@ -256,6 +259,8 @@ export function ProductPoolLinkSection({
     }
     setBusy(true)
     try {
+      const sourceImageUrl = createForm.image_url.trim()
+      const shouldPromoteImage = isPromotableProductImageSource(sourceImageUrl)
       const aliases = createForm.aliases
         .split(/[,，]/)
         .map((s) => s.trim())
@@ -272,7 +277,7 @@ export function ProductPoolLinkSection({
         p_ibu: createForm.ibu === '' ? null : Number(createForm.ibu),
         p_country: createForm.country || null,
         p_origin_region: null,
-        p_image_url: createForm.image_url || null,
+        p_image_url: shouldPromoteImage ? null : sourceImageUrl || null,
         p_description: createForm.description || null,
         p_tasting_note: createForm.tasting_note || null,
         p_source: 'admin_create',
@@ -282,8 +287,8 @@ export function ProductPoolLinkSection({
       const payload = (data ?? {}) as { ok?: boolean; product_id?: string }
       if (!payload.product_id) throw new Error('创建失败')
 
-      if (createForm.image_url.trim()) {
-        await promoteProductImage(supabase, payload.product_id, createForm.image_url.trim())
+      if (shouldPromoteImage) {
+        await promoteProductImage(supabase, payload.product_id, sourceImageUrl)
       }
 
       if (autoLink) {
@@ -312,6 +317,7 @@ export function ProductPoolLinkSection({
     if (!confirm('从当前酒款数据创建商品池酒款并自动关联？')) return
     setBusy(true)
     try {
+      const sourceImageUrl = drink.image_url?.trim() || ''
       const { data, error } = await supabase.rpc('admin_create_drink_product_from_drink', {
         p_drink_id: drink.id,
         p_auto_link: true,
@@ -319,8 +325,8 @@ export function ProductPoolLinkSection({
       if (error) throw error
       const payload = (data ?? {}) as { product_id?: string }
       if (!payload.product_id) throw new Error('创建失败')
-      if (drink.image_url?.trim()) {
-        await promoteProductImage(supabase, payload.product_id, drink.image_url.trim())
+      if (isPromotableProductImageSource(sourceImageUrl)) {
+        await promoteProductImage(supabase, payload.product_id, sourceImageUrl)
       }
       alert('已从当前酒款创建商品池记录并关联')
       onLinked()

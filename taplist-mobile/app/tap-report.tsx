@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -14,11 +14,16 @@ import { getMyDrinkInsights, normalizeBeerStyle } from '@/lib/api/drinkLog'
 
 export default function TapReportScreen() {
   const insets = useSafeAreaInsets()
+  const { month: monthParam } = useLocalSearchParams<{ month?: string }>()
   const shareRef = useRef<ShareableDrinkLogImageHandle>(null)
   const [previewUri, setPreviewUri] = useState<string | null>(null)
   const [sharing, setSharing] = useState(false)
   const [selectedStyle, setSelectedStyle] = useState('全部')
-  const insightsQuery = useQuery({ queryKey: ['drink-log', 'insights'], queryFn: getMyDrinkInsights })
+  const monthReference = parseMonthReference(monthParam)
+  const insightsQuery = useQuery({
+    queryKey: ['drink-log', 'insights', monthReference ?? 'current'],
+    queryFn: () => getMyDrinkInsights(monthReference ?? undefined),
+  })
   const profileQuery = useQuery({ queryKey: ['consumer-profile'], queryFn: getMyConsumerProfile })
   const month = insightsQuery.data?.month
   const styleFilters = month?.style_counts.filter((item) => item.style !== '其他') ?? []
@@ -46,7 +51,7 @@ export default function TapReportScreen() {
           <>
             <ReportHeader title="TAP 报告" />
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>本月还没有 TAP 记录</Text>
+              <Text style={styles.emptyTitle}>当月还没有 TAP 记录</Text>
               <Text style={styles.emptyBody}>记录新的酒款后，月度报告会出现在这里。</Text>
             </View>
           </>
@@ -58,12 +63,12 @@ export default function TapReportScreen() {
               title={`${formatMonth(month.month_start)} TAP 报告`}
             />
             <Text style={styles.summary}>
-              本月 TAP {month.drink_count} 款 · 新增 {month.new_drink_count} 款 · 来自 {month.bar_count} 家酒吧
+              当月 TAP {month.drink_count} 款 · 来自 {month.bar_count} 家酒吧
             </Text>
 
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>本月喝过</Text>
+                <Text style={styles.sectionTitle}>当月喝过</Text>
                 <Text style={styles.sectionMeta}>{visibleDrinks.length} 款</Text>
               </View>
               {styleFilters.length ? (
@@ -130,7 +135,7 @@ function ReportHeader({ onShare, sharing = false, title }: { onShare?: () => voi
       <Text numberOfLines={1} style={styles.title}>{title}</Text>
       {onShare ? (
         <Pressable
-          accessibilityLabel="分享本月 TAP"
+          accessibilityLabel="分享当月 TAP"
           disabled={sharing}
           hitSlop={8}
           onPress={onShare}
@@ -146,6 +151,11 @@ function ReportHeader({ onShare, sharing = false, title }: { onShare?: () => voi
 
 function formatMonth(value: string) {
   return `${new Date(value).getMonth() + 1} 月`
+}
+
+function parseMonthReference(value?: string) {
+  if (!value || !/^\d{4}-\d{2}$/.test(value)) return null
+  return `${value}-15T12:00:00+08:00`
 }
 
 function formatMonthDay(value: string) {

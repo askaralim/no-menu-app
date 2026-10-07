@@ -23,9 +23,8 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
     const shotRef = useRef<ViewShot>(null)
     const title = tenant.display_name || tenant.name
     const addressLine = [tenant.district, tenant.address].filter(Boolean).join(' · ')
-    const personalCity = localizeCity(tenant.city)
+    const personalRegion = tenant.district?.trim() || localizeCity(tenant.city)
     const generatedAtLabel = formatGeneratedAt(new Date())
-    const generatedDateLabel = formatShortDate(new Date().toISOString())
     const breweryLine = formatBreweryWithCollab(
       drink.beer?.brewery,
       drink.beer?.collab_breweries,
@@ -52,7 +51,7 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
               <View style={styles.personalHeader}>
                 <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.68} style={styles.personalHeaderTitle}>
                   <Text style={styles.personalHeaderDate}>{formatShortDate(litAt)} · </Text>
-                  {personalCity ? <Text style={styles.personalHeaderDate}>{personalCity} · </Text> : null}
+                  {personalRegion ? <Text style={styles.personalHeaderRegion}>{personalRegion} · </Text> : null}
                   <Text style={styles.personalHeaderVenue}>{title} · </Text>
                   <Text style={styles.personalHeaderAccent}>新 TAP</Text>
                 </Text>
@@ -64,11 +63,14 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
               </View>
 
               <View style={styles.personalBeerCopy}>
-                <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72} style={styles.personalIdentityLine}>
-                  {breweryLine ? <Text style={styles.personalMeta}>{breweryLine} · </Text> : null}
-                  <Text style={styles.personalBeerName}>{drink.name}</Text>
+                {breweryLine ? (
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72} style={styles.personalBrewery}>
+                    {breweryLine}
+                  </Text>
+                ) : null}
+                <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72} style={styles.personalBeerName}>
+                  {drink.name}
                 </Text>
-                {drink.beer?.country ? <Text numberOfLines={1} style={styles.personalOrigin}>{drink.beer.country}</Text> : null}
                 {[drink.beer?.beer_style, personalAbv].filter(Boolean).length ? (
                   <Text numberOfLines={1} style={styles.personalFacts}>
                     {[drink.beer?.beer_style, personalAbv].filter(Boolean).join(' · ')}
@@ -78,7 +80,7 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
               </View>
 
               <View style={styles.personalFooter}>
-                <Text style={styles.personalBrand}>NO MENU · {generatedDateLabel}</Text>
+                <Text style={styles.personalBrand}>NO MENU</Text>
               </View>
             </>
           ) : (
@@ -231,6 +233,7 @@ const styles = StyleSheet.create({
   },
   personalHeaderTitle: { ...typography.body, fontSize: 13, lineHeight: 18, fontWeight: '500', flexShrink: 1 },
   personalHeaderDate: { color: palette.muted },
+  personalHeaderRegion: { color: palette.tungsten, fontSize: 14, fontWeight: '600' },
   personalHeaderVenue: { color: palette.text, fontSize: 15, fontWeight: '600' },
   personalHeaderAccent: { color: palette.tungsten },
   personalHeaderRule: { flex: 1, minWidth: 18, height: 1, backgroundColor: palette.line },
@@ -241,27 +244,20 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     marginBottom: spacing.xs,
   },
-  personalIdentityLine: {
+  personalBrewery: { ...typography.title, color: palette.amber, fontSize: 17, lineHeight: 22, textAlign: 'center' },
+  personalBeerName: {
     ...typography.headline,
     color: palette.text,
-    fontSize: 24,
-    lineHeight: 31,
+    fontSize: 27,
+    lineHeight: 34,
     textAlign: 'center',
+    marginTop: 2,
   },
-  personalBeerName: {
-    color: palette.text,
-    fontSize: 24,
-  },
-  personalMeta: {
-    color: palette.amber,
-    fontSize: 17,
-  },
-  personalOrigin: { ...typography.caption, color: palette.muted, fontSize: 11, lineHeight: 15, marginTop: spacing.xxs, textAlign: 'center' },
   personalArtFrame: { width: 280, height: 280, alignSelf: 'center', marginTop: spacing.sm, padding: 5, borderRadius: 5, backgroundColor: palette.text },
   personalBeerCopy: {
     marginTop: spacing.md,
   },
-  personalFacts: { ...typography.micro, color: palette.tungsten, fontSize: 10, lineHeight: 14, marginTop: 2, textAlign: 'center' },
+  personalFacts: { ...typography.micro, color: palette.tungsten, fontSize: 11, lineHeight: 15, marginTop: 2, textAlign: 'center' },
   personalFooter: {
     minHeight: 24,
     marginTop: 'auto',

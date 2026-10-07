@@ -38,13 +38,15 @@ function norm(row) {
     tenant_id: String(row.tenant_id || '').toLowerCase(),
     placement: String(row.placement || '').toLowerCase(),
     enabled: row.enabled === true || row.enabled === 't' || row.enabled === 'true',
+    tenant_slug: String(row.tenant_slug || ''),
     image_path: String(row.image_path || row.storage_path || ''),
+    image_url: String(row.image_url || ''),
     version: Number(row.version || 0),
   }
 }
 
 function rowFingerprint(r) {
-  return `${r.qr_code}|${r.tenant_id}|${r.placement}|${r.enabled}|${r.version}|${r.image_path}`
+  return `${r.qr_code}|${r.tenant_id}|${r.placement}|${r.enabled}|${r.version}|${r.image_path}|${r.tenant_slug}|${r.image_url}`
 }
 
 if (!dbUrl) {
@@ -77,7 +79,7 @@ for (const raw of jsonRows) {
 }
 
 const sql = `
-SELECT qr_code, tenant_id::text, placement, enabled, version, image_path
+SELECT qr_code, tenant_id::text, placement, enabled, version, image_path, tenant_slug, image_url
 FROM public.tenant_qr_links
 ORDER BY qr_code;
 `
@@ -95,8 +97,8 @@ if (psql.status !== 0) {
 const dbByCode = new Map()
 const lines = (psql.stdout || '').split('\n').filter(Boolean)
 for (const line of lines) {
-  const [qr_code, tenant_id, placement, enabled, version, image_path] = line.split('\t')
-  const r = norm({ qr_code, tenant_id, placement, enabled, version, image_path })
+  const [qr_code, tenant_id, placement, enabled, version, image_path, tenant_slug, image_url] = line.split('\t')
+  const r = norm({ qr_code, tenant_id, placement, enabled, version, image_path, tenant_slug, image_url })
   if (dbByCode.has(r.qr_code)) fail(`Duplicate qr_code in DB: ${r.qr_code}`)
   dbByCode.set(r.qr_code, r)
 }

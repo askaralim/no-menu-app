@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
-import { Link, router, useLocalSearchParams } from 'expo-router'
+import { type Href, router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -12,28 +12,27 @@ import { DrinkLightAction, DrinkLightFeedback, useDrinkLightController } from '@
 import { DrinkRecordSuccessSheet } from '@/components/taplist/DrinkRecordSuccessSheet'
 import { CachedImage } from '@/components/taplist/CachedImage'
 import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
-import { ShareableTonightImage, type ShareableTonightImageHandle } from '@/components/taplist/ShareableTonightImage'
 import { ShareImagePreviewModal } from '@/components/taplist/ShareImagePreviewModal'
 import { ShareableBeerImage, type ShareableBeerImageHandle } from '@/components/taplist/ShareableBeerImage'
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
-import { displayServingOptions, formatBreweryWithCollab, localizeServingLabel } from '@/lib/formatTaplist'
+import { displayServingOptions, formatPrimaryBrewery, localizeServingLabel } from '@/lib/formatTaplist'
 import { fetchPublicDrink } from '@/lib/api/taplist'
-import { getMyConsumerProfile } from '@/lib/api/consumerProfile'
 import { getMyDrinkInsights, getMyDrinkState } from '@/lib/api/drinkLog'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
-import type { PublicDrinkRow, PublicServingOption } from '@/lib/types'
-import { trackEvent } from '@/lib/analytics'
+import type { PublicDrinkRow, PublicProductVenue, PublicServingOption, PublicTenantDetail } from '@/lib/types'
 
 export default function BeerDetailScreen() {
   const insets = useSafeAreaInsets()
   const shareableRef = useRef<ShareableBeerImageHandle>(null)
-  const tonightShareRef = useRef<ShareableTonightImageHandle>(null)
   const [isSavingBeer, setIsSavingBeer] = useState(false)
-  const [isSharingTonight, setIsSharingTonight] = useState(false)
-  const [tonightPreviewUri, setTonightPreviewUri] = useState<string | null>(null)
   const [beerPreviewUri, setBeerPreviewUri] = useState<string | null>(null)
-  const { slug, drinkId, fromPush } = useLocalSearchParams<{ slug: string; drinkId: string; fromPush?: string }>()
+  const { slug, drinkId, fromPush, discovery } = useLocalSearchParams<{
+    slug: string
+    drinkId: string
+    fromPush?: string
+    discovery?: string
+  }>()
   const configured = useTaplistSupabaseReady()
 
   const detailQuery = useQuery({
@@ -45,13 +44,24 @@ export default function BeerDetailScreen() {
   const detailResult = detailQuery.data
   const tenant = detailResult?.ok ? detailResult.tenant : null
   const drink = detailResult?.ok ? detailResult.drink : null
-  const breweryLine = drink
-    ? formatBreweryWithCollab(drink.beer?.brewery, drink.beer?.collab_breweries, drink.brand_name)
+  const primaryBrewery = drink
+    ? formatPrimaryBrewery(drink.beer?.brewery, drink.brand_name)
     : null
+  const collabBreweries = (drink?.beer?.collab_breweries ?? [])
+    .map((brewery) => brewery.trim())
+    .filter((brewery) => brewery && brewery !== primaryBrewery)
+    .slice(0, 3)
   const artworkUrl = drink?.image_url
   const servingOptions = drink ? displayServingOptions(drink.serving_options) : []
   const servingGroups = groupServingOptions(servingOptions)
   const metadata = drink ? beerMetadata(drink) : []
+  const productVenues = detailResult?.ok
+    ? discovery === 'product' && detailResult.venues?.length
+      ? detailResult.venues
+      : tenant && drink
+        ? [sourceVenue(tenant, drink)]
+        : []
+    : []
   const isResolvingDrink = configured && detailQuery.isLoading
   const drinkLogStateQuery = useQuery({
     queryKey: ['drink-log', 'state', drink?.id],
@@ -65,30 +75,12 @@ export default function BeerDetailScreen() {
   })
   const insightsQuery = useQuery({
     queryKey: ['drink-log', 'insights'],
-    queryFn: getMyDrinkInsights,
+    queryFn: () => getMyDrinkInsights(),
     enabled: Boolean(drinkLightController.lastResult?.created_venue),
   })
-  const profileQuery = useQuery({
-    queryKey: ['consumer-profile'],
-    queryFn: getMyConsumerProfile,
-    enabled: Boolean(insightsQuery.data?.tonight.drink_count),
-  })
-
-  const handleShareTonight = async () => {
-    if (!insightsQuery.data?.tonight.drink_count || isSharingTonight) return
-    setIsSharingTonight(true)
-    try {
-      const uri = await tonightShareRef.current?.capture()
-      if (!uri) {
-        Alert.alert('生成失败', '今晚分享图暂时无法生成，请稍后重试。')
-        return
-      }
-      drinkLightController.clearLastResult()
-      setTimeout(() => setTonightPreviewUri(uri), 250)
-      trackEvent('drink_tonight_share_generated', { drink_count: insightsQuery.data.tonight.drink_count })
-    } finally {
-      setIsSharingTonight(false)
-    }
+  const handleReviewTonight = () => {
+    drinkLightController.clearLastResult()
+    setTimeout(() => router.push('/tonight-recap' as Href), 250)
   }
 
   useEffect(() => {
@@ -144,24 +136,15 @@ export default function BeerDetailScreen() {
           <FontAwesome name="share-square-o" size={16} color={canSaveBeer ? palette.text : palette.faint} />
         </Pressable>
       ) : null}
-      {insightsQuery.data?.tonight.drink_count ? (
-        <View pointerEvents="none" style={styles.shareableCanvas}>
-          <ShareableTonightImage
-            ref={tonightShareRef}
-            tonight={insightsQuery.data.tonight}
-            username={profileQuery.data?.consumer_username || 'NoMenuist'}
-          />
-        </View>
-      ) : null}
       <DrinkRecordSuccessSheet
         result={drinkLightController.lastResult}
         insights={insightsQuery.data}
         insightsLoading={insightsQuery.isLoading}
-        sharing={isSharingTonight}
+        drinkImageUrl={drink?.image_url}
+        drinkName={drink?.name}
         onDismiss={drinkLightController.clearLastResult}
-        onShareTonight={() => void handleShareTonight()}
+        onReviewTonight={handleReviewTonight}
       />
-      <ShareImagePreviewModal uri={tonightPreviewUri} onClose={() => setTonightPreviewUri(null)} />
       <ShareImagePreviewModal uri={beerPreviewUri} onClose={() => setBeerPreviewUri(null)} />
       {tenant && drink ? (
         <Pressable
@@ -186,7 +169,7 @@ export default function BeerDetailScreen() {
         style={styles.screen}
         contentContainerStyle={artworkUrl ? styles.scrollContent : [styles.paddedContent, { paddingTop: insets.top + spacing.xxxl, paddingBottom: spacing.xxl }]}>
         {artworkUrl ? (
-          <AtmosphereImage source={artworkUrl} ossStyle="nm-detail" aspectRatio={1} overlayOpacity={0.18} scrimOpacity={1} borderRadius={0} />
+          <AtmosphereImage source={artworkUrl} ossStyle="nm-detail" aspectRatio={1} overlayOpacity={0.18} scrimOpacity={1} topScrimOpacity={0.58} borderRadius={0} />
         ) : null}
 
         <View style={artworkUrl ? styles.paddedContent : undefined}>
@@ -216,7 +199,23 @@ export default function BeerDetailScreen() {
               <View style={styles.titleRow}>
                 <View style={styles.titleCopy}>
                   <Text style={styles.title}>{drink.name}</Text>
-                  {breweryLine ? <Text style={styles.brewery}>{breweryLine}</Text> : null}
+                  {primaryBrewery || collabBreweries.length > 0 ? (
+                    <View style={styles.breweryRow}>
+                      {primaryBrewery ? (
+                        <Pressable
+                          accessibilityRole="link"
+                          accessibilityLabel={`查看${primaryBrewery}酒厂`}
+                          onPress={() => router.push(`/brewery/${encodeURIComponent(primaryBrewery)}` as Href)}
+                          style={({ pressed }) => [styles.breweryButton, pressed && styles.breweryButtonPressed]}>
+                          <Text style={styles.breweryButtonText}>{primaryBrewery}</Text>
+                          <FontAwesome name="angle-right" size={16} color={palette.tungsten} />
+                        </Pressable>
+                      ) : null}
+                      {collabBreweries.length > 0 ? (
+                        <Text style={styles.collabBreweries}>× {collabBreweries.join(' × ')}</Text>
+                      ) : null}
+                    </View>
+                  ) : null}
                 </View>
                 <DrinkLightAction controller={drinkLightController} />
               </View>
@@ -272,17 +271,25 @@ export default function BeerDetailScreen() {
               </>
             ) : null}
 
-            {tenant ? (
-              <View style={styles.venueSection}>
-                <Link href={`/bar/${tenant.slug}`} asChild>
-                  <Pressable style={({ pressed }) => [styles.venueCard, pressed && styles.venueCardPressed]}>
-                    <Text style={styles.venueName}>{tenant.display_name || tenant.name}</Text>
-                    <Text style={styles.venueMeta}>
-                      {tenant.address || tenant.district || tenant.city}
-                    </Text>
-                    <Text style={styles.venueLinkHint}>查看酒单 ›</Text>
+            {productVenues.length > 0 ? (
+              <View style={[styles.venueSection, discovery !== 'product' && styles.venueSectionCompact]}>
+                {discovery === 'product' && productVenues.length > 1 ? (
+                  <Text style={styles.sectionTitle}>{productVenues.length} 家门店供应</Text>
+                ) : null}
+                {productVenues.map((venue) => (
+                  <Pressable
+                    key={`${venue.tenant_id}:${venue.drink_id}`}
+                    accessibilityRole="link"
+                    accessibilityLabel={`查看${venue.tenant_display_name}酒吧详情`}
+                    onPress={() => router.push(`/bar/${venue.tenant_slug}` as Href)}
+                    style={({ pressed }) => [styles.venueCard, pressed && styles.venueCardPressed]}>
+                    <View style={styles.venueIcon}>
+                      <FontAwesome name="map-marker" size={15} color={palette.amber} />
+                    </View>
+                    <Text style={styles.venueName} numberOfLines={1}>{venue.tenant_display_name}</Text>
+                    <FontAwesome name="angle-right" size={17} color={palette.faint} />
                   </Pressable>
-                </Link>
+                ))}
               </View>
             ) : null}
 
@@ -351,6 +358,23 @@ function beerMetadata(drink: PublicDrinkRow) {
     typeof drink.beer?.ibu === 'number' ? { label: 'IBU', value: `${drink.beer.ibu}` } : null,
     drink.beer?.country ? { label: '产地', value: drink.beer.country } : null,
   ].filter((item): item is { label: string; value: string } => item !== null)
+}
+
+function sourceVenue(
+  tenant: PublicTenantDetail,
+  drink: PublicDrinkRow,
+): PublicProductVenue {
+  return {
+    drink_id: drink.id,
+    tenant_id: tenant.id,
+    tenant_slug: tenant.slug,
+    tenant_display_name: tenant.display_name || tenant.name,
+    tenant_district: tenant.district,
+    tenant_address: tenant.address,
+    public_status: drink.public_status,
+    default_serving: null,
+    last_menu_updated_at: tenant.last_menu_updated_at,
+  }
 }
 
 const styles = StyleSheet.create({
@@ -467,12 +491,38 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  brewery: {
+  breweryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  breweryButton: {
+    minHeight: 38,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(198,168,117,0.34)',
+    backgroundColor: 'rgba(211,154,69,0.08)',
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  breweryButtonPressed: {
+    opacity: 0.72,
+  },
+  breweryButtonText: {
+    ...typography.title,
+    color: palette.tungsten,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  collabBreweries: {
     ...typography.title,
     color: palette.muted,
-    marginTop: spacing.xs,
     fontSize: 16,
-    lineHeight: 23,
+    lineHeight: 22,
   },
   description: {
     ...typography.body,
@@ -570,36 +620,42 @@ const styles = StyleSheet.create({
   },
   venueSection: {
     paddingVertical: spacing.xl,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.hairline,
+  },
+  venueSectionCompact: {
+    paddingTop: spacing.xl,
   },
   venueCard: {
-    borderRadius: 8,
+    minHeight: 58,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(198,168,117,0.28)',
-    backgroundColor: 'rgba(21,21,21,0.55)',
-    padding: spacing.md,
+    backgroundColor: palette.bgSoft,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  venueIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(211,154,69,0.10)',
   },
   venueCardPressed: {
     opacity: 0.82,
     backgroundColor: 'rgba(21,21,21,0.72)',
   },
   venueName: {
-    ...typography.displayL,
-    color: palette.tungsten,
-    fontSize: 24,
-    lineHeight: 29,
-  },
-  venueMeta: {
-    ...typography.caption,
-    color: palette.muted,
-    marginTop: spacing.xs,
-  },
-  venueLinkHint: {
-    ...typography.label,
-    color: palette.amber,
-    fontSize: 11,
-    marginTop: spacing.sm,
+    ...typography.body,
+    flex: 1,
+    minWidth: 0,
+    color: palette.text,
+    fontWeight: '600',
   },
   complianceFooter: {
     marginTop: 0,

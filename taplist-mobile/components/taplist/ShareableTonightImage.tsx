@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from 'react-native'
 import ViewShot from 'react-native-view-shot'
 
 import { CachedImage } from '@/components/taplist/CachedImage'
-import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import type { MyDrinkInsights } from '@/lib/types'
 
@@ -16,8 +15,8 @@ export const ShareableTonightImage = forwardRef<
   const shotRef = useRef<ViewShot>(null)
   const drinks = tonight.drinks.slice(0, 9)
   const columns = drinks.length === 1 ? 1 : drinks.length <= 4 ? 2 : 3
-  const itemWidth = columns === 1 ? 190 : columns === 2 ? 150 : 106
-  const artSize = columns === 1 ? 196 : columns === 2 ? 124 : 84
+  const itemWidth = columns === 1 ? 230 : drinks.length === 2 ? 166 : columns === 2 ? 150 : 106
+  const artSize = columns === 1 ? 220 : drinks.length === 2 ? 154 : columns === 2 ? 124 : 84
   useImperativeHandle(ref, () => ({ capture: async () => (await shotRef.current?.capture?.()) ?? undefined }))
 
   return (
@@ -38,11 +37,9 @@ export const ShareableTonightImage = forwardRef<
           {drinks.map((drink) => (
             <View key={drink.light_id} style={[styles.item, { width: itemWidth }]}>
               <View style={[styles.artSlot, { width: artSize, height: artSize }]}>
-                <CachedImage
-                  source={drink.image_url || defaultBeerArtwork}
-                  ossStyle="nm-card"
-                  style={styles.art}
-                />
+                {drink.image_url ? (
+                  <CachedImage source={drink.image_url} ossStyle="nm-card" style={styles.art} />
+                ) : null}
               </View>
               <Text numberOfLines={1} style={styles.name}>
                 {[drink.brewery, drink.name].filter(Boolean).join(' · ')}
@@ -77,12 +74,12 @@ const styles = StyleSheet.create({
   recentLabel: { ...typography.micro, color: palette.faint, fontSize: 9, lineHeight: 12, marginTop: spacing.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm, rowGap: spacing.sm, marginTop: spacing.sm },
   gridCentered: { justifyContent: 'center' },
-  gridSpacious: { marginTop: spacing.xl },
+  gridSpacious: { flex: 1, alignItems: 'center', marginTop: 0 },
   item: { alignItems: 'center' },
   artSlot: { alignItems: 'center', justifyContent: 'flex-end' },
   art: { width: '100%', height: '100%', borderRadius: 7 },
   name: { ...typography.caption, color: palette.text, textAlign: 'center', marginTop: spacing.xxs, fontSize: 11, lineHeight: 15 },
-  venue: { ...typography.micro, color: palette.muted, textAlign: 'center', fontSize: 9, lineHeight: 12 },
+  venue: { ...typography.caption, color: palette.muted, textAlign: 'center', fontSize: 10, lineHeight: 14, fontWeight: '500' },
   footer: { minHeight: 28, marginTop: 'auto', paddingTop: spacing.xs, borderTopWidth: 1, borderTopColor: palette.line, flexDirection: 'row', alignItems: 'flex-end' },
   brand: { ...typography.label, color: palette.text, fontSize: 10 },
 })

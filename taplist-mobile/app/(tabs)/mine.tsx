@@ -6,14 +6,13 @@ import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Style
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CachedImage } from '@/components/taplist/CachedImage'
-import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import { resetUser, trackEvent } from '@/lib/analytics'
 import { getMyConsumerProfile } from '@/lib/api/consumerProfile'
 import { getMyDrinkHistory, getMyDrinkInsights, getMyDrinkSummary } from '@/lib/api/drinkLog'
 import { deleteDrinkLogAccount, getAccountProtectionState, isAppleCancellation, protectDrinkLogWithApple } from '@/lib/drinkLogAuth'
 import { getTaplistSupabase } from '@/lib/supabase'
-import type { AccountProtectionState, MyDrinkHistoryRow } from '@/lib/types'
+import type { AccountProtectionState, MyDrinkHistoryRow, MyDrinkInsights } from '@/lib/types'
 
 export default function MineScreen() {
   const insets = useSafeAreaInsets()
@@ -42,7 +41,7 @@ export default function MineScreen() {
   })
   const insightsQuery = useQuery({
     queryKey: ['drink-log', 'insights'],
-    queryFn: getMyDrinkInsights,
+    queryFn: () => getMyDrinkInsights(),
     enabled: hasSession,
   })
 
@@ -98,6 +97,7 @@ export default function MineScreen() {
   const summary = summaryQuery.data
   const hasDrinks = Boolean(summary && summary.drink_count > 0)
   const month = insightsQuery.data?.month
+  const tonightCount = insightsQuery.data?.tonight.drink_count ?? 0
   const tapCardMeta = month?.drink_count
     ? `${formatMonthName(month.month_start)}TAP ${month.drink_count} 款 · 来自 ${month.bar_count} 家酒吧`
     : '查看月度报告与分享记录'
@@ -154,32 +154,48 @@ export default function MineScreen() {
 
         {hasSession ? (
           <View style={styles.featureCards}>
-            {Platform.OS === 'ios' ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="关注酒吧，管理关注和上新通知"
-                onPress={() => router.push('/followed-bars' as Href)}
-                style={({ pressed }) => [styles.featureCard, pressed && styles.pressed]}>
-                <FontAwesome name="bell-o" size={18} color={palette.amber} style={styles.featureIcon} />
-                <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>关注酒吧</Text>
-                  <Text style={styles.featureBody}>管理关注和上新通知</Text>
-                </View>
-                <FontAwesome name="angle-right" size={20} color={palette.faint} />
-              </Pressable>
-            ) : null}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`我的 TAP，${tapCardMeta}`}
-              onPress={() => router.push('/tap-report' as Href)}
+              accessibilityLabel="关注酒吧，管理已关注的酒吧"
+              onPress={() => router.push('/followed-bars' as Href)}
               style={({ pressed }) => [styles.featureCard, pressed && styles.pressed]}>
-              <FontAwesome name="check-circle-o" size={18} color={palette.amber} style={styles.featureIcon} />
+              <FontAwesome name="bell-o" size={18} color={palette.amber} style={styles.featureIcon} />
               <View style={styles.featureCopy}>
-                <Text style={styles.featureTitle}>我的 TAP</Text>
-                <Text numberOfLines={1} style={styles.featureBody}>{tapCardMeta}</Text>
+                <Text style={styles.featureTitle}>关注酒吧</Text>
+                <Text style={styles.featureBody}>
+                  {Platform.OS === 'ios' ? '管理关注和上新通知' : '管理已关注的酒吧'}
+                </Text>
               </View>
               <FontAwesome name="angle-right" size={20} color={palette.faint} />
             </Pressable>
+            {month?.drink_count ? (
+              <MonthlyArchiveCard month={month} />
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`我的 TAP，${tapCardMeta}`}
+                onPress={() => router.push('/tap-report' as Href)}
+                style={({ pressed }) => [styles.featureCard, pressed && styles.pressed]}>
+                <FontAwesome name="check-circle-o" size={18} color={palette.amber} style={styles.featureIcon} />
+                <View style={styles.featureCopy}>
+                  <Text style={styles.featureTitle}>我的 TAP</Text>
+                  <Text numberOfLines={1} style={styles.featureBody}>{tapCardMeta}</Text>
+                </View>
+                <FontAwesome name="angle-right" size={20} color={palette.faint} />
+              </Pressable>
+            )}
+            {tonightCount >= 2 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`回顾今晚 ${tonightCount} 款 TAP`}
+                onPress={() => router.push('/tonight-recap' as Href)}
+                style={({ pressed }) => [styles.tonightRecap, pressed && styles.pressed]}>
+                <FontAwesome name="clone" size={15} color={palette.amber} />
+                <Text style={styles.tonightRecapCount}>今晚 {tonightCount} 款</Text>
+                <Text style={styles.tonightRecapAction}>回顾今晚 TAP</Text>
+                <FontAwesome name="angle-right" size={18} color={palette.faint} />
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
@@ -201,26 +217,51 @@ export default function MineScreen() {
           </View>
         ) : (
           <View style={styles.history}>
-            {groups.map((group) => (
-              <View key={group.key} style={styles.month}>
-                <Text style={styles.monthLabel}>{group.label}</Text>
-                {group.days.map((day) => (
-                  <View key={day.key} style={styles.day}>
-                    <Text style={styles.dayLabel}>{day.label}</Text>
-                    <View style={styles.grid}>
-                      {chunkIntoRows(day.items, 3).map((row, rowIndex) => (
-                        <View key={`${day.key}-${rowIndex}`} style={styles.gridRow}>
-                          {row.map((item) => <DrinkGridItem key={item.light_id} item={item} />)}
-                          {Array.from({ length: 3 - row.length }, (_, index) => (
-                            <View key={`empty-${index}`} style={styles.gridItem} />
-                          ))}
+            {groups.map((group) => {
+              const isCurrentMonth = group.key === currentMonthKey()
+              return (
+                <View key={group.key} style={styles.month}>
+                  <View style={[styles.timelineDot, isCurrentMonth && styles.timelineDotCurrent]} />
+                  <View style={styles.monthHeader}>
+                    <Text style={[styles.monthLabel, isCurrentMonth && styles.monthLabelCurrent]}>{group.label}</Text>
+                    <Text style={styles.monthCount}>{group.items.length} 款</Text>
+                  </View>
+                  {isCurrentMonth ? group.days.map((day) => (
+                    <View key={day.key} style={styles.day}>
+                      <Text style={styles.dayLabel}>{day.label}</Text>
+                      <View style={styles.grid}>
+                        {chunkIntoRows(day.items, 3).map((row, rowIndex) => (
+                          <View key={`${day.key}-${rowIndex}`} style={styles.gridRow}>
+                            {row.map((item) => <DrinkGridItem key={item.light_id} item={item} />)}
+                            {Array.from({ length: 3 - row.length }, (_, emptyIndex) => (
+                              <View key={`empty-${emptyIndex}`} style={styles.gridItem} />
+                            ))}
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )) : (
+                    <View style={styles.monthPreviewRow}>
+                      {group.items.slice(0, 5).map((item) => (
+                        <View key={item.light_id} style={styles.previewArtSlot}>
+                          {item.image_url ? (
+                            <CachedImage source={item.image_url} ossStyle="nm-thumb" style={styles.previewArt} />
+                          ) : null}
                         </View>
                       ))}
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`展开${group.label}全部记录`}
+                        onPress={() => router.push({ pathname: '/tap-report', params: { month: group.key } } as Href)}
+                        style={({ pressed }) => [styles.expandMonth, pressed && styles.pressed]}>
+                        <Text style={styles.expandMonthText}>展开全部</Text>
+                        <FontAwesome name="angle-right" size={14} color={palette.faint} />
+                      </Pressable>
                     </View>
-                  </View>
-                ))}
-              </View>
-            ))}
+                  )}
+                </View>
+              )
+            })}
           </View>
         )}
 
@@ -235,6 +276,56 @@ export default function MineScreen() {
   )
 }
 
+function MonthlyArchiveCard({ month }: { month: MyDrinkInsights['month'] }) {
+  const archiveMonth = formatArchiveMonth(month.month_start)
+  const artwork = month.drinks.filter((drink) => Boolean(drink.image_url)).slice(0, 3)
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`我的 TAP，${archiveMonth.year}年${Number(archiveMonth.month)}月，${month.drink_count}款，来自${month.bar_count}家酒吧，查看月报`}
+      onPress={() => router.push('/tap-report' as Href)}
+      style={({ pressed }) => [styles.monthArchiveCard, pressed && styles.pressed]}>
+      <View pointerEvents="none" style={styles.archiveAtmosphere} />
+
+      <View style={styles.archiveCopy}>
+        <View style={styles.archiveDateRow}>
+          <Text style={styles.archiveDate}>{archiveMonth.year}.</Text>
+          <Text style={[styles.archiveDate, styles.archiveDateAccent]}>{archiveMonth.month}</Text>
+        </View>
+        <View style={styles.archiveCountRow}>
+          <Text style={styles.archiveCount}>{month.drink_count}</Text>
+          <Text style={styles.archiveCountUnit}>TAP</Text>
+        </View>
+        <Text style={styles.archiveBars}>
+          来自 <Text style={styles.archiveBarsAccent}>{month.bar_count}</Text> 家酒吧
+        </Text>
+        <View style={styles.archiveShareChip}>
+          <Text style={styles.archiveShareText}>查看月报</Text>
+          <FontAwesome name="angle-right" size={14} color={palette.amber} />
+        </View>
+      </View>
+
+      <View pointerEvents="none" style={styles.archiveArtworkStage}>
+        {artwork.map((drink, index) => (
+          <CachedImage
+            key={drink.light_id}
+            accessibilityIgnoresInvertColors
+            source={drink.image_url as string}
+            ossStyle="nm-card"
+            style={[
+              styles.archiveArtwork,
+              index === 0 ? styles.archiveArtworkFront : null,
+              index === 1 ? styles.archiveArtworkMiddle : null,
+              index === 2 ? styles.archiveArtworkBack : null,
+            ]}
+          />
+        ))}
+      </View>
+    </Pressable>
+  )
+}
+
 function DrinkGridItem({ item }: { item: MyDrinkHistoryRow }) {
   const href = `/drink-log/${item.light_id}` as Href
   return (
@@ -242,11 +333,7 @@ function DrinkGridItem({ item }: { item: MyDrinkHistoryRow }) {
       <Link href={href} asChild>
         <Pressable style={({ pressed }) => [styles.gridPressable, pressed && styles.pressed]}>
           <View style={styles.artSlot}>
-            <CachedImage
-              source={item.image_url || defaultBeerArtwork}
-              ossStyle="nm-card"
-              style={styles.art}
-            />
+            {item.image_url ? <CachedImage source={item.image_url} ossStyle="nm-card" style={styles.art} /> : null}
           </View>
           <Text numberOfLines={2} style={styles.drinkName}>{item.name}</Text>
           <Text numberOfLines={1} style={styles.drinkMeta}>{item.brewery || item.beer_style || '精酿啤酒'}</Text>
@@ -259,26 +346,49 @@ function DrinkGridItem({ item }: { item: MyDrinkHistoryRow }) {
 function groupByMonth(items: MyDrinkHistoryRow[]) {
   const map = new Map<string, Map<string, MyDrinkHistoryRow[]>>()
   items.forEach((item) => {
-    const date = new Date(item.last_activity_at)
-    const monthKey = `${date.getFullYear()}-${date.getMonth()}`
-    const dayKey = `${monthKey}-${date.getDate()}`
-    const month = map.get(monthKey) ?? new Map<string, MyDrinkHistoryRow[]>()
-    month.set(dayKey, [...(month.get(dayKey) ?? []), item])
-    map.set(monthKey, month)
+    const activityByMonth = new Map<string, string>()
+    const activityDates = item.venues.length
+      ? item.venues.map((venue) => venue.first_drank_at)
+      : [item.last_activity_at]
+
+    activityDates.forEach((activityAt) => {
+      const date = new Date(activityAt)
+      const monthKey = monthKeyForDate(date)
+      const existing = activityByMonth.get(monthKey)
+      if (!existing || date.getTime() > new Date(existing).getTime()) activityByMonth.set(monthKey, activityAt)
+    })
+
+    activityByMonth.forEach((activityAt, monthKey) => {
+      const date = new Date(activityAt)
+      const dayKey = `${monthKey}-${String(date.getDate()).padStart(2, '0')}`
+      const month = map.get(monthKey) ?? new Map<string, MyDrinkHistoryRow[]>()
+      const activityItem = { ...item, last_activity_at: activityAt }
+      month.set(dayKey, [...(month.get(dayKey) ?? []), activityItem])
+      map.set(monthKey, month)
+    })
   })
-  return [...map.entries()].map(([key, month]) => {
-    const firstDay = month.values().next().value as MyDrinkHistoryRow[]
-    const monthDate = new Date(firstDay[0].last_activity_at)
-    return {
-      key,
-      label: `${monthDate.getFullYear()}年${monthDate.getMonth() + 1}月`,
-      days: [...month.entries()].map(([dayKey, grouped]) => ({
+  return [...map.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([key, month]) => {
+    const [year, monthNumber] = key.split('-')
+    const days = [...month.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([dayKey, grouped]) => ({
         key: dayKey,
         label: formatMonthDay(grouped[0].last_activity_at),
-        items: grouped,
-      })),
+        items: [...grouped].sort((a, b) => (
+          new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime()
+        )),
+      }))
+    return {
+      key,
+      label: `${year}年${Number(monthNumber)}月`,
+      items: days.flatMap((day) => day.items),
+      days,
     }
   })
+}
+
+function monthKeyForDate(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
 function chunkIntoRows<T>(items: T[], size: number) {
@@ -292,6 +402,18 @@ function formatMonthDay(value: string) {
 
 function formatMonthName(value: string) {
   return `${new Date(value).getMonth() + 1} 月`
+}
+
+function formatArchiveMonth(value: string) {
+  const date = new Date(value)
+  return {
+    year: String(date.getFullYear()),
+    month: String(date.getMonth() + 1).padStart(2, '0'),
+  }
+}
+
+function currentMonthKey() {
+  return monthKeyForDate(new Date())
 }
 
 const styles = StyleSheet.create({
@@ -400,6 +522,151 @@ const styles = StyleSheet.create({
     color: palette.muted,
     marginTop: 2,
   },
+  monthArchiveCard: {
+    height: 250,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(198,168,117,0.18)',
+    backgroundColor: palette.panelElevated,
+  },
+  archiveAtmosphere: {
+    position: 'absolute',
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    right: -82,
+    bottom: -74,
+    backgroundColor: 'rgba(124,86,56,0.13)',
+  },
+  archiveCopy: {
+    width: '54%',
+    height: '100%',
+    justifyContent: 'center',
+    paddingLeft: 15,
+    paddingVertical: 22,
+    zIndex: 4,
+  },
+  archiveDateRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  archiveDate: {
+    ...typography.display,
+    color: palette.text,
+    fontSize: 48,
+    lineHeight: 51,
+    letterSpacing: 0.6,
+  },
+  archiveDateAccent: {
+    color: palette.amber,
+  },
+  archiveCountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 1,
+  },
+  archiveCount: {
+    ...typography.display,
+    color: palette.amber,
+    fontSize: 39,
+    lineHeight: 42,
+    letterSpacing: 0.8,
+  },
+  archiveCountUnit: {
+    ...typography.display,
+    color: palette.text,
+    fontSize: 25,
+    lineHeight: 30,
+    marginLeft: 5,
+    letterSpacing: 1,
+  },
+  archiveBars: {
+    ...typography.caption,
+    color: palette.muted,
+    marginTop: -1,
+  },
+  archiveBarsAccent: {
+    color: palette.amber,
+  },
+  archiveShareChip: {
+    minHeight: 33,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 13,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.amber,
+  },
+  archiveShareText: {
+    ...typography.micro,
+    color: palette.amber,
+    fontWeight: '600',
+  },
+  archiveArtworkStage: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '58%',
+    height: '100%',
+    zIndex: 3,
+  },
+  archiveArtwork: {
+    position: 'absolute',
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(245,241,230,0.34)',
+    backgroundColor: palette.panel,
+  },
+  archiveArtworkFront: {
+    width: 123,
+    height: 154,
+    right: 8,
+    bottom: 8,
+    zIndex: 3,
+    transform: [{ rotate: '10deg' }],
+  },
+  archiveArtworkMiddle: {
+    width: 112,
+    height: 140,
+    right: 61,
+    bottom: 51,
+    zIndex: 2,
+    transform: [{ rotate: '-9deg' }],
+  },
+  archiveArtworkBack: {
+    width: 98,
+    height: 123,
+    right: 6,
+    top: 22,
+    zIndex: 1,
+    transform: [{ rotate: '7deg' }],
+  },
+  tonightRecap: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(211,154,69,0.28)',
+    backgroundColor: 'rgba(124,86,56,0.12)',
+  },
+  tonightRecapCount: {
+    ...typography.caption,
+    color: palette.text,
+  },
+  tonightRecapAction: {
+    ...typography.caption,
+    color: palette.amber,
+    flex: 1,
+    textAlign: 'right',
+  },
   historyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -420,19 +687,46 @@ const styles = StyleSheet.create({
   },
   history: {
     marginTop: 0,
+    marginLeft: spacing.xxs,
+    paddingLeft: 20,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: 'rgba(198,168,117,0.16)',
   },
   month: {
-    marginBottom: 0,
+    marginBottom: spacing.lg,
+    position: 'relative',
+  },
+  timelineDot: {
+    position: 'absolute',
+    left: -24,
+    top: 5,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: 'rgba(198,168,117,0.28)',
+  },
+  timelineDotCurrent: {
+    backgroundColor: 'rgba(211,154,69,0.72)',
+  },
+  monthHeader: {
+    minHeight: 20,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
   },
   monthLabel: {
-    ...typography.label,
+    ...typography.title,
+    color: palette.muted,
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  monthLabelCurrent: {
+    color: palette.text,
+  },
+  monthCount: {
+    ...typography.micro,
     color: palette.amber,
-    fontSize: 12,
-    lineHeight: 16,
-    borderLeftWidth: 2,
-    borderLeftColor: palette.amber,
-    paddingLeft: spacing.xs,
-    marginBottom: spacing.md,
   },
   day: {
     marginBottom: spacing.md,
@@ -448,6 +742,35 @@ const styles = StyleSheet.create({
   gridRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  monthPreviewRow: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  previewArtSlot: {
+    width: 42,
+    height: 42,
+  },
+  previewArt: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 6,
+  },
+  expandMonth: {
+    minWidth: 66,
+    minHeight: 42,
+    marginLeft: 'auto',
+    paddingLeft: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.xxs,
+  },
+  expandMonthText: {
+    ...typography.micro,
+    color: palette.muted,
   },
   gridItem: {
     flex: 1,

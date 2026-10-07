@@ -88,21 +88,8 @@ export default function AboutScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>隐私与条款</Text>
         <View style={styles.card}>
-          <View style={styles.analyticsRow}>
-            <View style={styles.rowCopy}>
-              <Text style={styles.rowTitle}>匿名使用分析</Text>
-              <Text style={styles.rowDescription}>不记录搜索词或个人资料</Text>
-            </View>
-            <Switch
-              accessibilityLabel="匿名使用分析"
-              value={analyticsEnabled}
-              onValueChange={onAnalyticsEnabledChange}
-              trackColor={{ false: palette.line, true: palette.olive }}
-              thumbColor={palette.text}
-            />
-          </View>
           <Pressable
-            style={({ pressed }) => [styles.row, styles.rowBorder, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
             onPress={() => void Linking.openURL(termsUrl)}
             accessibilityRole="link"
             accessibilityLabel="查看服务条款">
@@ -117,6 +104,16 @@ export default function AboutScreen() {
             <Text style={styles.rowTitle}>隐私政策</Text>
             <FontAwesome name="angle-right" size={20} color={palette.faint} />
           </Pressable>
+          <View style={[styles.row, styles.rowBorder]}>
+            <Text style={styles.rowTitle}>匿名产品分析</Text>
+            <Switch
+              accessibilityLabel="匿名产品分析"
+              value={analyticsEnabled}
+              onValueChange={onAnalyticsEnabledChange}
+              trackColor={{ false: palette.line, true: palette.olive }}
+              thumbColor={palette.text}
+            />
+          </View>
           <Pressable
             style={({ pressed }) => [styles.row, styles.rowBorder, pressed && styles.pressed]}
             onPress={() => setDisclaimerExpanded((expanded) => !expanded)}
@@ -240,15 +237,6 @@ const styles = StyleSheet.create({
   link: {
     ...typography.caption,
     color: palette.tungsten,
-  },
-  analyticsRow: {
-    minHeight: 72,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
   },
   pressed: {
     opacity: 0.72,

@@ -27,7 +27,7 @@ In EAS **production** secrets (Expo dashboard — not `eas.json`), set **HTTPS**
 
 | Variable | Required |
 |----------|----------|
-| `EXPO_PUBLIC_SUPABASE_URL` | `https://xxxx.supabase.co` |
+| `EXPO_PUBLIC_SUPABASE_URL` | `https://nomenuapp.com/api/supabase` |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Anon / publishable key |
 | `EXPO_PUBLIC_PRIVACY_POLICY_URL` | `https://nomenuapp.com/privacy` |
 

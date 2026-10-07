@@ -9,6 +9,11 @@ const MEDIA_API_BASE_URL = (process.env.NEXT_PUBLIC_MEDIA_API_BASE_URL || 'https
   .replace(/\/+$/, '')
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const UUID_PATH_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+const TENANT_DRINK_PATH = new RegExp(
+  `^/(?:prod/tenants/)?${UUID_PATH_PART}/drinks/${UUID_PATH_PART}/[^/]+$`,
+  'i'
+)
 
 function createUploadId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -132,6 +137,23 @@ export async function uploadTaplistEventImage(
   const ext = extensionForMime(file.type)
   const path = `prod/events/${tenantId}/${eventId}/${createUploadId()}.${ext}`
   return uploadTaplistObject(supabase, path, file)
+}
+
+export function isPromotableProductImageSource(value: string | null | undefined): boolean {
+  if (!value) return false
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return false
+    if (url.hostname === 'img.nomenuapp.com') {
+      return TENANT_DRINK_PATH.test(url.pathname)
+    }
+    return url.hostname === 'agtujigvxxdppngirqtu.supabase.co'
+      && TENANT_DRINK_PATH.test(
+        url.pathname.replace('/storage/v1/object/public/taplist-media', '')
+      )
+  } catch {
+    return false
+  }
 }
 
 export async function promoteProductImage(

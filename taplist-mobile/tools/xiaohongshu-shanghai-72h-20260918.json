@@ -1,0 +1,408 @@
+[
+  {
+    "name": "九度云层",
+    "brewery": "纸飞机酿造",
+    "style": "HVDE帝国浑浊IPA",
+    "abv": "9%",
+    "bar": "造浪 BEER WAVE",
+    "image": "https://img.nomenuapp.com/prod/tenants/27c1beca-c912-4f4a-bee5-3ccf0e5d981f/drinks/4b7d4ce0-9456-4305-a05b-6cc11a650e83/mu6sh76x-3ckg3ntuit.jpg",
+    "group": "IPA",
+    "updated_at": "2026-09-18T10:01:48.913044+00:00",
+    "featured": true
+  },
+  {
+    "name": "红眼",
+    "brewery": "塞尔加科鱼厂",
+    "style": "冰沙酸艾尔",
+    "abv": "5%",
+    "bar": "問·ASK",
+    "image": "https://img.nomenuapp.com/prod/tenants/a4f4002f-fccd-41dd-bbc5-153d30fc5385/drinks/a4ee7f9b-1a3d-402f-9e1b-b27641a252d1/36ebe95e-d0d6-4961-8139-8247488bba56.jpg",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-09-18T09:28:08.420452+00:00",
+    "featured": true
+  },
+  {
+    "name": "徐东町之龙",
+    "brewery": "BeerHead",
+    "style": "俄罗斯拉格",
+    "abv": "4.6%",
+    "bar": "右晃 Taproom",
+    "image": "https://img.nomenuapp.com/prod/products/9006f029-edd6-4390-9319-0ffe92cbaba6/bb9d1952-cab3-4a79-890d-7002008f7f70.jpg",
+    "group": "拉格",
+    "updated_at": "2026-09-18T09:15:37.15076+00:00",
+    "featured": true
+  },
+  {
+    "name": "享受者",
+    "brewery": "哈德逊河谷",
+    "style": "拉格",
+    "abv": "5%",
+    "bar": "懒海 · 苏州河",
+    "image": "https://img.nomenuapp.com/prod/products/295d8968-47d0-442e-9dfa-3a3d7071caf3/86ab8bfe-c428-4320-bbaf-a1ed441e7898.png",
+    "group": "拉格",
+    "updated_at": "2026-09-18T08:30:31.213786+00:00",
+    "featured": true
+  },
+  {
+    "name": "来自地下",
+    "brewery": "一滴",
+    "style": "水果酸艾尔",
+    "abv": "6%",
+    "bar": "懒海 · 苏州河",
+    "image": "https://img.nomenuapp.com/prod/tenants/57d005da-1193-4bd2-955a-ef6b9653516d/drinks/58218853-f0a7-4a22-a33a-1aee91c34211/70418ab0-bd94-42d3-8dfe-f9a338347de2.png",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-09-18T08:29:59.483293+00:00"
+  },
+  {
+    "name": "德式皮尔森",
+    "brewery": "回头客",
+    "style": "德式皮尔森",
+    "abv": "5.3%",
+    "bar": "懒海 · 苏州河",
+    "image": "https://img.nomenuapp.com/prod/products/d75d1e2a-092d-4537-aedb-72ab3aeeec55/66b33a8f-1998-4f6b-abc3-ab34f8ac2619.jpg",
+    "group": "拉格",
+    "updated_at": "2026-09-18T08:29:44.745602+00:00"
+  },
+  {
+    "name": "女王之语 桃葡三重奏",
+    "brewery": "艾尔药剂师",
+    "style": "美式野菌艾尔",
+    "abv": "6%",
+    "bar": "懒海 · 苏州河",
+    "group": "其他风格",
+    "updated_at": "2026-09-18T08:29:10.101522+00:00"
+  },
+  {
+    "name": "女王之语 白葡",
+    "brewery": "艾尔药剂师",
+    "style": "美式野菌艾尔",
+    "abv": "6%",
+    "bar": "懒海 · 苏州河",
+    "image": "https://img.nomenuapp.com/prod/tenants/57d005da-1193-4bd2-955a-ef6b9653516d/drinks/43cd0c9c-b484-4e74-9175-05572184e67c/293d1472-2d4e-403a-8423-b1f236bd90ad.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-09-18T08:28:26.65813+00:00"
+  },
+  {
+    "name": "女王之语 红葡",
+    "brewery": "艾尔药剂师",
+    "style": "美式野菌艾尔",
+    "abv": "6%",
+    "bar": "懒海 · 苏州河",
+    "group": "其他风格",
+    "updated_at": "2026-09-18T08:28:14.904838+00:00"
+  },
+  {
+    "name": "女王之语 莺桃",
+    "brewery": "艾尔药剂师",
+    "style": "美式野菌艾尔",
+    "abv": "6.7%",
+    "bar": "懒海 · 苏州河",
+    "image": "https://img.nomenuapp.com/prod/tenants/57d005da-1193-4bd2-955a-ef6b9653516d/drinks/ae70e337-1412-42ab-9e3f-122920a74744/896b7af7-cdbd-4b7a-a30e-f3336be92d9a.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-09-18T08:27:08.135137+00:00"
+  },
+  {
+    "name": "圣博祥-格兰库窖藏啤酒",
+    "brewery": "山魂",
+    "style": "茶色波特",
+    "abv": "11%",
+    "bar": "懒海 · 苏州河",
+    "image": "https://img.nomenuapp.com/prod/tenants/57d005da-1193-4bd2-955a-ef6b9653516d/drinks/8a40e8e7-0be3-4c57-a9d5-295e01f74046/b84baa65-523a-4209-b7be-be4443f4d99f.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-09-18T08:26:54.525732+00:00"
+  },
+  {
+    "name": "拉穆尔",
+    "brewery": "山魂",
+    "style": "金色艾尔",
+    "abv": "6%",
+    "bar": "懒海 · 苏州河",
+    "image": "https://img.nomenuapp.com/prod/tenants/57d005da-1193-4bd2-955a-ef6b9653516d/drinks/5841f1ce-87e9-49f8-86af-2594ec111f9f/ace656da-e951-45ba-9f84-72f383e8f937.png",
+    "group": "其他风格",
+    "updated_at": "2026-09-18T08:26:30.513491+00:00"
+  },
+  {
+    "name": "圣博祥窖藏 索拉来「葡萄酒桶陈」",
+    "brewery": "山魂",
+    "style": "野菌艾尔",
+    "abv": "11%",
+    "bar": "懒海 · 苏州河",
+    "group": "其他风格",
+    "updated_at": "2026-09-18T08:26:19.464421+00:00"
+  },
+  {
+    "name": "圣邦欲复古赛松",
+    "brewery": "山魂",
+    "style": "复古赛松",
+    "abv": "6%",
+    "bar": "懒海 · 苏州河",
+    "image": "https://img.nomenuapp.com/prod/tenants/57d005da-1193-4bd2-955a-ef6b9653516d/drinks/bfdbf65c-417c-4c5a-8393-091860b9ae85/5f23b0be-f108-4636-8c17-4ab386e8ee2e.png",
+    "group": "其他风格",
+    "updated_at": "2026-09-18T08:26:03.851463+00:00"
+  },
+  {
+    "name": "沙滩",
+    "brewery": "Alus",
+    "style": "IPA - New England / Hazy",
+    "abv": "6.9%",
+    "bar": "Catfish",
+    "image": "https://img.nomenuapp.com/prod/products/0e46c7e5-b29f-4b37-9e3f-8cf13c77c428/de2e3ba4-86c1-4729-ba14-381ddb93c3ab.jpg",
+    "group": "IPA",
+    "updated_at": "2026-09-18T08:05:05.627831+00:00",
+    "featured": true
+  },
+  {
+    "name": "传奇怪鸟",
+    "brewery": "美西啤酒",
+    "style": "浑浊淡色艾尔",
+    "abv": "6%",
+    "bar": "Catfish",
+    "image": "https://img.nomenuapp.com/prod/products/ff13ef33-e685-4d9d-9c50-e25f6a37adfa/ca033fab-c506-42bc-9732-18db36c4cac3.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-09-18T08:04:59.410228+00:00"
+  },
+  {
+    "name": "西柚世界",
+    "brewery": "大九酿造",
+    "style": "IPA",
+    "abv": "3.7%",
+    "bar": "酒宵 Drunken Night",
+    "image": "https://img.nomenuapp.com/prod/tenants/2c191730-69f6-4031-8256-91aa59e5bc52/drinks/3046ab5e-5730-4b30-b0ef-252a52ec5db4/mu6i31eg-ykjd87o1ud.jpg",
+    "serving": "M ¥40 / L ¥50",
+    "group": "IPA",
+    "updated_at": "2026-09-18T05:12:37.143878+00:00"
+  },
+  {
+    "name": "摩登之旅",
+    "brewery": "裂变酿造",
+    "style": "西海岸IPA",
+    "abv": "7.7%",
+    "bar": "2062",
+    "image": "https://img.nomenuapp.com/prod/tenants/4d1da7d9-8b21-4706-b535-355b9ff79388/drinks/7a0cd65e-43b1-463d-ae76-6fcb50855db0/mu5ejpw9-lv78j323oa.jpg",
+    "serving": "小杯 ¥56",
+    "group": "IPA",
+    "updated_at": "2026-09-17T10:44:05.518339+00:00"
+  },
+  {
+    "name": "均匀的云2026",
+    "brewery": "FEVER",
+    "style": "野菌农舍艾尔",
+    "abv": "6.2%",
+    "bar": "造浪 BEER WAVE",
+    "image": "https://img.nomenuapp.com/prod/products/3858d09a-7c85-45b6-bfc3-789c7170c9c4/22ffb735-7030-43fe-8bca-f58ab292278b.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-09-17T09:19:30.628156+00:00"
+  },
+  {
+    "name": "繁星沧澜",
+    "brewery": "虽吾酿造",
+    "style": "三倍干投摩登西海岸IPA",
+    "abv": "7%",
+    "bar": "右晃 Taproom",
+    "image": "https://img.nomenuapp.com/prod/products/e8aa14ea-d315-45d0-9d8d-7012aaf519dd/0708999c-72fd-473a-9e92-2b3a4f00ba03.jpg",
+    "group": "IPA",
+    "updated_at": "2026-09-17T08:59:27.488081+00:00"
+  },
+  {
+    "name": "捷克淡色拉格",
+    "brewery": "城墙根",
+    "style": "捷克淡色拉格",
+    "abv": "3.9%",
+    "bar": "Empty Cup 空杯",
+    "image": "https://img.nomenuapp.com/prod/tenants/de4207d0-d3c8-455a-8450-0d5b3e846ff0/drinks/a8bc48d4-9061-467d-92f8-425b1f279578/mu4c0708-x1nj0iln9h.jpg",
+    "group": "拉格",
+    "updated_at": "2026-09-16T16:45:31.449979+00:00"
+  },
+  {
+    "name": "美味巅峰",
+    "brewery": "圣殿骑士",
+    "style": "西海岸皮尔森",
+    "abv": "5%",
+    "bar": "造浪 BEER WAVE",
+    "image": "https://img.nomenuapp.com/prod/tenants/27c1beca-c912-4f4a-bee5-3ccf0e5d981f/drinks/aaaad6ec-e8f8-4da6-b3b0-74072c8450a0/mu47pxzn-zmc3u1qkfs.jpg",
+    "group": "拉格",
+    "updated_at": "2026-09-16T14:45:12.355468+00:00"
+  },
+  {
+    "name": "失控的神性",
+    "brewery": "万川酿造",
+    "style": "杜塞尔多夫",
+    "abv": "4.5%",
+    "bar": "吞吐 TuneTo",
+    "image": "https://img.nomenuapp.com/prod/products/a923e13e-a4bc-41e8-8465-3c1645538a9e/9acbe2d0-2362-46d7-9576-73b5e7ee48e1.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-09-16T11:43:59.893369+00:00"
+  },
+  {
+    "name": "逛三园",
+    "brewery": "山乘",
+    "style": "水果酸艾尔",
+    "abv": "4%",
+    "bar": "WE CHEERS",
+    "image": "https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/777ca3a8-279c-4f36-9ea6-efceda376995/drinks/71d7d21a-d95c-46bc-a07e-09f0ea1d7207/IMG_7019.jpg",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-09-16T11:20:14.768297+00:00"
+  },
+  {
+    "name": "E小调",
+    "brewery": "TAPSTAR",
+    "style": "杨梅酸艾尔",
+    "abv": "5.3%",
+    "bar": "WE CHEERS",
+    "image": "https://img.nomenuapp.com/prod/products/30465ac9-d4a7-416f-92bb-28a656e683bf/cc5b4a45-d547-4a43-9f59-5a1bc6904fb7.jpg",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-09-16T11:19:05.694732+00:00"
+  },
+  {
+    "name": "无序",
+    "brewery": "大九酿造",
+    "style": "酸浑浊IPA",
+    "abv": "5.2%",
+    "bar": "WE CHEERS",
+    "image": "https://img.nomenuapp.com/prod/tenants/777ca3a8-279c-4f36-9ea6-efceda376995/drinks/8ff58974-0cbb-4c5e-836f-bc5a3a59ba12/18a5fa0d-1292-4078-9885-a0cd134daacc.jpg",
+    "group": "IPA",
+    "updated_at": "2026-09-16T11:18:46.360397+00:00"
+  },
+  {
+    "name": "质能方程",
+    "brewery": "稳态酒厂",
+    "style": "双倍浑浊 IPA",
+    "abv": "8%",
+    "bar": "WE CHEERS",
+    "image": "https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/777ca3a8-279c-4f36-9ea6-efceda376995/drinks/9207dae7-2e86-410f-9bdc-7f59cf84f9dd/49.jpg",
+    "group": "IPA",
+    "updated_at": "2026-09-16T11:16:57.026116+00:00"
+  },
+  {
+    "name": "莫停",
+    "brewery": "Alus",
+    "style": "科隆",
+    "abv": "4.8%",
+    "bar": "WE CHEERS",
+    "image": "https://img.nomenuapp.com/prod/products/c870eb58-2c5a-4c75-b366-f8ce518a22d4/c84ee0ec-f1e5-459d-98ed-206f2792b6bb.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-09-16T11:13:25.183769+00:00"
+  },
+  {
+    "name": "青岩",
+    "brewery": "TAPSTAR",
+    "style": "玫瑰红茶蜂蜜酒",
+    "abv": "12%",
+    "bar": "WE CHEERS",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-09-16T11:09:16.847626+00:00"
+  },
+  {
+    "name": "有限社交",
+    "brewery": "TAPSTAR",
+    "style": "美式淡色艾尔",
+    "abv": "5%",
+    "bar": "WE CHEERS",
+    "image": "https://img.nomenuapp.com/prod/products/f474a6ef-b794-4cbe-8a96-c98e1641ef34/5d8a2d15-a56e-4bb7-94b9-a19bd92d8fad.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-09-16T11:08:08.969232+00:00"
+  },
+  {
+    "name": "老伙计",
+    "brewery": "TAPSTAR",
+    "style": "西海岸IPA",
+    "abv": "8%",
+    "bar": "WE CHEERS",
+    "image": "https://agtujigvxxdppngirqtu.supabase.co/storage/v1/object/public/taplist-media/777ca3a8-279c-4f36-9ea6-efceda376995/drinks/31c0ceea-e50e-4560-868a-8b73487b3047/IMG_7016.jpg",
+    "group": "IPA",
+    "updated_at": "2026-09-16T11:07:49.468597+00:00"
+  },
+  {
+    "name": "北极星",
+    "brewery": "TAPSTAR",
+    "style": "浑浊IPA",
+    "abv": "6%",
+    "bar": "WE CHEERS",
+    "image": "https://img.nomenuapp.com/prod/products/17696052-3322-444b-bb24-d0f0baca118d/297d2df6-54f7-43c3-bbb0-61e43cf3b2ce.jpg",
+    "group": "IPA",
+    "updated_at": "2026-09-16T11:05:15.398859+00:00"
+  },
+  {
+    "name": "智慧羊驼",
+    "brewery": "啤酒脑袋",
+    "style": "DDH 浑浊 IPA",
+    "abv": "7.5%",
+    "bar": "COME OUT",
+    "image": "https://img.nomenuapp.com/prod/tenants/13b6f277-ab0d-4c19-ba8a-d97a5af9f51d/drinks/25a14166-c8c7-410b-b9f8-0786299906c1/0e805e93-c10d-46ca-b77c-1776e3e9df07.jpg",
+    "group": "IPA",
+    "updated_at": "2026-09-16T10:09:46.55116+00:00"
+  },
+  {
+    "name": "键盘手弗雷克",
+    "brewery": "啤酒脑袋",
+    "style": "慕尼黑深色拉格",
+    "abv": "5.3%",
+    "bar": "COME OUT",
+    "image": "https://img.nomenuapp.com/prod/tenants/13b6f277-ab0d-4c19-ba8a-d97a5af9f51d/drinks/e5cfb356-e8ee-42c3-a5bd-e06acbc3854d/93527988-6cc4-4cca-8a51-ce239e577328.jpg",
+    "group": "拉格",
+    "updated_at": "2026-09-16T10:09:17.534831+00:00"
+  },
+  {
+    "name": "旷野之息",
+    "brewery": "啤酒脑袋",
+    "style": "餐桌啤酒",
+    "abv": "3.8%",
+    "bar": "2062",
+    "image": "https://img.nomenuapp.com/prod/tenants/4d1da7d9-8b21-4706-b535-355b9ff79388/drinks/4e177315-fe5f-4417-85a8-41d1ac2481c1/mu3x6wbr-usr7wyvv8o.jpg",
+    "serving": "小杯 ¥52",
+    "group": "其他风格",
+    "updated_at": "2026-09-16T09:50:28.06683+00:00"
+  },
+  {
+    "name": "金尘翩跹",
+    "brewery": "邪恶双子",
+    "style": "酸IPA",
+    "abv": "6.5%",
+    "bar": "GEER 嗝 · 武夷路",
+    "image": "https://img.nomenuapp.com/prod/tenants/283206e3-22d9-4a54-b8a5-70694b1ec062/drinks/fff76ce3-d589-4eb1-9dff-8364616b0d36/f155207c-f8b4-4b3c-9e09-fbea70bef022.jpg",
+    "serving": "M ¥79 / L ¥105",
+    "group": "IPA",
+    "updated_at": "2026-09-16T06:32:28.25146+00:00"
+  },
+  {
+    "name": "潮渡",
+    "brewery": "虽吾酿造",
+    "style": "意式皮尔森",
+    "abv": "5.2%",
+    "bar": "Farside 月之暗面",
+    "image": "https://img.nomenuapp.com/prod/tenants/4daa2912-3268-4396-bfcc-8a4c2a406dc6/drinks/e4bb84d4-6a8c-45c6-b7c2-c22c1fec03dc/cc05772f-4b19-4c8a-a881-987c4e434bf0.jpg",
+    "group": "拉格",
+    "updated_at": "2026-09-16T04:14:50.095747+00:00"
+  },
+  {
+    "name": "猛犸象族长版",
+    "brewery": "分野酿造",
+    "style": "酒花饱和艾尔",
+    "abv": "8.8%",
+    "bar": "夜游",
+    "image": "https://img.nomenuapp.com/prod/tenants/81a90487-39c9-46bb-b221-68ff631275d6/drinks/9f644871-7007-4371-8e9e-c4e72e6601c4/mu2wb10d-vl6h1za59c.jpg",
+    "serving": "M ¥58 / L ¥78",
+    "group": "其他风格",
+    "updated_at": "2026-09-15T16:37:54.688654+00:00"
+  },
+  {
+    "name": "寂静收割",
+    "brewery": "八比特",
+    "style": "三倍浑浊IPA",
+    "abv": "10.1%",
+    "bar": "Empty Cup 空杯",
+    "image": "https://img.nomenuapp.com/prod/tenants/de4207d0-d3c8-455a-8450-0d5b3e846ff0/drinks/87a1406c-7065-478c-a81d-d8819567f1e4/mu2or9ek-9w2ok8xor1.jpg",
+    "group": "IPA",
+    "updated_at": "2026-09-15T13:06:47.067467+00:00"
+  },
+  {
+    "name": "传统古斯",
+    "brewery": "骑士领地",
+    "style": "古斯",
+    "abv": "4.7%",
+    "bar": "52Hz",
+    "image": "https://img.nomenuapp.com/prod/tenants/fa4b4a67-1147-48e1-8577-b06045728e45/drinks/0db3f4b5-032d-4a46-be64-9a8d04e99a3e/17feefdc-7bc9-4878-b34c-8459ae361f59.png",
+    "group": "其他风格",
+    "updated_at": "2026-09-15T12:21:31.591781+00:00"
+  }
+]

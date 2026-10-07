@@ -51,6 +51,7 @@
       cursor: pointer;
     }
     .toolbar span { color: #8f887b; font-size: 13px; }
+    .toolbar a { color: var(--gold); }
 
     #slides {
       display: grid;
@@ -159,21 +160,21 @@
       letter-spacing: 2px;
     }
     .intro .home {
-      left: 70px;
-      top: 590px;
-      width: 510px;
-      height: 770px;
+      left: 55px;
+      top: 500px;
+      width: 430px;
+      height: 930px;
       transform: rotate(-1.8deg);
     }
-    .intro .home img { object-position: 50% 7%; }
+    .intro .home img { object-fit: contain; }
     .intro .mine {
-      right: 63px;
-      top: 535px;
-      width: 455px;
-      height: 825px;
+      right: 55px;
+      top: 560px;
+      width: 390px;
+      height: 844px;
       transform: rotate(2deg);
     }
-    .intro .mine img { object-position: 50% 4%; }
+    .intro .mine img { object-fit: contain; }
     .intro .fade {
       position: absolute;
       left: 38px;
@@ -392,8 +393,9 @@
 </head>
 <body>
   <div class="toolbar">
+    <button type="button" id="downloadAll">下载全部 PNG</button>
     <button type="button" onclick="window.print()">打印 / 导出</button>
-    <span>6 张画布，1080 × 1440。使用 ?slide=1 单张预览。</span>
+    <span id="toolbarStatus">6 张画布，1080 × 1440。使用 ?slide=1 单张预览。</span>
   </div>
 
   <main id="slides">
@@ -402,10 +404,10 @@
       <span class="brand">NO MENU</span>
       <div class="copy">
         <h1>现在的<br><span class="gold">No Menu</span></h1>
-        <p class="summary">看实时酒单，也记录喝过的酒</p>
+        <p class="summary">看实时酒单，记录喝过的 TAP</p>
       </div>
-      <div class="screen home"><img src="../output/xiaohongshu-intro-refresh/sources/home.png" alt="今晚首页" /></div>
-      <div class="screen mine"><img src="../output/xiaohongshu-intro-refresh/sources/mine.png" alt="我的 TAP" /></div>
+      <div class="screen home"><img src="../output/xiaohongshu-intro-refresh/sources/home.png?v=20260917" alt="今晚首页" /></div>
+      <div class="screen mine"><img src="../output/xiaohongshu-intro-refresh/sources/mine.png?v=20260917" alt="我的 TAP" /></div>
       <div class="fade"></div>
       <div class="frame"></div>
     </section>
@@ -425,7 +427,7 @@
       <div class="veil"></div>
       <span class="brand">NO MENU</span>
       <div class="copy">
-        <h2>酒吧现在<br><span class="gold">有什么酒</span></h2>
+        <h2>酒吧实时<br><span class="gold">TAP</span></h2>
       </div>
       <div class="frame"></div>
     </section>
@@ -433,8 +435,7 @@
     <section class="slide mytap">
       <span class="brand">NO MENU</span>
       <div class="copy">
-        <div class="section-mark">MY TAP</div>
-        <h2>记录喝过的酒</h2>
+        <h2>记录喝过的 TAP</h2>
         <p class="sub">按月份回看，仅自己可见</p>
       </div>
       <div class="screen recorded-screen"><img src="../output/xiaohongshu-intro-refresh/sources/recorded.png" alt="记录成功" /></div>
@@ -466,13 +467,91 @@
         <div class="city">沈阳</div>
         <div class="city">长春</div>
         <div class="city">滨州</div>
+        <div class="city">西安</div>
+        <div class="city">更多...</div>
       </div>
       <p class="invite">告诉我们城市和酒吧名字</p>
       <div class="frame"></div>
     </section>
   </main>
 
+  <script src="../node_modules/html2canvas/dist/html2canvas.min.js"></script>
   <script>
+    const downloadAllButton = document.querySelector("#downloadAll");
+    const toolbarStatus = document.querySelector("#toolbarStatus");
+    const servedPreviewUrl = "http://127.0.0.1:4173/tools/xiaohongshu-no-menu-intro-2026.html";
+
+    if (location.protocol === "file:") {
+      downloadAllButton.textContent = "打开可导出的预览";
+      toolbarStatus.innerHTML = `本地文件模式不能导出 PNG。<a href="${servedPreviewUrl}">通过本地预览打开</a>`;
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function inlineSlideImages(slide) {
+      const images = [...slide.querySelectorAll("img")];
+      await Promise.all(images.map(async (image) => {
+        if (image.src.startsWith("data:")) return;
+        const response = await fetch(image.currentSrc || image.src, { cache: "no-store" });
+        if (!response.ok) throw new Error(`图片加载失败：${response.status}`);
+        image.src = await blobToDataUrl(await response.blob());
+        await image.decode();
+      }));
+    }
+
+    async function downloadSlide(slide, index) {
+      await inlineSlideImages(slide);
+      await document.fonts?.ready;
+      const canvas = await html2canvas(slide, {
+        backgroundColor: "#070806",
+        scale: 1,
+        useCORS: true,
+        logging: false,
+        width: 1080,
+        height: 1440,
+      });
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((value) => {
+          if (value) resolve(value);
+          else reject(new Error("PNG 生成失败"));
+        }, "image/png");
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `no-menu-intro-${String(index + 1).padStart(2, "0")}.png`;
+      link.href = url;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    downloadAllButton?.addEventListener("click", async () => {
+      if (location.protocol === "file:") {
+        location.href = servedPreviewUrl;
+        return;
+      }
+      downloadAllButton.disabled = true;
+      downloadAllButton.textContent = "正在生成…";
+      try {
+        const slides = [...document.querySelectorAll(".slide")];
+        for (const [index, slide] of slides.entries()) {
+          await downloadSlide(slide, index);
+        }
+      } catch (error) {
+        console.error(error);
+        alert(`导出失败：${error.message}`);
+      } finally {
+        downloadAllButton.textContent = "下载全部 PNG";
+        downloadAllButton.disabled = false;
+      }
+    });
+
     const slideNumber = Number(new URLSearchParams(location.search).get("slide"));
     if (slideNumber) {
       document.querySelector(".toolbar")?.remove();

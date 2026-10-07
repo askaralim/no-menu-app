@@ -28,12 +28,17 @@ npm run ios
 Required public environment variables:
 
 ```bash
-EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_URL=https://nomenuapp.com/api/supabase
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 EXPO_PUBLIC_PRIVACY_POLICY_URL=
 EXPO_PUBLIC_POSTHOG_API_KEY=
 EXPO_PUBLIC_POSTHOG_HOST=
 ```
+
+Production routes Supabase Auth, REST, Functions, and Storage through the ECS proxy above.
+Local development continues to use the Supabase CLI URL from `.env.local.example`. To roll
+back the proxy, restore the hosted `https://<project-ref>.supabase.co` URL and publish a new
+production update; the fixed auth storage key preserves existing sessions in either direction.
 
 PostHog is optional at runtime and only activates after analytics consent. Apply the
 repository-level `supabase/migrations/` before expecting corresponding RPCs to work.

@@ -13,7 +13,7 @@ export default function OrderingStackLayout() {
       }}
     >
       <Stack.Screen name="index" />
-      <Stack.Screen name="form" />
+      <Stack.Screen name="form" options={{ fullScreenGestureEnabled: false }} />
     </Stack>
   )
 }

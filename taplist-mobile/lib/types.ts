@@ -7,6 +7,7 @@
 export type OpeningHourJson = {
   open: string
   close: string
+  closes_next_day?: boolean
 }
 
 /** Counts from `get_public_taplist_bars.status_counts` (Chinese labels, public drinks only). */
@@ -44,6 +45,8 @@ export type PublicBarRow = {
   district: string | null
   address: string | null
   opening_hour: OpeningHourJson | null
+  opening_hour_source?: 'tenant_opening_periods' | 'tenants.opening_hour' | 'none' | null
+  is_open_now?: boolean | null
   description: string | null
   cover_image_url: string | null
   city: string
@@ -64,6 +67,8 @@ export type PublicTenantDetail = {
   district: string | null
   address: string | null
   opening_hour: OpeningHourJson | null
+  opening_hour_source?: 'tenant_opening_periods' | 'tenants.opening_hour' | 'none' | null
+  is_open_now?: boolean | null
   description: string | null
   cover_image_url: string | null
   city: string
@@ -74,6 +79,8 @@ export type PublicTenantDetail = {
   tags?: PublicBarTag[]
   brewing_type?: BrewingType | null
   brewing_label?: string | null
+  qr_image_url?: string | null
+  qr_image_path?: string | null
 }
 
 export type PublicBeerProfile = {
@@ -129,7 +136,7 @@ export type PublicTaplistTenantRpc =
 
 /** RPC `get_public_taplist_drink` JSON union (additive optimized detail endpoint). */
 export type PublicTaplistDrinkRpc =
-  | { ok: true; tenant: PublicTenantDetail; drink: PublicDrinkRow }
+  | { ok: true; tenant: PublicTenantDetail; drink: PublicDrinkRow; venues?: PublicProductVenue[] }
   | { ok: false; code: string; name?: string }
 
 /** RPC `get_public_taplist_cities` JSON union */
@@ -203,6 +210,20 @@ export type PublicTaplistSearchResult = {
   beer_style: string | null
   abv: number | null
   default_serving: PublicSearchServingOption | null
+  venue_count?: number
+  venues?: PublicProductVenue[]
+}
+
+export type PublicProductVenue = {
+  drink_id: string
+  tenant_id: string
+  tenant_slug: string
+  tenant_display_name: string
+  tenant_district: string | null
+  tenant_address: string | null
+  public_status: string
+  default_serving: PublicSearchServingOption | null
+  last_menu_updated_at: string | null
 }
 
 export type PublicNewTapRow = PublicTaplistSearchResult
@@ -210,7 +231,75 @@ export type PublicNewTapRow = PublicTaplistSearchResult
 export type PublicTaplistBreweryDiscoveryRow = {
   brewery_name: string
   tap_count: number
+  logo_url: string | null
 }
+
+export type MiniProductSearchVenue = {
+  id: string
+  name: string
+  slug: string
+}
+
+export type MiniProductSearchResult = {
+  key: string
+  product_id: string | null
+  drink_id: string | null
+  name: string
+  image_url: string | null
+  brewery: string | null
+  beer_style: string | null
+  abv: number | null
+  venue_count: number
+  last_menu_updated_at: string | null
+  venues: MiniProductSearchVenue[]
+}
+
+export type MiniProductSearchRpc =
+  | {
+      ok: true
+      results: MiniProductSearchResult[]
+      next_offset: number | null
+    }
+  | { ok: false; code?: string }
+
+export type MiniProductDetailVenue = {
+  id: string
+  name: string
+  slug: string
+  district: string | null
+  is_source: boolean
+  available: boolean
+  group: 'available' | 'coming_soon' | 'sold_out'
+  listings: Array<{
+    drink_id: string
+    status: string
+    servings: PublicServingOption[]
+  }>
+}
+
+export type MiniProductDetail = {
+  key: string
+  product_id: string | null
+  drink_id: string | null
+  name: string
+  image_url: string | null
+  brewery: string | null
+  collab_breweries: string[] | null
+  beer_style: string | null
+  abv: number | null
+  ibu: number | null
+  country: string | null
+  description: string | null
+}
+
+export type MiniProductDetailRpc =
+  | {
+      ok: true
+      product: MiniProductDetail
+      venues: MiniProductDetailVenue[]
+      source_unavailable: boolean
+    }
+  | { ok: false; code?: string }
 
 export type PublicEventDisplayState = 'TONIGHT' | 'ONGOING' | 'UPCOMING'
 
@@ -241,15 +330,39 @@ export type PublicTaplistSearchRpc =
   | { ok: true; results: PublicTaplistSearchResult[] }
   | { ok: false; code?: string }
 
+export type PublicTaplistBreweryRpc =
+  | { ok: true; brewery_name: string; results: PublicTaplistSearchResult[] }
+  | { ok: false; code?: string }
+
 /** RPC `get_public_taplist_new_drinks` JSON union */
 export type PublicTaplistNewDrinksRpc =
   | { ok: true; results: PublicNewTapRow[] }
   | { ok: false; code?: string }
 
-/** RPC `get_public_taplist_breweries` JSON union */
+/** Mini-program RPC `get_mini_breweries` JSON union, normalized by the Taplist API adapter. */
 export type PublicTaplistBreweriesRpc =
-  | { ok: true; results: PublicTaplistBreweryDiscoveryRow[] }
+  | {
+      ok: true
+      results: Array<{
+        brewery: string
+        product_count: number
+        logo_url: string | null
+      }>
+    }
   | { ok: false; code?: string }
+
+export type MiniBrewery = {
+  name_zh: string | null
+  name_en: string | null
+  country: string | null
+  city: string | null
+  logo_url: string | null
+}
+
+export type MiniBreweryRpc = {
+  ok: true
+  brewery: MiniBrewery | null
+}
 
 /** RPC `get_public_taplist_events` JSON union */
 export type PublicTaplistEventsRpc =

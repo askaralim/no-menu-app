@@ -24,7 +24,7 @@ export default function FollowedBarsScreen() {
   const barsQuery = useQuery({
     queryKey: ['bar-follows'],
     queryFn: getMyFollowedBars,
-    enabled: Platform.OS === 'ios' && Boolean(sessionQuery.data),
+    enabled: Boolean(sessionQuery.data),
   })
 
   useFocusEffect(useCallback(() => {
@@ -96,7 +96,9 @@ export default function FollowedBarsScreen() {
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} style={styles.followCount}>
               已关注 {bars.length} 家 · 仅自己可见
             </Text>
-            <Text style={styles.intro}>关闭通知不会取消关注</Text>
+            <Text style={styles.intro}>
+              {Platform.OS === 'ios' ? '关闭通知不会取消关注' : '关注列表仅自己可见'}
+            </Text>
           </View>
         </View>
 
@@ -128,18 +130,22 @@ export default function FollowedBarsScreen() {
                     <View style={styles.copy}>
                       <Text style={styles.barName} numberOfLines={1}>{bar.tenant_display_name}</Text>
                       <Text style={styles.meta} numberOfLines={1}>
-                      {locationLabel} · {bar.notify_new_taps ? '通知已开启' : '通知已关闭'}
+                        {Platform.OS === 'ios'
+                          ? `${locationLabel} · ${bar.notify_new_taps ? '通知已开启' : '通知已关闭'}`
+                          : locationLabel}
                       </Text>
                     </View>
                   </Pressable>
-                  <Pressable
-                    accessibilityRole="switch"
-                    accessibilityState={{ checked: bar.notify_new_taps, disabled: busy }}
-                    disabled={busy}
-                    onPress={() => void updateNotification(bar)}
-                    style={[styles.toggle, bar.notify_new_taps && styles.toggleOn]}>
-                    {updatingNotification ? <ActivityIndicator size="small" color={palette.amber} /> : <View style={[styles.knob, bar.notify_new_taps && styles.knobOn]} />}
-                  </Pressable>
+                  {Platform.OS === 'ios' ? (
+                    <Pressable
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: bar.notify_new_taps, disabled: busy }}
+                      disabled={busy}
+                      onPress={() => void updateNotification(bar)}
+                      style={[styles.toggle, bar.notify_new_taps && styles.toggleOn]}>
+                      {updatingNotification ? <ActivityIndicator size="small" color={palette.amber} /> : <View style={[styles.knob, bar.notify_new_taps && styles.knobOn]} />}
+                    </Pressable>
+                  ) : null}
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`取消关注 ${bar.tenant_display_name}`}

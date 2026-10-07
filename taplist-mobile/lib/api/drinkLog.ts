@@ -53,10 +53,10 @@ export async function getMyDrinkSummary() {
   return data as MyDrinkSummary
 }
 
-export async function getMyDrinkInsights() {
+export async function getMyDrinkInsights(at?: string) {
   const client = getTaplistSupabase()
   const [{ data, error }, history] = await Promise.all([
-    client.rpc('get_my_drink_insights'),
+    client.rpc('get_my_drink_insights', at ? { p_at: at } : undefined),
     getMyDrinkHistory(null, 200),
   ])
   if (error) throw error

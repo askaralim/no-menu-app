@@ -2267,6 +2267,8 @@ BEGIN
   RETURNING id INTO v_tenant_id;
   INSERT INTO public.settings (theme, auto_refresh, refresh_interval, tenant_id)
   VALUES ('dark', true, 3600, v_tenant_id);
+  INSERT INTO public.categories (tenant_id, name, sort_order, enabled, is_public_visible)
+  VALUES (v_tenant_id, '生啤', 1, true, true);
   RETURN v_tenant_id;
 END;
 $$;

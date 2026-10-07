@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   annotatePublicVisibility,
+  isNoncanonicalProductImage,
   resumeAction,
   selectCandidates,
   selectGlobalCandidates,
@@ -11,6 +12,17 @@ import {
 const projectRef = 'agtujigvxxdppngirqtu'
 const tenantId = 'c953fa59-932b-45a9-99de-6148433d7c9f'
 const sourceUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/taplist-media/${tenantId}/drinks/11111111-1111-4111-8111-111111111111/image.jpg`
+const tenantOssUrl = `https://img.nomenuapp.com/prod/tenants/${tenantId}/drinks/11111111-1111-4111-8111-111111111111/image.jpg`
+
+test('recognizes Supabase and tenant OSS drink images as noncanonical product images', () => {
+  assert.equal(isNoncanonicalProductImage(sourceUrl, projectRef), true)
+  assert.equal(isNoncanonicalProductImage(tenantOssUrl, projectRef), true)
+  assert.equal(isNoncanonicalProductImage(
+    'https://img.nomenuapp.com/prod/products/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/image.jpg',
+    projectRef,
+  ), false)
+  assert.equal(isNoncanonicalProductImage('https://example.com/image.jpg', projectRef), false)
+})
 
 test('selects only unshared products whose tenant drink still has the product source URL', () => {
   const products = [

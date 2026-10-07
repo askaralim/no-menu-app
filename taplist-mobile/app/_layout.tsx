@@ -80,8 +80,11 @@ function RootLayoutNav() {
         <Stack.Screen name="bar/[slug]/events" options={{ headerShown: false }} />
         <Stack.Screen name="bar/[slug]/event/[eventId]" options={{ headerShown: false }} />
         <Stack.Screen name="bar/[slug]/beer/[drinkId]" options={{ headerShown: false }} />
+        <Stack.Screen name="brewery/[name]" options={{ headerShown: false }} />
+        <Stack.Screen name="product/[key]" options={{ headerShown: false }} />
         <Stack.Screen name="drink-log/[lightId]" options={{ headerShown: false }} />
         <Stack.Screen name="tap-report" options={{ headerShown: false }} />
+        <Stack.Screen name="tonight-recap" options={{ headerShown: false }} />
         <Stack.Screen name="followed-bars" options={{ headerShown: false }} />
         <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
         <Stack.Screen name="about" options={{ headerShown: false }} />

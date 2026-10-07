@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from 'react-native'
 import ViewShot from 'react-native-view-shot'
 
 import { CachedImage } from '@/components/taplist/CachedImage'
-import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import type { MyDrinkInsights } from '@/lib/types'
 
@@ -28,29 +27,27 @@ export const ShareableDrinkLogImage = forwardRef<
           <Text style={styles.headerDate}>{formatYearMonth(month.month_start)}</Text>
           <Text style={styles.headerSeparator}> · </Text>
           <Text style={styles.headerUsername}>{username}</Text>
-          <Text style={styles.headerCopy}> 本月 </Text>
+          <Text style={styles.headerSeparator}> · </Text>
           <Text style={styles.headerCount}>{month.drink_count}</Text>
-          <Text style={styles.headerCopy}> 款 </Text>
-          <Text style={styles.headerTap}>TAP</Text>
+          <Text style={styles.headerTap}> TAP</Text>
         </Text>
         <View style={styles.headerRule} />
         <Text style={styles.contextLabel}>
-          {month.drink_count > drinks.length ? `最近 ${drinks.length} 款 · ` : ''}新增 {month.new_drink_count} 款 · 来自 {month.bar_count} 家酒吧
+          来自 {month.bar_count} 家酒吧
+          {month.drink_count > drinks.length ? ` · 展示最近 ${drinks.length} 款` : ''}
         </Text>
         <View style={[styles.grid, columns < 3 && styles.gridCentered, drinks.length <= 2 && styles.gridSpacious]}>
           {drinks.map((drink) => (
             <View key={drink.light_id} style={[styles.item, { width: itemWidth }]}>
-              <CachedImage
-                source={drink.image_url || defaultBeerArtwork}
-                ossStyle="nm-card"
-                style={[styles.art, { width: artSize, height: artSize }]}
-              />
+              <View style={[styles.artSlot, { width: artSize, height: artSize }]}>
+                {drink.image_url ? (
+                  <CachedImage source={drink.image_url} ossStyle="nm-card" style={styles.art} />
+                ) : null}
+              </View>
               <Text numberOfLines={1} style={styles.name}>
                 {[drink.brewery, drink.name].filter(Boolean).join(' · ')}
               </Text>
-              {drink.bar_names.length ? (
-                <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ')}</Text>
-              ) : null}
+              <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ') || '未知酒吧'}</Text>
             </View>
           ))}
         </View>
@@ -78,7 +75,6 @@ const styles = StyleSheet.create({
   headerDate: { ...typography.label, color: palette.faint, fontSize: 14, letterSpacing: 0.7 },
   headerSeparator: { ...typography.body, color: palette.faint, fontSize: 17 },
   headerUsername: { ...typography.title, color: palette.amber, fontSize: 20 },
-  headerCopy: { ...typography.body, color: palette.muted, fontSize: 17 },
   headerCount: { ...typography.display, color: palette.text, fontSize: 26 },
   headerTap: { ...typography.display, color: palette.text, fontSize: 24, letterSpacing: 1 },
   headerRule: { height: 1, backgroundColor: palette.line, marginTop: spacing.sm },
@@ -87,9 +83,10 @@ const styles = StyleSheet.create({
   gridCentered: { justifyContent: 'center' },
   gridSpacious: { marginTop: spacing.xl },
   item: { alignItems: 'center' },
-  art: { borderRadius: 7 },
+  artSlot: { alignItems: 'center', justifyContent: 'flex-end' },
+  art: { width: '100%', height: '100%', borderRadius: 7 },
   name: { ...typography.caption, color: palette.text, textAlign: 'center', marginTop: spacing.xxs, fontSize: 11, lineHeight: 15 },
-  venue: { ...typography.micro, color: palette.muted, textAlign: 'center', fontSize: 9, lineHeight: 12 },
+  venue: { ...typography.caption, color: palette.muted, textAlign: 'center', fontSize: 10, lineHeight: 14, fontWeight: '500' },
   footer: { minHeight: 24, marginTop: 'auto', paddingTop: spacing.xs, borderTopWidth: 1, borderTopColor: palette.line, flexDirection: 'row', alignItems: 'flex-end' },
   brand: { ...typography.label, color: palette.text, fontSize: 10 },
 })

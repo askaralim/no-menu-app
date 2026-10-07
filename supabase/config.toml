@@ -414,3 +414,6 @@ backend = "postgres"
 
 [functions.dispatch-new-tap-notifications]
 verify_jwt = false
+
+[functions.wechat-mini-auth]
+verify_jwt = false

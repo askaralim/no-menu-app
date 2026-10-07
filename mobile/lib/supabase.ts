@@ -7,6 +7,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 const LOCAL_DEFAULT_URL = 'http://127.0.0.1:54321'
 const LOCAL_DEFAULT_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+const PRODUCTION_AUTH_STORAGE_KEY = 'sb-agtujigvxxdppngirqtu-auth-token'
 
 /** Placeholder so createClient never throws at import time in a broken production build. */
 const PLACEHOLDER_URL = 'https://example.invalid'
@@ -33,6 +34,14 @@ const useDevFallback = __DEV__ && (!rawUrl || !rawKey)
 const supabaseUrl = rawUrl || (useDevFallback ? LOCAL_DEFAULT_URL : '')
 const supabaseAnonKey = rawKey || (useDevFallback ? LOCAL_DEFAULT_ANON_KEY : '')
 
+function resolveAuthStorageKey(url: string): string | undefined {
+  const hostname = new URL(url).hostname
+  if (hostname === 'agtujigvxxdppngirqtu.supabase.co' || hostname === 'nomenuapp.com') {
+    return PRODUCTION_AUTH_STORAGE_KEY
+  }
+  return undefined
+}
+
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
 if (!isSupabaseConfigured) {
@@ -45,16 +54,20 @@ if (!isSupabaseConfigured) {
   )
 }
 
+const clientUrl = supabaseUrl || PLACEHOLDER_URL
+const authStorageKey = resolveAuthStorageKey(clientUrl)
+
 /**
  * Always construct a client. When misconfigured, calls fail network-wise instead of
  * crashing the whole app at import (TestFlight blank/crash on launch).
  */
 export const supabase: SupabaseClient = createClient(
-  supabaseUrl || PLACEHOLDER_URL,
+  clientUrl,
   supabaseAnonKey || PLACEHOLDER_KEY,
   {
     auth: {
       storage: AsyncStorage,
+      ...(authStorageKey ? { storageKey: authStorageKey } : {}),
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,

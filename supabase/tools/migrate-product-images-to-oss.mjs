@@ -119,6 +119,22 @@ function isSupabaseDrinkImage(url, projectRef) {
   )
 }
 
+function isTenantOssDrinkImage(url) {
+  if (!url) return false
+  let parsed
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+  if (parsed.hostname !== 'img.nomenuapp.com') return false
+  return /^\/prod\/tenants\/[0-9a-f-]+\/drinks\/[0-9a-f-]+\/[^/]+$/i.test(parsed.pathname)
+}
+
+export function isNoncanonicalProductImage(url, projectRef) {
+  return isSupabaseDrinkImage(url, projectRef) || isTenantOssDrinkImage(url)
+}
+
 export function selectCandidates({ drinks, products, tenantId, projectRef, limit }) {
   const productById = new Map(products.map((product) => [product.id, product]))
   const usageByProduct = new Map()
@@ -130,7 +146,7 @@ export function selectCandidates({ drinks, products, tenantId, projectRef, limit
   }
 
   return [...productById.values()]
-    .filter((product) => isSupabaseDrinkImage(product.image_url, projectRef))
+    .filter((product) => isNoncanonicalProductImage(product.image_url, projectRef))
     .map((product) => {
       const usages = usageByProduct.get(product.id) || []
       const tenantUsages = usages.filter((drink) => drink.tenant_id === tenantId)
@@ -159,7 +175,7 @@ export function selectGlobalCandidates({ drinks, products, projectRef, limit }) 
   }
 
   return products
-    .filter((product) => isSupabaseDrinkImage(product.image_url, projectRef))
+    .filter((product) => isNoncanonicalProductImage(product.image_url, projectRef))
     .map((product) => {
       const usages = usageByProduct.get(product.id) || []
       const matchingUsages = usages.filter((drink) => drink.image_url === product.image_url)
@@ -293,6 +309,16 @@ async function inspectSource(url) {
   }
 }
 
+async function verifyMigratedImage(url) {
+  const original = await inspectSource(url)
+  const thumbnailUrl = new URL(url)
+  thumbnailUrl.searchParams.set('x-oss-process', 'style/nm-thumb')
+  const thumbnail = await inspectSource(thumbnailUrl)
+  if (!original.ok || !thumbnail.ok || thumbnail.contentType !== 'image/webp') {
+    throw new Error(`Migrated image verification failed: ${url}`)
+  }
+}
+
 async function loadPlan({ projectRef, tenantId, limit, key }) {
   const baseUrl = `https://${projectRef}.supabase.co/rest/v1`
   const tenantRows = await restJson(
@@ -338,8 +364,10 @@ async function loadGlobalPlan({ projectRef, limit, key }) {
     candidates: await annotatePlanPublicVisibility(baseUrl, key, inspected),
     productCount: products.length,
     drinkCount: drinks.length,
-    remainingCandidateCount: products.filter((product) =>
+    remainingSupabaseCount: products.filter((product) =>
       isSupabaseDrinkImage(product.image_url, projectRef)).length,
+    remainingTenantOssCount: products.filter((product) =>
+      isTenantOssDrinkImage(product.image_url)).length,
   }
 }
 
@@ -472,7 +500,8 @@ async function main() {
     if (args.global) {
       console.log(`${args.apply ? 'APPLY' : 'DRY-RUN'} scope: global product pool`)
       console.log(`Scanned products: ${plan.productCount}; linked drinks: ${plan.drinkCount}`)
-      console.log(`Remaining eligible product images: ${plan.remainingCandidateCount}`)
+      console.log(`Remaining Supabase product images: ${plan.remainingSupabaseCount}`)
+      console.log(`Remaining tenant-path product images: ${plan.remainingTenantOssCount}`)
     } else {
       console.log(`${args.apply ? 'APPLY' : 'DRY-RUN'} tenant: ${plan.tenant.display_name || plan.tenant.name} (${plan.tenant.id})`)
     }
@@ -577,6 +606,7 @@ async function main() {
       oldUrl: item.oldUrl,
       newUrl: item.newUrl,
     })
+    await verifyMigratedImage(item.newUrl)
     item.status = 'complete'
     item.completedAt = new Date().toISOString()
     await writeState(stateFile, state)

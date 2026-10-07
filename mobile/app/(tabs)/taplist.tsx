@@ -546,10 +546,10 @@ export default function TaplistScreen() {
                     style={styles.shareTonightBtn}
                     onPress={() => setTonightShareOpen(true)}
                     activeOpacity={0.72}
-                    accessibilityLabel="分享上新"
+                    accessibilityLabel="导出酒单图片"
                   >
                     <Ionicons name="share-outline" size={21} color={T.gold} />
-                    <Text style={styles.shareTonightText}>分享上新</Text>
+                    <Text style={styles.shareTonightText}>酒单图片</Text>
                   </TouchableOpacity>
                   {draft.isOwner ? (
                     <TouchableOpacity

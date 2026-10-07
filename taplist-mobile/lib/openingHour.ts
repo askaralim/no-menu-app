@@ -1,6 +1,7 @@
 export type OpeningHourJson = {
   open: string
   close: string
+  closes_next_day?: boolean
 }
 
 function pad2(n: number) {
@@ -29,6 +30,16 @@ export function formatOpeningHourLabel(value: OpeningHourJson | null | undefined
   const close = formatHm24(value.close)
   if (!open || !close) return null
   return `${open}–${close}`
+}
+
+export function formatOpeningStatusLabel(value: {
+  opening_hour?: OpeningHourJson | null
+  is_open_now?: boolean | null
+}): string | null {
+  const range = formatOpeningHourLabel(value.opening_hour)
+  if (value.is_open_now === true) return range ? `营业中 · ${range}` : '营业中'
+  if (value.is_open_now === false) return range ? `已打烊 · ${range}` : '已打烊'
+  return range
 }
 
 export function formatRoadmapHoursLabel(stop: {

@@ -5,8 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const requestTypes = new Set(['bar_onboarding', 'product_support', 'privacy', 'other'])
+const requestTypes = new Set(['bar_onboarding', 'product_support', 'privacy', 'apple_account_link', 'other'])
 const contactChannels = new Set(['mobile', 'wechat'])
+const requestSources = new Set(['taplist_web', 'miniprogram'])
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -39,9 +40,10 @@ Deno.serve(async (req) => {
   const contactValue = clean(body.contactValue, 100)
   const venueName = clean(body.venueName, 100)
   const message = clean(body.message, 1000)
+  const source = clean(body.source, 30) || 'taplist_web'
   const consent = body.consent === true
 
-  if (!requestTypes.has(requestType) || !contactChannels.has(contactChannel)) {
+  if (!requestTypes.has(requestType) || !contactChannels.has(contactChannel) || !requestSources.has(source)) {
     return json({ ok: false, code: 'INVALID_OPTION' }, 400)
   }
   if (contactName.length < 2 || contactValue.length < 2 || message.length < 10 || !consent) {
@@ -66,6 +68,14 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
+  let createdByUserId: string | null = null
+  const authorization = req.headers.get('Authorization')
+  const accessToken = authorization?.replace(/^Bearer\s+/i, '') ?? ''
+  if (accessToken && accessToken !== Deno.env.get('SUPABASE_ANON_KEY')) {
+    const { data: userData } = await admin.auth.getUser(accessToken)
+    createdByUserId = userData.user?.id ?? null
+  }
+
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString()
   const { count, error: countError } = await admin
     .from('support_requests')
@@ -82,7 +92,8 @@ Deno.serve(async (req) => {
     .from('support_requests')
     .insert({
       request_type: requestType,
-      source: 'taplist_web',
+      source,
+      created_by_user_id: createdByUserId,
       contact_name: contactName,
       contact_channel: contactChannel,
       contact_value: contactValue,

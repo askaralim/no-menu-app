@@ -33,14 +33,15 @@ export async function getMyTenantQr(
     qr_code?: string
     short_url?: string
     image_path?: string
+    image_url?: string
     placement?: string
     version?: number
   }
 
   if (!row.qr_code || !row.image_path) return null
 
-  const { data: pub } = supabase.storage.from(TAPLIST_MEDIA_BUCKET).getPublicUrl(row.image_path)
-  const image_url = pub?.publicUrl
+  const image_url = row.image_url ||
+    supabase.storage.from(TAPLIST_MEDIA_BUCKET).getPublicUrl(row.image_path).data.publicUrl
   if (!image_url) throw new Error('无法生成二维码图片地址')
 
   return {

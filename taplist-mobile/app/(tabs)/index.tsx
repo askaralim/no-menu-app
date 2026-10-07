@@ -661,6 +661,7 @@ function BarFeedCard({
   const feedStatus = compactStatusCounts(bar)
   const updatedLabel = formatRelativeUpdatedAt(bar.last_menu_updated_at)
   const distanceLabel = formatDistance(distanceMeters)
+  const openingStatus = bar.is_open_now === true ? '营业中' : null
 
   return (
     <Link href={`/bar/${bar.slug}`} asChild>
@@ -686,14 +687,23 @@ function BarFeedCard({
               <Text style={styles.barMeta} numberOfLines={1} ellipsizeMode="tail">
                 {location}
               </Text>
-              {distanceLabel ? (
+              {feedStatus || distanceLabel || openingStatus ? (
                 <View style={styles.barFooterRow}>
-                  {feedStatus ? <Text style={[styles.barStatus, styles.barStatusInline]}>{feedStatus}</Text> : <View />}
-                  <Text accessibilityLabel={distanceLabel} style={styles.barDistance}>
-                    {distanceLabel}
-                  </Text>
+                  {feedStatus ? <Text style={styles.barStatus}>{feedStatus}</Text> : <View />}
+                  <View style={styles.barFooterTrailing}>
+                    {distanceLabel ? (
+                      <Text accessibilityLabel={distanceLabel} style={styles.barDistance}>
+                        {distanceLabel}
+                      </Text>
+                    ) : null}
+                    {openingStatus ? (
+                      <Text style={[styles.openingStatus, bar.is_open_now ? styles.openingStatusOpen : styles.openingStatusClosed]}>
+                        {openingStatus}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-              ) : feedStatus ? <Text style={styles.barStatus}>{feedStatus}</Text> : null}
+              ) : null}
             </View>
           </AtmosphereImage>
           {updatedLabel ? (
@@ -729,13 +739,10 @@ function compactStatusCounts(bar: PublicBarRow) {
   const counts = bar.status_counts
   if (!counts) return null
 
-  const parts = [
-    counts.上新 > 0 ? `${counts.上新} 上新` : null,
-    counts.在售 > 0 ? `${counts.在售} 在售` : null,
-    counts.少量 > 0 ? `${counts.少量} 少量` : null,
-  ].filter(Boolean)
-
-  return parts.length > 0 ? parts.join(' · ') : null
+  const activeCount = counts.上新 + counts.在售 + counts.少量
+  return counts.上新 > 0
+    ? `${activeCount} 在售 · ${counts.上新} 上新`
+    : `${activeCount} 在售`
 }
 
 function firstEventByTenant(events: PublicEventRow[]) {
@@ -1148,6 +1155,13 @@ const styles = StyleSheet.create({
     color: palette.muted,
     marginTop: spacing.xs,
   },
+  openingStatus: {
+    ...typography.label,
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  openingStatusOpen: { color: palette.amber },
+  openingStatusClosed: { color: palette.faint },
   livePill: {
     position: 'absolute',
     top: spacing.md,
@@ -1207,8 +1221,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
-  barStatusInline: {
-    marginTop: 0,
+  barFooterTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
   },
   barDistance: {
     ...typography.caption,
