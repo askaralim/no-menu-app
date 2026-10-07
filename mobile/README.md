@@ -8,21 +8,24 @@ ASC docs: [`docs/APP_STORE_CONNECT_1.1.2.md`](./docs/APP_STORE_CONNECT_1.1.2.md)
 
 ## iOS release
 
-**Required before `eas build`:** production Supabase must be in EAS env
-(not only in local `.env` — `.env` is not uploaded to EAS).
+**Required before `eas build`:** production Supabase URL and anon key must be in the EAS
+`production` environment (not only in local `.env` — `.env` is not uploaded to EAS).
 
 ```bash
 cd mobile
-eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value https://nomenuapp.com/api/supabase --environment production --visibility plaintext
-eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value YOUR_ANON_KEY --environment production --visibility sensitive
-# or set the same names in Expo dashboard → Project → Environment variables → production
 eas env:list --environment production
 ```
 
-Production routes Supabase Auth, REST, Realtime, Functions, and Storage through the shared
-ECS proxy. Local development continues to use the Supabase CLI URL from `.env.local.example`.
-To roll back, restore the hosted `https://<project-ref>.supabase.co` URL and publish a new
-production update; the fixed auth storage key preserves existing POS sessions.
+Production routes Supabase Auth, REST, Realtime, Functions, and Storage through the shared ECS
+proxy. The current live binary may retain the hosted Supabase URL in EAS for OTA compatibility;
+`lib/supabase.ts` maps that exact production URL to the proxy at runtime. Do not change the EAS URL
+during an OTA-only release without checking runtime compatibility. Local development continues to
+use the Supabase CLI URL from `.env.local.example`.
+
+See [`../docs/ECS_SUPABASE_PROXY.md`](../docs/ECS_SUPABASE_PROXY.md) for the deployed routes,
+verification record, OTA commands, and rollback procedure. Rollback requires reverting the runtime
+URL mapper; changing the EAS URL alone does not bypass it. The fixed auth storage key preserves
+existing POS sessions in either direction.
 
 Then:
 

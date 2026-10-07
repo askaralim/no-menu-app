@@ -36,9 +36,15 @@ EXPO_PUBLIC_POSTHOG_HOST=
 ```
 
 Production routes Supabase Auth, REST, Functions, and Storage through the ECS proxy above.
-Local development continues to use the Supabase CLI URL from `.env.local.example`. To roll
-back the proxy, restore the hosted `https://<project-ref>.supabase.co` URL and publish a new
-production update; the fixed auth storage key preserves existing sessions in either direction.
+The current live binary may retain the hosted Supabase URL in EAS for fingerprint-compatible OTA;
+`lib/supabase.ts` maps that exact URL to the proxy at runtime. Do not change the EAS production URL
+during an OTA-only release without checking its runtime fingerprint. Local development continues
+to use the Supabase CLI URL from `.env.local.example`.
+
+See [`../docs/ECS_SUPABASE_PROXY.md`](../docs/ECS_SUPABASE_PROXY.md) for deployed routes,
+production verification, OTA commands, and rollback. Rollback requires reverting the runtime URL
+mapper; changing the EAS URL alone does not bypass it. The fixed auth storage key preserves
+existing sessions in either direction.
 
 PostHog is optional at runtime and only activates after analytics consent. Apply the
 repository-level `supabase/migrations/` before expecting corresponding RPCs to work.
