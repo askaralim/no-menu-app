@@ -72,6 +72,8 @@ export type PublicTenantDetail = {
   description: string | null
   cover_image_url: string | null
   city: string
+  /** Localized display name from taplist_public_cities.label */
+  city_label?: string | null
   country: string
   latitude?: number | null
   longitude?: number | null

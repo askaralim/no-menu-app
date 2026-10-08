@@ -1,6 +1,6 @@
 # ECS Supabase proxy rollout
 
-Last verified: 2026-10-07.
+Last verified: 2026-10-08.
 
 ## Purpose
 
@@ -99,6 +99,9 @@ The rollout was verified against native-device traffic in the ECS Nginx access l
   work, confirming the pre-OTA session remained usable.
 - Taplist Web's active production bundle contains the ECS base URL and no Supabase API host; a
   public cities RPC through the full proxy path returned `200` and 11 cities.
+- A final 2026-10-08 recheck returned `200` for consumer REST, Auth, Functions, and Storage proxy
+  paths; recent native access-log aggregates showed successful public/private RPCs and token
+  refresh, and the Taplist preflight passed.
 
 Useful live checks:
 

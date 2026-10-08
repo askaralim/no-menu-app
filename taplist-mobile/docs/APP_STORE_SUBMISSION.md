@@ -31,6 +31,12 @@ In EAS **production** secrets (Expo dashboard — not `eas.json`), set **HTTPS**
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Anon / publishable key |
 | `EXPO_PUBLIC_PRIVACY_POLICY_URL` | `https://nomenuapp.com/privacy` |
 
+`https://nomenuapp.com/api/supabase` is the target value for future native builds. The live
+App Store `1.3.2` build 48 intentionally keeps the hosted Supabase URL in EAS so OTA updates
+retain the same runtime fingerprint; `lib/supabase.ts` maps that exact URL to the ECS proxy at
+runtime. Do not change the EAS URL during an OTA-only release. See
+[`../../docs/ECS_SUPABASE_PROXY.md`](../../docs/ECS_SUPABASE_PROXY.md).
+
 Do **not** ship production builds with `http://127.0.0.1:54321`.
 
 See also **[TESTFLIGHT.md](./TESTFLIGHT.md)** for the full release checklist.

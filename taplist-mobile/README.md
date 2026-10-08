@@ -104,6 +104,7 @@ See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_ST
 | `lib/api/drinkLog.ts` | Authenticated history RPC wrappers |
 | `lib/drinkLogAuth.ts` | Anonymous auth, Apple protection, deletion |
 | `lib/analytics.ts` | Consent-gated PostHog client and event contract |
+| `lib/analyticsIdentity.ts` | Soft Supabase-to-PostHog identity synchronization |
 | `lib/types.ts` | DTO types |
 | `tools/app-store-screenshots.html` | App Store screenshot compositor |
 
@@ -116,6 +117,8 @@ See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_ST
 - Personal data and raw drink history must not be sent to PostHog.
 - PostHog tracks consented behavioral events such as record success, history opens, share
   generation, and Apple-link outcomes.
+- The dated measurement baseline and event-contract decisions are in
+  [`docs/ANALYTICS_BASELINE_2026-10-08.md`](docs/ANALYTICS_BASELINE_2026-10-08.md).
 - Missing images never receive fake artwork.
 - Delisted drinks remain in private history; invalid public detail/share links are hidden.
 

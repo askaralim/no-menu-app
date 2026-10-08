@@ -52,6 +52,12 @@ Expo dashboard → project **no-menu-app** → **Secrets** → environment **pro
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | anon / publishable key |
 | `EXPO_PUBLIC_PRIVACY_POLICY_URL` | `https://nomenuapp.com/privacy` |
 
+`https://nomenuapp.com/api/supabase` is the target value for future native builds. The live
+App Store `1.3.2` build 48 intentionally keeps the hosted Supabase URL in EAS so OTA updates
+retain the same runtime fingerprint; `lib/supabase.ts` maps that exact URL to the ECS proxy at
+runtime. Do not change the EAS URL during an OTA-only release. See
+[`../../docs/ECS_SUPABASE_PROXY.md`](../../docs/ECS_SUPABASE_PROXY.md).
+
 Optional: same values as `NEXT_PUBLIC_*` if your CI only sets those (supported in `app.config.ts`).
 
 Do **not** put secrets in `eas.json` (git).
@@ -101,4 +107,4 @@ Apple credentials and the distribution certificate remain separate from the POS 
 | `eas init` cannot write `app.config.ts` | Set `slug` in `app.json` manually (`no-menu-app`) |
 | Slug mismatch | Match `app.json` slug to Expo project slug |
 | About has no privacy link | Set `EXPO_PUBLIC_PRIVACY_POLICY_URL` in EAS secrets and rebuild |
-| Empty Tonight on device | Production secrets must point at hosted Supabase with demo/real data |
+| Empty Tonight on device | Confirm the production config resolves to the ECS proxy and the production Supabase RPCs contain real data; see the ECS proxy runbook |

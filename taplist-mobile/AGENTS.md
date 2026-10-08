@@ -9,6 +9,7 @@ combines public bar tap lists with a private personal drink history called **我
 
 Monorepo ops index: [`../docs/INDEX.md`](../docs/INDEX.md).  
 Sibling POS (**No Menu Tonight**, `mobile/`) App Store `1.1.2` is **approved / live** — do not confuse ASC docs with this consumer app.
+Sibling WeChat mini program: [`no-menu-miniprogram`](/Users/askar/Documents/code/demo/no-menu-miniprogram).
 
 ## Release status
 

@@ -9,6 +9,7 @@ import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { formatAppVersionLabel } from '@/lib/appVersion'
 import { isAnalyticsEnabled, setAnalyticsEnabled } from '@/lib/analytics'
+import { syncCurrentAnalyticsIdentity } from '@/lib/analyticsIdentity'
 import { useTaplistCity } from '@/lib/taplistCity'
 
 const privacyPolicyUrl =
@@ -35,7 +36,9 @@ export default function AboutScreen() {
 
   const onAnalyticsEnabledChange = (enabled: boolean) => {
     setAnalyticsEnabledState(enabled)
-    void setAnalyticsEnabled(enabled)
+    void setAnalyticsEnabled(enabled).then(() => {
+      if (enabled) void syncCurrentAnalyticsIdentity()
+    })
   }
 
   return (

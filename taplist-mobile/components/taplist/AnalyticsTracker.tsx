@@ -8,6 +8,8 @@ import {
   type AnalyticsProperties,
   type AnalyticsScreenName,
 } from '@/lib/analytics'
+import { handleAnalyticsAuthChange } from '@/lib/analyticsIdentity'
+import { getTaplistSupabase } from '@/lib/supabase'
 import { useTaplistCity } from '@/lib/taplistCity'
 
 export function AnalyticsTracker() {
@@ -26,6 +28,12 @@ export function AnalyticsTracker() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!ready) return
+    const { data } = getTaplistSupabase().auth.onAuthStateChange(handleAnalyticsAuthChange)
+    return () => data.subscription.unsubscribe()
+  }, [ready])
 
   useEffect(() => {
     setAnalyticsCity(selectedCity.city)

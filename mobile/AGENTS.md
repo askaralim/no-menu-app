@@ -2,6 +2,7 @@
 
 POS / owner app under `mobile/`.  
 Doc index: [`../docs/INDEX.md`](../docs/INDEX.md).
+Sibling WeChat mini program: [`no-menu-miniprogram`](/Users/askar/Documents/code/demo/no-menu-miniprogram).
 
 ## Release status
 

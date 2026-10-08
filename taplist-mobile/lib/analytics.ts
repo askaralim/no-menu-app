@@ -5,6 +5,8 @@ import PostHog, { PostHogPersistedProperty } from 'posthog-react-native'
 
 const ANALYTICS_ENABLED_KEY = '@taplist/analytics_enabled_v1'
 const DEFAULT_POSTHOG_HOST = 'https://us.i.posthog.com'
+const ANALYTICS_SCHEMA_VERSION = 1
+const ANALYTICS_CONSENT_VERSION = 'analytics_v1'
 
 export type AnalyticsSource =
   | 'home_bar'
@@ -114,6 +116,9 @@ function getClient() {
 function commonProperties(): AnalyticsProperties {
   const { debug } = analyticsConfig()
   return {
+    analytics_schema_version: ANALYTICS_SCHEMA_VERSION,
+    consent_version: ANALYTICS_CONSENT_VERSION,
+    surface: 'taplist',
     platform: Platform.OS,
     app_version: Constants.nativeAppVersion || Constants.expoConfig?.version || null,
     build_number:

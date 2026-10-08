@@ -1,6 +1,6 @@
 # Documentation index (source of truth)
 
-Last updated: 2026-10-07 (ECS Supabase proxy verified for mini-program, iOS apps, and public web).
+Last updated: 2026-10-08 (ECS Supabase proxy verified for mini-program, iOS apps, and public web).
 
 Use this file to find the **canonical** doc for a topic. Prefer current ops docs over design-era `docs/` archives.
 
@@ -17,7 +17,7 @@ Use this file to find the **canonical** doc for a topic. Prefer current ops docs
 | **No Menu Tonight** (POS) | `1.1.0` (build ≥20) | Superseded by `1.1.1` — fixed tap slots release |
 | **No Menu Tonight** (POS) | `1.0.0` (build ≥16) | Superseded — baseline metadata in [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md) |
 | **No Menu** (consumer) | App Store `1.3.2` (build 48) | **Approved / live 2026-09-03** — Nearby sorting, event discovery, corrected monthly TAP activity and share-flow improvements |
-| ECS Supabase proxy | `nomenuapp.com/api/supabase` | **Live / verified 2026-10-07** — mini-program, POS iOS, consumer iOS, and public Taplist Web; Android intentionally excluded |
+| ECS Supabase proxy | `nomenuapp.com/api/supabase` | **Live / verified 2026-10-08** — mini-program, POS iOS, consumer iOS, and public Taplist Web; Android intentionally excluded |
 | Production DB | Migrations through `20260817130000_…` (incl. tap slots, follow/push, usernames, freshness, QR seeds) | **Applied** (operator-confirmed) |
 
 **Tonight live ops:** new owners → App Store 搜「No Menu Tonight」；微信用 [`OWNER_WECHAT_GUIDE.md`](../supabase/OWNER_WECHAT_GUIDE.md) 已上架模板；完整说明 [`OWNER_USER_GUIDE.md`](../supabase/OWNER_USER_GUIDE.md). Do not send TestFlight / 审核中 copy.
