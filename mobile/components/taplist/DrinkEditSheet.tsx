@@ -47,6 +47,7 @@ import {
 } from '../../lib/taplistMedia'
 import type { DrinkSaveIntent, DrinkUpsertResult, ServingType, TaplistCategory } from '../../lib/types'
 import { useAuth } from '../../lib/authProvider'
+import { recognizeBeerLabel } from '../../lib/beerLabelRecognition'
 import { getTenantDefaultCupSizes } from '../../lib/tenantStorefrontApi'
 
 type ImagePickerModule = typeof import('expo-image-picker')
@@ -123,6 +124,13 @@ function findEnabledSameNameDrink(drinks: DraftDrink[], name: string): DraftDrin
   return drinks.find((d) => d.enabled && (d.name || '').trim().toLowerCase() === normalized)
 }
 
+function normalizeProductMatchText(value: string | null | undefined): string {
+  return (value || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/[\s\p{P}\p{S}]+/gu, '')
+}
+
 export type DrinkEditorEntryPoint = 'tonight' | 'catalog'
 
 interface Props {
@@ -173,7 +181,10 @@ export default function DrinkEditSheet({
   const [poolSearchDone, setPoolSearchDone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [recognizingImage, setRecognizingImage] = useState(false)
   const [pendingImage, setPendingImage] = useState<LocalImageAsset | null>(null)
+  const [recognitionMatchName, setRecognitionMatchName] = useState<string | null>(null)
+  const [recognitionNotice, setRecognitionNotice] = useState<string | null>(null)
   const [showImagePreview, setShowImagePreview] = useState(false)
   const [previewImageSize, setPreviewImageSize] = useState<{ width: number; height: number } | null>(null)
   const [abvText, setAbvText] = useState(
@@ -203,7 +214,10 @@ export default function DrinkEditSheet({
     savingRef.current = false
     setSearching(false)
     setUploadingImage(false)
+    setRecognizingImage(false)
     setPendingImage(null)
+    setRecognitionMatchName(null)
+    setRecognitionNotice(null)
     setShowImagePreview(false)
     setPreviewImageSize(null)
     setAbvText(drink?.profile.abv != null ? String(drink.profile.abv) : '')
@@ -271,6 +285,39 @@ export default function DrinkEditSheet({
     }, 250)
     return () => clearTimeout(timer)
   }, [nameQuery, visible, isCreate, linkedProductId])
+
+  useEffect(() => {
+    if (!recognitionMatchName || linkedProductId || searching || !poolSearchDone) return
+
+    const target = normalizeProductMatchText(recognitionMatchName)
+    const exactMatches = poolResults.filter((product) =>
+      [product.name, product.name_en].some((name) => normalizeProductMatchText(name) === target),
+    )
+    setRecognitionMatchName(null)
+    if (exactMatches.length !== 1) return
+
+    const product = exactMatches[0]
+    searchSeq.current += 1
+    setSearching(false)
+    setPoolResults([])
+    setPoolSearchDone(false)
+    if (product.image_url) setPendingImage(null)
+    setLocal((draft) => {
+      if (!draft) return draft
+      const applied = applyProductToDraftDrink(draft, product)
+      return {
+        ...applied,
+        name: product.name,
+        image_url: product.image_url || applied.image_url,
+      }
+    })
+    if (product.abv != null) setAbvText(String(product.abv))
+    setRecognitionNotice(
+      product.image_url
+        ? '已匹配商品池，已采用商品资料与图片，请确认后保存'
+        : '已匹配商品池，已采用商品资料，请确认后保存',
+    )
+  }, [recognitionMatchName, linkedProductId, searching, poolSearchDone, poolResults])
 
   const previewImageUri = pendingImage?.uri || local?.image_url || null
 
@@ -435,7 +482,7 @@ export default function DrinkEditSheet({
     })
 
   const pickDrinkImage = async () => {
-    if (!local || !tenantId || uploadingImage || saving) return
+    if (!local || !tenantId || uploadingImage || recognizingImage || saving) return
     try {
       const ImagePicker = await loadImagePicker()
       const allowed = await ensurePhotoLibraryPermission()
@@ -465,32 +512,53 @@ export default function DrinkEditSheet({
         return
       }
 
-      // Create flow: keep local preview until save creates drink_id.
-      if (isCreate || !local.id) {
-        setPendingImage(localAsset)
-        return
-      }
-
       setPendingImage(localAsset)
-      setUploadingImage(true)
-      const publicUrl = await uploadDrinkImageFromAsset(tenantId, local.id, localAsset)
-      setPendingImage(null)
-      const withImage = { ...local, image_url: publicUrl }
-      setLocal(withImage)
-      const imageSave = await upsertDrinkProduct(tenantId, withImage, { includeServings: false })
-      if (!imageSave.ok) {
-        Alert.alert('图片已上传', '写入酒款失败，请再点保存。')
-      }
+      setRecognitionMatchName(null)
+      setRecognitionNotice(null)
     } catch (e: any) {
-      Alert.alert('图片未上传成功', translateImageUploadError(e) + '\n图片已保留，可点「更换」重试。')
+      Alert.alert('图片选择失败', translateImageUploadError(e))
+    }
+  }
+
+  const recognizePendingImage = async () => {
+    if (!pendingImage || recognizingImage || uploadingImage || saving) return
+    setRecognizingImage(true)
+    setRecognitionNotice(null)
+    try {
+      const result = await recognizeBeerLabel(pendingImage)
+      setLocal((draft) => {
+        if (!draft) return draft
+        return {
+          ...draft,
+          name: result.name || draft.name,
+          profile: {
+            ...draft.profile,
+            brewery: result.brewery || draft.profile.brewery,
+            beer_style: result.beerStyle || draft.profile.beer_style,
+            abv: result.abv ?? draft.profile.abv,
+            collab_breweries: result.collabBreweries.length > 0
+              ? result.collabBreweries.slice(0, 3)
+              : draft.profile.collab_breweries,
+          },
+        }
+      })
+      if (result.abv != null) setAbvText(String(result.abv))
+      if (isCreate && !linkedProductId && result.name) {
+        setRecognitionMatchName(result.name)
+      }
+      setRecognitionNotice('识别结果已填入，请确认后保存')
+    } catch (error: any) {
+      Alert.alert('识别失败', error?.message || '图片识别暂时不可用，请稍后重试')
     } finally {
-      setUploadingImage(false)
+      setRecognizingImage(false)
     }
   }
 
   const clearDrinkImage = () => {
-    if (!local || uploadingImage || saving) return
+    if (!local || uploadingImage || recognizingImage || saving) return
     setPendingImage(null)
+    setRecognitionMatchName(null)
+    setRecognitionNotice(null)
     const cleared = { ...local, image_url: null as string | null }
     setLocal(cleared)
     // Existing drink: clear URL in DB immediately. Create flow only clears draft.
@@ -503,7 +571,7 @@ export default function DrinkEditSheet({
   }
 
   const save = async (intent: DrinkSaveIntent) => {
-    if (!local || saving || uploadingImage || savingRef.current) return
+    if (!local || saving || uploadingImage || recognizingImage || savingRef.current) return
     if (!tenantId) {
       Alert.alert('无法保存', '未找到关联门店')
       return
@@ -538,7 +606,7 @@ export default function DrinkEditSheet({
   }
 
   const performSave = async (intent: DrinkSaveIntent, toSave: DraftDrink) => {
-    if (!local || saving || uploadingImage || savingRef.current) return
+    if (!local || saving || uploadingImage || recognizingImage || savingRef.current) return
     if (!tenantId) return
     savingRef.current = true
     setSaving(true)
@@ -582,7 +650,7 @@ export default function DrinkEditSheet({
         return
       }
 
-      // New drink: upload pending image after we have drink_id, then persist URL only.
+      // Upload the selected image only after the user confirms the form by saving.
       if (pendingImage && res.drink_id) {
         setUploadingImage(true)
         try {
@@ -657,7 +725,12 @@ export default function DrinkEditSheet({
       >
         <View style={styles.sheet}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} hitSlop={10} disabled={saving} style={styles.headerSide}>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={10}
+              disabled={saving || recognizingImage}
+              style={styles.headerSide}
+            >
               <Text style={styles.cancel}>取消</Text>
             </TouchableOpacity>
             <Text style={styles.title} numberOfLines={1}>
@@ -822,7 +895,7 @@ export default function DrinkEditSheet({
                   <TouchableOpacity
                     onPress={() => void pickDrinkImage()}
                     style={styles.imageActionBtn}
-                    disabled={uploadingImage || saving}
+                    disabled={uploadingImage || recognizingImage || saving}
                   >
                     {uploadingImage ? (
                       <ActivityIndicator color={T.gold} />
@@ -836,7 +909,7 @@ export default function DrinkEditSheet({
                   <TouchableOpacity
                     onPress={clearDrinkImage}
                     style={styles.clearImageBtn}
-                    disabled={uploadingImage || saving}
+                    disabled={uploadingImage || recognizingImage || saving}
                   >
                     <Ionicons name="trash-outline" size={18} color={T.danger} />
                     <Text style={styles.clearImageText}>移除</Text>
@@ -847,7 +920,7 @@ export default function DrinkEditSheet({
               <TouchableOpacity
                 style={styles.pickImageBtn}
                 onPress={() => void pickDrinkImage()}
-                disabled={uploadingImage || saving}
+                disabled={uploadingImage || recognizingImage || saving}
               >
                 {uploadingImage ? (
                   <ActivityIndicator color={T.gold} />
@@ -859,11 +932,30 @@ export default function DrinkEditSheet({
                 )}
               </TouchableOpacity>
             )}
-            {isCreate && pendingImage ? (
-              <Text style={styles.hint}>保存酒款后会自动上传图片</Text>
+            {pendingImage ? (
+              <>
+                <TouchableOpacity
+                  style={styles.recognizeImageBtn}
+                  onPress={() => void recognizePendingImage()}
+                  disabled={recognizingImage || uploadingImage || saving}
+                >
+                  {recognizingImage ? (
+                    <ActivityIndicator size="small" color={T.background} />
+                  ) : (
+                    <Ionicons name="sparkles-outline" size={18} color={T.background} />
+                  )}
+                  <Text style={styles.recognizeImageText}>
+                    {recognizingImage ? '正在识别…' : '识别酒款信息'}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.hint}>选图不会自动识别；保存确认后才会上传图片</Text>
+              </>
             ) : (
               <Text style={styles.hint}>支持 JPEG / PNG / WebP，最大 2MB</Text>
             )}
+            {recognitionNotice ? (
+              <Text style={styles.recognitionNotice}>{recognitionNotice}</Text>
+            ) : null}
 
             {/* 5. Beer profile */}
             <Text style={styles.sectionLabel}>啤酒信息</Text>
@@ -1115,8 +1207,11 @@ export default function DrinkEditSheet({
 
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.primarySave, (saving || uploadingImage) && { opacity: 0.6 }]}
-              disabled={saving || uploadingImage}
+              style={[
+                styles.primarySave,
+                (saving || uploadingImage || recognizingImage) && { opacity: 0.6 },
+              ]}
+              disabled={saving || uploadingImage || recognizingImage}
               onPress={() => void save(primaryIntent)}
             >
               {saving ? (
@@ -1310,6 +1405,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pickImageText: { color: T.gold, fontSize: 15, fontWeight: '600' },
+  recognizeImageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: T.gold,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  recognizeImageText: { color: T.background, fontSize: 14, fontWeight: '700' },
+  recognitionNotice: { color: T.goldSoft, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   searchRow: {
     flexDirection: 'row',
     gap: 10,
