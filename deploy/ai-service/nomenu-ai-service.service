@@ -1,0 +1,21 @@
+[Unit]
+Description=No Menu authenticated AI service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nomenu-ai
+Group=nomenu-ai
+WorkingDirectory=/opt/nomenu-ai-service
+EnvironmentFile=/etc/nomenu-ai-service.env
+ExecStart=/usr/local/bin/node /opt/nomenu-ai-service/src/server.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
