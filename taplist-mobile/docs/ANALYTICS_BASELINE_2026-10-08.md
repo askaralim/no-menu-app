@@ -3,8 +3,10 @@
 Baseline date: 2026-10-08 (Asia/Shanghai)
 
 This document records the P0 measurement baseline before cross-client analytics work. It is not a
-live dashboard. PostHog counts cover only devices that enabled optional analytics; Supabase counts
-are the business source of truth for retained private records.
+live dashboard. P1-A and P1-B implementation status was updated on 2026-10-09; the current
+cross-client contract is [`CONSUMER_ANALYTICS.md`](CONSUMER_ANALYTICS.md).
+PostHog counts cover only devices that enabled optional analytics; Supabase counts are the business
+source of truth for retained private records.
 
 ## Measurement boundaries
 
@@ -68,36 +70,50 @@ Every Taplist event includes `analytics_schema_version`, `consent_version`, `sur
 `app_version`, `build_number`, `city`, and `is_internal` when available. Events must not contain
 search text, Apple contact data, precise location, exact addresses, or private TAP history.
 
-## P0 gaps and decisions
+## P0 decisions
 
-- Taplist previously defined `identifyUser()` but did not call it. Anonymous PostHog IDs therefore
-  could not be linked to Supabase anonymous or Apple-protected accounts.
-- The mini-program has business usage but no No Menu product analytics. Its first implementation
-  should reuse the Taplist event names rather than introduce synonyms.
+- Before P1-A, Taplist defined `identifyUser()` but did not call it. The production OTA now
+  synchronizes consented analytics with Supabase anonymous and Apple-protected user IDs.
+- Before P1-B, the mini-program had business usage but no No Menu product analytics. Version
+  `1.2.2` now reuses the Taplist event names and is awaiting WeChat review/release after experience
+  build verification.
 - The first QR event should mean that a valid QR entry was opened. Do not infer a store visit.
 - Do not upload analytics opt-out choices merely to calculate an opt-in rate.
 - PostHog remains analysis infrastructure; Supabase remains the business source of truth.
 
-## P1-A acceptance criteria
+## P1-A completion — Taplist iOS
 
-- An existing Supabase session is identified after consented analytics initializes.
-- New anonymous sessions and Apple identity updates synchronize without delaying auth or RPCs.
-- Signing out resets the PostHog identity.
-- Enabling analytics later from About synchronizes the current session.
-- Analytics, auth, and identity failures remain soft and do not affect public browsing or private
-  product features.
-- The implementation changes JavaScript/TypeScript only and remains compatible with EAS Update.
+- **Status:** completed, published to the production EAS channel on 2026-10-08 and verified on a
+  production-compatible iOS build.
+- Existing sessions, new anonymous sessions and Apple identity updates synchronize after consent.
+- Signing out resets the PostHog identity; enabling analytics later synchronizes the current session.
+- Analytics and identity failures remain soft and do not affect public browsing, auth or private RPCs.
+- The change is JavaScript/TypeScript-only and was delivered by EAS Update. Runtime:
+  `ee7f9707efde823e12a9ee09ecebacef7af96f79`; update group:
+  `d75f688a-bb90-422a-a6ba-0455a0e1c24c`.
 
-## P1-B acceptance criteria
+## P1-B completion — WeChat mini-program
 
-- The WeChat mini-program persists a random visitor ID and rotates a session after 30 minutes of
-  inactivity without requiring WeChat login.
-- It reuses the Taplist event names for app open, screens, bars, beers, events, search, and TAPs.
+- **Status:** code complete and experience build verified on 2026-10-09; not production-live until
+  `1.2.2` passes WeChat review and is manually published.
+- A random visitor ID persists locally and a session rotates after 30 minutes of inactivity.
+- The app reuses Taplist event names for app open, screens, bars, beers, events, search and TAPs.
+- A trial venue code for `FR73UGDP` successfully produced
+  `Application Opened → qr_entry_opened → bar_opened(source=qr)` with one distinct ID/session and
+  opened `zj-jx-didi`.
 - `qr_entry_opened` is emitted only after a permanent venue QR resolves successfully and never
   implies a store visit.
-- Search text, precise location, addresses, contact details, WeChat codes, and Supabase tokens are
-  excluded from analytics events.
+- Search text, precise location, addresses, contact details, WeChat codes and Supabase tokens are
+  excluded. Anonymous events do not process Person profiles.
 - A WeChat consumer session identifies with the existing Supabase user ID; sign-out resets the
   analytics identity without affecting authentication or business RPCs.
-- Analytics transport failures stay soft. The mini-program requires a reviewed experience build
-  and a normal WeChat release; it cannot use OTA delivery.
+- Transport failures stay soft. The mini-program cannot use OTA delivery.
+
+## Known remaining gaps
+
+- iOS notification routing works, but there is no `push_opened` event and `fromPush=1` is not yet
+  included in analytics properties.
+- iOS records `apple_maps_opened`; the mini-program `wx.openLocation` path is not instrumented, so
+  navigation is not a complete cross-client event.
+- `screen_viewed` is a page impression only. Bar-card and beer-card impressions are not collected.
+- TAP actions are instrumented on both clients, but Supabase remains the business source of truth.

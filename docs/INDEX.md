@@ -1,6 +1,6 @@
 # Documentation index (source of truth)
 
-Last updated: 2026-10-08 (ECS Supabase proxy verified for mini-program, iOS apps, and public web).
+Last updated: 2026-10-18 (consumer brewery discovery OTA, two production Migrations, and mini-program `1.2.2` release verified).
 
 Use this file to find the **canonical** doc for a topic. Prefer current ops docs over design-era `docs/` archives.
 
@@ -8,7 +8,7 @@ Use this file to find the **canonical** doc for a topic. Prefer current ops docs
 
 ---
 
-## Release status (2026-09-03)
+## Release status (2026-10-18)
 
 | Surface | Version | Status |
 |---------|---------|--------|
@@ -16,13 +16,15 @@ Use this file to find the **canonical** doc for a topic. Prefer current ops docs
 | **No Menu Tonight** (POS) | App Store `1.1.1` (build 23) | Superseded by `1.1.2` — 分享上新、高清图片下载、群文案和酒单筛选优化 |
 | **No Menu Tonight** (POS) | `1.1.0` (build ≥20) | Superseded by `1.1.1` — fixed tap slots release |
 | **No Menu Tonight** (POS) | `1.0.0` (build ≥16) | Superseded — baseline metadata in [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md) |
-| **No Menu** (consumer) | App Store `1.3.2` (build 48) | **Approved / live 2026-09-03** — Nearby sorting, event discovery, corrected monthly TAP activity and share-flow improvements |
+| **No Menu** (consumer) | App Store `1.3.2` (build 48) + production OTA | **Live** — analytics identity sync and brewery discovery directory published and verified; brewery RPCs rechecked 2026-10-13 |
+| **No Menu** (微信小程序) | `1.2.2` | **Live** — review passed; analytics and brewery discovery flows verified |
+| Taplist Web | Production | Cookieless QR landing, follow CTA and mini-program-code display events verified 2026-10-09 |
 | ECS Supabase proxy | `nomenuapp.com/api/supabase` | **Live / verified 2026-10-08** — mini-program, POS iOS, consumer iOS, and public Taplist Web; Android intentionally excluded |
-| Production DB | Migrations through `20260817130000_…` (incl. tap slots, follow/push, usernames, freshness, QR seeds) | **Applied** (operator-confirmed) |
+| Production DB | Recorded migrations through `20260817130000_…`; both `20261009...` brewery Migration behaviors are live | **Applied / verified** — no remaining database step for the brewery rollout |
 
 **Tonight live ops:** new owners → App Store 搜「No Menu Tonight」；微信用 [`OWNER_WECHAT_GUIDE.md`](../supabase/OWNER_WECHAT_GUIDE.md) 已上架模板；完整说明 [`OWNER_USER_GUIDE.md`](../supabase/OWNER_USER_GUIDE.md). Do not send TestFlight / 审核中 copy.
 
-**Consumer live ops:** App Store 搜「No Menu」；follow / new-tap push ops: [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md). Current live ASC record: [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md).
+**Consumer live ops:** App Store 搜「No Menu」；follow / new-tap push ops: [`supabase/NEW_TAP_PUSH_DEPLOYMENT.md`](../supabase/NEW_TAP_PUSH_DEPLOYMENT.md). Current live ASC record: [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md). Brewery discovery OTA / RPC record: [`taplist-mobile/docs/BREWERY_DISCOVERY_2026-10-09.md`](../taplist-mobile/docs/BREWERY_DISCOVERY_2026-10-09.md).
 
 **Admin web (concierge only, does not change POS/iOS binaries):** `/admin/taplist` 公开状态中文化 + 上新提示、封面空串误清保护；产品池关联门店酒文案；品牌别名合酿提示。Do **not** add follower analytics or push toggles to admin.
 
@@ -95,6 +97,11 @@ Canonical Tonight ASC docs:
 | Tonight ASC Connect fill-in checklist | [`mobile/APP_STORE_CONNECT_SUBMISSION.md`](../mobile/APP_STORE_CONNECT_SUBMISSION.md) |
 | Tonight agent / release notes | [`mobile/AGENTS.md`](../mobile/AGENTS.md) · [`mobile/README.md`](../mobile/README.md) |
 | Consumer No Menu app | [`taplist-mobile/README.md`](../taplist-mobile/README.md) |
+| Consumer WeChat mini-program | [`no-menu-miniprogram/README.md`](../../no-menu-miniprogram/README.md) |
+| Public Taplist Web | [`taplist-web/README.md`](../../taplist-web/README.md) |
+| Consumer analytics contract / rollout | [`taplist-mobile/docs/CONSUMER_ANALYTICS.md`](../taplist-mobile/docs/CONSUMER_ANALYTICS.md) |
+| Consumer analytics 2026-10-08 baseline | [`taplist-mobile/docs/ANALYTICS_BASELINE_2026-10-08.md`](../taplist-mobile/docs/ANALYTICS_BASELINE_2026-10-08.md) |
+| Consumer brewery discovery OTA / RPC rollout | [`taplist-mobile/docs/BREWERY_DISCOVERY_2026-10-09.md`](../taplist-mobile/docs/BREWERY_DISCOVERY_2026-10-09.md) |
 | Consumer agent rules | [`taplist-mobile/AGENTS.md`](../taplist-mobile/AGENTS.md) |
 | Consumer ASC 1.3.2 (current live) | [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.2.md) |
 | Consumer ASC 1.3.1 (previous live release) | [`taplist-mobile/docs/APP_STORE_CONNECT_1.3.1.md`](../taplist-mobile/docs/APP_STORE_CONNECT_1.3.1.md) |
@@ -168,5 +175,6 @@ POS 1.0.0 round deliberately deferred these; do not treat as review blockers.
 |---------|------|----------------|
 | Tonight (POS / owner) | `mobile/` | `com.taklip.nomenuapp` — **1.1.2 (build 24) App Store live** |
 | No Menu (consumer) | `taplist-mobile/` | `com.nomenuapp.taplist` — **1.3.2 (build 48) App Store live** |
+| No Menu (微信小程序) | `../no-menu-miniprogram/` | `1.2.2` live; analytics and brewery discovery verified |
 | Admin / platform web | `app/` | Next static export |
-| Public web menu | `taplist-web/` (if present) | `/bar/{slug}`, `/tonight`, `/support` |
+| Public web menu | `../taplist-web/` | `/bar/{slug}`, `/tonight`, `/support`; cookieless QR analytics live |

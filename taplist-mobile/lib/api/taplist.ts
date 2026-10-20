@@ -4,6 +4,7 @@ import type {
   MiniProductSearchRpc,
   MiniProductDetailRpc,
   MiniBreweryRpc,
+  MiniBreweryListRpc,
   PublicBarRow,
   PublicTaplistCitiesRpc,
   PublicTaplistBreweriesRpc,
@@ -121,6 +122,27 @@ export async function fetchPublicTaplistBreweries(city?: string | null) {
     tap_count: brewery.product_count,
     logo_url: brewery.logo_url,
   }))
+}
+
+export async function listMiniBreweries(
+  city: string,
+  offset: number,
+  signal?: AbortSignal,
+) {
+  const request = getTaplistSupabase().rpc('list_mini_breweries', {
+    p_city: city,
+    p_offset: offset,
+  })
+  const { data, error } = await (signal ? request.abortSignal(signal) : request)
+  if (error) throw error
+  const payload = data as MiniBreweryListRpc
+  if (!payload || payload.ok !== true) {
+    throw new Error(payload?.code || 'mini_brewery_list_unavailable')
+  }
+  return {
+    results: payload.results ?? [],
+    nextOffset: payload.next_offset ?? null,
+  }
 }
 
 export async function fetchPublicBrewery(brewery: string, city?: string | null) {

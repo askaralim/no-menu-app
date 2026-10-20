@@ -397,9 +397,9 @@ function SearchGuide({
           <Text style={styles.sectionTitle}>酒厂</Text>
           <RetryButton label="酒厂加载失败，点击重试" onPress={onRetryBreweries} />
         </View>
-      ) : breweries.length > 0 && tileWidth > 0 ? (
+      ) : tileWidth > 0 ? (
         <BreweryDiscovery
-          breweries={breweries.slice(0, 9)}
+          breweries={breweries.slice(0, 8)}
           tileWidth={tileWidth}
           gap={gap}
         />
@@ -551,7 +551,8 @@ function BreweryDiscovery({
   gap: number
 }) {
   const router = useRouter()
-  const rows = chunkRows(breweries, GRID_COLS)
+  const items: Array<PublicTaplistBreweryDiscoveryRow | 'all'> = [...breweries, 'all']
+  const rows = chunkRows(items, GRID_COLS)
   const tileHeight = tileWidth
 
   return (
@@ -559,8 +560,35 @@ function BreweryDiscovery({
       <Text style={styles.sectionTitle}>酒厂</Text>
       <View style={[styles.breweryGrid, { gap }]}>
         {rows.map((row, rowIndex) => (
-          <View key={row.map((brewery) => brewery.brewery_name).join('-')} style={[styles.breweryRow, { gap }]}>
-            {row.map((brewery) => (
+          <View
+            key={row.map((brewery) => brewery === 'all' ? 'all' : brewery.brewery_name).join('-')}
+            style={[styles.breweryRow, { gap }]}>
+            {row.map((brewery) => brewery === 'all' ? (
+              <Pressable
+                key="all-breweries"
+                accessibilityRole="link"
+                accessibilityLabel="查看全部酒厂"
+                accessibilityHint="打开当前城市的完整酒厂列表"
+                onPress={() => router.push('/breweries' as Href)}
+                style={({ pressed }) => [
+                  styles.newTapTile,
+                  { width: tileWidth, height: tileHeight },
+                  pressed && styles.newTapTilePressed,
+                ]}>
+                <LinearGradient
+                  colors={['rgba(61,54,43,0.72)', 'rgba(27,25,22,0.92)', 'rgba(13,13,13,1)']}
+                  locations={[0, 0.5, 1]}
+                  style={styles.allBreweriesSurface}>
+                  <View style={styles.allBreweriesIcon}>
+                    <FontAwesome name="ellipsis-h" size={24} color="rgba(211,154,69,0.78)" />
+                  </View>
+                  <View style={styles.newTapTileCopy}>
+                    <Text style={styles.newTapTileName}>全部酒厂</Text>
+                    <Text style={styles.newTapTileBrewery}>本城有供应</Text>
+                  </View>
+                </LinearGradient>
+              </Pressable>
+            ) : (
               <Pressable
                 key={brewery.brewery_name}
                 accessibilityRole="link"
@@ -577,8 +605,9 @@ function BreweryDiscovery({
                     accessibilityLabel={`${brewery.brewery_name}酒厂 Logo`}
                     ossStyle="nm-card"
                     source={brewery.logo_url}
-                    style={styles.newTapTileImage}
-                    imageStyle={styles.newTapTileImageRadius}>
+                    contentFit="contain"
+                    style={[styles.newTapTileImage, styles.breweryTileFrame]}
+                    imageStyle={[styles.newTapTileImageRadius, styles.breweryTileLogo]}>
                     <BreweryTileCopy brewery={brewery} />
                   </CachedImageBackground>
                 ) : (
@@ -898,9 +927,30 @@ const styles = StyleSheet.create({
   breweryGrid: {
     width: '100%',
   },
+  breweryTileFrame: {
+    backgroundColor: 'rgba(245,241,232,0.06)',
+  },
+  breweryTileLogo: {
+    top: spacing.sm,
+    right: spacing.sm,
+    bottom: spacing.sm,
+    left: spacing.sm,
+  },
   breweryRow: {
     flexDirection: 'row',
     width: '100%',
+  },
+  allBreweriesSurface: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.md,
+  },
+  allBreweriesIcon: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loading: {
     borderTopWidth: 1,

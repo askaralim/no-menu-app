@@ -102,6 +102,7 @@ export default function BreweryScreen() {
             aspectRatio={4 / 3}
             overlayOpacity={0.2}
             borderRadius={0}
+            contentFit="contain"
           />
         ) : null}
         <View style={[styles.paddedContent, { paddingTop: brewery?.logo_url ? spacing.lg : insets.top + 74 }]}>

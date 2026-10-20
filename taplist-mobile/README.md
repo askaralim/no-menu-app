@@ -13,7 +13,7 @@ consumer app must not depend on POS UI or mutate POS workflows.
 
 Monorepo doc index: [`../docs/INDEX.md`](../docs/INDEX.md).  
 
-**Status (2026-09-03):** App Store `1.3.2` (build 48) is **Approved / live** — optional Nearby sorting, single-banner event discovery with full-poster viewing, corrected monthly TAP activity, and redesigned bar tap-list share images with complete public pricing. ASC: [`docs/APP_STORE_CONNECT_1.3.2.md`](docs/APP_STORE_CONNECT_1.3.2.md).
+**Status (2026-10-18):** App Store `1.3.2` (build 48) is **Approved / live**. Its production OTA includes 8 popular breweries plus an all-breweries directory with city switching, search, pagination, and improved logo display. Both Migration behaviors are verified, and the matching WeChat mini-program `1.2.2` is also live. See [`docs/BREWERY_DISCOVERY_2026-10-09.md`](docs/BREWERY_DISCOVERY_2026-10-09.md). ASC: [`docs/APP_STORE_CONNECT_1.3.2.md`](docs/APP_STORE_CONNECT_1.3.2.md).
 Tonight POS `1.1.2` is also **Approved / live** — see `mobile/docs/APP_STORE_CONNECT_1.1.2.md`.
 
 ## Setup
@@ -46,13 +46,16 @@ production verification, OTA commands, and rollback. Rollback requires reverting
 mapper; changing the EAS URL alone does not bypass it. The fixed auth storage key preserves
 existing sessions in either direction.
 
-PostHog is optional at runtime and only activates after analytics consent. Apply the
-repository-level `supabase/migrations/` before expecting corresponding RPCs to work.
+PostHog is optional at runtime and only activates after analytics consent. P1-A identity sync was
+published by production OTA on 2026-10-08 and links consented PostHog activity to the current
+Supabase user ID without delaying auth or product RPCs. Cross-client status, event semantics and
+known gaps are documented in [`docs/CONSUMER_ANALYTICS.md`](docs/CONSUMER_ANALYTICS.md).
+Apply the repository-level `supabase/migrations/` before expecting corresponding RPCs to work.
 
 ## Product surfaces
 
 - `今晚`: city feed, public bars, events, and new taps
-- `搜索`: public beer and bar discovery
+- `搜索`: public beer, brewery, and bar discovery
 - `我的`: private 我的 TAP, followed bars entry, Apple protection, sharing, and account deletion
 - `关于`: product, privacy, compliance, and analytics controls, opened from the fixed top action in `我的`
 - Bar detail: live public tap list + compact private follow control
@@ -90,7 +93,9 @@ See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_ST
 | Path | Role |
 |------|------|
 | `app/(tabs)/index.tsx` | Tonight feed |
-| `app/(tabs)/search.tsx` | Search (drinks + bars) |
+| `app/(tabs)/search.tsx` | Search (drinks + breweries + bars) |
+| `app/breweries.tsx` | City-aware brewery directory with search and pagination |
+| `app/brewery/[name].tsx` | Brewery detail and currently supplied drinks |
 | `app/(tabs)/mine.tsx` | Private 我的 TAP |
 | `app/about.tsx` | About / compliance (Stack screen opened from Mine) |
 | `app/events.tsx` | City activity list |
@@ -117,6 +122,13 @@ See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_ST
 - Personal data and raw drink history must not be sent to PostHog.
 - PostHog tracks consented behavioral events such as record success, history opens, share
   generation, and Apple-link outcomes.
+- The analytics preference remains device-local, so enabled and disabled populations cannot be
+  counted exactly. PostHog users are “observable users”, not all installs or all registered users.
+- App and screen opens, bar/beer opens and TAP actions are covered. Push opens are not yet tracked;
+  `apple_maps_opened` covers iOS map intent only; list/card impressions are not implemented.
+- QR, map, share and push interactions must not be interpreted as a store visit.
+- The current cross-client contract and rollout status are in
+  [`docs/CONSUMER_ANALYTICS.md`](docs/CONSUMER_ANALYTICS.md).
 - The dated measurement baseline and event-contract decisions are in
   [`docs/ANALYTICS_BASELINE_2026-10-08.md`](docs/ANALYTICS_BASELINE_2026-10-08.md).
 - Missing images never receive fake artwork.

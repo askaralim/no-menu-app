@@ -35,6 +35,14 @@ eas update --channel production --platform ios --environment production --messag
 
 发布后在 Expo Dashboard 确认 update runtime 与上表一致且显示 `Builds: 1`。`Builds: None` 表示 OTA 没有命中已上线的 build。
 
+### 2026-10-09 酒厂发现 OTA
+
+build `48` 的 production channel 已发布并验证酒厂发现更新：搜索页展示 8 家热门酒厂和“全部酒厂”入口，完整列表支持城市切换、搜索、分页及改进后的 Logo 展示。当前 OTA Group ID 为 `017a615f-8930-4f98-97b4-b7cdf3bedffe`，runtime 仍为 `ee7f9707efde823e12a9ee09ecebacef7af96f79`，无需提交新二进制。
+
+截至 2026-10-18，两个酒厂 Migration 的生产行为均已验证，微信小程序 `1.2.2` 也已审核通过并正式发布，本次跨客户端上线完成。
+
+完整 RPC、上线顺序、验证结果与已知数据问题见 [`BREWERY_DISCOVERY_2026-10-09.md`](BREWERY_DISCOVERY_2026-10-09.md)。
+
 ## 2. iOS 版本页面文案（可直接粘贴）
 
 ### 副标题（30 字以内）
@@ -248,6 +256,7 @@ npm run preflight
 - [x] 活动详情的完整日期、时间、唯一酒吧入口和活动介绍层级正常
 - [x] 活动详情首图顶部裁切正常；点击可查看完整原图，再次点击或关闭按钮可退出
 - [x] 酒吧、酒款、搜索、我的 TAP、月报、关注与分享正常
+- [x] 搜索页 8 家热门酒厂、“全部酒厂”入口、完整列表、城市切换、搜索和分页正常
 - [x] 酒吧酒单下载图已用 8、13、21 款真机样本验证；双栏、枪号、状态、长酒名与页脚均正常
 - [x] 公开价格完整显示全部规格并允许卡片增高；未公开价格的酒吧不显示价格，且没有省略号或截断
 - [x] 底部仅显示“今晚 / 搜索 / 我的”；从“我的”顶部打开“关于 No Menu”后，右滑和返回按钮均回到“我的”

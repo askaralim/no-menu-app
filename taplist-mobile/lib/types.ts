@@ -236,6 +236,22 @@ export type PublicTaplistBreweryDiscoveryRow = {
   logo_url: string | null
 }
 
+export type MiniBreweryListRow = {
+  brewery: string
+  display_name: string
+  name_en: string | null
+  product_count: number
+  logo_url: string | null
+}
+
+export type MiniBreweryListRpc =
+  | {
+      ok: true
+      results: MiniBreweryListRow[]
+      next_offset: number | null
+    }
+  | { ok: false; code?: string }
+
 export type MiniProductSearchVenue = {
   id: string
   name: string

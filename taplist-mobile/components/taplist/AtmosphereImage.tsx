@@ -15,6 +15,8 @@ type AtmosphereImageProps = {
   children?: React.ReactNode
   borderRadius?: number
   ossStyle?: OssImageStyle
+  contentFit?: 'cover' | 'contain'
+  imageInset?: number
 }
 
 export function AtmosphereImage({
@@ -27,6 +29,8 @@ export function AtmosphereImage({
   children,
   borderRadius = 8,
   ossStyle = 'nm-cover',
+  contentFit = 'cover',
+  imageInset = 0,
 }: AtmosphereImageProps) {
   const frameStyle = [
     styles.frame,
@@ -60,7 +64,18 @@ export function AtmosphereImage({
   }
 
   return (
-    <CachedImageBackground source={source} ossStyle={ossStyle} style={frameStyle} imageStyle={{ borderRadius }}>
+    <CachedImageBackground
+      source={source}
+      ossStyle={ossStyle}
+      contentFit={contentFit}
+      style={frameStyle}
+      imageStyle={{
+        borderRadius,
+        top: imageInset,
+        right: imageInset,
+        bottom: imageInset,
+        left: imageInset,
+      }}>
       <LinearGradient
         colors={[
           `rgba(75,54,31,${overlayOpacity})`,
