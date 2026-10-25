@@ -4,7 +4,10 @@ import { supabase } from './supabase'
 
 export const TAPLIST_MEDIA_BUCKET = 'taplist-media'
 
-/** Align with web Admin ADR-013 (~2MB client cap; bucket allows 3MiB). */
+/** Original image accepted from the picker / recognition service. */
+export const TAPLIST_IMAGE_SOURCE_MAX_BYTES = 5 * 1024 * 1024
+
+/** Compressed image persisted to media storage (bucket allows 3MiB). */
 export const TAPLIST_IMAGE_MAX_BYTES = 2 * 1024 * 1024
 
 const UPLOAD_TIMEOUT_MS = 30_000
@@ -46,7 +49,10 @@ function normalizeMime(mime: string | null | undefined, fileName?: string | null
   return 'image/jpeg'
 }
 
-export function assertImageAsset(asset: LocalImageAsset, maxBytes = TAPLIST_IMAGE_MAX_BYTES): string {
+export function assertImageAsset(
+  asset: LocalImageAsset,
+  maxBytes = TAPLIST_IMAGE_SOURCE_MAX_BYTES,
+): string {
   const mime = normalizeMime(asset.mimeType, asset.fileName)
   if (!ALLOWED_MIME.has(mime)) {
     throw new Error('仅支持 JPEG、PNG、WebP 图片')

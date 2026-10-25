@@ -7,6 +7,8 @@ const RECOGNITION_TIMEOUT_MS = 75_000
 
 export type BeerLabelDraft = {
   name: string | null
+  nameCn?: string | null
+  nameEn?: string | null
   beerStyle: string | null
   abv: number | null
   brewery: string | null
@@ -25,7 +27,10 @@ function recognitionError(status: number, body: RecognitionResponse | null): Err
   return new Error(body?.message || '图片识别暂时不可用，请稍后重试')
 }
 
-export async function recognizeBeerLabel(asset: LocalImageAsset): Promise<BeerLabelDraft> {
+export async function recognizeBeerLabel(
+  asset: LocalImageAsset,
+  externalSignal?: AbortSignal,
+): Promise<BeerLabelDraft> {
   const mediaType = assertImageAsset(asset)
   const { data, error } = await supabase.auth.getSession()
   if (error) throw error
@@ -37,6 +42,8 @@ export async function recognizeBeerLabel(asset: LocalImageAsset): Promise<BeerLa
   const bytes = await imageResponse.arrayBuffer()
 
   const controller = new AbortController()
+  const cancel = () => controller.abort()
+  externalSignal?.addEventListener('abort', cancel, { once: true })
   const timeout = setTimeout(() => controller.abort(), RECOGNITION_TIMEOUT_MS)
   try {
     const response = await fetch(`${AI_API_BASE_URL}/api/ai/images/beer-labels`, {
@@ -52,13 +59,32 @@ export async function recognizeBeerLabel(asset: LocalImageAsset): Promise<BeerLa
     if (!response.ok) throw recognitionError(response.status, body)
     const result = body?.results?.[0]
     if (!result) throw new Error('没有识别到酒款信息，请手动填写或换一张图片')
-    return result
+    const normalized: BeerLabelDraft = {
+      ...result,
+      nameCn: result.nameCn?.trim() || null,
+      nameEn: result.nameEn?.trim() || null,
+      name: result.nameCn?.trim() || result.nameEn?.trim() || result.name?.trim() || null,
+      beerStyle: result.beerStyle?.trim() || null,
+      brewery: result.brewery?.trim() || null,
+      collabBreweries: (result.collabBreweries ?? []).map((name) => name.trim()).filter(Boolean),
+    }
+    const hasUsefulResult = Boolean(
+      normalized.name ||
+      normalized.beerStyle ||
+      normalized.brewery ||
+      normalized.abv != null ||
+      normalized.collabBreweries.length > 0,
+    )
+    if (!hasUsefulResult) throw new Error('没有识别到有效酒款信息，请手动填写或换一张图片')
+    return normalized
   } catch (error) {
     if ((error as { name?: string })?.name === 'AbortError') {
+      if (externalSignal?.aborted) throw error
       throw new Error('图片识别超时，请稍后重试')
     }
     throw error
   } finally {
     clearTimeout(timeout)
+    externalSignal?.removeEventListener('abort', cancel)
   }
 }

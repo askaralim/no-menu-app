@@ -217,7 +217,27 @@ export default function BeerDetailScreen() {
                     </View>
                   ) : null}
                 </View>
-                <DrinkLightAction controller={drinkLightController} />
+                <View style={styles.detailActions}>
+                  <SupplyStatus status={drink.public_status} />
+                  <DrinkLightAction
+                    controller={drinkLightController}
+                    onOpenHistory={drinkLightController.state?.light_id
+                      ? () => router.push(`/drink-log/${drinkLightController.state!.light_id}` as Href)
+                      : undefined}
+                  />
+                  {drinkLightController.state?.is_lit &&
+                  !drinkLightController.state.is_current_venue_lit &&
+                  drinkLightController.state.light_id ? (
+                    <Pressable
+                      accessibilityRole="link"
+                      accessibilityLabel="查看喝过记录"
+                      onPress={() => router.push(`/drink-log/${drinkLightController.state!.light_id}` as Href)}
+                      style={({ pressed }) => [styles.historyTextLink, pressed && styles.drinkHistoryLinkPressed]}>
+                      <Text style={styles.historyTextLinkLabel}>喝过记录</Text>
+                      <FontAwesome name="angle-right" size={13} color={palette.faint} />
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
 
               <DrinkLightFeedback controller={drinkLightController} />
@@ -284,7 +304,7 @@ export default function BeerDetailScreen() {
                     onPress={() => router.push(`/bar/${venue.tenant_slug}` as Href)}
                     style={({ pressed }) => [styles.venueCard, pressed && styles.venueCardPressed]}>
                     <View style={styles.venueIcon}>
-                      <FontAwesome name="map-marker" size={15} color={palette.amber} />
+                      <FontAwesome name="building-o" size={14} color={palette.amber} />
                     </View>
                     <Text style={styles.venueName} numberOfLines={1}>{venue.tenant_display_name}</Text>
                     <FontAwesome name="angle-right" size={17} color={palette.faint} />
@@ -315,6 +335,24 @@ export default function BeerDetailScreen() {
           </View>
         </View>
       ) : null}
+    </View>
+  )
+}
+
+function SupplyStatus({ status }: { status: string }) {
+  const color = status === '在售'
+    ? '#8BC3A2'
+    : status === '上新'
+      ? palette.liveGreen
+      : status === '即将上新'
+        ? '#7FA9CC'
+        : status === '少量'
+          ? palette.amber
+          : palette.faint
+  return (
+    <View style={styles.supplyStatus}>
+      <View style={[styles.supplyDot, { backgroundColor: color }]} />
+      <Text style={styles.supplyStatusText}>{status}</Text>
     </View>
   )
 }
@@ -484,7 +522,7 @@ const styles = StyleSheet.create({
   },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.md,
   },
   titleCopy: {
@@ -528,6 +566,45 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: palette.muted,
     marginTop: spacing.lg,
+  },
+  detailActions: {
+    minWidth: 94,
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+  },
+  supplyStatus: {
+    minHeight: 28,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: palette.hairline,
+    backgroundColor: 'rgba(17,17,17,0.74)',
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  supplyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  supplyStatusText: {
+    ...typography.micro,
+    color: palette.muted,
+  },
+  drinkHistoryLinkPressed: {
+    opacity: 0.72,
+  },
+  historyTextLink: {
+    minHeight: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    paddingHorizontal: spacing.xs,
+  },
+  historyTextLinkLabel: {
+    ...typography.micro,
+    color: palette.tungsten,
   },
   metadataChips: {
     flexDirection: 'row',

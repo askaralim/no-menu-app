@@ -21,8 +21,8 @@ test('calls Qwen 3.8 Flash in non-thinking JSON mode', async () => {
           content: JSON.stringify({
             items: [{
               image_order: 1,
-              title: '漫長的季節',
-              subtitle: 'One Year Later',
+              name_cn: '漫長的季節',
+              name_en: 'One Year Later',
               series_code: null,
               style_en: 'Berliner Weisse',
               style_cn: '过桶野菌柏林酸小麦',
@@ -50,8 +50,10 @@ test('calls Qwen 3.8 Flash in non-thinking JSON mode', async () => {
   assert.equal(request.body.enable_thinking, false)
   assert.deepEqual(request.body.response_format, { type: 'json_object' })
   assert.match(request.body.messages[0].content[0].text, /简体中文/)
+  assert.match(request.body.messages[0].content[0].text, /不要自行翻译/)
   assert.match(request.body.messages[0].content[1].image_url.url, /^data:image\/png;base64,/)
   assert.equal(result.items[0].abv.value, 3.6)
+  assert.equal(result.items[0].name_cn, '漫長的季節')
   assert.equal(result.items[0].collaboration[0], '寒武纪 CAMBREW')
 })
 
@@ -63,6 +65,22 @@ test('rejects malformed model JSON', async () => {
   await assert.rejects(
     () => recognize([{ mediaType: 'image/jpeg', bytes: Buffer.from('image') }]),
     (error) => error.code === 'invalid_model_result' && error.status === 422,
+  )
+})
+
+test('rejects a structured response with no usable beer name', async () => {
+  const recognize = createQwenBeerLabelRecognizer(config, async () => new Response(JSON.stringify({
+    id: 'model-request-empty',
+    choices: [{ message: { content: JSON.stringify({
+      items: [{ image_order: 1, name_cn: null, name_en: null, brewery: null, collaboration: [] }],
+    }) } }],
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+
+  await assert.rejects(
+    () => recognize([{ mediaType: 'image/jpeg', bytes: Buffer.from('image') }]),
+    (error) => error.code === 'invalid_model_result'
+      && error.details.reason === 'missing_name'
+      && error.details.providerRequestId === 'model-request-empty',
   )
 })
 

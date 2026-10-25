@@ -3,11 +3,13 @@ import type {
   LightDrinkResult,
   MyDrinkHistoryRow,
   MyDrinkInsights,
+  MyDrinkListState,
   MyDrinkState,
   MyDrinkSummary,
 } from '@/lib/types'
 
 type HistoryResponse = { ok: true; results: MyDrinkHistoryRow[] }
+type ListStateResponse = { ok: true; results: MyDrinkListState[] }
 
 export async function getMyDrinkState(drinkId: string) {
   const client = getTaplistSupabase()
@@ -27,6 +29,18 @@ export async function getMyDrinkState(drinkId: string) {
   })
   if (error) throw error
   return data as MyDrinkState
+}
+
+export async function getMyDrinkStates(drinkIds: string[]) {
+  if (drinkIds.length === 0) return []
+  const client = getTaplistSupabase()
+  const { data: sessionData } = await client.auth.getSession()
+  if (!sessionData.session) return []
+  const { data, error } = await client.rpc('get_my_drink_states', {
+    p_drink_ids: [...new Set(drinkIds)].slice(0, 99),
+  })
+  if (error) throw error
+  return ((data as ListStateResponse)?.results ?? []) as MyDrinkListState[]
 }
 
 export async function lightMyDrink(drinkId: string) {

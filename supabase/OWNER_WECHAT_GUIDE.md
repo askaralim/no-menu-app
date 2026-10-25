@@ -4,7 +4,7 @@
 Doc index: [`docs/INDEX.md`](../docs/INDEX.md).  
 完整上手说明：[`OWNER_USER_GUIDE.md`](./OWNER_USER_GUIDE.md).
 
-**Tonight App Store 状态：已上架（1.1.0）。** 新店主一律用「已上架」模板；勿再发 TestFlight / 审核中话术。
+**Tonight App Store 状态：已上架（1.1.2 + production OTA）。** 新店主一律用「已上架」模板；勿再发 TestFlight / 审核中话术。
 
 ## 开户消息 — 已上架（当前）
 
@@ -37,8 +37,8 @@ Doc index: [`docs/INDEX.md`](../docs/INDEX.md).
 
 1. App Store 搜 **No Menu Tonight**（不是 No Menu）
 2. 手机号（11 位）+ 临时密码登录 → 立刻改密码
-3. **商品库** 录酒 → **加入酒单** → 设枪号
-4. 重要酒款补图片；卖完点 **售罄**
+3. 空酒头点 **上酒** → 优先上传酒标识图，也可搜索或手动新增
+4. 确认酒款资料和枪号；卖完点状态标签 / **⋯ → 售罄**
 5. **门店** 里改成 **已公开**，再保存二维码 / 发链接
 6. 顾客网页和 No Menu App 里看到的今晚酒单，以你在 Tonight 设的为准
 

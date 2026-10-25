@@ -46,6 +46,7 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
       void queryClient.invalidateQueries({ queryKey: ['drink-log', 'history'] })
       void queryClient.invalidateQueries({ queryKey: ['drink-log', 'summary'] })
       void queryClient.invalidateQueries({ queryKey: ['drink-log', 'insights'] })
+      void queryClient.invalidateQueries({ queryKey: ['drink-log', 'states'] })
       setShowUndo(result.created_venue)
       setLastResult(result.created_venue ? result : null)
       setMessage(null)
@@ -94,8 +95,28 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
 
 type Controller = ReturnType<typeof useDrinkLightController>
 
-export function DrinkLightAction({ controller }: { controller: Controller }) {
+export function DrinkLightAction({
+  controller,
+  onOpenHistory,
+}: {
+  controller: Controller
+  onOpenHistory?: () => void
+}) {
   const { state, buttonLabel, showUndo, lightMutation, undoMutation } = controller
+
+  if (state?.is_current_venue_lit && state.light_id && onOpenHistory) {
+    return (
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel="查看喝过记录"
+        onPress={onOpenHistory}
+        style={({ pressed }) => [styles.historyButton, pressed && styles.buttonPressed]}>
+        <FontAwesome name="check-circle-o" size={14} color={palette.amber} />
+        <Text style={styles.historyButtonText}>已喝过</Text>
+        <FontAwesome name="angle-right" size={15} color={palette.faint} />
+      </Pressable>
+    )
+  }
 
   return (
     <View style={styles.action}>
@@ -166,6 +187,23 @@ const styles = StyleSheet.create({
     borderColor: palette.line,
   },
   buttonPressed: { opacity: 0.82 },
+  historyButton: {
+    minWidth: 92,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(211,154,69,0.24)',
+    backgroundColor: 'rgba(211,154,69,0.08)',
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  historyButtonText: {
+    ...typography.caption,
+    color: palette.tungsten,
+  },
   buttonText: { ...typography.micro, color: palette.amber, fontSize: 10 },
   completeText: { color: palette.faint },
   stateRow: { minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },

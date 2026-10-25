@@ -40,9 +40,9 @@ export default function DrinkLogDetailScreen() {
     },
   })
 
-  const confirmUnlight = () => Alert.alert('熄灭这款酒？', '这款酒在所有酒吧的记录都会被删除。', [
+  const confirmUnlight = () => Alert.alert('删除整款 TAP 记录？', '这款酒在所有酒吧的记录都会被删除。', [
     { text: '取消', style: 'cancel' },
-    { text: '熄灭', style: 'destructive', onPress: () => unlight.mutate() },
+    { text: '删除', style: 'destructive', onPress: () => unlight.mutate() },
   ])
 
   const generateShare = async () => {
@@ -75,52 +75,65 @@ export default function DrinkLogDetailScreen() {
           <Text style={styles.loading}>{historyQuery.isLoading ? '正在加载记录…' : '找不到这条记录'}</Text>
         ) : (
           <>
-            <View style={styles.heroSection}>
-              <CachedImage
-                source={item.image_url || defaultBeerArtwork}
-                ossStyle="nm-detail"
-                style={styles.hero}
-              />
-              <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72} style={styles.identityLine}>
-                {item.brewery ? <Text style={styles.identityBrewery}>{item.brewery} · </Text> : null}
+            <View style={styles.beerCard}>
+              <View style={styles.artworkStage}>
+                <CachedImage
+                  source={item.image_url || defaultBeerArtwork}
+                  ossStyle="nm-detail"
+                  contentFit="contain"
+                  style={styles.hero}
+                />
+              </View>
+              <View style={styles.identitySection}>
                 <Text style={styles.identityName}>{item.name}</Text>
-              </Text>
-              {item.country ? <Text style={styles.origin}>{item.country}</Text> : null}
-              <Text style={styles.factLine}>
-                {[item.beer_style, typeof item.abv === 'number' ? `ABV ${item.abv}%` : null].filter(Boolean).join(' · ')}
-              </Text>
+                {item.brewery ? <Text style={styles.identityBrewery}>{item.brewery}</Text> : null}
+              </View>
+              <View style={styles.factGrid}>
+                {item.beer_style ? <Fact label="风格" value={item.beer_style} /> : null}
+                {typeof item.abv === 'number' ? <Fact label="ABV" value={`${item.abv}%`} /> : null}
+                {typeof item.ibu === 'number' ? <Fact label="IBU" value={`${item.ibu}`} /> : null}
+                {item.country ? <Fact label="产地" value={item.country} /> : null}
+              </View>
             </View>
 
-            {item.source_drink_is_public ? (
-              <Pressable
-                accessibilityRole="button"
-                disabled={sharing}
-                onPress={() => void generateShare()}
-                style={({ pressed }) => [styles.shareAction, pressed && styles.pressed]}>
-                {sharing
-                  ? <ActivityIndicator size="small" color={palette.black} />
-                  : <FontAwesome name="share-square-o" size={16} color={palette.black} />}
-                <Text style={styles.shareActionText}>生成分享图</Text>
-              </Pressable>
-            ) : null}
+            <View style={styles.historyHeader}>
+              <Text style={styles.historyTitle}>喝过记录</Text>
+              <View style={styles.historyHeaderActions}>
+                <Text style={styles.historyCount}>{item.venue_count} 家</Text>
+                {item.source_drink_is_public ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="生成分享图"
+                    disabled={sharing}
+                    onPress={() => void generateShare()}
+                    style={({ pressed }) => [styles.shareAction, pressed && styles.pressed]}>
+                    {sharing
+                      ? <ActivityIndicator size="small" color={palette.amber} />
+                      : <FontAwesome name="share-square-o" size={14} color={palette.amber} />}
+                    <Text style={styles.shareActionText}>分享</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
 
             <View style={styles.venueList}>
               {item.venues.map((venue) => (
                 <View key={venue.tenant_id} style={styles.venueRow}>
                   <View style={styles.venueCopy}>
-                    <Text style={styles.venueName}>{formatVenueTitle(venue)}</Text>
-                    <Text style={styles.venueMeta}>{formatDate(venue.first_drank_at)}</Text>
+                    <Text style={styles.venueDate}>{formatDate(venue.first_drank_at)}</Text>
+                    <Text style={styles.venueName}>{venue.tenant_name}</Text>
+                    <Text numberOfLines={1} style={styles.venueMeta}>{formatVenueLocation(venue)}</Text>
                   </View>
                   <Pressable
                     disabled={removeVenue.isPending}
                     accessibilityRole="button"
                     accessibilityLabel={`移除${venue.tenant_name}记录`}
-                    style={styles.removeVenueButton}
+                    style={({ pressed }) => [styles.removeVenueButton, pressed && styles.pressed]}
                     onPress={() => Alert.alert('移除这家酒吧？', '其他酒吧记录不会受到影响。', [
                       { text: '取消', style: 'cancel' },
                       { text: '移除', style: 'destructive', onPress: () => removeVenue.mutate({ tenantId: venue.tenant_id }) },
                     ])}>
-                    <FontAwesome name="trash-o" size={17} color={palette.faint} />
+                    <Text style={styles.removeVenueText}>删除</Text>
                   </Pressable>
                 </View>
               ))}
@@ -129,10 +142,10 @@ export default function DrinkLogDetailScreen() {
             <Pressable
               disabled={unlight.isPending}
               accessibilityRole="button"
-              accessibilityLabel="熄灭这款酒"
+              accessibilityLabel="删除整款 TAP 记录"
               onPress={confirmUnlight}
               style={styles.dangerButton}>
-              <Text style={styles.dangerText}>熄灭这款酒</Text>
+              <Text style={styles.dangerText}>删除整款 TAP 记录</Text>
             </Pressable>
           </>
         )}
@@ -147,9 +160,18 @@ export default function DrinkLogDetailScreen() {
   )
 }
 
-function formatVenueTitle(venue: { city: string | null; city_label: string | null; tenant_name: string }) {
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.fact}>
+      <Text style={styles.factLabel}>{label}</Text>
+      <Text style={styles.factValue}>{value}</Text>
+    </View>
+  )
+}
+
+function formatVenueLocation(venue: { city: string | null; city_label: string | null; district: string | null; address: string | null }) {
   const city = venue.city_label || localizeCity(venue.city || '')
-  return [city, venue.tenant_name].filter(Boolean).join(' · ')
+  return [city, venue.district, venue.address].filter(Boolean).join(' · ')
 }
 
 function formatDate(value: string) { const d = new Date(value); return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}` }
@@ -165,25 +187,38 @@ function localizeCity(city: string) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: palette.background }, content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
+  screen: { flex: 1, backgroundColor: palette.background }, content: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
   header: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerButton: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(17,17,17,0.72)', borderWidth: 1, borderColor: 'rgba(245,241,230,0.14)' },
   headerSpacer: { width: 38, height: 38 },
   headerTitle: { ...typography.title, color: palette.text, flex: 1, textAlign: 'center' },
   loading: { ...typography.body, color: palette.muted, marginTop: spacing.xxl },
-  heroSection: { alignItems: 'center', marginTop: spacing.md },
-  hero: { width: 238, height: 238, borderRadius: 8 },
-  identityLine: { ...typography.headline, color: palette.text, fontSize: 28, lineHeight: 36, textAlign: 'center', marginTop: spacing.lg },
-  identityBrewery: { color: palette.amber, fontSize: 20 },
-  identityName: { color: palette.text, fontSize: 28 },
-  origin: { ...typography.body, color: palette.muted, textAlign: 'center', marginTop: spacing.xs },
-  factLine: { ...typography.caption, color: palette.tungsten, textAlign: 'center', marginTop: spacing.xxs },
-  shareAction: { minHeight: 50, marginTop: spacing.lg, borderRadius: 8, backgroundColor: palette.amber, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
-  shareActionText: { ...typography.title, color: palette.black },
-  venueList: { marginTop: spacing.xl, borderTopWidth: 1, borderTopColor: palette.line },
-  venueRow: { minHeight: 76, borderTopWidth: 1, borderTopColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md }, venueCopy: { flex: 1 }, venueName: { ...typography.title, color: palette.text }, venueMeta: { ...typography.caption, color: palette.tungsten, marginTop: spacing.xxs },
-  removeVenueButton: { width: 44, height: 44, marginRight: -spacing.sm, alignItems: 'center', justifyContent: 'center' },
-  dangerButton: { marginTop: spacing.xxl, minHeight: 44, alignSelf: 'center', paddingHorizontal: spacing.sm, alignItems: 'center', justifyContent: 'center' }, dangerText: { ...typography.caption, color: palette.copper },
+  beerCard: { marginTop: spacing.sm, overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: palette.hairline, backgroundColor: palette.panel },
+  artworkStage: { width: '100%', aspectRatio: 1.18, backgroundColor: palette.panelElevated, borderBottomWidth: 1, borderBottomColor: palette.hairline },
+  hero: { width: '100%', height: '100%' },
+  identitySection: { paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  identityName: { ...typography.headline, color: palette.text, fontSize: 24, lineHeight: 31 },
+  identityBrewery: { ...typography.caption, color: palette.muted, marginTop: spacing.xxs },
+  factGrid: { flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, borderTopColor: palette.hairline },
+  fact: { width: '50%', minHeight: 66, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRightWidth: 1, borderBottomWidth: 1, borderColor: palette.hairline },
+  factLabel: { ...typography.micro, color: palette.faint },
+  factValue: { ...typography.caption, color: palette.text, marginTop: spacing.xxs },
+  historyHeader: { marginTop: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  historyTitle: { ...typography.title, color: palette.text, fontSize: 22, lineHeight: 29 },
+  historyHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  historyCount: { ...typography.caption, color: palette.faint },
+  shareAction: { minHeight: 34, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(211,154,69,0.24)', backgroundColor: 'rgba(211,154,69,0.08)', paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  shareActionText: { ...typography.caption, color: palette.tungsten },
+  venueList: { marginTop: spacing.sm, gap: spacing.xs },
+  venueRow: { minHeight: 100, borderWidth: 1, borderColor: palette.hairline, borderRadius: 14, backgroundColor: palette.panel, padding: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  venueCopy: { flex: 1, minWidth: 0 },
+  venueDate: { ...typography.body, color: palette.tungsten, fontWeight: '500', letterSpacing: 0.8 },
+  venueName: { ...typography.body, color: palette.text, fontWeight: '500', marginTop: spacing.xs },
+  venueMeta: { ...typography.micro, color: palette.faint, marginTop: spacing.xxs },
+  removeVenueButton: { width: 56, height: 34, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(168,102,63,0.34)', backgroundColor: 'rgba(168,102,63,0.08)', alignItems: 'center', justifyContent: 'center' },
+  removeVenueText: { ...typography.caption, color: palette.copper },
+  dangerButton: { marginTop: spacing.xl, minHeight: 46, alignSelf: 'center', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(168,102,63,0.28)', paddingHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center' },
+  dangerText: { ...typography.caption, color: palette.copper },
   hiddenCanvas: { position: 'absolute', left: -10000, top: 0 },
   pressed: { opacity: 0.82 },
 })

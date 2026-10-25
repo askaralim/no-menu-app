@@ -473,6 +473,13 @@ export type MyDrinkState = {
   venue_count: number
 }
 
+export type MyDrinkListState = {
+  drink_id: string
+  light_id: string | null
+  is_lit: boolean
+  is_current_venue_lit: boolean
+}
+
 export type LightDrinkResult = MyDrinkState & {
   created_light: boolean
   created_venue: boolean

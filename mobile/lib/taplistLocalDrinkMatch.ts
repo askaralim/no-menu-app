@@ -8,6 +8,7 @@ export function matchLocalDrinks(drinks: DraftDrink[], query: string, limit = 8)
 
   const scored: { drink: DraftDrink; score: number }[] = []
   for (const d of drinks) {
+    if (d.public_sort_order) continue
     const name = (d.name || '').toLowerCase()
     const display = (d.display_name || '').toLowerCase()
     const brand = (d.brand_name || '').toLowerCase()

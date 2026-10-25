@@ -1,4 +1,3 @@
-import { useRef } from 'react'
 import {
   ActivityIndicator,
   StyleSheet,
@@ -9,7 +8,6 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { TAPLIST_THEME as T, statusVisual } from '../../lib/taplistTheme'
 import type { DraftDrink } from '../../lib/taplistOwnerApi'
-import type { AnchorRect } from '../ui/AnchorMenu'
 import { BeerArtworkImage } from './BeerArtworkImage'
 
 type Props = {
@@ -21,7 +19,7 @@ type Props = {
   onEdit: () => void
   onClear: () => void
   onReplace: () => void
-  onMore: (anchor: AnchorRect) => void
+  onMore: () => void
 }
 
 export default function TaplistSlotRow({
@@ -35,8 +33,6 @@ export default function TaplistSlotRow({
   onReplace,
   onMore,
 }: Props) {
-  const moreRef = useRef<View>(null)
-
   if (!drink) {
     return (
       <TouchableOpacity style={styles.emptyRow} onPress={onAdd} activeOpacity={0.78}>
@@ -66,6 +62,9 @@ export default function TaplistSlotRow({
         accessibilityLabel={`枪号 ${tapNumber}，点按调整枪号`}
       >
         <Text style={styles.tapNumber}>#{tapNumber}</Text>
+        <View style={styles.tapEditBadge} pointerEvents="none">
+          <Ionicons name="pencil" size={9} color={T.background} />
+        </View>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -126,7 +125,13 @@ export default function TaplistSlotRow({
       </View>
 
       <View style={styles.rightRail}>
-        <View style={styles.statusReadout}>
+        <TouchableOpacity
+          style={styles.statusReadout}
+          onPress={onMore}
+          disabled={busy}
+          activeOpacity={0.68}
+          accessibilityLabel={`当前状态${drink.is_public_visible ? status.label : '隐藏'}，点击修改`}
+        >
           {drink.is_public_visible ? (
             <View style={[styles.statusDot, { backgroundColor: status.fg }]} />
           ) : (
@@ -138,26 +143,21 @@ export default function TaplistSlotRow({
           >
             {drink.is_public_visible ? status.label : '隐藏'}
           </Text>
-        </View>
+          <Ionicons name="chevron-down" size={12} color={T.faint} />
+        </TouchableOpacity>
         <View style={styles.moreSlot}>
           {busy ? (
             <ActivityIndicator size="small" color={T.gold} />
           ) : (
-            <View ref={moreRef} collapsable={false}>
             <TouchableOpacity
               style={styles.moreButton}
               disabled={busy}
               activeOpacity={0.58}
               accessibilityLabel="更多操作"
-              onPress={() => {
-                moreRef.current?.measureInWindow((x, y, width, height) => {
-                  onMore({ x, y, width, height })
-                })
-              }}
+              onPress={onMore}
             >
               <Ionicons name="ellipsis-horizontal" size={22} color={T.goldSoft} />
             </TouchableOpacity>
-            </View>
           )}
         </View>
       </View>
@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
     borderBottomColor: T.border,
   },
   tapButton: {
+    position: 'relative',
     width: 44,
     height: 44,
     borderRadius: 8,
@@ -204,6 +205,19 @@ const styles = StyleSheet.create({
   tapButtonEmpty: { backgroundColor: 'transparent', borderColor: T.border },
   tapNumber: { color: T.gold, fontSize: 18, fontWeight: '800' },
   tapNumberEmpty: { color: T.faint },
+  tapEditBadge: {
+    position: 'absolute',
+    right: -4,
+    bottom: -4,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: T.gold,
+    borderWidth: 2,
+    borderColor: T.background,
+  },
   image: {
     width: 54,
     height: 54,
@@ -232,18 +246,23 @@ const styles = StyleSheet.create({
   titleDivider: { color: T.faint, fontSize: 15 },
   name: { color: T.text, fontSize: 17, fontWeight: '800', flex: 1 },
   styleText: { color: T.muted, fontSize: 13, marginTop: 6 },
-  rightRail: { width: 64, alignSelf: 'stretch', alignItems: 'flex-end' },
+  rightRail: { minWidth: 84, alignSelf: 'stretch', alignItems: 'flex-end' },
   statusReadout: {
-    width: 64,
-    minHeight: 25,
+    minWidth: 84,
+    minHeight: 32,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     gap: 5,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+    backgroundColor: T.surfaceMuted,
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 11, fontWeight: '700' },
+  statusText: { fontSize: 11, fontWeight: '700', flexShrink: 0 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
   quickAction: {
     height: 32,

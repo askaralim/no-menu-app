@@ -23,9 +23,10 @@ type BeerListCardProps = {
   drink: PublicDrinkRow
   slug: string
   tenantId: string
+  isLit?: boolean
 }
 
-export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
+export function BeerListCard({ drink, slug, tenantId, isLit = false }: BeerListCardProps) {
   const publicStatus = drink.public_status || null
   const isSoldOut = publicStatus === '售罄'
   const isNew = publicStatus === '上新'
@@ -38,6 +39,7 @@ export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
   const metaLine = [brewery, style].filter(Boolean).join(' · ')
   const abv = typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null
   const servingOptions = displayServingOptions(drink.serving_options)
+  const tapNumber = drink.public_sort_order > 0 ? drink.public_sort_order : null
 
   return (
     <Link href={`/bar/${slug}/beer/${drink.id}`} asChild>
@@ -61,6 +63,13 @@ export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
               ossStyle="nm-thumb"
               style={listCapsuleCardStyles.artwork}
             />
+            {tapNumber ? (
+              <View pointerEvents="none" style={styles.tapNumberBadge}>
+                <Text accessibilityLabel={`${tapNumber}号枪`} style={styles.tapNumberText}>
+                  #{tapNumber}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={listCapsuleCardStyles.panel}>
@@ -102,7 +111,12 @@ export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
                 </Text>
               ) : null}
 
-              {abv ? <Text style={listCapsuleSecondaryStyle}>{abv}</Text> : null}
+              {abv || isLit ? (
+                <View style={styles.secondaryRow}>
+                  {abv ? <Text style={listCapsuleSecondaryStyle}>{abv}</Text> : null}
+                  {isLit ? <Text style={styles.litLabel}>✓ 喝过</Text> : null}
+                </View>
+              ) : null}
 
               {servingOptions.length > 0 ? (
                 <View style={styles.servingRow}>
@@ -127,6 +141,28 @@ export function BeerListCard({ drink, slug, tenantId }: BeerListCardProps) {
 }
 
 const styles = StyleSheet.create({
+  tapNumberBadge: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    minWidth: 30,
+    height: 24,
+    paddingHorizontal: 7,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(8,8,8,0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,241,230,0.22)',
+  },
+  tapNumberText: {
+    ...typography.micro,
+    color: 'rgba(245,238,225,0.92)',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -166,6 +202,17 @@ const styles = StyleSheet.create({
   },
   statusTagSoldOut: {
     color: 'rgba(255,255,255,0.35)',
+  },
+  secondaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  litLabel: {
+    ...typography.micro,
+    color: palette.tungsten,
+    fontSize: 11,
+    lineHeight: 14,
   },
   servingRow: {
     flexDirection: 'row',

@@ -79,6 +79,7 @@ export function createAiServiceServer({
         imageCount,
         itemCount: result.items.length,
         model: result.model,
+        providerRequestId: result.providerRequestId,
         durationMs: Date.now() - startedAt,
         usage: result.usage,
       })
@@ -96,6 +97,8 @@ export function createAiServiceServer({
           code: error.code,
           providerStatus: error.details?.providerStatus,
           providerCode: error.details?.providerCode,
+          providerRequestId: error.details?.providerRequestId,
+          reason: error.details?.reason,
           durationMs: Date.now() - startedAt,
         })
         return json(response, error.status, { error: error.code, message: error.message, requestId }, cors)

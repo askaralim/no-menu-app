@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from 'expo-router'
 import { useAuth } from '../../lib/authProvider'
-import { TAPLIST_THEME as T, statusVisual } from '../../lib/taplistTheme'
+import { TAPLIST_THEME as T } from '../../lib/taplistTheme'
 import { LAYOUT } from '../../lib/theme'
 import {
   type DraftDrink,
@@ -30,16 +30,16 @@ import {
   tapSlotCount,
 } from '../../lib/taplistOwnerApi'
 import type { DrinkUpsertResult, PublicStatus } from '../../lib/types'
+import type { LocalImageAsset } from '../../lib/taplistMedia'
 import TaplistPreview from '../../components/taplist/TaplistPreview'
 import TapNumberSheet from '../../components/taplist/TapNumberSheet'
 import DrinkStatusHistorySheet from '../../components/taplist/DrinkStatusHistorySheet'
 import CatalogPickSheet from '../../components/taplist/CatalogPickSheet'
 import DrinkEditSheet from '../../components/taplist/DrinkEditSheet'
-import JoinTonightSheet from '../../components/taplist/JoinTonightSheet'
 import TapSlotCountSheet from '../../components/taplist/TapSlotCountSheet'
 import TaplistSlotRow from '../../components/taplist/TaplistSlotRow'
 import TonightShareSheet from '../../components/taplist/TonightShareSheet'
-import AnchorMenu, { type AnchorRect } from '../../components/ui/AnchorMenu'
+import DrinkStatusSheet from '../../components/taplist/DrinkStatusSheet'
 
 const SOLD_OUT_UNDO_MS = 7000
 const TAP_NUMBER_HINT_KEY = 'taplist:tap-number-hint:v1'
@@ -79,13 +79,12 @@ export default function TaplistScreen() {
   const [tapBusy, setTapBusy] = useState(false)
   const [soldOutUndo, setSoldOutUndo] = useState<SoldOutUndo | null>(null)
   const [historyDrink, setHistoryDrink] = useState<DraftDrink | null>(null)
-  const [moreMenu, setMoreMenu] = useState<{ drink: DraftDrink; anchor: AnchorRect } | null>(null)
+  const [moreMenu, setMoreMenu] = useState<DraftDrink | null>(null)
   const [pickerTapNumber, setPickerTapNumber] = useState<number | null>(null)
-  const [joinDrink, setJoinDrink] = useState<DraftDrink | null>(null)
-  const [joinTapNumber, setJoinTapNumber] = useState<number | null>(null)
   const [editing, setEditing] = useState<DraftDrink | null>(null)
   const [creating, setCreating] = useState(false)
   const [editorTapNumber, setEditorTapNumber] = useState<number | null>(null)
+  const [editorRecognitionAsset, setEditorRecognitionAsset] = useState<LocalImageAsset | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [tonightShareOpen, setTonightShareOpen] = useState(false)
@@ -139,11 +138,10 @@ export default function TaplistScreen() {
     setHistoryDrink(null)
     setMoreMenu(null)
     setPickerTapNumber(null)
-    setJoinDrink(null)
-    setJoinTapNumber(null)
     setEditing(null)
     setCreating(false)
     setEditorTapNumber(null)
+    setEditorRecognitionAsset(null)
     setSettingsOpen(false)
     setTonightShareOpen(false)
     setFilter('all')
@@ -297,16 +295,6 @@ export default function TaplistScreen() {
     }
   }
 
-  /** After snackbar expires: restore always to available (do not guess previous). */
-  const restoreOnSale = async (d: DraftDrink) => {
-    clearSoldOutUndo()
-    try {
-      await applyImmediate(d, { public_status: 'available' })
-    } catch {
-      /* already alerted */
-    }
-  }
-
   const markAsNew = async (d: DraftDrink) => {
     if (d.public_status === 'new') return
     clearSoldOutUndo()
@@ -337,9 +325,7 @@ export default function TaplistScreen() {
     }
   }
 
-  const openMoreMenu = (d: DraftDrink, anchor: AnchorRect) => {
-    setMoreMenu({ drink: d, anchor })
-  }
+  const openMoreMenu = (d: DraftDrink) => setMoreMenu(d)
 
   const handleRemoveFromTonight = (d: DraftDrink) => {
     if (!draft) return
@@ -428,17 +414,18 @@ export default function TaplistScreen() {
     setPickerTapNumber(tapNumber)
   }
 
-  const handleCatalogPick = (drink: DraftDrink) => {
-    const target = pickerTapNumber
+  const openCreateFromPicker = (
+    mode: 'recognition' | 'manual',
+    asset?: LocalImageAsset,
+    targetTapNumber?: number | null,
+  ) => {
     setPickerTapNumber(null)
-    setJoinTapNumber(target)
-    setJoinDrink(drink)
-  }
-
-  const openCreateFromPicker = () => {
-    const target = pickerTapNumber
-    setPickerTapNumber(null)
-    setEditorTapNumber(target)
+    if (!targetTapNumber || targetTapNumber < 1) {
+      Alert.alert('无法确定酒头', '请返回酒单，从目标空酒头重新上酒。')
+      return
+    }
+    setEditorTapNumber(targetTapNumber)
+    setEditorRecognitionAsset(mode === 'recognition' ? asset ?? null : null)
     setCreating(true)
     setEditing(emptyDraftDrink({ entryPoint: 'tonight' }))
   }
@@ -454,6 +441,7 @@ export default function TaplistScreen() {
     setEditing(null)
     setCreating(false)
     setEditorTapNumber(null)
+    setEditorRecognitionAsset(null)
   }
 
   const replaceEditingDrink = () => {
@@ -620,8 +608,8 @@ export default function TaplistScreen() {
                 if (drink) handleRemoveFromTonight(drink)
               }}
               onReplace={() => openTapPicker(item.tapNumber)}
-              onMore={(anchor) => {
-                if (drink) openMoreMenu(drink, anchor)
+              onMore={() => {
+                if (drink) openMoreMenu(drink)
               }}
             />
           )
@@ -648,89 +636,29 @@ export default function TaplistScreen() {
         </View>
       ) : null}
 
-      <AnchorMenu
-        visible={!!moreMenu}
-        anchor={moreMenu?.anchor ?? null}
-        items={
-          moreMenu
-            ? [
-                {
-                  key: 'primary_status',
-                  label:
-                    moreMenu.drink.public_status === 'sold_out'
-                      ? '恢复在售'
-                      : moreMenu.drink.public_status === 'new'
-                        ? '标为在售'
-                        : '标为上新',
-                  icon: 'radio-button-on-outline',
-                  iconColor:
-                    moreMenu.drink.public_status === 'sold_out' ||
-                    moreMenu.drink.public_status === 'new'
-                      ? statusVisual('available').fg
-                      : statusVisual('new').fg,
-                  onPress: () => {
-                    const drink = moreMenu.drink
-                    if (drink.public_status === 'sold_out') void restoreOnSale(drink)
-                    else if (drink.public_status === 'new') void markAsAvailable(drink)
-                    else void markAsNew(drink)
-                  },
-                },
-                ...(moreMenu.drink.public_status !== 'sold_out'
-                  ? [
-                      {
-                        key: 'sold_out',
-                        label: '标为售罄',
-                        icon: 'remove-circle-outline' as const,
-                        iconColor: statusVisual('sold_out').fg,
-                        onPress: () => void markSoldOut(moreMenu.drink),
-                      },
-                    ]
-                  : []),
-                {
-                  key: 'visibility',
-                  label: moreMenu.drink.is_public_visible ? '酒单隐藏' : '设为公开',
-                  icon: moreMenu.drink.is_public_visible ? 'eye-off-outline' : 'eye-outline',
-                  iconColor: moreMenu.drink.is_public_visible ? T.faint : T.goldSoft,
-                  onPress: () => {
-                    const d = moreMenu.drink
-                    void applyImmediate(d, {
-                      is_public_visible: !d.is_public_visible,
-                    }).catch(() => {})
-                  },
-                },
-                ...(moreMenu.drink.public_status !== 'coming_soon'
-                  ? [
-                      {
-                        key: 'coming_soon',
-                        label: '即将上新',
-                        icon: 'calendar-outline' as const,
-                        iconColor: statusVisual('coming_soon').fg,
-                        onPress: () => void markComingSoon(moreMenu.drink),
-                      },
-                    ]
-                  : []),
-                {
-                  key: 'tap_number',
-                  label: '调整枪号',
-                  icon: 'pencil-outline',
-                  onPress: () => setTapDrink(moreMenu.drink),
-                },
-                {
-                  key: 'edit',
-                  label: '编辑酒款',
-                  icon: 'create-outline',
-                  onPress: () => openEditDrink(moreMenu.drink),
-                },
-                {
-                  key: 'history',
-                  label: '状态记录',
-                  icon: 'time-outline',
-                  onPress: () => setHistoryDrink(moreMenu.drink),
-                },
-              ]
-            : []
-        }
+      <DrinkStatusSheet
+        drink={moreMenu}
+        busy={!!moreMenu && busyDrinkId === moreMenu.id}
         onClose={() => setMoreMenu(null)}
+        onSelectStatus={(status) => {
+          const drink = moreMenu
+          setMoreMenu(null)
+          if (!drink) return
+          if (status === 'sold_out') void markSoldOut(drink)
+          else if (status === 'new') void markAsNew(drink)
+          else if (status === 'coming_soon') void markComingSoon(drink)
+          else void markAsAvailable(drink)
+        }}
+        onToggleVisibility={() => {
+          const drink = moreMenu
+          setMoreMenu(null)
+          if (drink) void applyImmediate(drink, { is_public_visible: !drink.is_public_visible }).catch(() => {})
+        }}
+        onHistory={() => {
+          const drink = moreMenu
+          setMoreMenu(null)
+          if (drink) setHistoryDrink(drink)
+        }}
       />
       <TaplistPreview visible={previewOpen} draft={draft} onClose={() => setPreviewOpen(false)} />
       <DrinkStatusHistorySheet
@@ -752,10 +680,8 @@ export default function TaplistScreen() {
       />
       <CatalogPickSheet
         visible={pickerTapNumber != null}
-        drinks={draft.drinks}
         targetTapNumber={pickerTapNumber}
         onClose={() => setPickerTapNumber(null)}
-        onPick={handleCatalogPick}
         onCreate={openCreateFromPicker}
       />
       <DrinkEditSheet
@@ -767,27 +693,12 @@ export default function TaplistScreen() {
         entryPoint={editorTapNumber ? 'tonight' : 'catalog'}
         saveIntent={editorTapNumber ? 'save_and_add_to_tonight' : 'product_only'}
         suggestedTapNumber={editorTapNumber}
+        initialRecognitionAsset={editorRecognitionAsset}
         catalogDrinks={draft.drinks}
         onPickLocalDrink={handlePickLocalDrink}
         onReplaceDrink={!creating && editing?.public_sort_order ? replaceEditingDrink : undefined}
         onClose={closeEditor}
         onSaved={handleEditorSaved}
-      />
-      <JoinTonightSheet
-        visible={!!joinDrink}
-        drink={joinDrink}
-        allDrinks={draft.drinks}
-        configuredTapCount={slotCount}
-        fixedTapNumber={joinTapNumber}
-        onClose={() => {
-          setJoinDrink(null)
-          setJoinTapNumber(null)
-        }}
-        onJoined={async () => {
-          setJoinDrink(null)
-          setJoinTapNumber(null)
-          await refreshDraft()
-        }}
       />
       <TapSlotCountSheet
         visible={settingsOpen}

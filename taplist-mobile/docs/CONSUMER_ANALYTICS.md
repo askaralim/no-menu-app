@@ -1,6 +1,6 @@
 # No Menu 消费者行为分析
 
-最后更新：2026-10-09（Asia/Shanghai）
+最后更新：2026-10-25（Asia/Shanghai）
 
 本文是 Taplist iOS、微信小程序和 Taplist Web 产品分析的当前事实来源。历史基线见
 [`ANALYTICS_BASELINE_2026-10-08.md`](ANALYTICS_BASELINE_2026-10-08.md)。
@@ -10,7 +10,7 @@
 | Surface | 状态 | 数据边界 |
 |---|---|---|
 | Taplist iOS | P0 与 P1-A 已通过 production OTA 发布并验证 | 只有用户打开「匿名产品分析」后才向 PostHog 发送事件 |
-| 微信小程序 | P1-B 代码与体验版二维码链路已验证；`1.2.2` 尚待微信审核和正式发布 | 匿名事件使用本地随机 visitor；登录后关联现有 Supabase user ID |
+| 微信小程序 | P1-B 已验证；审核通过并正式发布 | 匿名事件使用本地随机 visitor；登录后关联现有 Supabase user ID |
 | Taplist Web | 生产二维码落地页事件已验证 | PostHog cookieless；不会与 iOS 或小程序匿名 ID 自动合并 |
 | Supabase | TAP、关注、账号和门店等业务事实来源 | 不用 PostHog 事件替代业务记录或计算精确用户总数 |
 
@@ -111,7 +111,6 @@ Apple contact data 或完整私人 TAP 历史。GeoIP、session replay、surveys
 2. 跨端 navigation：iOS 有 `apple_maps_opened`，小程序 `wx.openLocation` 尚未埋点；未统一事件名。
 3. Item impression：目前只有页面级 `screen_viewed`，没有酒吧卡片、酒款卡片的曝光事件。数据量和分析目的明确前不默认增加。
 4. 到店：未收集，不从分享、二维码、地图打开或定位推断到店。
-5. 小程序正式发布：`1.2.2` 体验版 QR 链路已通过，仍需微信审核和手动发布。
 
 ## 查询与解释规则
 

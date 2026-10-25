@@ -78,11 +78,18 @@ export function createQwenBeerLabelRecognizer(config, fetchImpl = fetch) {
       throw new RequestError(422, 'invalid_model_result', '模型返回的识别结果格式无效')
     }
 
-    return {
-      ...normalizeBeerLabelResult(parsed, images.length),
-      model: payload.model || config.dashscopeModel,
-      usage: payload.usage || null,
-      providerRequestId: payload.id || null,
+    try {
+      return {
+        ...normalizeBeerLabelResult(parsed, images.length),
+        model: payload.model || config.dashscopeModel,
+        usage: payload.usage || null,
+        providerRequestId: payload.id || null,
+      }
+    } catch (error) {
+      if (error instanceof RequestError) {
+        error.details = { ...error.details, providerRequestId: payload.id || null }
+      }
+      throw error
     }
   }
 }

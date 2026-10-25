@@ -23,6 +23,7 @@ import { formatOpeningStatusLabel } from '@/lib/openingHour'
 import { buildAppleMapsPlaceUrl } from '@/lib/navigationLinks'
 import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { fetchPublicDrinks, fetchPublicTenantBySlug, fetchPublicTenantEvents } from '@/lib/api/taplist'
+import { getMyDrinkStates } from '@/lib/api/drinkLog'
 import { followBar, getMyBarFollowState, setBarNewTapNotifications, unfollowBar } from '@/lib/api/barFollows'
 import { ensureDrinkLogSession } from '@/lib/drinkLogAuth'
 import { enablePushNotifications, getPushPermissionState } from '@/lib/pushNotifications'
@@ -86,6 +87,16 @@ export default function BarDetailScreen() {
   const events = eventsQuery.data ?? []
   const shareDrinks = [...drinks, ...comingSoon]
   const hasAnyDrinks = shareDrinks.length > 0 || recentlySoldOut.length > 0
+  const drinkIds = partitions.allForLookup.map((drink) => drink.id)
+  const drinkStatesQuery = useQuery({
+    queryKey: ['drink-log', 'states', tenant?.id, drinkIds.join(',')],
+    queryFn: () => getMyDrinkStates(drinkIds),
+    enabled: configured && drinkIds.length > 0,
+    retry: false,
+  })
+  const litDrinkIds = new Set(
+    (drinkStatesQuery.data ?? []).filter((state) => state.is_lit).map((state) => state.drink_id),
+  )
   const openingHoursLabel = tenant ? formatOpeningStatusLabel(tenant) : null
   const canSaveTaplist = Boolean(tenant && shareDrinks.length > 0 && !isSavingTaplist)
   const appleMapsUrl =
@@ -376,6 +387,7 @@ export default function BarDetailScreen() {
                           drink={drink}
                           slug={tenant.slug}
                           tenantId={tenant.id}
+                          isLit={litDrinkIds.has(drink.id)}
                         />
                       ))}
                     </TapListSection>
@@ -388,6 +400,7 @@ export default function BarDetailScreen() {
                           drink={drink}
                           slug={tenant.slug}
                           tenantId={tenant.id}
+                          isLit={litDrinkIds.has(drink.id)}
                         />
                       ))}
                     </TapListSection>
@@ -400,6 +413,7 @@ export default function BarDetailScreen() {
                           drink={drink}
                           slug={tenant.slug}
                           tenantId={tenant.id}
+                          isLit={litDrinkIds.has(drink.id)}
                         />
                       ))}
                     </TapListSection>

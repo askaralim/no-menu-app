@@ -21,6 +21,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/authProvider'
 import { THEME as T, LAYOUT } from '../../lib/theme'
 import type { Category, DrinkUpsertResult } from '../../lib/types'
+import type { LocalImageAsset } from '../../lib/taplistMedia'
 import {
   type DraftDrink,
   type TaplistDraft,
@@ -32,6 +33,7 @@ import {
   restoreDrink,
 } from '../../lib/taplistOwnerApi'
 import DrinkEditSheet from '../../components/taplist/DrinkEditSheet'
+import CatalogPickSheet from '../../components/taplist/CatalogPickSheet'
 import JoinTonightSheet from '../../components/taplist/JoinTonightSheet'
 import { BeerArtworkImage } from '../../components/taplist/BeerArtworkImage'
 import AnchorMenu, { type AnchorRect } from '../../components/ui/AnchorMenu'
@@ -194,6 +196,8 @@ export default function MenuScreen() {
 
   const [editing, setEditing] = useState<DraftDrink | null>(null)
   const [creating, setCreating] = useState(false)
+  const [createMethodOpen, setCreateMethodOpen] = useState(false)
+  const [editorRecognitionAsset, setEditorRecognitionAsset] = useState<LocalImageAsset | null>(null)
   const [joinDrink, setJoinDrink] = useState<DraftDrink | null>(null)
   const [moreMenu, setMoreMenu] = useState<{ drink: DraftDrink; anchor: AnchorRect } | null>(null)
 
@@ -234,6 +238,8 @@ export default function MenuScreen() {
     tenantIdRef.current = tenantId
     setEditing(null)
     setCreating(false)
+    setCreateMethodOpen(false)
+    setEditorRecognitionAsset(null)
     setJoinDrink(null)
     setMoreMenu(null)
     setShowCategoryForm(false)
@@ -299,14 +305,17 @@ export default function MenuScreen() {
   }
 
   // --- Drink editor (unified) ---
-  const openCreate = () => {
+  const openCreate = (mode: 'recognition' | 'manual', asset?: LocalImageAsset) => {
     const d = emptyDraftDrink({ entryPoint: 'catalog' })
     d.category_id = categories.find((c) => c.enabled)?.id ?? null
+    setCreateMethodOpen(false)
+    setEditorRecognitionAsset(mode === 'recognition' ? asset ?? null : null)
     setCreating(true)
     setEditing(d)
   }
 
   const openEdit = (d: DraftDrink) => {
+    setEditorRecognitionAsset(null)
     setCreating(false)
     setEditing(d)
   }
@@ -314,6 +323,7 @@ export default function MenuScreen() {
   const closeEditor = () => {
     setEditing(null)
     setCreating(false)
+    setEditorRecognitionAsset(null)
   }
 
   const handlePickLocalDrink = (d: DraftDrink) => {
@@ -511,7 +521,7 @@ export default function MenuScreen() {
           <TouchableOpacity
             style={styles.headerAddButton}
             activeOpacity={0.72}
-            onPress={() => (viewMode === 'categories' ? openCategoryForm() : openCreate())}
+            onPress={() => (viewMode === 'categories' ? openCategoryForm() : setCreateMethodOpen(true))}
           >
             <Ionicons name="add" size={18} color={T.gold} />
             <Text style={styles.headerAddText}>
@@ -775,10 +785,17 @@ export default function MenuScreen() {
         categories={draft?.categories ?? []}
         isCreate={creating}
         entryPoint="catalog"
+        initialRecognitionAsset={editorRecognitionAsset}
         catalogDrinks={drinkList}
         onPickLocalDrink={handlePickLocalDrink}
         onClose={closeEditor}
         onSaved={handleSaved}
+      />
+
+      <CatalogPickSheet
+        visible={createMethodOpen}
+        onClose={() => setCreateMethodOpen(false)}
+        onCreate={openCreate}
       />
 
       <JoinTonightSheet

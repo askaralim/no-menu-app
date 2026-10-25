@@ -36,6 +36,8 @@ test('authenticates and returns the stable product draft for a raw image', async
       return {
         items: [{
           image_order: 1,
+          name_cn: null,
+          name_en: 'GREENHOUSE',
           title: 'GREENHOUSE',
           style_cn: null,
           style_en: 'German Pils',
@@ -61,6 +63,8 @@ test('authenticates and returns the stable product draft for a raw image', async
     assert.deepEqual(body.results[0], {
       imageOrder: 1,
       name: 'GREENHOUSE',
+      nameCn: null,
+      nameEn: 'GREENHOUSE',
       beerStyle: 'German Pils',
       abv: 5,
       brewery: 'Evil Twin Brewing',

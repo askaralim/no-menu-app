@@ -16,6 +16,7 @@ import {
   Alert,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import * as ImagePicker from 'expo-image-picker'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
   useAnimatedStyle,
@@ -41,20 +42,14 @@ import {
 import { matchLocalDrinks } from '../../lib/taplistLocalDrinkMatch'
 import {
   type LocalImageAsset,
-  TAPLIST_IMAGE_MAX_BYTES,
+  TAPLIST_IMAGE_SOURCE_MAX_BYTES,
   translateImageUploadError,
   uploadDrinkImageFromAsset,
 } from '../../lib/taplistMedia'
 import type { DrinkSaveIntent, DrinkUpsertResult, ServingType, TaplistCategory } from '../../lib/types'
 import { useAuth } from '../../lib/authProvider'
-import { recognizeBeerLabel } from '../../lib/beerLabelRecognition'
+import { recognizeBeerLabel, type BeerLabelDraft } from '../../lib/beerLabelRecognition'
 import { getTenantDefaultCupSizes } from '../../lib/tenantStorefrontApi'
-
-type ImagePickerModule = typeof import('expo-image-picker')
-
-async function loadImagePicker(): Promise<ImagePickerModule> {
-  return import('expo-image-picker')
-}
 
 const SERVING_TYPES: ServingType[] = ['draft', 'can', 'bottle', 'flight', 'other']
 const IMAGE_PREVIEW_MAX_SCALE = 4
@@ -131,6 +126,16 @@ function normalizeProductMatchText(value: string | null | undefined): string {
     .replace(/[\s\p{P}\p{S}]+/gu, '')
 }
 
+function findExactLocalMatches(drinks: DraftDrink[], names: string[]): DraftDrink[] {
+  const targets = new Set(names.map(normalizeProductMatchText).filter(Boolean))
+  if (targets.size === 0) return []
+  return drinks.filter((drink) => {
+    if (drink.public_sort_order) return false
+    return [drink.name, drink.display_name, drink.brand_name]
+      .some((value) => targets.has(normalizeProductMatchText(value)))
+  })
+}
+
 export type DrinkEditorEntryPoint = 'tonight' | 'catalog'
 
 interface Props {
@@ -145,6 +150,8 @@ interface Props {
   saveIntent?: DrinkSaveIntent
   /** Suggested tap # when joining tonight (create / no existing tap). */
   suggestedTapNumber?: number | null
+  /** Image selected from the primary recognition entry before opening the editor. */
+  initialRecognitionAsset?: LocalImageAsset | null
   /** Tenant catalog for local-dedup suggestions (create mode). */
   catalogDrinks?: DraftDrink[]
   /** User picked an existing local drink from suggestions. */
@@ -164,6 +171,7 @@ export default function DrinkEditSheet({
   entryPoint = 'tonight',
   saveIntent: saveIntentProp,
   suggestedTapNumber,
+  initialRecognitionAsset = null,
   catalogDrinks = [],
   onPickLocalDrink,
   onReplaceDrink,
@@ -183,8 +191,13 @@ export default function DrinkEditSheet({
   const [uploadingImage, setUploadingImage] = useState(false)
   const [recognizingImage, setRecognizingImage] = useState(false)
   const [pendingImage, setPendingImage] = useState<LocalImageAsset | null>(null)
-  const [recognitionMatchName, setRecognitionMatchName] = useState<string | null>(null)
   const [recognitionNotice, setRecognitionNotice] = useState<string | null>(null)
+  const [recognitionError, setRecognitionError] = useState<string | null>(null)
+  const [recognitionResult, setRecognitionResult] = useState<BeerLabelDraft | null>(null)
+  const [recognitionLocalMatch, setRecognitionLocalMatch] = useState<DraftDrink | null>(null)
+  const [recognitionProductMatch, setRecognitionProductMatch] = useState<ProductSearchResult | null>(null)
+  const [activeRecognitionAsset, setActiveRecognitionAsset] = useState<LocalImageAsset | null>(null)
+  const [recognitionEntryResolved, setRecognitionEntryResolved] = useState(false)
   const [showImagePreview, setShowImagePreview] = useState(false)
   const [previewImageSize, setPreviewImageSize] = useState<{ width: number; height: number } | null>(null)
   const [abvText, setAbvText] = useState(
@@ -194,6 +207,9 @@ export default function DrinkEditSheet({
 
   const searchSeq = useRef(0)
   const savingRef = useRef(false)
+  const autoRecognitionStartedRef = useRef(false)
+  const recognitionAbortRef = useRef<AbortController | null>(null)
+  const recognitionSeqRef = useRef(0)
 
   useEffect(() => {
     let next = drink
@@ -216,8 +232,13 @@ export default function DrinkEditSheet({
     setUploadingImage(false)
     setRecognizingImage(false)
     setPendingImage(null)
-    setRecognitionMatchName(null)
     setRecognitionNotice(null)
+    setRecognitionError(null)
+    setRecognitionResult(null)
+    setRecognitionLocalMatch(null)
+    setRecognitionProductMatch(null)
+    setActiveRecognitionAsset(null)
+    setRecognitionEntryResolved(false)
     setShowImagePreview(false)
     setPreviewImageSize(null)
     setAbvText(drink?.profile.abv != null ? String(drink.profile.abv) : '')
@@ -242,6 +263,30 @@ export default function DrinkEditSheet({
     }
   }, [visible, drink?.id, isCreate])
 
+  useEffect(() => {
+    if (!visible) {
+      autoRecognitionStartedRef.current = false
+      recognitionSeqRef.current += 1
+      recognitionAbortRef.current?.abort()
+      recognitionAbortRef.current = null
+      setRecognizingImage(false)
+      setRecognitionError(null)
+      setRecognitionResult(null)
+      setRecognitionLocalMatch(null)
+      setRecognitionProductMatch(null)
+      setActiveRecognitionAsset(null)
+      setRecognitionEntryResolved(false)
+      return
+    }
+    if (!isCreate || !initialRecognitionAsset || autoRecognitionStartedRef.current) return
+    autoRecognitionStartedRef.current = true
+    setRecognitionEntryResolved(false)
+    setPendingImage(initialRecognitionAsset)
+    setActiveRecognitionAsset(initialRecognitionAsset)
+    const timer = setTimeout(() => void recognizeImageAsset(initialRecognitionAsset, true), 0)
+    return () => clearTimeout(timer)
+  }, [visible, isCreate, initialRecognitionAsset])
+
   const nameQuery = (local?.name ?? '').trim()
   const linkedProductId = local?.product_id ?? null
 
@@ -249,6 +294,13 @@ export default function DrinkEditSheet({
     if (!isCreate || !visible || linkedProductId || nameQuery.length < 1) return []
     return matchLocalDrinks(catalogDrinks, nameQuery)
   }, [isCreate, visible, linkedProductId, nameQuery, catalogDrinks])
+
+  const visiblePoolResults = useMemo(() => {
+    const localProductIds = new Set(
+      localMatches.flatMap((drink) => (drink.product_id ? [drink.product_id] : [])),
+    )
+    return poolResults.filter((product) => !localProductIds.has(product.id))
+  }, [localMatches, poolResults])
 
   // Create mode: debounce product-pool search from 酒款名称.
   // Skip while linked — otherwise applying a pool hit renames the field and reopens suggestions.
@@ -285,39 +337,6 @@ export default function DrinkEditSheet({
     }, 250)
     return () => clearTimeout(timer)
   }, [nameQuery, visible, isCreate, linkedProductId])
-
-  useEffect(() => {
-    if (!recognitionMatchName || linkedProductId || searching || !poolSearchDone) return
-
-    const target = normalizeProductMatchText(recognitionMatchName)
-    const exactMatches = poolResults.filter((product) =>
-      [product.name, product.name_en].some((name) => normalizeProductMatchText(name) === target),
-    )
-    setRecognitionMatchName(null)
-    if (exactMatches.length !== 1) return
-
-    const product = exactMatches[0]
-    searchSeq.current += 1
-    setSearching(false)
-    setPoolResults([])
-    setPoolSearchDone(false)
-    if (product.image_url) setPendingImage(null)
-    setLocal((draft) => {
-      if (!draft) return draft
-      const applied = applyProductToDraftDrink(draft, product)
-      return {
-        ...applied,
-        name: product.name,
-        image_url: product.image_url || applied.image_url,
-      }
-    })
-    if (product.abv != null) setAbvText(String(product.abv))
-    setRecognitionNotice(
-      product.image_url
-        ? '已匹配商品池，已采用商品资料与图片，请确认后保存'
-        : '已匹配商品池，已采用商品资料，请确认后保存',
-    )
-  }, [recognitionMatchName, linkedProductId, searching, poolSearchDone, poolResults])
 
   const previewImageUri = pendingImage?.uri || local?.image_url || null
 
@@ -441,12 +460,12 @@ export default function DrinkEditSheet({
   }
 
   const onChangeName = (t: string) => {
+    setRecognitionNotice(null)
     patch({ name: t })
   }
 
   const ensurePhotoLibraryPermission = (): Promise<boolean> =>
     new Promise(async (resolve) => {
-      const ImagePicker = await loadImagePicker()
       const current = await ImagePicker.getMediaLibraryPermissionsAsync()
       if (current.granted) {
         resolve(true)
@@ -481,11 +500,138 @@ export default function DrinkEditSheet({
       )
     })
 
-  const pickDrinkImage = async () => {
+  async function recognizeImageAsset(asset: LocalImageAsset, forceStart = false) {
+    if ((!forceStart && recognizingImage) || uploadingImage || saving) return
+    const seq = ++recognitionSeqRef.current
+    const controller = new AbortController()
+    recognitionAbortRef.current = controller
+    setRecognizingImage(true)
+    setRecognitionNotice(null)
+    setRecognitionError(null)
+    setRecognitionResult(null)
+    setRecognitionLocalMatch(null)
+    setRecognitionProductMatch(null)
+    setActiveRecognitionAsset(asset)
+    try {
+      const result = await recognizeBeerLabel(asset, controller.signal)
+      if (recognitionSeqRef.current !== seq) return
+      const recognizedNames = [...new Set(
+        [result.nameCn, result.nameEn, result.name]
+          .map((name) => name?.trim())
+          .filter((name): name is string => Boolean(name)),
+      )]
+      const localExactMatches = isCreate && !linkedProductId
+        ? findExactLocalMatches(catalogDrinks, recognizedNames)
+        : []
+      const localMatch = localExactMatches.length === 1 ? localExactMatches[0] : null
+      setRecognitionLocalMatch(localMatch)
+
+      if (!localMatch && isCreate && !linkedProductId && recognizedNames.length > 0) {
+        try {
+          const products = await searchDrinkProducts(recognizedNames[0])
+          if (recognitionSeqRef.current !== seq) return
+          const targets = new Set(recognizedNames.map(normalizeProductMatchText).filter(Boolean))
+          const exactProducts = products.filter((product) =>
+            [product.name, product.name_en]
+              .some((name) => targets.has(normalizeProductMatchText(name))),
+          )
+          if (exactProducts.length === 1) setRecognitionProductMatch(exactProducts[0])
+        } catch {
+          // Recognition remains useful when product-pool matching is temporarily unavailable.
+        }
+      }
+      setRecognitionResult(result)
+    } catch (error: any) {
+      if (recognitionSeqRef.current !== seq || error?.name === 'AbortError') return
+      setRecognitionError(error?.message || '图片识别暂时不可用，请稍后重试')
+    } finally {
+      if (recognitionSeqRef.current === seq) {
+        recognitionAbortRef.current = null
+        setRecognizingImage(false)
+      }
+    }
+  }
+
+  const cancelRecognition = () => {
+    recognitionSeqRef.current += 1
+    recognitionAbortRef.current?.abort()
+    recognitionAbortRef.current = null
+    setRecognizingImage(false)
+    setRecognitionError(null)
+    setRecognitionResult(null)
+    setRecognitionLocalMatch(null)
+    setRecognitionProductMatch(null)
+    setActiveRecognitionAsset(null)
+    setRecognitionEntryResolved(true)
+  }
+
+  const confirmRecognition = () => {
+    setRecognitionEntryResolved(true)
+    if (recognitionLocalMatch && onPickLocalDrink) {
+      onPickLocalDrink(recognitionLocalMatch)
+      return
+    }
+    if (!recognitionResult) return
+    const result = recognitionResult
+    const product = recognitionProductMatch
+    setLocal((draft) => {
+      if (!draft) return draft
+      const currentCollabs = draft.profile.collab_breweries ?? []
+      const recognizedDraft: DraftDrink = {
+        ...draft,
+        name: draft.name || result.nameCn || result.nameEn || result.name || '',
+        profile: {
+          ...draft.profile,
+          brewery: draft.profile.brewery || result.brewery || '',
+          beer_style: draft.profile.beer_style || result.beerStyle || '',
+          abv: draft.profile.abv ?? result.abv,
+          collab_breweries:
+            currentCollabs.some((name) => name.trim()) || result.collabBreweries.length === 0
+              ? currentCollabs
+              : result.collabBreweries.slice(0, 3),
+        },
+      }
+      if (!product) return recognizedDraft
+      const applied = applyProductToDraftDrink(recognizedDraft, product)
+      return {
+        ...applied,
+        name: recognizedDraft.name || product.name,
+        image_url: product.image_url || applied.image_url,
+        profile: {
+          ...applied.profile,
+          brewery: recognizedDraft.profile.brewery || applied.profile.brewery,
+          beer_style: recognizedDraft.profile.beer_style || applied.profile.beer_style,
+          abv: recognizedDraft.profile.abv ?? applied.profile.abv,
+          country: recognizedDraft.profile.country || applied.profile.country,
+          collab_breweries:
+            (recognizedDraft.profile.collab_breweries ?? []).length > 0
+              ? recognizedDraft.profile.collab_breweries
+              : applied.profile.collab_breweries ?? [],
+        },
+      }
+    })
+    if (!abvText) {
+      const nextAbv = result.abv ?? product?.abv
+      if (nextAbv != null) setAbvText(String(nextAbv))
+    }
+    if (product?.image_url) setPendingImage(null)
+    setRecognitionNotice(
+      product
+        ? product.image_url
+          ? '已匹配商品池，已采用商品图片并补全空白资料'
+          : '已匹配商品池，已补全空白资料'
+        : '识别结果已补入空白项，请确认后保存',
+    )
+    setRecognitionResult(null)
+    setRecognitionLocalMatch(null)
+    setRecognitionProductMatch(null)
+    setActiveRecognitionAsset(null)
+  }
+
+  const pickDrinkImage = async (recognizeAfterPick = false) => {
     if (!local || !tenantId || uploadingImage || recognizingImage || saving) return
     try {
-      const ImagePicker = await loadImagePicker()
-      const allowed = await ensurePhotoLibraryPermission()
+      const allowed = Platform.OS === 'web' ? true : await ensurePhotoLibraryPermission()
       if (!allowed) return
 
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -504,61 +650,39 @@ export default function DrinkEditSheet({
         fileSize: asset.fileSize,
       }
 
-      if (localAsset.fileSize != null && localAsset.fileSize > TAPLIST_IMAGE_MAX_BYTES) {
+      if (
+        localAsset.fileSize != null &&
+        localAsset.fileSize > TAPLIST_IMAGE_SOURCE_MAX_BYTES
+      ) {
         Alert.alert(
           '图片过大',
-          `图片不能超过 ${Math.round(TAPLIST_IMAGE_MAX_BYTES / 1024 / 1024)}MB，请换一张或压缩后再传`,
+          `原图不能超过 ${Math.round(TAPLIST_IMAGE_SOURCE_MAX_BYTES / 1024 / 1024)}MB，请换一张或压缩后再传`,
         )
         return
       }
 
       setPendingImage(localAsset)
-      setRecognitionMatchName(null)
       setRecognitionNotice(null)
+      setRecognitionError(null)
+      setRecognitionResult(null)
+      setRecognitionLocalMatch(null)
+      setRecognitionProductMatch(null)
+      setActiveRecognitionAsset(localAsset)
+      if (recognizeAfterPick) await recognizeImageAsset(localAsset)
     } catch (e: any) {
       Alert.alert('图片选择失败', translateImageUploadError(e))
-    }
-  }
-
-  const recognizePendingImage = async () => {
-    if (!pendingImage || recognizingImage || uploadingImage || saving) return
-    setRecognizingImage(true)
-    setRecognitionNotice(null)
-    try {
-      const result = await recognizeBeerLabel(pendingImage)
-      setLocal((draft) => {
-        if (!draft) return draft
-        return {
-          ...draft,
-          name: result.name || draft.name,
-          profile: {
-            ...draft.profile,
-            brewery: result.brewery || draft.profile.brewery,
-            beer_style: result.beerStyle || draft.profile.beer_style,
-            abv: result.abv ?? draft.profile.abv,
-            collab_breweries: result.collabBreweries.length > 0
-              ? result.collabBreweries.slice(0, 3)
-              : draft.profile.collab_breweries,
-          },
-        }
-      })
-      if (result.abv != null) setAbvText(String(result.abv))
-      if (isCreate && !linkedProductId && result.name) {
-        setRecognitionMatchName(result.name)
-      }
-      setRecognitionNotice('识别结果已填入，请确认后保存')
-    } catch (error: any) {
-      Alert.alert('识别失败', error?.message || '图片识别暂时不可用，请稍后重试')
-    } finally {
-      setRecognizingImage(false)
     }
   }
 
   const clearDrinkImage = () => {
     if (!local || uploadingImage || recognizingImage || saving) return
     setPendingImage(null)
-    setRecognitionMatchName(null)
     setRecognitionNotice(null)
+    setRecognitionError(null)
+    setRecognitionResult(null)
+    setRecognitionLocalMatch(null)
+    setRecognitionProductMatch(null)
+    setActiveRecognitionAsset(null)
     const cleared = { ...local, image_url: null as string | null }
     setLocal(cleared)
     // Existing drink: clear URL in DB immediately. Create flow only clears draft.
@@ -716,6 +840,13 @@ export default function DrinkEditSheet({
         ? '新建商品'
         : '添加酒款'
     : local.display_name || local.name || '编辑酒款'
+  const recognitionEntryPending = Boolean(
+    isCreate &&
+    initialRecognitionAsset &&
+    !recognitionEntryResolved &&
+    !recognitionError &&
+    !recognitionResult,
+  )
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -802,7 +933,7 @@ export default function DrinkEditSheet({
 
                 {!linkedProductId && localMatches.length > 0 ? (
                   <View style={styles.suggestGroup}>
-                    <Text style={styles.suggestGroupTitle}>本店已有</Text>
+                    <Text style={styles.suggestGroupTitle}>本店商品库</Text>
                     {localMatches.map((d) => (
                       <TouchableOpacity
                         key={d.id}
@@ -825,11 +956,10 @@ export default function DrinkEditSheet({
                   </View>
                 ) : null}
 
-                {/* Prefer local dedup; hide pool when linked or this store already has hits. */}
-                {!linkedProductId && localMatches.length === 0 && poolResults.length > 0 ? (
+                {!linkedProductId && visiblePoolResults.length > 0 ? (
                   <View style={styles.suggestGroup}>
-                    <Text style={styles.suggestGroupTitle}>商品池</Text>
-                    {poolResults.map((r) => (
+                    <Text style={styles.suggestGroupTitle}>全局商品池</Text>
+                    {visiblePoolResults.map((r) => (
                       <TouchableOpacity
                         key={r.id}
                         style={styles.resultRow}
@@ -853,11 +983,31 @@ export default function DrinkEditSheet({
 
                 {nameQuery.length >= 1 &&
                 !local.product_id &&
+                !recognitionNotice &&
                 poolSearchDone &&
                 !searching &&
                 localMatches.length === 0 &&
-                poolResults.length === 0 ? (
-                  <Text style={styles.hintText}>未找到匹配，保存后将新建</Text>
+                visiblePoolResults.length === 0 ? (
+                  <View style={styles.noMatchCard}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.noMatchTitle}>没有找到对应酒款</Text>
+                      <Text style={styles.noMatchNote}>
+                        可继续填写，或上传酒款图自动补全空白资料。
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.noMatchRecognize}
+                      onPress={() => void pickDrinkImage(true)}
+                      disabled={recognizingImage || uploadingImage || saving}
+                    >
+                      {recognizingImage ? (
+                        <ActivityIndicator size="small" color={T.background} />
+                      ) : (
+                        <Ionicons name="sparkles-outline" size={16} color={T.background} />
+                      )}
+                      <Text style={styles.noMatchRecognizeText}>识图</Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : null}
 
                 {local.product_id ? (
@@ -932,27 +1082,11 @@ export default function DrinkEditSheet({
                 )}
               </TouchableOpacity>
             )}
-            {pendingImage ? (
-              <>
-                <TouchableOpacity
-                  style={styles.recognizeImageBtn}
-                  onPress={() => void recognizePendingImage()}
-                  disabled={recognizingImage || uploadingImage || saving}
-                >
-                  {recognizingImage ? (
-                    <ActivityIndicator size="small" color={T.background} />
-                  ) : (
-                    <Ionicons name="sparkles-outline" size={18} color={T.background} />
-                  )}
-                  <Text style={styles.recognizeImageText}>
-                    {recognizingImage ? '正在识别…' : '识别酒款信息'}
-                  </Text>
-                </TouchableOpacity>
-                <Text style={styles.hint}>选图不会自动识别；保存确认后才会上传图片</Text>
-              </>
-            ) : (
-              <Text style={styles.hint}>支持 JPEG / PNG / WebP，最大 2MB</Text>
-            )}
+            <Text style={styles.hint}>
+              {pendingImage
+                ? '保存时会自动压缩图片后上传'
+                : '支持 JPEG / PNG / WebP，原图最大 5MB'}
+            </Text>
             {recognitionNotice ? (
               <Text style={styles.recognitionNotice}>{recognitionNotice}</Text>
             ) : null}
@@ -1221,6 +1355,105 @@ export default function DrinkEditSheet({
               )}
             </TouchableOpacity>
           </View>
+
+          {recognizingImage || recognitionEntryPending || recognitionError || recognitionResult ? (
+            <View style={styles.recognitionOverlay}>
+              {(activeRecognitionAsset || initialRecognitionAsset)?.uri ? (
+                <Image source={{ uri: (activeRecognitionAsset || initialRecognitionAsset)!.uri }} resizeMode="contain" style={styles.recognitionPreview} />
+              ) : null}
+              {recognizingImage || recognitionEntryPending ? (
+                <>
+                  <ActivityIndicator size="large" color={T.gold} />
+                  <Text style={styles.recognitionTitle}>正在识别酒款信息</Text>
+                  <Text style={styles.recognitionSubtitle}>通常需要几秒，可以随时取消。</Text>
+                  <TouchableOpacity
+                    style={styles.recognitionSecondaryButton}
+                    onPress={() => {
+                      cancelRecognition()
+                      onClose()
+                    }}
+                  >
+                    <Text style={styles.recognitionSecondaryText}>取消识别</Text>
+                  </TouchableOpacity>
+                </>
+              ) : recognitionResult ? (
+                <>
+                  <View style={styles.recognitionResultCard}>
+                    <Text style={styles.recognitionResultBadge}>
+                      {recognitionLocalMatch
+                        ? '已匹配本店商品库'
+                        : recognitionProductMatch
+                          ? '已匹配全局商品池'
+                          : 'AI 识别结果'}
+                    </Text>
+                    <Text style={styles.recognitionResultName} numberOfLines={2}>
+                      {recognitionResult.nameCn || recognitionResult.nameEn || recognitionResult.name || '未识别酒名'}
+                    </Text>
+                    {recognitionResult.nameEn && recognitionResult.nameEn !== recognitionResult.nameCn ? (
+                      <Text style={styles.recognitionResultEnglish}>{recognitionResult.nameEn}</Text>
+                    ) : null}
+                    <View style={styles.recognitionFacts}>
+                      <RecognitionFact label="酒厂" value={recognitionResult.brewery} />
+                      <RecognitionFact label="风格" value={recognitionResult.beerStyle} />
+                      <RecognitionFact
+                        label="ABV"
+                        value={recognitionResult.abv != null ? `${recognitionResult.abv}%` : null}
+                      />
+                      <RecognitionFact
+                        label="联名酒厂"
+                        value={recognitionResult.collabBreweries.join(' × ') || null}
+                      />
+                    </View>
+                  </View>
+                  <Text style={styles.recognitionConfirmHint}>识别内容仅用于预填，请确认后保存。</Text>
+                  <TouchableOpacity style={styles.recognitionPrimaryButton} onPress={confirmRecognition}>
+                    <Text style={styles.recognitionPrimaryText}>
+                      {recognitionLocalMatch ? '带入现有商品' : '确认并继续'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.recognitionSecondaryButton}
+                    onPress={() => void pickDrinkImage(true)}
+                  >
+                    <Text style={styles.recognitionSecondaryText}>换一张图片</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.recognitionBackButton}
+                    onPress={() => {
+                      cancelRecognition()
+                      onClose()
+                    }}
+                  >
+                    <Text style={styles.recognitionBackText}>取消识别</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <View style={styles.recognitionErrorIcon}>
+                    <Ionicons name="alert-circle-outline" size={28} color={T.danger} />
+                  </View>
+                  <Text style={styles.recognitionTitle}>没有完成识别</Text>
+                  <Text style={styles.recognitionSubtitle}>{recognitionError}</Text>
+                  <TouchableOpacity
+                    style={styles.recognitionPrimaryButton}
+                    onPress={() => void pickDrinkImage(true)}
+                  >
+                    <Ionicons name="image-outline" size={18} color={T.background} />
+                    <Text style={styles.recognitionPrimaryText}>重新上传图片</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.recognitionBackButton}
+                    onPress={() => {
+                      cancelRecognition()
+                      onClose()
+                    }}
+                  >
+                    <Text style={styles.recognitionBackText}>取消识别</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          ) : null}
         </View>
 
         <Modal
@@ -1257,6 +1490,16 @@ export default function DrinkEditSheet({
         </Modal>
       </KeyboardAvoidingView>
     </Modal>
+  )
+}
+
+function RecognitionFact({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null
+  return (
+    <View style={styles.recognitionFact}>
+      <Text style={styles.recognitionFactLabel}>{label}</Text>
+      <Text style={styles.recognitionFactValue}>{value}</Text>
+    </View>
   )
 }
 
@@ -1405,19 +1648,102 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pickImageText: { color: T.gold, fontSize: 15, fontWeight: '600' },
-  recognizeImageBtn: {
+  noMatchCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    marginTop: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldFill,
+  },
+  noMatchTitle: { color: T.text, fontSize: 14, fontWeight: '700' },
+  noMatchNote: { color: T.muted, fontSize: 12, lineHeight: 17, marginTop: 4 },
+  noMatchRecognize: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    minHeight: 36,
+    borderRadius: 18,
+    backgroundColor: T.gold,
+  },
+  noMatchRecognizeText: { color: T.background, fontSize: 13, fontWeight: '800' },
+  recognitionNotice: { color: T.goldSoft, fontSize: 13, lineHeight: 18, marginBottom: 8 },
+  recognitionOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    backgroundColor: T.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 32,
+  },
+  recognitionPreview: {
+    width: '100%',
+    maxWidth: 360,
+    height: 220,
+    borderRadius: 14,
+    backgroundColor: T.surface,
+    marginBottom: 28,
+  },
+  recognitionTitle: { color: T.text, fontSize: 20, fontWeight: '800', marginTop: 18 },
+  recognitionSubtitle: { color: T.muted, fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 8 },
+  recognitionResultCard: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.border,
+    backgroundColor: T.surface,
+    padding: 16,
+  },
+  recognitionResultBadge: { color: T.gold, fontSize: 12, fontWeight: '700' },
+  recognitionResultName: { color: T.text, fontSize: 22, lineHeight: 29, fontWeight: '800', marginTop: 10 },
+  recognitionResultEnglish: { color: T.muted, fontSize: 14, lineHeight: 20, marginTop: 4 },
+  recognitionFacts: { borderTopWidth: 1, borderTopColor: T.borderFaint, marginTop: 14, paddingTop: 10, gap: 7 },
+  recognitionFact: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  recognitionFactLabel: { width: 64, color: T.faint, fontSize: 12, lineHeight: 18 },
+  recognitionFactValue: { flex: 1, color: T.textSoft, fontSize: 13, lineHeight: 18 },
+  recognitionConfirmHint: { color: T.faint, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 12 },
+  recognitionErrorIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(191, 85, 69, 0.10)',
+  },
+  recognitionPrimaryButton: {
+    minHeight: 48,
+    minWidth: 210,
+    borderRadius: 12,
+    marginTop: 24,
+    paddingHorizontal: 22,
+    backgroundColor: T.gold,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    minHeight: 44,
-    borderRadius: 10,
-    backgroundColor: T.gold,
-    marginTop: 4,
-    marginBottom: 8,
+    gap: 8,
   },
-  recognizeImageText: { color: T.background, fontSize: 14, fontWeight: '700' },
-  recognitionNotice: { color: T.goldSoft, fontSize: 13, lineHeight: 18, marginBottom: 8 },
+  recognitionPrimaryText: { color: T.background, fontSize: 15, fontWeight: '800' },
+  recognitionSecondaryButton: {
+    minHeight: 44,
+    minWidth: 160,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  recognitionSecondaryText: { color: T.gold, fontSize: 14, fontWeight: '700' },
+  recognitionBackButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+  recognitionBackText: { color: T.muted, fontSize: 14 },
   searchRow: {
     flexDirection: 'row',
     gap: 10,

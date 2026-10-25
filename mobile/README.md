@@ -2,9 +2,11 @@
 
 Home-screen / App Store display name: **No Menu Tonight** (`expo.name` in `app.json`).  
 App Store subtitle (listed v1): **酒吧实时酒单管理**.  
-**Status (2026-09-03): App Store `1.1.2` approved / live** (build 24; image preview, editing polish, event creation fix + EAS Update).
+**Status (2026-10-25): App Store `1.1.2` build 24 + production OTA live.** The current OTA adds beer-label recognition, unified drink entry, product-pool search parity and the status action sheet. Follow-up hotfixes for the iOS Modal transition and preserving the target tap through recognition/save are verified in production.
 
-ASC docs: [`docs/APP_STORE_CONNECT_1.1.2.md`](./docs/APP_STORE_CONNECT_1.1.2.md) (current) · [`docs/APP_STORE_CONNECT_1.1.1.md`](./docs/APP_STORE_CONNECT_1.1.1.md) (previous) · [`docs/APP_STORE_CONNECT_1.1.0.md`](./docs/APP_STORE_CONNECT_1.1.0.md) (historical) · [`docs/APP_STORE_LISTED_V1.md`](./docs/APP_STORE_LISTED_V1.md) (`1.0.0` baseline) · agent notes: [`AGENTS.md`](./AGENTS.md) · index: [`../docs/INDEX.md`](../docs/INDEX.md).
+Current POS OTA: [`docs/POS_RECOGNITION_OTA_2026-10-23.md`](./docs/POS_RECOGNITION_OTA_2026-10-23.md) · flow: [`docs/DRINK_ENTRY_AND_RECOGNITION_FLOW.md`](./docs/DRINK_ENTRY_AND_RECOGNITION_FLOW.md) · status actions: [`docs/TAPLIST_STATUS_ACTION_FLOW.md`](./docs/TAPLIST_STATUS_ACTION_FLOW.md).
+
+ASC docs: [`docs/APP_STORE_CONNECT_1.1.2.md`](./docs/APP_STORE_CONNECT_1.1.2.md) (current binary) · [`docs/APP_STORE_CONNECT_1.1.1.md`](./docs/APP_STORE_CONNECT_1.1.1.md) (previous) · [`docs/APP_STORE_CONNECT_1.1.0.md`](./docs/APP_STORE_CONNECT_1.1.0.md) (historical) · [`docs/APP_STORE_LISTED_V1.md`](./docs/APP_STORE_LISTED_V1.md) (`1.0.0` baseline) · agent notes: [`AGENTS.md`](./AGENTS.md) · index: [`../docs/INDEX.md`](../docs/INDEX.md).
 
 ## iOS release
 

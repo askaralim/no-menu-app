@@ -13,7 +13,7 @@ consumer app must not depend on POS UI or mutate POS workflows.
 
 Monorepo doc index: [`../docs/INDEX.md`](../docs/INDEX.md).  
 
-**Status (2026-10-18):** App Store `1.3.2` (build 48) is **Approved / live**. Its production OTA includes 8 popular breweries plus an all-breweries directory with city switching, search, pagination, and improved logo display. Both Migration behaviors are verified, and the matching WeChat mini-program `1.2.2` is also live. See [`docs/BREWERY_DISCOVERY_2026-10-09.md`](docs/BREWERY_DISCOVERY_2026-10-09.md). ASC: [`docs/APP_STORE_CONNECT_1.3.2.md`](docs/APP_STORE_CONNECT_1.3.2.md).
+**Status (2026-10-25):** App Store `1.3.2` (build 48) + production OTA is **Approved / live**. In addition to brewery discovery, the current experience marks previously tasted drinks in bar tap lists, clarifies beer-detail state and improves TAP record layout and deletion wording. The matching WeChat mini-program has passed review and is live with the same private “喝过” semantics and updated analytics. See [`docs/CONSUMER_TAP_HISTORY_ROLLOUT_2026-10-25.md`](docs/CONSUMER_TAP_HISTORY_ROLLOUT_2026-10-25.md) and [`docs/BREWERY_DISCOVERY_2026-10-09.md`](docs/BREWERY_DISCOVERY_2026-10-09.md). ASC: [`docs/APP_STORE_CONNECT_1.3.2.md`](docs/APP_STORE_CONNECT_1.3.2.md).
 Tonight POS `1.1.2` is also **Approved / live** — see `mobile/docs/APP_STORE_CONNECT_1.1.2.md`.
 
 ## Setup
@@ -133,6 +133,8 @@ See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_ST
   [`docs/ANALYTICS_BASELINE_2026-10-08.md`](docs/ANALYTICS_BASELINE_2026-10-08.md).
 - Missing images never receive fake artwork.
 - Delisted drinks remain in private history; invalid public detail/share links are hidden.
+- Editing a venue's TAP date is available in the mini program first; the iOS client keeps this
+  action deferred until a later binary release.
 
 Production client env vars belong in the EAS `production` environment. Apple private-key
 material belongs in Supabase Edge Function secrets, never in `EXPO_PUBLIC_*` variables.

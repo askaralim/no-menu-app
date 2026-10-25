@@ -23,6 +23,7 @@ For a single image, send the image bytes as the request body. For multiple image
 ```
 
 The endpoint returns a draft only. It does not persist the source image or recognition result and does not update a tap list.
+Responses without a usable Chinese or English beer name are rejected with `invalid_model_result`; an all-null model object is never returned as a successful draft.
 
 Response fields are intentionally limited to the first product flow:
 
@@ -33,6 +34,8 @@ Response fields are intentionally limited to the first product flow:
     {
       "imageOrder": 1,
       "name": "漫长的季节",
+      "nameCn": "漫长的季节",
+      "nameEn": "One Year Later",
       "beerStyle": "过桶野菌柏林酸小麦",
       "abv": 3.6,
       "brewery": "彼岸酿造",
@@ -60,6 +63,10 @@ Clients should conditionally resize only large inputs. Recommended mobile policy
 - upload no more than five images or 15 MB decoded data per request.
 
 Images are held in process memory only long enough to call Model Studio. Application logs must never contain image bytes, Base64 data, prompts, access tokens, or complete model output.
+
+The POS accepts a source image up to 5 MB for recognition. When the same image is later saved as a drink image, the client separately resizes it to a 1200 px long edge and enforces a 2 MB persisted-upload limit. Do not conflate the AI input limit with the media-storage limit.
+
+Client cancellation aborts the client's fetch and causes the UI to ignore a late response. It does not currently propagate cancellation through this service to an Alibaba Cloud request that has already started, so such a request can still complete and be billable.
 
 ## Local setup
 
@@ -138,5 +145,13 @@ Inspect service status without printing its environment:
 sudo systemctl status nomenu-ai-service
 sudo journalctl -u nomenu-ai-service -n 100 --no-pager
 ```
+
+Correlate a client `requestId` with the structured service log:
+
+```sh
+sudo journalctl -u nomenu-ai-service --since today --no-pager | rg '<requestId>'
+```
+
+The log records the outcome code, safe validation reason, provider request ID, duration and token usage. It deliberately omits image bytes, access tokens, prompts and model output.
 
 Do not open port `8790` in the ECS security group. Only Nginx should reach it over the loopback interface.

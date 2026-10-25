@@ -189,3 +189,9 @@ production build 24 已确认使用 production channel。已通过临时版本�
 | App Store 发布 / 可分发 | **完成（2026-09-03）** |
 
 **当前结论：`1.1.2` build 24 已通过 App Review 并正式上线，是当前 App Store 版本。**
+
+## 10. 上线后的 production OTA
+
+`1.1.2` runtime 在 2026-10-23 发布了识图、统一上酒入口、商品池搜索对齐和状态操作优化，并随后发布两次兼容 hotfix：iOS Modal 切换，以及识图保存时完整保留目标酒头并确认酒单关联成功。该 OTA 不改变本节记录的 App Store binary、原生依赖或隐私申报。
+
+当前 OTA 状态、update group、故障修复和验证记录以 [`POS_RECOGNITION_OTA_2026-10-23.md`](./POS_RECOGNITION_OTA_2026-10-23.md) 为准。

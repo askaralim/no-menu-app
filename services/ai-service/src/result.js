@@ -35,7 +35,9 @@ function normalizeItem(item, index, imageCount) {
 
   return {
     image_order: imageOrder,
-    title: nullableString(item.title),
+    name_cn: nullableString(item.name_cn),
+    name_en: nullableString(item.name_en),
+    title: nullableString(item.name_cn) || nullableString(item.name_en) || nullableString(item.title),
     subtitle: nullableString(item.subtitle),
     series_code: nullableString(item.series_code),
     style_en: nullableString(item.style_en),
@@ -58,18 +60,26 @@ function normalizeItem(item, index, imageCount) {
 
 export function normalizeBeerLabelResult(value, imageCount) {
   if (!value || typeof value !== 'object' || !Array.isArray(value.items)) {
-    throw new RequestError(422, 'invalid_model_result', '模型未返回有效的识别结果')
+    throw new RequestError(422, 'invalid_model_result', '模型未返回有效的识别结果', { reason: 'invalid_shape' })
   }
   if (value.items.length > 100) {
-    throw new RequestError(422, 'invalid_model_result', '模型返回的酒款数量异常')
+    throw new RequestError(422, 'invalid_model_result', '模型返回的酒款数量异常', { reason: 'too_many_items' })
   }
-  return { items: value.items.map((item, index) => normalizeItem(item, index, imageCount)) }
+  const items = value.items
+    .map((item, index) => normalizeItem(item, index, imageCount))
+    .filter((item) => item.title)
+  if (!items.length) {
+    throw new RequestError(422, 'invalid_model_result', '没有识别到可用的酒款名称，请换一张图片', { reason: 'missing_name' })
+  }
+  return { items }
 }
 
 export function toPublicBeerLabelResults(items) {
   return items.map((item) => ({
     imageOrder: item.image_order,
-    name: item.title,
+    name: item.name_cn || item.name_en || item.title,
+    nameCn: item.name_cn,
+    nameEn: item.name_en,
     beerStyle: item.style_cn || item.style_en,
     abv: item.abv.value,
     brewery: item.brewery,
