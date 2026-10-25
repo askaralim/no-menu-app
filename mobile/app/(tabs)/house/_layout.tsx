@@ -19,6 +19,8 @@ export default function HouseStackLayout() {
       <Stack.Screen name="events" />
       <Stack.Screen name="event-edit" />
       <Stack.Screen name="more" />
+      <Stack.Screen name="tap-data" />
+      <Stack.Screen name="tap-sessions" />
       <Stack.Screen name="staff" />
       <Stack.Screen name="account" />
       <Stack.Screen name="switch-tenant" />

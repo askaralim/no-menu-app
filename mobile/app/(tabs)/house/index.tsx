@@ -44,7 +44,7 @@ function roleLabel(r: string): string {
 
 export default function HouseHubScreen() {
   const router = useRouter()
-  const { tenantId, role, memberships, refreshMembership } = useAuth()
+  const { tenantId, role, orderingEnabled, memberships, refreshMembership } = useAuth()
   const tenant = memberships.find((m) => m.tenant_id === tenantId) ?? null
   const canSwitchStore = memberships.length > 1
 
@@ -194,7 +194,23 @@ export default function HouseHubScreen() {
       href: '/(tabs)/house/qr',
     },
     { key: 'events', label: '活动', icon: 'calendar-outline', href: '/(tabs)/house/events', sub: eventSub },
-    { key: 'more', label: '经营数据', icon: 'bar-chart-outline', href: '/(tabs)/house/more' },
+    {
+      key: 'tap-data',
+      label: '酒头数据',
+      icon: 'pulse-outline',
+      href: '/(tabs)/house/tap-data',
+      sub: '近30天酒头操作',
+    },
+    ...(orderingEnabled
+      ? [
+          {
+            key: 'more',
+            label: '经营数据',
+            icon: 'bar-chart-outline' as const,
+            href: '/(tabs)/house/more',
+          },
+        ]
+      : []),
     ...(role === 'owner' || role === 'super_admin'
       ? [{ key: 'staff', label: '员工', icon: 'people-outline' as const, href: '/(tabs)/house/staff' }]
       : []),
