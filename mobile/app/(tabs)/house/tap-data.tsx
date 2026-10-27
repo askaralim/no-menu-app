@@ -210,12 +210,25 @@ function operationVisual(operation: TapLifecycleOperation): OperationVisual {
         icon: 'archive-outline',
         color: THEME.faint,
       }
+    case 'keg_change':
+      return {
+        title: withTap('换桶', operation.to_tap ?? operation.from_tap),
+        detail,
+        icon: 'reload-outline',
+        color: THEME.gold,
+      }
     case 'baseline':
-    default:
       return {
         title: withTap('记录起点', operation.to_tap ?? operation.from_tap),
         detail,
         icon: 'flag-outline',
+        color: THEME.faint,
+      }
+    default:
+      return {
+        title: withTap('其他操作', operation.to_tap ?? operation.from_tap),
+        detail,
+        icon: 'ellipsis-horizontal-outline',
         color: THEME.faint,
       }
   }
@@ -274,7 +287,7 @@ function OperationRow({ operation, last }: { operation: TapLifecycleOperation; l
   const showsDuration =
     !isUnclassified &&
     duration != null &&
-    ['clear', 'replace', 'archive'].includes(operation.action)
+    ['clear', 'replace', 'archive', 'keg_change'].includes(operation.action)
 
   return (
     <View style={[styles.operationRow, isUnclassified && styles.operationRowMuted, !last && styles.operationRowBorder]}>
@@ -290,9 +303,14 @@ function OperationRow({ operation, last }: { operation: TapLifecycleOperation; l
         ) : null}
         {meta ? <Text style={styles.operationMeta}>{meta}</Text> : null}
         {isUnclassified ? (
-          <Text style={styles.unclassifiedText}>记录来源不完整 · 不计入统计</Text>
+          <Text style={styles.unclassifiedText}>历史起点不完整 · 不计算相关周期时长</Text>
         ) : null}
-        {showsDuration ? <Text style={styles.operationDuration}>在枪 {duration}</Text> : null}
+        {showsDuration ? (
+          <Text style={styles.operationDuration}>
+            {operation.action === 'keg_change' ? '上一桶 ' : '在枪 '}
+            {duration}
+          </Text>
+        ) : null}
       </View>
     </View>
   )
@@ -429,6 +447,7 @@ export default function TapDataScreen() {
             <MetricCard label="下枪" value={overview.counts.clear} />
             <MetricCard label="换酒" value={overview.counts.replace} />
             <MetricCard label="移枪" value={overview.counts.move} />
+            <MetricCard label="换桶" value={overview.counts.keg_change} />
           </View>
           <Text style={styles.metricFootnote}>换酒会同时计入一次上枪和一次下枪。</Text>
 
@@ -441,7 +460,7 @@ export default function TapDataScreen() {
             <View style={styles.emptyCard}>
               <Ionicons name="receipt-outline" size={28} color={THEME.faint} />
               <Text style={styles.emptyTitle}>还没有准确操作记录</Text>
-              <Text style={styles.emptyText}>在酒单中完成上枪、换酒、下枪或移枪后，记录会出现在这里。</Text>
+              <Text style={styles.emptyText}>在酒单中完成上枪、换酒、换桶、下枪或移枪后，记录会出现在这里。</Text>
             </View>
           ) : (
             operationGroups.map((group) => (

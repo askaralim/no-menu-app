@@ -441,6 +441,73 @@ export async function setDrinkStatusImmediate(
   if (error) throw new Error(translateError(error.message))
 }
 
+export type KegChangeResult = {
+  ok: true
+  drink_id: string
+  tap_number: number
+  public_status: PublicStatus
+  keg_changed_at: string
+  replayed: boolean
+}
+
+export class TapOperationConflictError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'TapOperationConflictError'
+  }
+}
+
+function isTapOperationIdConflict(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    (lower.includes('operation id') || lower.includes('request id')) &&
+    (lower.includes('conflict') || lower.includes('already used'))
+  )
+}
+
+export function newTapOperationId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+    const random = (Math.random() * 16) | 0
+    const value = character === 'x' ? random : (random & 0x3) | 0x8
+    return value.toString(16)
+  })
+}
+
+/** Record a new keg for the same beer on the same tap without ending its tap session. */
+export async function recordTapKegChange(
+  drinkId: string,
+  operationId: string,
+): Promise<KegChangeResult> {
+  const { data, error } = await supabase.rpc('record_tap_keg_change', {
+    p_drink_id: drinkId,
+    p_operation_id: operationId,
+  })
+  if (error) {
+    const message = translateError(error.message)
+    if (isTapOperationIdConflict(error.message)) {
+      throw new TapOperationConflictError(message)
+    }
+    throw new Error(message)
+  }
+
+  const result = data as Partial<KegChangeResult> | null
+  if (
+    result?.ok !== true ||
+    typeof result.drink_id !== 'string' ||
+    !Number.isInteger(result.tap_number) ||
+    !result.public_status ||
+    !VALID_STATUSES.includes(result.public_status) ||
+    typeof result.keg_changed_at !== 'string' ||
+    typeof result.replayed !== 'boolean'
+  ) {
+    throw new Error('记录换桶失败')
+  }
+  return result as KegChangeResult
+}
+
 export type DrinkStatusEvent = {
   id: string
   from_status: PublicStatus | null
@@ -723,6 +790,15 @@ export function isOnTonight(drink: { public_sort_order?: number | null }): boole
 
 function translateError(message: string): string {
   const m = message || ''
+  if (m.includes('Active tap lifecycle session not found')) {
+    return '未找到这款酒当前的在枪周期，请刷新酒单后重试'
+  }
+  if (m.includes('Drink is not assigned to a tap')) {
+    return '这款酒当前没有分配酒头，请刷新酒单后重试'
+  }
+  if (isTapOperationIdConflict(m)) {
+    return '这次换桶请求与已有记录冲突，请刷新酒单后重新操作'
+  }
   if (m.includes('Invalid tap number')) return '枪号无效（请选择 1–99）'
   if (m.includes('Tap number exceeds tenant tap slot count')) return '枪号超出本店设置的酒头数量'
   if (m.includes('Invalid tap slot count')) return '酒头数量必须在 1–99 之间'

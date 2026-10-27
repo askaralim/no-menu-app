@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { TAPLIST_THEME as T, statusVisual } from '../../lib/taplistTheme'
 import type { DraftDrink } from '../../lib/taplistOwnerApi'
@@ -18,6 +18,7 @@ type Props = {
   onSelectStatus: (status: PublicStatus) => void
   onToggleVisibility: () => void
   onHistory: () => void
+  onKegChange: () => void
 }
 
 export default function DrinkStatusSheet({
@@ -27,6 +28,7 @@ export default function DrinkStatusSheet({
   onSelectStatus,
   onToggleVisibility,
   onHistory,
+  onKegChange,
 }: Props) {
   if (!drink) return null
 
@@ -56,72 +58,102 @@ export default function DrinkStatusSheet({
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionLabel}>供应状态</Text>
-          <View style={styles.statusGrid}>
-            {STATUS_OPTIONS.map((option) => {
-              const selected = drink.public_status === option.key
-              const visual = statusVisual(option.key)
-              return (
-                <TouchableOpacity
-                  key={option.key}
-                  style={[styles.statusOption, selected && styles.statusOptionSelected]}
-                  disabled={busy || selected}
-                  onPress={() => onSelectStatus(option.key)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected, disabled: busy }}
-                  accessibilityLabel={`${option.label}${selected ? '，当前状态' : ''}`}
-                >
-                  <View style={[styles.statusDot, { backgroundColor: visual.fg }]} />
-                  <Text style={[styles.statusLabel, selected && styles.statusLabelSelected]}>
-                    {option.label}
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.sectionLabel}>供应状态</Text>
+            <View style={styles.statusGrid}>
+              {STATUS_OPTIONS.map((option) => {
+                const selected = drink.public_status === option.key
+                const visual = statusVisual(option.key)
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[styles.statusOption, selected && styles.statusOptionSelected]}
+                    disabled={busy || selected}
+                    onPress={() => onSelectStatus(option.key)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected, disabled: busy }}
+                    accessibilityLabel={`${option.label}${selected ? '，当前状态' : ''}`}
+                  >
+                    <View style={[styles.statusDot, { backgroundColor: visual.fg }]} />
+                    <Text style={[styles.statusLabel, selected && styles.statusLabelSelected]}>
+                      {option.label}
+                    </Text>
+                    {selected ? (
+                      <Ionicons style={styles.statusCheck} name="checkmark" size={18} color={T.gold} />
+                    ) : null}
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+
+            <Text style={styles.sectionLabel}>公开展示</Text>
+            <TouchableOpacity
+              style={styles.settingRow}
+              disabled={busy}
+              onPress={onToggleVisibility}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: drink.is_public_visible, disabled: busy }}
+              accessibilityLabel="酒单公开"
+            >
+              <View style={styles.settingCopy}>
+                <Ionicons
+                  name={drink.is_public_visible ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={drink.is_public_visible ? T.goldSoft : T.faint}
+                />
+                <View style={styles.settingText}>
+                  <Text style={styles.settingTitle}>
+                    {drink.is_public_visible ? '酒单公开' : '酒单隐藏'}
                   </Text>
-                  {selected ? (
-                    <Ionicons style={styles.statusCheck} name="checkmark" size={18} color={T.gold} />
-                  ) : null}
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-
-          <Text style={styles.sectionLabel}>公开展示</Text>
-          <TouchableOpacity
-            style={styles.settingRow}
-            disabled={busy}
-            onPress={onToggleVisibility}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: drink.is_public_visible, disabled: busy }}
-            accessibilityLabel="酒单公开"
-          >
-            <View style={styles.settingCopy}>
-              <Ionicons
-                name={drink.is_public_visible ? 'eye-outline' : 'eye-off-outline'}
-                size={20}
-                color={drink.is_public_visible ? T.goldSoft : T.faint}
-              />
-              <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>
-                  {drink.is_public_visible ? '酒单公开' : '酒单隐藏'}
-                </Text>
-                <Text style={styles.settingHint}>
-                  {drink.is_public_visible ? '顾客当前可以看到这款酒' : '仅门店员工可以看到这款酒'}
-                </Text>
+                  <Text style={styles.settingHint}>
+                    {drink.is_public_visible ? '顾客当前可以看到这款酒' : '仅门店员工可以看到这款酒'}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <View style={[styles.switchTrack, drink.is_public_visible && styles.switchTrackOn]}>
-              <View style={[styles.switchThumb, drink.is_public_visible && styles.switchThumbOn]} />
-            </View>
-          </TouchableOpacity>
+              <View style={[styles.switchTrack, drink.is_public_visible && styles.switchTrackOn]}>
+                <View style={[styles.switchThumb, drink.is_public_visible && styles.switchThumbOn]} />
+              </View>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.historyRow}
-            disabled={busy}
-            onPress={onHistory}
-            accessibilityLabel="查看状态记录"
-          >
-            <Ionicons name="time-outline" size={20} color={T.muted} />
-            <Text style={styles.historyText}>状态记录</Text>
-            <Ionicons name="chevron-forward" size={18} color={T.faint} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.historyRow}
+              disabled={busy}
+              onPress={onHistory}
+              accessibilityLabel="查看状态记录"
+            >
+              <Ionicons name="time-outline" size={20} color={T.muted} />
+              <Text style={styles.historyText}>状态记录</Text>
+              <Ionicons name="chevron-forward" size={18} color={T.faint} />
+            </TouchableOpacity>
+
+            {tapNumber ? (
+              <>
+                <Text style={styles.sectionLabel}>酒头操作</Text>
+                <TouchableOpacity
+                  style={styles.kegRow}
+                  disabled={busy}
+                  onPress={onKegChange}
+                  accessibilityLabel={drink.public_status === 'sold_out' ? '换桶并恢复在售' : '记录换桶'}
+                >
+                  <View style={styles.kegIcon}>
+                    <Ionicons name="reload-outline" size={20} color={T.gold} />
+                  </View>
+                  <View style={styles.settingText}>
+                    <Text style={styles.settingTitle}>
+                      {drink.public_status === 'sold_out' ? '换桶并恢复在售' : '记录换桶'}
+                    </Text>
+                    <Text style={styles.settingHint}>同一款酒留在当前酒头，重新开始本桶计时</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={T.faint} />
+                </TouchableOpacity>
+              </>
+            ) : null}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -138,6 +170,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 10,
     paddingBottom: 30,
+    maxHeight: '88%',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: T.border,
   },
@@ -150,6 +183,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   header: { flexDirection: 'row', alignItems: 'flex-start' },
+  content: { flexShrink: 1 },
+  contentContainer: { paddingBottom: 2 },
   headingCopy: { flex: 1, minWidth: 0, paddingTop: 2 },
   title: { color: T.text, fontSize: 20, fontWeight: '800' },
   subtitle: { color: T.muted, fontSize: 13, marginTop: 6 },
@@ -204,4 +239,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   historyText: { flex: 1, color: T.textSoft, fontSize: 15, fontWeight: '600' },
+  kegRow: {
+    minHeight: 68,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldFill,
+  },
+  kegIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: T.surfaceMuted,
+  },
 })

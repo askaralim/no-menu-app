@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
+  Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -19,11 +21,14 @@ import { LAYOUT } from '../../lib/theme'
 import {
   type DraftDrink,
   type TaplistDraft,
+  TapOperationConflictError,
   assignDrinkTapNumber,
   buildDraft,
   emptyDraftDrink,
   isOnTonight,
   loadOwnerTaplist,
+  newTapOperationId,
+  recordTapKegChange,
   removeDrinkFromTonight,
   setDrinkStatusImmediate,
   setTenantTapSlotCount,
@@ -44,11 +49,75 @@ import DrinkStatusSheet from '../../components/taplist/DrinkStatusSheet'
 const SOLD_OUT_UNDO_MS = 7000
 const TAP_NUMBER_HINT_KEY = 'taplist:tap-number-hint:v1'
 const TAP_NUMBER_HINT_MS = 6000
+const KEG_CHANGE_PENDING_KEY_PREFIX = 'taplist:keg-change-pending:v1'
 
 type SoldOutUndo = {
   drinkId: string
   drinkName: string
   previousStatus: PublicStatus
+}
+
+type PendingKegChange = {
+  operationId: string
+  attemptedAt: string
+  tapNumber: number
+}
+
+type WebKegChangeDialog =
+  | {
+      kind: 'confirm'
+      drink: DraftDrink
+      pending: PendingKegChange
+      title: string
+      message: string
+      confirmLabel: string
+    }
+  | {
+      kind: 'pending'
+      drink: DraftDrink
+      pending: PendingKegChange
+      title: string
+      message: string
+    }
+  | {
+      kind: 'message'
+      title: string
+      message: string
+    }
+
+function pendingKegChangeKey(tenantId: string, drinkId: string): string {
+  return `${KEG_CHANGE_PENDING_KEY_PREFIX}:${tenantId}:${drinkId}`
+}
+
+function parsePendingKegChange(value: string | null): PendingKegChange | null {
+  if (!value) return null
+  try {
+    const parsed = JSON.parse(value) as Partial<PendingKegChange>
+    if (
+      typeof parsed.operationId !== 'string' ||
+      typeof parsed.attemptedAt !== 'string' ||
+      !Number.isInteger(parsed.tapNumber) ||
+      Number(parsed.tapNumber) < 1
+    ) {
+      return null
+    }
+    return parsed as PendingKegChange
+  } catch {
+    return null
+  }
+}
+
+function formatPendingKegChangeTime(value: string): string | null {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date)
 }
 
 type Filter = 'all' | 'new' | 'sold_out' | 'hidden' | 'empty'
@@ -89,9 +158,11 @@ export default function TaplistScreen() {
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [tonightShareOpen, setTonightShareOpen] = useState(false)
   const [tapNumberHintVisible, setTapNumberHintVisible] = useState(false)
+  const [webKegChangeDialog, setWebKegChangeDialog] = useState<WebKegChangeDialog | null>(null)
   const soldOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const tapNumberHintCheckedRef = useRef(false)
   const tenantIdRef = useRef(tenantId)
+  const pendingKegChangesRef = useRef<Map<string, PendingKegChange>>(new Map())
 
   const clearSoldOutUndo = useCallback(() => {
     if (soldOutTimerRef.current) {
@@ -132,8 +203,10 @@ export default function TaplistScreen() {
   useEffect(() => {
     if (tenantIdRef.current === tenantId) return
     tenantIdRef.current = tenantId
+    pendingKegChangesRef.current.clear()
     clearSoldOutUndo()
     setPreviewOpen(false)
+    setBusyDrinkId(null)
     setTapDrink(null)
     setHistoryDrink(null)
     setMoreMenu(null)
@@ -144,11 +217,21 @@ export default function TaplistScreen() {
     setEditorRecognitionAsset(null)
     setSettingsOpen(false)
     setTonightShareOpen(false)
+    setWebKegChangeDialog(null)
     setFilter('all')
     setDraft(null)
     setError(null)
     setLoading(true)
   }, [tenantId, clearSoldOutUndo])
+
+  const showKegChangeMessage = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      setMoreMenu(null)
+      setWebKegChangeDialog({ kind: 'message', title, message })
+      return
+    }
+    Alert.alert(title, message)
+  }
 
   const tonightDrinks = useMemo(
     () => (draft ? draft.drinks.filter((d) => d.enabled && isOnTonight(d)) : []),
@@ -326,6 +409,237 @@ export default function TaplistScreen() {
   }
 
   const openMoreMenu = (d: DraftDrink) => setMoreMenu(d)
+
+  const loadPendingKegChange = async (
+    operationTenantId: string,
+    drinkId: string,
+  ): Promise<PendingKegChange | null> => {
+    const cached = pendingKegChangesRef.current.get(drinkId)
+    if (cached) return cached
+
+    const storageKey = pendingKegChangeKey(operationTenantId, drinkId)
+    try {
+      const raw = await AsyncStorage.getItem(storageKey)
+      const stored = parsePendingKegChange(raw)
+      if (stored) {
+        pendingKegChangesRef.current.set(drinkId, stored)
+        return stored
+      }
+      if (raw) await AsyncStorage.removeItem(storageKey)
+    } catch {
+      throw new Error('暂时无法确认上次换桶状态，请稍后重试')
+    }
+    return null
+  }
+
+  const persistPendingKegChange = async (
+    operationTenantId: string,
+    drinkId: string,
+    pending: PendingKegChange,
+  ) => {
+    pendingKegChangesRef.current.set(drinkId, pending)
+    try {
+      await AsyncStorage.setItem(
+        pendingKegChangeKey(operationTenantId, drinkId),
+        JSON.stringify(pending),
+      )
+    } catch {
+      const current = pendingKegChangesRef.current.get(drinkId)
+      if (current?.operationId === pending.operationId) {
+        pendingKegChangesRef.current.delete(drinkId)
+      }
+      throw new Error('无法保存换桶请求，请重试')
+    }
+  }
+
+  const clearPendingKegChange = async (
+    operationTenantId: string,
+    drinkId: string,
+    operationId: string,
+  ) => {
+    const current = pendingKegChangesRef.current.get(drinkId)
+    if (current && current.operationId !== operationId) return
+    if (tenantIdRef.current === operationTenantId) {
+      pendingKegChangesRef.current.delete(drinkId)
+    }
+
+    const storageKey = pendingKegChangeKey(operationTenantId, drinkId)
+    try {
+      const stored = parsePendingKegChange(await AsyncStorage.getItem(storageKey))
+      if (!stored || stored.operationId === operationId) {
+        await AsyncStorage.removeItem(storageKey)
+      }
+    } catch {
+      // The server result is authoritative; stale local state still requires an explicit choice.
+    }
+  }
+
+  const executeKegChange = async (
+    d: DraftDrink,
+    pending: PendingKegChange,
+    persistBeforeRequest: boolean,
+  ) => {
+    const operationTenantId = tenantId
+    if (!operationTenantId) {
+      showKegChangeMessage('无法记录换桶', '未找到当前门店，请刷新后重试。')
+      return
+    }
+
+    setBusyDrinkId(d.id)
+    try {
+      if (persistBeforeRequest) {
+        await persistPendingKegChange(operationTenantId, d.id, pending)
+      }
+
+      const result = await recordTapKegChange(d.id, pending.operationId)
+      await clearPendingKegChange(operationTenantId, d.id, pending.operationId)
+
+      if (tenantIdRef.current !== operationTenantId) return
+
+      if (soldOutUndo?.drinkId === d.id) clearSoldOutUndo()
+      if (result.replayed) {
+        try {
+          await refreshDraft()
+        } catch {
+          // The RPC succeeded; focus refresh will reconcile the current public status later.
+        }
+      } else {
+        setDraft((current) =>
+          current
+            ? {
+                ...current,
+                drinks: current.drinks.map((drink) =>
+                  drink.id === d.id
+                    ? { ...drink, public_status: result.public_status }
+                    : drink,
+                ),
+              }
+            : current,
+        )
+      }
+
+      setMoreMenu((current) => (current?.id === d.id ? null : current))
+      showKegChangeMessage(
+        result.replayed ? '上次换桶已确认' : '换桶已记录',
+        result.replayed
+          ? `#${result.tap_number} 酒头的上次换桶记录已确认，不会重复记录。`
+          : d.public_status === 'sold_out'
+            ? `#${result.tap_number} 酒头已从现在开始记录新桶，并已恢复在售。`
+            : `#${result.tap_number} 酒头已从现在开始记录新桶。`,
+      )
+    } catch (error) {
+      if (error instanceof TapOperationConflictError) {
+        await clearPendingKegChange(operationTenantId, d.id, pending.operationId)
+      }
+      showKegChangeMessage('记录失败', error instanceof Error ? error.message : '请重试')
+    } finally {
+      if (tenantIdRef.current === operationTenantId) setBusyDrinkId(null)
+    }
+  }
+
+  const confirmNewKegChange = (d: DraftDrink) => {
+    const tapNumber = Number(d.public_sort_order)
+    if (!Number.isInteger(tapNumber) || tapNumber < 1) {
+      showKegChangeMessage('无法记录换桶', '这款酒当前没有分配酒头。')
+      return
+    }
+
+    const name = d.display_name || d.name
+    const resumesSale = d.public_status === 'sold_out'
+    const message = resumesSale
+      ? `「${name}」仍在 #${tapNumber}。将结束上一桶计时，从现在开始记录新桶，并恢复为在售状态；不会创建新的在枪周期或改变酒单排序。`
+      : `「${name}」仍在 #${tapNumber}。将结束上一桶计时，并从现在开始记录新桶；不会创建新的在枪周期，也不会改变顾客端状态或酒单排序。`
+
+    if (Platform.OS === 'web') {
+      setMoreMenu(null)
+      setWebKegChangeDialog({
+        kind: 'confirm',
+        drink: d,
+        pending: {
+          operationId: newTapOperationId(),
+          attemptedAt: new Date().toISOString(),
+          tapNumber,
+        },
+        title: '确认已换桶？',
+        message,
+        confirmLabel: resumesSale ? '换桶并恢复在售' : '确认换桶',
+      })
+      return
+    }
+
+    Alert.alert(
+      '确认已换桶？',
+      message,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: resumesSale ? '换桶并恢复在售' : '确认换桶',
+          onPress: () => {
+            const pending: PendingKegChange = {
+              operationId: newTapOperationId(),
+              attemptedAt: new Date().toISOString(),
+              tapNumber,
+            }
+            void executeKegChange(d, pending, true)
+          },
+        },
+      ],
+    )
+  }
+
+  const handleKegChange = async (d: DraftDrink) => {
+    if (!tenantId) {
+      showKegChangeMessage('无法记录换桶', '未找到当前门店，请刷新后重试。')
+      return
+    }
+
+    let pending: PendingKegChange | null
+    try {
+      pending = await loadPendingKegChange(tenantId, d.id)
+    } catch (error) {
+      showKegChangeMessage('暂时无法操作', error instanceof Error ? error.message : '请稍后重试')
+      return
+    }
+    if (tenantIdRef.current !== tenantId) return
+    if (!pending) {
+      confirmNewKegChange(d)
+      return
+    }
+
+    const attemptedAt = formatPendingKegChangeTime(pending.attemptedAt)
+    const attemptLabel = attemptedAt
+      ? `${attemptedAt} · #${pending.tapNumber}`
+      : `#${pending.tapNumber}`
+    const message = `${attemptLabel} 酒头的上次请求可能已经成功。若仍在确认同一次换桶，请重试上次；只有确实又换了一桶，才记录新的换桶。`
+
+    if (Platform.OS === 'web') {
+      setMoreMenu(null)
+      setWebKegChangeDialog({
+        kind: 'pending',
+        drink: d,
+        pending,
+        title: '上次换桶尚未确认',
+        message,
+      })
+      return
+    }
+
+    Alert.alert(
+      '上次换桶尚未确认',
+      message,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '重试上次',
+          onPress: () => void executeKegChange(d, pending, false),
+        },
+        {
+          text: '记录新换桶',
+          onPress: () => confirmNewKegChange(d),
+        },
+      ],
+    )
+  }
 
   const handleRemoveFromTonight = (d: DraftDrink) => {
     if (!draft) return
@@ -659,7 +973,98 @@ export default function TaplistScreen() {
           setMoreMenu(null)
           if (drink) setHistoryDrink(drink)
         }}
+        onKegChange={() => {
+          const drink = moreMenu
+          if (drink) void handleKegChange(drink)
+        }}
       />
+      <Modal
+        visible={Platform.OS === 'web' && webKegChangeDialog !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWebKegChangeDialog(null)}
+      >
+        <View style={styles.webKegDialogOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setWebKegChangeDialog(null)}
+            accessibilityRole="button"
+            accessibilityLabel="关闭换桶确认"
+          />
+          {webKegChangeDialog ? (
+            <View style={styles.webKegDialogCard}>
+              <Text style={styles.webKegDialogTitle}>{webKegChangeDialog.title}</Text>
+              <Text style={styles.webKegDialogMessage}>{webKegChangeDialog.message}</Text>
+
+              {webKegChangeDialog.kind === 'confirm' ? (
+                <View style={styles.webKegDialogActions}>
+                  <TouchableOpacity
+                    style={styles.webKegDialogSecondary}
+                    onPress={() => setWebKegChangeDialog(null)}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.webKegDialogSecondaryText}>取消</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.webKegDialogPrimary}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      const { drink, pending } = webKegChangeDialog
+                      setWebKegChangeDialog(null)
+                      void executeKegChange(drink, pending, true)
+                    }}
+                  >
+                    <Text style={styles.webKegDialogPrimaryText}>
+                      {webKegChangeDialog.confirmLabel}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : webKegChangeDialog.kind === 'pending' ? (
+                <View style={styles.webKegDialogActionsStacked}>
+                  <TouchableOpacity
+                    style={styles.webKegDialogPrimary}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      const { drink, pending } = webKegChangeDialog
+                      setWebKegChangeDialog(null)
+                      void executeKegChange(drink, pending, false)
+                    }}
+                  >
+                    <Text style={styles.webKegDialogPrimaryText}>重试上次</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.webKegDialogSecondary}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      const { drink } = webKegChangeDialog
+                      setWebKegChangeDialog(null)
+                      confirmNewKegChange(drink)
+                    }}
+                  >
+                    <Text style={styles.webKegDialogSecondaryText}>记录新换桶</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.webKegDialogCancel}
+                    onPress={() => setWebKegChangeDialog(null)}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.webKegDialogCancelText}>取消</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.webKegDialogPrimary}
+                  onPress={() => setWebKegChangeDialog(null)}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.webKegDialogPrimaryText}>知道了</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : null}
+        </View>
+      </Modal>
       <TaplistPreview visible={previewOpen} draft={draft} onClose={() => setPreviewOpen(false)} />
       <DrinkStatusHistorySheet
         visible={!!historyDrink}
@@ -826,4 +1231,54 @@ const styles = StyleSheet.create({
     backgroundColor: T.goldFill,
   },
   snackbarUndo: { color: T.gold, fontSize: 15, fontWeight: '800' },
+  webKegDialogOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.68)',
+  },
+  webKegDialogCard: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.border,
+    backgroundColor: T.surfaceSolid,
+    padding: 22,
+    gap: 14,
+  },
+  webKegDialogTitle: { color: T.text, fontSize: 20, fontWeight: '800' },
+  webKegDialogMessage: { color: T.muted, fontSize: 15, lineHeight: 23 },
+  webKegDialogActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  webKegDialogActionsStacked: { gap: 10, marginTop: 4 },
+  webKegDialogPrimary: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    paddingHorizontal: 16,
+    backgroundColor: T.gold,
+  },
+  webKegDialogPrimaryText: { color: T.background, fontSize: 15, fontWeight: '800' },
+  webKegDialogSecondary: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    paddingHorizontal: 16,
+    backgroundColor: T.goldFill,
+  },
+  webKegDialogSecondaryText: { color: T.goldSoft, fontSize: 15, fontWeight: '700' },
+  webKegDialogCancel: {
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  webKegDialogCancelText: { color: T.muted, fontSize: 14, fontWeight: '600' },
 })

@@ -81,6 +81,18 @@ function exactDurationSeconds(session: TapLifecycleSession): number | null {
   return seconds >= 0 ? seconds : null
 }
 
+function currentKegDurationSeconds(session: TapLifecycleSession): number | null {
+  const supplied = finiteNumber(session.current_keg_duration_seconds)
+  if (supplied != null && supplied >= 0) return supplied
+
+  const started = validDate(session.current_keg_started_at)
+  if (!started) return null
+  const ended = session.state === 'active' ? new Date() : validDate(session.ended_at)
+  if (!ended) return null
+  const seconds = Math.floor((ended.getTime() - started.getTime()) / 1000)
+  return seconds >= 0 ? seconds : null
+}
+
 function tapLabel(value: number | null | undefined): string | null {
   const number = finiteNumber(value)
   return number != null && number >= 1 ? `#${number}` : null
@@ -142,6 +154,18 @@ function SessionRow({ session, last }: { session: TapLifecycleSession; last: boo
   const tap = tapLabel(session.current_tap)
   const name = session.drink_name?.trim() || '酒款名称未记录'
   const duration = formatDuration(exactDurationSeconds(session))
+  const currentKegDuration = formatDuration(currentKegDurationSeconds(session))
+  const rawKegChangeCount = finiteNumber(session.keg_change_count)
+  const kegChangeCount =
+    rawKegChangeCount == null ? null : Math.max(0, Math.floor(rawKegChangeCount))
+  const kegSummary =
+    kegChangeCount == null
+      ? null
+      : isPartial
+        ? kegChangeCount > 0
+          ? `准确记录后换桶 ${kegChangeCount} 次`
+          : null
+        : `共 ${kegChangeCount + 1} 桶 · 换桶 ${kegChangeCount} 次`
   const timeline = sessionTimeline(session)
   const endReason = session.state === 'completed' ? endReasonLabel(session.end_reason) : null
 
@@ -169,6 +193,18 @@ function SessionRow({ session, last }: { session: TapLifecycleSession; last: boo
           {duration ?? '—'}
         </Text>
       )}
+
+      {currentKegDuration || kegSummary ? (
+        <View style={styles.kegSummary}>
+          {currentKegDuration ? (
+            <Text style={styles.kegDurationText}>
+              {session.state === 'active' ? '本桶 ' : '末桶 '}
+              {currentKegDuration}
+            </Text>
+          ) : null}
+          {kegSummary ? <Text style={styles.kegSummaryText}>{kegSummary}</Text> : null}
+        </View>
+      ) : null}
 
       {timeline ? <Text style={styles.sessionMeta}>{timeline}</Text> : null}
       {endReason || session.actor_name?.trim() ? (
@@ -390,6 +426,9 @@ const styles = StyleSheet.create({
   durationText: { color: THEME.goldSoft, fontSize: 20, fontWeight: '800', marginTop: SPACING.md },
   partialTitle: { color: THEME.goldSoft, fontSize: 15, fontWeight: '700', marginTop: SPACING.md },
   partialText: { color: THEME.muted, fontSize: 12, marginTop: 3 },
+  kegSummary: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm },
+  kegDurationText: { color: THEME.textSoft, fontSize: 12, fontWeight: '700' },
+  kegSummaryText: { color: THEME.muted, fontSize: 12 },
   sessionMeta: { color: THEME.faint, fontSize: 12, lineHeight: 18, marginTop: SPACING.sm },
   emptyCard: {
     alignItems: 'center',

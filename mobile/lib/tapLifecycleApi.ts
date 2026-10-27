@@ -9,7 +9,9 @@ export type TapLifecycleAction =
   | 'sold_out'
   | 'reactivate'
   | 'archive'
+  | 'keg_change'
   | 'baseline'
+  | (string & {})
 
 export type TapLifecycleAccuracy = 'exact' | 'partial_start' | 'unclassified'
 export type TapLifecycleSessionStatus = 'completed' | 'active'
@@ -37,6 +39,7 @@ export type TapLifecycleCounts = {
   clear: number | null
   replace: number | null
   move: number | null
+  keg_change: number | null
 }
 
 export type TapLifecycleOverview = {
@@ -63,6 +66,9 @@ export type TapLifecycleSession = {
   duration_seconds: number | null
   end_reason: string | null
   actor_name: string | null
+  keg_change_count: number | null
+  current_keg_started_at: string | null
+  current_keg_duration_seconds: number | null
 }
 
 export type TapLifecycleSessions = {
@@ -118,6 +124,7 @@ export async function getTapLifecycleOverview(tenantId: string): Promise<TapLife
       clear: finiteNumber(rawCounts.clear),
       replace: finiteNumber(rawCounts.replace),
       move: finiteNumber(rawCounts.move),
+      keg_change: finiteNumber(rawCounts.keg_change),
     },
     operations: Array.isArray(payload.operations)
       ? (payload.operations as TapLifecycleOperation[])
