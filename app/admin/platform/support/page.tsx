@@ -35,6 +35,7 @@ type DeliveryCard = {
   mobile: string
   temporaryPassword: string
   created: boolean
+  passwordReset: boolean
 }
 
 const STATUS_LABEL: Record<SupportStatus, string> = {
@@ -89,6 +90,16 @@ function slugifyHint(name: string): string {
 }
 
 function deliveryCopy(card: DeliveryCard): string {
+  if (!card.passwordReset) {
+    return [
+      `【No Menu Tonight】${card.tenantName}`,
+      '',
+      `手机号：${card.mobile}`,
+      '',
+      '这家店已绑定到你的现有账号。',
+      '请用原来的密码登录 No Menu Tonight，然后在店内切换门店。',
+    ].join('\n')
+  }
   return [
     `【No Menu Tonight】${card.tenantName}`,
     '',
@@ -236,8 +247,8 @@ export default function SupportRequestsPage() {
       [
         row.tenant_id ? '将仅绑定店主到已创建的门店。' : '将创建门店并绑定店主账号。',
         '',
-        '若该手机号已有店主账号，将重置其密码并绑定到本门店。',
-        '临时密码仅本次显示，不会写入申请备注。',
+        '若该手机号已改过密码，将沿用原密码，只把新店加到这个账号。',
+        '新账号或仍在使用临时密码的账号，会设置本次临时密码。临时密码不会写入申请备注。',
         '',
         '确认继续？',
       ].join('\n'),
@@ -295,11 +306,13 @@ export default function SupportRequestsPage() {
         ok?: boolean
         created?: boolean
         mobile?: string
-        temporary_password?: string
+        temporary_password?: string | null
+        password_reset?: boolean
       }
+      const passwordReset = json.password_reset !== false
 
       const deliveredMobile = json.mobile || toNationalMobile(mobileRaw)
-      const deliveredPassword = json.temporary_password || password
+      const deliveredPassword = passwordReset ? (json.temporary_password || password) : ''
       const deliveredAt = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
 
       await updateRequest(
@@ -316,6 +329,7 @@ export default function SupportRequestsPage() {
         mobile: deliveredMobile,
         temporaryPassword: deliveredPassword,
         created: !!json.created,
+        passwordReset,
       })
       setOnboardId(null)
       await load()
@@ -365,7 +379,7 @@ export default function SupportRequestsPage() {
           }}
         >
           <strong style={{ color: '#92400e' }}>
-            账号已交付{delivery.created ? '（新账号）' : '（已有账号已重置密码）'} — 请复制发给店主
+            账号已交付{delivery.passwordReset ? (delivery.created ? '（新账号）' : '（已有账号已重置密码）') : '（沿用现有密码）'} — 请复制发给店主
           </strong>
           <pre
             style={{
@@ -379,7 +393,8 @@ export default function SupportRequestsPage() {
             {deliveryCopy(delivery)}
           </pre>
           <p style={{ color: '#78716c', fontSize: 13, margin: '0 0 12px' }}>
-            tenant_id：{delivery.tenantId} · 临时密码仅此显示，未写入申请备注
+            tenant_id：{delivery.tenantId}
+            {delivery.passwordReset ? ' · 临时密码仅此显示，未写入申请备注' : ' · 未重置密码'}
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button

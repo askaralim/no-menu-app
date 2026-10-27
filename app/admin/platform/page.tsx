@@ -18,6 +18,7 @@ type BoundOwnerCreds = {
   loginEmail: string
   temporaryPassword: string
   created: boolean
+  passwordReset: boolean
 }
 
 export default function PlatformAdminPage() {
@@ -109,15 +110,18 @@ export default function PlatformAdminPage() {
         created?: boolean
         mobile?: string
         login_email?: string
-        temporary_password?: string
+        temporary_password?: string | null
+        password_reset?: boolean
       }
+      const passwordReset = json.password_reset !== false
 
       setLastBound({
         tenantName,
         mobile: json.mobile || mobile,
         loginEmail: json.login_email || '',
-        temporaryPassword: json.temporary_password || password,
+        temporaryPassword: passwordReset ? (json.temporary_password || password) : '',
         created: !!json.created,
+        passwordReset,
       })
       await fetchTenants()
     } catch (err: unknown) {
@@ -324,26 +328,41 @@ export default function PlatformAdminPage() {
             }}
           >
             <strong style={{ color: '#fbbf24' }}>
-              店主账号已{lastBound.created ? '创建并' : ''}绑定（请复制发给微信）
+              {lastBound.passwordReset
+                ? `店主账号已${lastBound.created ? '创建并' : ''}绑定（请复制发给微信）`
+                : '已绑定到现有店主账号（沿用原密码）'}
             </strong>
             <p style={{ margin: '0.5rem 0 0', color: '#e5e7eb', fontSize: '0.95rem' }}>
               门店：{lastBound.tenantName}
               <br />
               手机号：{lastBound.mobile}
-              <br />
-              临时密码：
-              <code style={{ fontSize: '1.15rem', letterSpacing: 1 }}>{lastBound.temporaryPassword}</code>
-              <br />
-              <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
-                No Menu Tonight 使用手机号 + 密码登录；首次登录会要求改密码。
-              </span>
+              {lastBound.passwordReset ? (
+                <>
+                  <br />
+                  临时密码：
+                  <code style={{ fontSize: '1.15rem', letterSpacing: 1 }}>{lastBound.temporaryPassword}</code>
+                  <br />
+                  <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                    No Menu Tonight 使用手机号 + 密码登录；首次登录会要求改密码。
+                  </span>
+                </>
+              ) : (
+                <>
+                  <br />
+                  <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                    这个手机号已经改过密码。新店已加上，登录密码不变，不会再要求改密码。店主用原密码登录后，在店内切换门店。
+                  </span>
+                </>
+              )}
             </p>
             <button
               type="button"
               className="admin-button admin-button-secondary"
               style={{ marginTop: 12 }}
               onClick={() => {
-                const text = `【No Menu Tonight】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n临时密码：${lastBound.temporaryPassword}\n请打开 No Menu Tonight 登录后修改密码。`
+                const text = lastBound.passwordReset
+                  ? `【No Menu Tonight】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n临时密码：${lastBound.temporaryPassword}\n请打开 No Menu Tonight 登录后修改密码。`
+                  : `【No Menu Tonight】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n这家店已绑定到你的现有账号。请用原来的密码登录，然后在店内切换门店。`
                 void navigator.clipboard.writeText(text)
                 alert('已复制微信文案')
               }}
@@ -458,7 +477,7 @@ export default function PlatformAdminPage() {
                         onClick={() => {
                           const mobile = window.prompt('店主手机号', '')
                           if (!mobile) return
-                          const pwd = window.prompt('临时密码（留空自动生成）', '') ?? ''
+                          const pwd = window.prompt('临时密码（留空自动生成。已改过密码的店主会沿用原密码）', '') ?? ''
                           void bindOwner(tenant.id, tenant.name, mobile, pwd)
                         }}
                         disabled={bindingId === tenant.id}

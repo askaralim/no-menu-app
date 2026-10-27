@@ -21,7 +21,7 @@ No SMS OTP. No invite codes for owners.
 
 Temp passwords are letters+digits only (no `!`), so WeChat copy/paste is less error-prone.
 
-Re-binding the same or a new mobile resets the temp password and replaces the previous owner role on that bar.
+Re-binding a mobile that already changed its password keeps that password and adds the owner role on the new bar. A brand-new mobile, or one still on its temporary password, still gets a temp password and must change it on first login. Binding replaces the previous owner role on that bar only; other bars tied to the same mobile stay attached.
 
 ## How login works (no SMS)
 
