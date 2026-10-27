@@ -153,37 +153,50 @@ export default function DrinksPage() {
     })
   }
 
-  const handleDelete = async (id: string) => {
+  const handleArchive = async (drink: Drink) => {
     if (!tenantId) return
-    if (!confirm('确定要删除这个酒品吗？')) return
+    if (!drink.enabled) return
+    if (
+      !confirm(
+        `确定要归档“${drink.name}”吗？归档后会从酒头和顾客端酒单移除，之后仍可恢复。`
+      )
+    ) {
+      return
+    }
 
     try {
-      const { error } = await supabase
-        .from('drinks')
-        .delete()
-        .eq('id', id)
-        .eq('tenant_id', tenantId)
+      const { data, error } = await supabase.rpc('archive_drink', {
+        p_drink_id: drink.id,
+      })
       if (error) throw error
+      const result = data as { ok?: boolean } | null
+      if (result?.ok !== true) throw new Error('归档失败')
+      alert('酒品已归档')
       refresh()
     } catch (error) {
-      console.error('Error deleting drink:', error)
-      alert('删除失败，请重试')
+      console.error('Error archiving drink:', error)
+      alert('归档失败，请重试')
     }
   }
 
   const handleToggleEnabled = async (drink: Drink) => {
     if (!tenantId) return
     try {
-      const { error } = await supabase
-        .from('drinks')
-        .update({ enabled: !drink.enabled })
-        .eq('id', drink.id)
-        .eq('tenant_id', tenantId)
+      const action = drink.enabled ? 'archive_drink' : 'restore_drink'
+      const { data, error } = await supabase.rpc(action, {
+        p_drink_id: drink.id,
+      })
 
       if (error) throw error
+      const result = data as { ok?: boolean } | null
+      if (result?.ok !== true) {
+        throw new Error(drink.enabled ? '归档失败' : '恢复失败')
+      }
+      alert(drink.enabled ? '酒品已归档' : '酒品已恢复到商品库')
       refresh()
     } catch (error) {
       console.error('Error toggling drink:', error)
+      alert(drink.enabled ? '归档失败，请重试' : '恢复失败，请重试')
     }
   }
 
@@ -390,10 +403,11 @@ export default function DrinksPage() {
                           编辑
                         </button>
                         <button
-                          onClick={() => handleDelete(drink.id)}
+                          onClick={() => handleArchive(drink)}
+                          disabled={!drink.enabled}
                           className="admin-button admin-button-danger"
                         >
-                          删除
+                          {drink.enabled ? '归档' : '已归档'}
                         </button>
                       </td>
                     </tr>
@@ -459,10 +473,11 @@ export default function DrinksPage() {
                           编辑
                         </button>
                         <button
-                          onClick={() => handleDelete(drink.id)}
+                          onClick={() => handleArchive(drink)}
+                          disabled={!drink.enabled}
                           className="admin-button admin-button-danger"
                         >
-                          删除
+                          {drink.enabled ? '归档' : '已归档'}
                         </button>
                       </td>
                     </tr>
