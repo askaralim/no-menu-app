@@ -25,6 +25,8 @@ export interface Drink {
   name: string
   /** Beer style from profile / product pool; used by in-bar /display */
   beer_style?: string | null
+  /** Short origin shown in front of the name on in-bar /display */
+  origin_region?: string | null
   volume_ml?: number | null
   /** @deprecated POS uses drink_serving_options */
   price: number

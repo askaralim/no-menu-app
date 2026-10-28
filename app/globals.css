@@ -217,34 +217,75 @@ body::after {
   display: block;
 }
 
+.drink-origin {
+  flex: 0 0 3.4em;
+  width: 3.4em;
+  align-self: center;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
 .drink-row:hover {
   background: rgba(255, 255, 255, 0.03);
   transform: translateY(-2px);
   border-bottom-color: transparent;
 }
 
-.drink-name {
-  font-size: 22px;
-  font-weight: 400;
-  color: var(--text-main);
-  letter-spacing: 0.5px;
+.drink-copy {
   flex: 1 1 auto;
-  line-height: 1.4;
-  word-break: break-word;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
   z-index: 2;
-  padding-right: 24px;
+  padding-right: 8px;
+}
+
+.drink-brewery {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: rgba(244, 244, 245, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drink-title {
+  font-size: 18px;
+  font-weight: 560;
+  line-height: 1.3;
+  color: var(--title-text);
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .drink-style {
+  display: block;
+  max-width: 100%;
   color: var(--text-muted);
   font-weight: 400;
-  letter-spacing: 0.3px;
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .drink-prices {
   display: flex;
-  gap: 16px;
-  align-items: baseline;
+  gap: 14px;
+  align-items: center;
   justify-content: flex-end;
   z-index: 2;
   flex-shrink: 0;
@@ -253,11 +294,30 @@ body::after {
 .drink-price,
 .drink-price-cup,
 .drink-price-bottle {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.drink-price-amount {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.drink-price-spec {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
-  color: var(--gold);
-  font-size: 20px;
-  letter-spacing: 1px;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: rgba(212, 175, 55, 0.78);
   white-space: nowrap;
 }
 
@@ -280,15 +340,18 @@ body::after {
     flex-basis: 48px;
   }
 
-  .drink-name {
-    font-size: 18px;
-    padding-right: 8px;
+  .drink-origin {
+    flex-basis: 3.2em;
+    width: 3.2em;
+    font-size: 12px;
   }
 
-  .drink-price,
-  .drink-price-cup,
-  .drink-price-bottle {
+  .drink-title {
     font-size: 17px;
+  }
+
+  .drink-price-amount {
+    font-size: 16px;
   }
 }
 
@@ -309,15 +372,18 @@ body::after {
     flex-basis: 56px;
   }
 
-  .drink-name {
-    font-size: 22px;
-    padding-right: 16px;
+  .drink-origin {
+    flex-basis: 3.4em;
+    width: 3.4em;
+    font-size: 13px;
   }
 
-  .drink-price,
-  .drink-price-cup,
-  .drink-price-bottle {
-    font-size: 20px;
+  .drink-title {
+    font-size: 18px;
+  }
+
+  .drink-price-amount {
+    font-size: 18px;
   }
 }
 
@@ -330,7 +396,7 @@ body::after {
   pointer-events: none;
 }
 
-.drink-row.disabled .drink-name {
+.drink-row.disabled .drink-title {
   text-decoration: line-through;
   text-decoration-color: var(--text-muted);
 }
@@ -394,12 +460,28 @@ body::after {
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 
-.theme-minimal .drink-name {
+.theme-minimal .drink-brewery {
+  color: rgba(0, 0, 0, 0.62);
+}
+
+.theme-minimal .drink-title {
   color: #000000;
 }
 
-.theme-minimal .drink-price {
+.theme-minimal .drink-style {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.theme-minimal .drink-origin {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.theme-minimal .drink-price-amount {
   color: #000000;
+}
+
+.theme-minimal .drink-price-spec {
+  color: rgba(0, 0, 0, 0.5);
 }
 
 .theme-minimal .drink-row {
@@ -438,11 +520,12 @@ body::after {
   border-bottom: 1px solid rgba(251, 191, 36, 0.25);
 }
 
-.theme-luxury .drink-name {
+.theme-luxury .drink-title {
   font-style: italic;
 }
 
-.theme-luxury .drink-price {
+.theme-luxury .drink-price-amount,
+.theme-luxury .drink-origin {
   color: #fbbf24;
 }
 
@@ -985,18 +1068,21 @@ input:checked + .toggle-slider:hover {
     padding: 10px 12px;
   }
 
-  .drink-name {
-    font-size: 18px;
-    padding-right: 8px;
+  .drink-origin {
+    flex-basis: 3.2em;
+    width: 3.2em;
+    font-size: 12px;
+  }
+
+  .drink-title {
+    font-size: 17px;
   }
 
   .drink-prices {
     padding-left: 8px;
   }
 
-  .drink-price,
-  .drink-price-cup,
-  .drink-price-bottle {
+  .drink-price-amount {
     font-size: 16px;
   }
 
@@ -1320,11 +1406,14 @@ input:checked + .toggle-slider:hover {
     padding: 16px 0;
   }
 
-  .drink-name {
-    word-break: break-word;
-    overflow-wrap: break-word;
-    line-height: 1.5;
+  .drink-copy {
     max-width: 100%;
+  }
+
+  .drink-title,
+  .drink-style {
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   .drink-prices {

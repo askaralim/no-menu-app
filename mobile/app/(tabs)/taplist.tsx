@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useAuth } from '../../lib/authProvider'
 import { TAPLIST_THEME as T } from '../../lib/taplistTheme'
 import { LAYOUT } from '../../lib/theme'
@@ -136,7 +136,9 @@ const FILTERS: { key: Filter; label: string }[] = [
 ]
 
 export default function TaplistScreen() {
-  const { tenantId } = useAuth()
+  const router = useRouter()
+  const { tenantId, memberships } = useAuth()
+  const canSwitchStore = memberships.length > 1
 
   const [draft, setDraft] = useState<TaplistDraft | null>(null)
   const [loading, setLoading] = useState(true)
@@ -839,9 +841,25 @@ export default function TaplistScreen() {
             <View style={styles.hero}>
               <View style={styles.headerRow}>
                 <View style={styles.headerCopy}>
-                  <Text style={styles.barName} numberOfLines={1}>
-                    {draft.tenant.display_name || draft.tenant.name}
-                  </Text>
+                  {canSwitchStore ? (
+                    <TouchableOpacity
+                      style={styles.storeSwitcher}
+                      onPress={() => router.push('/(tabs)/house/switch-tenant')}
+                      activeOpacity={0.72}
+                      accessibilityRole="button"
+                      accessibilityLabel="切换门店"
+                      accessibilityHint={`当前门店：${draft.tenant.display_name || draft.tenant.name}`}
+                    >
+                      <Text style={[styles.barName, styles.storeSwitcherName]} numberOfLines={1}>
+                        {draft.tenant.display_name || draft.tenant.name}
+                      </Text>
+                      <Ionicons name="chevron-down" size={20} color={T.gold} />
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.barName} numberOfLines={1}>
+                      {draft.tenant.display_name || draft.tenant.name}
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.headerActions}>
                   <TouchableOpacity
@@ -1137,6 +1155,8 @@ const styles = StyleSheet.create({
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1, minWidth: 0 },
+  storeSwitcher: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, maxWidth: '100%' },
+  storeSwitcherName: { flexShrink: 1 },
   barName: { color: T.text, fontSize: 24, fontWeight: '800' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   shareTonightBtn: {

@@ -12,44 +12,51 @@ function activeServings(drink: Drink): DrinkServingOption[] {
   return (drink.drink_serving_options ?? []).filter((s) => s.is_active !== false)
 }
 
-function formatServingPrice(s: DrinkServingOption): string {
+type PriceLine = { amount: string; spec: string }
+
+function servingPrice(s: DrinkServingOption): PriceLine {
   const label = (s.label || '').trim()
   const volume = s.volume_ml != null && s.volume_ml > 0 ? `${s.volume_ml}ml` : ''
-  const unit = [label, volume].filter(Boolean).join(' ')
-  const price = `¥${Number(s.price).toFixed(0)}`
-  return unit ? `${price}/${unit}` : price
+  return {
+    amount: `¥${Number(s.price).toFixed(0)}`,
+    spec: [label, volume].filter(Boolean).join(' '),
+  }
 }
 
 /** Legacy cup/bottle columns — only when no serving options exist yet. */
-function legacyPrices(drink: Drink): string[] {
-  const out: string[] = []
+function legacyPrices(drink: Drink): PriceLine[] {
+  const out: PriceLine[] = []
   if (drink.price && drink.price > 0) {
-    out.push(`¥${Number(drink.price).toFixed(0)}/${drink.price_unit || '杯'}`)
+    out.push({ amount: `¥${Number(drink.price).toFixed(0)}`, spec: drink.price_unit || '杯' })
   }
   if (drink.price_bottle && drink.price_bottle > 0) {
-    out.push(`¥${Number(drink.price_bottle).toFixed(0)}/${drink.price_unit_bottle || '瓶'}`)
+    out.push({
+      amount: `¥${Number(drink.price_bottle).toFixed(0)}`,
+      spec: drink.price_unit_bottle || '瓶',
+    })
   }
   return out
 }
 
-function formatDisplayName(drink: Drink): string {
+function splitBreweryAndName(drink: Drink): { brewery: string; name: string } {
   const name = (drink.name || '').trim()
-  const brand = (drink.brand_name || '').trim()
-  if (!brand) return name
-  // Name already includes brand (e.g. "纸飞机 IPA") — don't duplicate.
-  if (name.toLowerCase().startsWith(brand.toLowerCase())) return name
-  return `${brand} ${name}`
+  const brewery = (drink.brand_name || '').trim()
+  if (!brewery) return { brewery: '', name }
+  if (name.toLowerCase().startsWith(brewery.toLowerCase())) {
+    const rest = name.slice(brewery.length).replace(/^[\s·\-–—]+/, '').trim()
+    return { brewery, name: rest || name }
+  }
+  return { brewery, name }
 }
 
 export default function DrinkItem({ drink, disabled }: DrinkItemProps) {
   const servings = activeServings(drink)
-  const priceTexts =
-    servings.length > 0 ? servings.map(formatServingPrice) : legacyPrices(drink)
-
-  const displayName = formatDisplayName(drink)
+  const prices = servings.length > 0 ? servings.map(servingPrice) : legacyPrices(drink)
+  const { brewery, name } = splitBreweryAndName(drink)
+  const origin = (drink.origin_region || '').trim()
   const beerStyle = (drink.beer_style || '').trim()
-  const styleAlreadyInName =
-    beerStyle !== '' && displayName.toLowerCase().includes(beerStyle.toLowerCase())
+  const identity = `${brewery} ${name}`.toLowerCase()
+  const styleAlreadyInName = beerStyle !== '' && identity.includes(beerStyle.toLowerCase())
   const [imageFailed, setImageFailed] = useState(false)
   const imageUrl = imageFailed ? '' : (drink.image_url || '').trim()
 
@@ -64,16 +71,19 @@ export default function DrinkItem({ drink, disabled }: DrinkItemProps) {
           />
         ) : null}
       </span>
-      <span className="drink-name">
-        {displayName}
+      <span className="drink-origin">{origin}</span>
+      <span className="drink-copy">
+        {brewery ? <span className="drink-brewery">{brewery}</span> : null}
+        <span className="drink-title">{name}</span>
         {beerStyle && !styleAlreadyInName ? (
-          <span className="drink-style"> · {beerStyle}</span>
+          <span className="drink-style">{beerStyle}</span>
         ) : null}
       </span>
       <div className="drink-prices">
-        {priceTexts.map((text, i) => (
+        {prices.map((price, i) => (
           <span key={`${drink.id}-price-${i}`} className="drink-price">
-            {text}
+            <span className="drink-price-amount">{price.amount}</span>
+            {price.spec ? <span className="drink-price-spec">{price.spec}</span> : null}
           </span>
         ))}
       </div>

@@ -1,10 +1,12 @@
 # Documentation index (source of truth)
 
-Last updated: 2026-10-25 (POS recognition rollout and both production hotfixes verified; consumer TAP-history polish and mini-program release recorded).
+Last updated: 2026-10-27 (next POS OTA queue records the tap-list header store switcher; current production releases are unchanged).
 
 Use this file to find the **canonical** doc for a topic. Prefer current ops docs over design-era `docs/` archives.
 
 Current POS release: [`mobile/docs/POS_RECOGNITION_OTA_2026-10-23.md`](../mobile/docs/POS_RECOGNITION_OTA_2026-10-23.md). Unified mini-program/POS drink-entry contract: [`mobile/docs/DRINK_ENTRY_AND_RECOGNITION_FLOW.md`](../mobile/docs/DRINK_ENTRY_AND_RECOGNITION_FLOW.md). Status actions: [`mobile/docs/TAPLIST_STATUS_ACTION_FLOW.md`](../mobile/docs/TAPLIST_STATUS_ACTION_FLOW.md).
+
+**Next POS OTA queue (not live):** multi-store accounts can open the existing store selector directly from the current store name in the tap-list header. Single-store accounts keep the static title. No schema or native dependency change.
 
 **Do not edit production SQL from this index.** Schema changes go through `supabase/migrations/` only.
 
@@ -46,6 +48,7 @@ POS does **not** need new UI for new-tap push: enqueue is DB-triggered when a dr
 6. ~~Ship Tonight `1.1.1` (分享上新)~~ — **Approved / superseded by 1.1.2**.
 7. ~~Ship Tonight `1.1.2` (image preview + OTA)~~ — **Approved / live**.
 8. ~~Consumer `1.3.0` ASC~~ — **Approved / superseded by 1.3.1**.
+9. Next POS OTA: expose the existing multi-store selector from the tap-list header — **implemented / typechecked, not yet published**.
 
 ### Phase 2 — Next POS binary (post-1.1.2)
 

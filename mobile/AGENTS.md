@@ -26,6 +26,7 @@ Canonical ASC:
 - Tabs: **酒单 | 商品库 | 门店** (and 开台/订单 only when `ordering_enabled`; `开台` was called `点单` before `1.1.0`).
 - Ordering stays hidden from the App Store listing and from any `ordering_enabled = false` tenant. New ordering-adjacent copy must branch on `orderingEnabled` — see the audit table in [`docs/APP_STORE_CONNECT_1.1.0.md`](./docs/APP_STORE_CONNECT_1.1.0.md) §6.1.
 - Landing after login: always `/(tabs)/taplist`.
+- Multi-store accounts: the current store name in the tap-list header opens `/(tabs)/house/switch-tenant`; show this affordance only when `memberships.length > 1`. This is implemented for the next OTA but is not live yet.
 - Reviewer / ASC tenants: `ordering_enabled = false`.
 - Storefront save: RPC treats `p_cover_image_url = null` as preserve (`20260807170000_…`). Do not reintroduce hard-coded null clears.
 - Schema changes: only via repo-root `supabase/migrations/`. Never re-run `install_all_in_one.sql` on production.
