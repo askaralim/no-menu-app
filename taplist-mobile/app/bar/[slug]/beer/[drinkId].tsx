@@ -15,14 +15,16 @@ import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { ShareImagePreviewModal } from '@/components/taplist/ShareImagePreviewModal'
 import { ShareableBeerImage, type ShareableBeerImageHandle } from '@/components/taplist/ShareableBeerImage'
 import { palette, spacing, typography } from '@/constants/design'
-import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
+import { TAPLIST_LEGAL_DISCLAIMER, TAPLIST_LEGAL_DISCLAIMER_EN } from '@/constants/compliance'
 import { displayServingOptions, formatPrimaryBrewery, localizeServingLabel } from '@/lib/formatTaplist'
 import { fetchPublicDrink } from '@/lib/api/taplist'
 import { getMyDrinkInsights, getMyDrinkState } from '@/lib/api/drinkLog'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicDrinkRow, PublicProductVenue, PublicServingOption, PublicTenantDetail } from '@/lib/types'
+import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
 
 export default function BeerDetailScreen() {
+  const { language, localized } = useLanguage()
   const insets = useSafeAreaInsets()
   const shareableRef = useRef<ShareableBeerImageHandle>(null)
   const [isSavingBeer, setIsSavingBeer] = useState(false)
@@ -45,7 +47,7 @@ export default function BeerDetailScreen() {
   const tenant = detailResult?.ok ? detailResult.tenant : null
   const drink = detailResult?.ok ? detailResult.drink : null
   const primaryBrewery = drink
-    ? formatPrimaryBrewery(drink.beer?.brewery, drink.brand_name)
+    ? formatPrimaryBrewery(localized(drink.beer?.brewery, drink.beer?.brewery_en), drink.brand_name)
     : null
   const collabBreweries = (drink?.beer?.collab_breweries ?? [])
     .map((brewery) => brewery.trim())
@@ -54,7 +56,7 @@ export default function BeerDetailScreen() {
   const artworkUrl = drink?.image_url
   const servingOptions = drink ? displayServingOptions(drink.serving_options) : []
   const servingGroups = groupServingOptions(servingOptions)
-  const metadata = drink ? beerMetadata(drink) : []
+  const metadata = drink ? beerMetadata(drink, language) : []
   const productVenues = detailResult?.ok
     ? discovery === 'product' && detailResult.venues?.length
       ? detailResult.venues
@@ -99,7 +101,7 @@ export default function BeerDetailScreen() {
     if (!tenant || !drink || isSavingBeer) return
     if (drinkLogStateQuery.isLoading) return
     if (drinkLogStateQuery.isError) {
-      Alert.alert('暂时无法生成图片', '无法确认这款酒的喝过状态，请稍后重试。')
+      Alert.alert(tr(language, '暂时无法生成图片', 'Unable to create image'), tr(language, '无法确认这款酒的喝过状态，请稍后重试。', 'Unable to confirm your beer history. Please try again.'))
       void drinkLogStateQuery.refetch()
       return
     }
@@ -107,12 +109,12 @@ export default function BeerDetailScreen() {
       setIsSavingBeer(true)
       const uri = await shareableRef.current?.capture()
       if (!uri) {
-        Alert.alert('生成失败', '酒款图片生成失败，请稍后再试')
+        Alert.alert(tr(language, '生成失败', 'Generation failed'), tr(language, '酒款图片生成失败，请稍后再试', 'Unable to create the beer image. Please try again.'))
         return
       }
       setBeerPreviewUri(uri)
     } catch {
-      Alert.alert('生成失败', '酒款图片生成失败，请稍后再试')
+      Alert.alert(tr(language, '生成失败', 'Generation failed'), tr(language, '酒款图片生成失败，请稍后再试', 'Unable to create the beer image. Please try again.'))
     } finally {
       setIsSavingBeer(false)
     }
@@ -123,7 +125,7 @@ export default function BeerDetailScreen() {
       <BackButton />
       {tenant && drink ? (
         <Pressable
-          accessibilityLabel="分享酒款图片"
+          accessibilityLabel={tr(language, '分享酒款图片', 'Share beer image')}
           hitSlop={10}
           disabled={!canSaveBeer}
           onPress={() => void handlePreviewBeerImage()}
@@ -141,14 +143,14 @@ export default function BeerDetailScreen() {
         insights={insightsQuery.data}
         insightsLoading={insightsQuery.isLoading}
         drinkImageUrl={drink?.image_url}
-        drinkName={drink?.name}
+        drinkName={drink ? localized(drink.name, drink.name_en) : undefined}
         onDismiss={drinkLightController.clearLastResult}
         onReviewTonight={handleReviewTonight}
       />
       <ShareImagePreviewModal uri={beerPreviewUri} onClose={() => setBeerPreviewUri(null)} />
       {tenant && drink ? (
         <Pressable
-          accessibilityLabel="保存酒款图片"
+          accessibilityLabel={tr(language, '保存酒款图片', 'Save beer image')}
           hitSlop={10}
           disabled={!canSaveBeer}
           onPress={() => void handlePreviewBeerImage()}
@@ -175,36 +177,36 @@ export default function BeerDetailScreen() {
         <View style={artworkUrl ? styles.paddedContent : undefined}>
           {!artworkUrl && drink ? (
             <CachedImage
-              accessibilityLabel={`${drink.name}默认酒款图片`}
+              accessibilityLabel={tr(language, `${drink.name}默认酒款图片`, `Default artwork for ${localized(drink.name, drink.name_en)}`)}
               source={defaultBeerArtwork}
               style={styles.fallbackHero}
             />
           ) : null}
           {!configured ? (
-            <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看实时公开酒单。" />
+            <EmptyState title={tr(language, '尚未连接酒单服务', 'Taplist service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看实时公开酒单。', 'Configure Supabase to view live public taplists.')} />
           ) : isResolvingDrink ? (
             <View style={styles.loading}>
               <ActivityIndicator color={palette.amber} />
-              <Text style={styles.loadingText}>正在加载酒款...</Text>
+              <Text style={styles.loadingText}>{tr(language, '正在加载酒款...', 'Loading beer...')}</Text>
             </View>
           ) : detailQuery.isError ? (
-            <EmptyState title="暂时无法加载酒款" body="请稍后重试，或以门店实际供应为准。" />
+            <EmptyState title={tr(language, '暂时无法加载酒款', 'Unable to load beer')} body={tr(language, '请稍后重试，或以门店实际供应为准。', 'Please try again, or check availability with the venue.')} />
           ) : detailResult?.ok === false && detailResult.code.startsWith('tenant_') ? (
-            <EmptyState title="找不到这家酒吧" body="该酒吧可能尚未发布公开酒单，或链接已经失效。" />
+            <EmptyState title={tr(language, '找不到这家酒吧', 'Venue not found')} body={tr(language, '该酒吧可能尚未发布公开酒单，或链接已经失效。', 'This venue may not have a public taplist, or the link has expired.')} />
           ) : detailResult?.ok === false || (!drink && !detailQuery.isLoading) ? (
-            <EmptyState title="找不到这款酒" body="这款酒可能已经下架，或不再公开展示。" />
+            <EmptyState title={tr(language, '找不到这款酒', 'Beer not found')} body={tr(language, '这款酒可能已经下架，或不再公开展示。', 'This beer may be off tap or no longer public.')} />
           ) : drink ? (
             <>
-              <Text style={styles.kicker}>{tenant?.display_name || tenant?.name || '酒吧'}</Text>
+              <Text style={styles.kicker}>{tenant ? localized(tenant.display_name || tenant.name, tenant.display_name_en) : tr(language, '酒吧', 'Venue')}</Text>
               <View style={styles.titleRow}>
                 <View style={styles.titleCopy}>
-                  <Text style={styles.title}>{drink.name}</Text>
+                  <Text style={styles.title}>{localized(drink.name, drink.name_en)}</Text>
                   {primaryBrewery || collabBreweries.length > 0 ? (
                     <View style={styles.breweryRow}>
                       {primaryBrewery ? (
                         <Pressable
                           accessibilityRole="link"
-                          accessibilityLabel={`查看${primaryBrewery}酒厂`}
+                          accessibilityLabel={tr(language, `查看${primaryBrewery}酒厂`, `View ${primaryBrewery}`)}
                           onPress={() => router.push(`/brewery/${encodeURIComponent(primaryBrewery)}` as Href)}
                           style={({ pressed }) => [styles.breweryButton, pressed && styles.breweryButtonPressed]}>
                           <Text style={styles.breweryButtonText}>{primaryBrewery}</Text>
@@ -230,10 +232,10 @@ export default function BeerDetailScreen() {
                   drinkLightController.state.light_id ? (
                     <Pressable
                       accessibilityRole="link"
-                      accessibilityLabel="查看喝过记录"
+                      accessibilityLabel={tr(language, '查看喝过记录', 'View beer history')}
                       onPress={() => router.push(`/drink-log/${drinkLightController.state!.light_id}` as Href)}
                       style={({ pressed }) => [styles.historyTextLink, pressed && styles.drinkHistoryLinkPressed]}>
-                      <Text style={styles.historyTextLinkLabel}>喝过记录</Text>
+                      <Text style={styles.historyTextLinkLabel}>{tr(language, '喝过记录', 'Beer history')}</Text>
                       <FontAwesome name="angle-right" size={13} color={palette.faint} />
                     </Pressable>
                   ) : null}
@@ -257,8 +259,8 @@ export default function BeerDetailScreen() {
               <>
                 <Text style={styles.sectionTitle}>
                   {servingOptions.some((o) => typeof o.price === 'number' && o.price > 0)
-                    ? '杯型与价格'
-                    : '杯型'}
+                    ? tr(language, '杯型与价格', 'Servings and prices')
+                    : tr(language, '杯型', 'Servings')}
                 </Text>
                 <View style={styles.servingList}>
                   {servingGroups.map((group) => (
@@ -294,19 +296,19 @@ export default function BeerDetailScreen() {
             {productVenues.length > 0 ? (
               <View style={[styles.venueSection, discovery !== 'product' && styles.venueSectionCompact]}>
                 {discovery === 'product' && productVenues.length > 1 ? (
-                  <Text style={styles.sectionTitle}>{productVenues.length} 家门店供应</Text>
+                  <Text style={styles.sectionTitle}>{tr(language, `${productVenues.length} 家门店供应`, `Available at ${productVenues.length} venues`)}</Text>
                 ) : null}
                 {productVenues.map((venue) => (
                   <Pressable
                     key={`${venue.tenant_id}:${venue.drink_id}`}
                     accessibilityRole="link"
-                    accessibilityLabel={`查看${venue.tenant_display_name}酒吧详情`}
+                    accessibilityLabel={tr(language, `查看${venue.tenant_display_name}酒吧详情`, `View ${localized(venue.tenant_display_name, venue.tenant_display_name_en)}`)}
                     onPress={() => router.push(`/bar/${venue.tenant_slug}` as Href)}
                     style={({ pressed }) => [styles.venueCard, pressed && styles.venueCardPressed]}>
                     <View style={styles.venueIcon}>
                       <FontAwesome name="building-o" size={14} color={palette.amber} />
                     </View>
-                    <Text style={styles.venueName} numberOfLines={1}>{venue.tenant_display_name}</Text>
+                    <Text style={styles.venueName} numberOfLines={1}>{localized(venue.tenant_display_name, venue.tenant_display_name_en)}</Text>
                     <FontAwesome name="angle-right" size={17} color={palette.faint} />
                   </Pressable>
                 ))}
@@ -316,7 +318,7 @@ export default function BeerDetailScreen() {
             <BeerRoadmapSection startTenantId={tenant?.id} enabled={configured} />
 
             <View style={styles.complianceFooter}>
-              <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
+              <Text style={styles.complianceText}>{language === 'en' ? TAPLIST_LEGAL_DISCLAIMER_EN : TAPLIST_LEGAL_DISCLAIMER}</Text>
             </View>
           </>
         ) : null}
@@ -331,7 +333,7 @@ export default function BeerDetailScreen() {
         <View style={styles.saveOverlay} pointerEvents="none">
           <View style={styles.saveToast}>
             <ActivityIndicator size="small" color={palette.amber} />
-            <Text style={styles.saveText}>正在生成预览</Text>
+            <Text style={styles.saveText}>{tr(language, '正在生成预览', 'Creating preview')}</Text>
           </View>
         </View>
       ) : null}
@@ -340,6 +342,7 @@ export default function BeerDetailScreen() {
 }
 
 function SupplyStatus({ status }: { status: string }) {
+  const { language } = useLanguage()
   const color = status === '在售'
     ? '#8BC3A2'
     : status === '上新'
@@ -352,7 +355,7 @@ function SupplyStatus({ status }: { status: string }) {
   return (
     <View style={styles.supplyStatus}>
       <View style={[styles.supplyDot, { backgroundColor: color }]} />
-      <Text style={styles.supplyStatusText}>{status}</Text>
+      <Text style={styles.supplyStatusText}>{language === 'en' ? ({ 在售: 'Available', 上新: 'New', 即将上新: 'Coming soon', 少量: 'Low stock', 售罄: 'Sold out' }[status] || status) : status}</Text>
     </View>
   )
 }
@@ -389,12 +392,13 @@ function groupServingOptions(options: PublicServingOption[]) {
   }))
 }
 
-function beerMetadata(drink: PublicDrinkRow) {
+function beerMetadata(drink: PublicDrinkRow, language: 'zh' | 'en') {
+  const location = drink.beer ? localizedLocation(language, drink.beer) : ''
   return [
-    drink.beer?.beer_style ? { label: '风格', value: drink.beer.beer_style } : null,
+    drink.beer?.beer_style ? { label: tr(language, '风格', 'Style'), value: drink.beer.beer_style } : null,
     typeof drink.beer?.abv === 'number' ? { label: 'ABV', value: `${drink.beer.abv}%` } : null,
     typeof drink.beer?.ibu === 'number' ? { label: 'IBU', value: `${drink.beer.ibu}` } : null,
-    drink.beer?.country ? { label: '产地', value: drink.beer.country } : null,
+    location ? { label: tr(language, '产地', 'Origin'), value: location } : null,
   ].filter((item): item is { label: string; value: string } => item !== null)
 }
 
@@ -407,6 +411,7 @@ function sourceVenue(
     tenant_id: tenant.id,
     tenant_slug: tenant.slug,
     tenant_display_name: tenant.display_name || tenant.name,
+    tenant_display_name_en: tenant.display_name_en,
     tenant_district: tenant.district,
     tenant_address: tenant.address,
     public_status: drink.public_status,

@@ -124,6 +124,10 @@ export default function PlatformProductsPage() {
   const [companyOptions, setCompanyOptions] = useState<AdminDrinkCompanyRow[]>([])
   const [companyLoading, setCompanyLoading] = useState(false)
   const [unlinkedDrinksCount, setUnlinkedDrinksCount] = useState<number | null>(null)
+  const selectedCompany = useMemo(
+    () => companyOptions.find((company) => company.id === form.company_id) ?? null,
+    [companyOptions, form.company_id]
+  )
 
   const loadProducts = useCallback(async () => {
     const { data, error: rpcError } = await supabase.rpc('admin_list_drink_products', {
@@ -151,7 +155,23 @@ export default function PlatformProductsPage() {
       })
       if (rpcError) throw rpcError
       const payload = data as { ok?: boolean; companies?: AdminDrinkCompanyRow[] }
-      setCompanyOptions(payload?.companies ?? [])
+      const listed = payload?.companies ?? []
+      const ids = listed.map((company) => company.id)
+      if (!ids.length) {
+        setCompanyOptions([])
+        return
+      }
+      const { data: i18nRows, error: i18nError } = await supabase
+        .from('drink_companies')
+        .select('id,country_en,origin_region_en')
+        .in('id', ids)
+      if (i18nError) throw i18nError
+      const i18nById = new Map((i18nRows ?? []).map((row) => [row.id as string, row]))
+      setCompanyOptions(listed.map((company) => ({
+        ...company,
+        country_en: (i18nById.get(company.id)?.country_en as string | null) ?? null,
+        origin_region_en: (i18nById.get(company.id)?.origin_region_en as string | null) ?? null,
+      })))
     } finally {
       setCompanyLoading(false)
     }
@@ -848,23 +868,14 @@ export default function PlatformProductsPage() {
                     style={{ margin: 0 }}
                   />
                 </Field>
-                <Field label="国家">
-                  <input
-                    className="admin-input"
-                    value={form.country}
-                    onChange={(e) => setForm({ ...form, country: e.target.value })}
-                    style={{ margin: 0 }}
-                  />
-                </Field>
               </div>
-
-              <Field label="产地/城市">
-                <input
-                  className="admin-input"
-                  value={form.origin_region}
-                  onChange={(e) => setForm({ ...form, origin_region: e.target.value })}
-                  style={{ margin: 0 }}
-                />
+              <Field label="酒厂所在地">
+                <div className="admin-input" style={{ margin: 0, background: '#f8fafc', color: '#475569' }}>
+                  {selectedCompany
+                    ? [selectedCompany.country_en || selectedCompany.country, selectedCompany.origin_region_en || selectedCompany.origin_region]
+                        .filter(Boolean).join(' · ') || '关联酒厂尚未填写所在地'
+                    : '请先关联标准酒厂；未关联时消费端不显示所在地'}
+                </div>
               </Field>
               <Field label="图片 URL">
                 <input

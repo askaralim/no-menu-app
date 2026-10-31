@@ -80,6 +80,19 @@ type WebKegChangeDialog =
       message: string
     }
   | {
+      kind: 'recover'
+      drink: DraftDrink
+      targetStatus: 'new' | 'available' | 'low'
+      title: string
+      message: string
+    }
+  | {
+      kind: 'sold_out'
+      drink: DraftDrink
+      title: string
+      message: string
+    }
+  | {
       kind: 'message'
       title: string
       message: string
@@ -367,16 +380,50 @@ export default function TaplistScreen() {
     }
   }
 
+  const confirmMarkSoldOut = (d: DraftDrink) => {
+    const name = d.display_name || d.name
+    const tapNumber = Number(d.public_sort_order)
+    const location = Number.isInteger(tapNumber) && tapNumber > 0 ? `#${tapNumber} 酒头` : '当前酒头'
+    const endsActiveCycle = d.public_status !== 'coming_soon'
+    const message = endsActiveCycle
+      ? `「${name}」将结束当前在枪周期。酒款仍保留在 ${location}，并在酒单中显示为售罄。`
+      : `「${name}」将取消即将上新安排。酒款仍保留在 ${location}，并在酒单中显示为售罄。`
+
+    if (Platform.OS === 'web') {
+      setMoreMenu(null)
+      setWebKegChangeDialog({
+        kind: 'sold_out',
+        drink: d,
+        title: '确认标记售罄？',
+        message,
+      })
+      return
+    }
+
+    Alert.alert(
+      '确认标记售罄？',
+      message,
+      [
+        { text: '取消', style: 'cancel' },
+        { text: '确认售罄', style: 'destructive', onPress: () => void markSoldOut(d) },
+      ],
+    )
+  }
+
   const undoSoldOut = async () => {
     if (!draft || !soldOutUndo) return
     const d = draft.drinks.find((x) => x.id === soldOutUndo.drinkId)
     const prevStatus = soldOutUndo.previousStatus
     clearSoldOutUndo()
     if (!d) return
-    try {
-      await applyImmediate(d, { public_status: prevStatus })
-    } catch {
-      /* already alerted */
+    if (prevStatus === 'new' || prevStatus === 'available' || prevStatus === 'low') {
+      confirmSoldOutRecovery(d, prevStatus)
+    } else {
+      try {
+        await applyImmediate(d, { public_status: prevStatus })
+      } catch {
+        /* applyImmediate already alerted */
+      }
     }
   }
 
@@ -526,7 +573,7 @@ export default function TaplistScreen() {
         result.replayed
           ? `#${result.tap_number} 酒头的上次换桶记录已确认，不会重复记录。`
           : d.public_status === 'sold_out'
-            ? `#${result.tap_number} 酒头已从现在开始记录新桶，并已恢复在售。`
+            ? `#${result.tap_number} 酒头已从现在开始记录新桶和新的在枪周期，并已恢复在售。`
             : `#${result.tap_number} 酒头已从现在开始记录新桶。`,
       )
     } catch (error) {
@@ -549,7 +596,7 @@ export default function TaplistScreen() {
     const name = d.display_name || d.name
     const resumesSale = d.public_status === 'sold_out'
     const message = resumesSale
-      ? `「${name}」仍在 #${tapNumber}。将结束上一桶计时，从现在开始记录新桶，并恢复为在售状态；不会创建新的在枪周期或改变酒单排序。`
+      ? `「${name}」仍在 #${tapNumber}。上一周期已在标记售罄时结束；将从现在开始记录新桶和新的在枪周期，并恢复为在售状态，不改变酒单排序。`
       : `「${name}」仍在 #${tapNumber}。将结束上一桶计时，并从现在开始记录新桶；不会创建新的在枪周期，也不会改变顾客端状态或酒单排序。`
 
     if (Platform.OS === 'web') {
@@ -589,7 +636,7 @@ export default function TaplistScreen() {
     )
   }
 
-  const handleKegChange = async (d: DraftDrink) => {
+  const handleKegChange = async (d: DraftDrink, alreadyConfirmed = false) => {
     if (!tenantId) {
       showKegChangeMessage('无法记录换桶', '未找到当前门店，请刷新后重试。')
       return
@@ -604,7 +651,24 @@ export default function TaplistScreen() {
     }
     if (tenantIdRef.current !== tenantId) return
     if (!pending) {
-      confirmNewKegChange(d)
+      if (alreadyConfirmed) {
+        const tapNumber = Number(d.public_sort_order)
+        if (!Number.isInteger(tapNumber) || tapNumber < 1) {
+          showKegChangeMessage('无法记录换桶', '这款酒当前没有分配酒头。')
+          return
+        }
+        void executeKegChange(
+          d,
+          {
+            operationId: newTapOperationId(),
+            attemptedAt: new Date().toISOString(),
+            tapNumber,
+          },
+          true,
+        )
+      } else {
+        confirmNewKegChange(d)
+      }
       return
     }
 
@@ -638,6 +702,55 @@ export default function TaplistScreen() {
         {
           text: '记录新换桶',
           onPress: () => confirmNewKegChange(d),
+        },
+      ],
+    )
+  }
+
+  const resumeSoldOutWithoutKegChange = async (
+    d: DraftDrink,
+    targetStatus: 'new' | 'available' | 'low',
+  ) => {
+    clearSoldOutUndo()
+    try {
+      await applyImmediate(d, { public_status: targetStatus })
+    } catch {
+      /* applyImmediate already alerted */
+    }
+  }
+
+  const confirmSoldOutRecovery = (
+    d: DraftDrink,
+    targetStatus: 'new' | 'available' | 'low',
+  ) => {
+    const name = d.display_name || d.name
+    const statusLabel = targetStatus === 'new' ? '上新' : targetStatus === 'low' ? '少量' : '在售'
+    const message = `「${name}」的上一周期已在标记售罄时结束。\n\n仅恢复供应：从现在开启新的在枪周期，恢复为${statusLabel}，不记录换桶。\n换桶并恢复在售：从现在记录新桶和新的在枪周期，恢复为在售。`
+
+    if (Platform.OS === 'web') {
+      setMoreMenu(null)
+      setWebKegChangeDialog({
+        kind: 'recover',
+        drink: d,
+        targetStatus,
+        title: '如何恢复供应？',
+        message,
+      })
+      return
+    }
+
+    Alert.alert(
+      '如何恢复供应？',
+      message,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '仅恢复供应',
+          onPress: () => void resumeSoldOutWithoutKegChange(d, targetStatus),
+        },
+        {
+          text: '换桶并恢复在售',
+          onPress: () => void handleKegChange(d, true),
         },
       ],
     )
@@ -963,7 +1076,9 @@ export default function TaplistScreen() {
             onPress={() => void undoSoldOut()}
             activeOpacity={0.72}
           >
-            <Text style={styles.snackbarUndo}>撤销</Text>
+            <Text style={styles.snackbarUndo}>
+              {soldOutUndo.previousStatus === 'coming_soon' ? '恢复预告' : '恢复供应'}
+            </Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -976,8 +1091,13 @@ export default function TaplistScreen() {
           const drink = moreMenu
           setMoreMenu(null)
           if (!drink) return
-          if (status === 'sold_out') void markSoldOut(drink)
-          else if (status === 'new') void markAsNew(drink)
+          if (status === 'sold_out') confirmMarkSoldOut(drink)
+          else if (
+            drink.public_status === 'sold_out' &&
+            (status === 'new' || status === 'available')
+          ) {
+            confirmSoldOutRecovery(drink, status)
+          } else if (status === 'new') void markAsNew(drink)
           else if (status === 'coming_soon') void markComingSoon(drink)
           else void markAsAvailable(drink)
         }}
@@ -1068,6 +1188,59 @@ export default function TaplistScreen() {
                     accessibilityRole="button"
                   >
                     <Text style={styles.webKegDialogCancelText}>取消</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : webKegChangeDialog.kind === 'recover' ? (
+                <View style={styles.webKegDialogActionsStacked}>
+                  <TouchableOpacity
+                    style={styles.webKegDialogPrimary}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      const { drink } = webKegChangeDialog
+                      setWebKegChangeDialog(null)
+                      void handleKegChange(drink, true)
+                    }}
+                  >
+                    <Text style={styles.webKegDialogPrimaryText}>换桶并恢复在售</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.webKegDialogSecondary}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      const { drink, targetStatus } = webKegChangeDialog
+                      setWebKegChangeDialog(null)
+                      void resumeSoldOutWithoutKegChange(drink, targetStatus)
+                    }}
+                  >
+                    <Text style={styles.webKegDialogSecondaryText}>仅恢复供应</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.webKegDialogCancel}
+                    onPress={() => setWebKegChangeDialog(null)}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.webKegDialogCancelText}>取消</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : webKegChangeDialog.kind === 'sold_out' ? (
+                <View style={styles.webKegDialogActions}>
+                  <TouchableOpacity
+                    style={styles.webKegDialogSecondary}
+                    onPress={() => setWebKegChangeDialog(null)}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.webKegDialogSecondaryText}>取消</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.webKegDialogPrimary}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      const { drink } = webKegChangeDialog
+                      setWebKegChangeDialog(null)
+                      void markSoldOut(drink)
+                    }}
+                  >
+                    <Text style={styles.webKegDialogPrimaryText}>确认售罄</Text>
                   </TouchableOpacity>
                 </View>
               ) : (

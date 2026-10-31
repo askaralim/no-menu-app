@@ -4,6 +4,7 @@ import ViewShot from 'react-native-view-shot'
 
 import { CachedImage } from '@/components/taplist/CachedImage'
 import { palette, spacing, typography } from '@/constants/design'
+import { tr, useLanguage } from '@/lib/i18n'
 import type { MyDrinkInsights } from '@/lib/types'
 
 export type ShareableDrinkLogImageHandle = { capture: () => Promise<string | undefined> }
@@ -13,6 +14,7 @@ export const ShareableDrinkLogImage = forwardRef<
   { month: MyDrinkInsights['month']; username: string }
 >(function ShareableDrinkLogImage({ month, username }, ref) {
   const shotRef = useRef<ViewShot>(null)
+  const { language, localized } = useLanguage()
   const drinks = month.drinks.slice(0, 9)
   const columns = drinks.length === 1 ? 1 : drinks.length <= 4 ? 2 : 3
   const itemWidth = columns === 1 ? 190 : columns === 2 ? 150 : 106
@@ -33,8 +35,8 @@ export const ShareableDrinkLogImage = forwardRef<
         </Text>
         <View style={styles.headerRule} />
         <Text style={styles.contextLabel}>
-          来自 {month.bar_count} 家酒吧
-          {month.drink_count > drinks.length ? ` · 展示最近 ${drinks.length} 款` : ''}
+          {tr(language, `来自 ${month.bar_count} 家酒吧`, `From ${month.bar_count} venue${month.bar_count === 1 ? '' : 's'}`)}
+          {month.drink_count > drinks.length ? tr(language, ` · 展示最近 ${drinks.length} 款`, ` · Latest ${drinks.length}`) : ''}
         </Text>
         <View style={[styles.grid, columns < 3 && styles.gridCentered, drinks.length <= 2 && styles.gridSpacious]}>
           {drinks.map((drink) => (
@@ -45,9 +47,9 @@ export const ShareableDrinkLogImage = forwardRef<
                 ) : null}
               </View>
               <Text numberOfLines={1} style={styles.name}>
-                {[drink.brewery, drink.name].filter(Boolean).join(' · ')}
+                {[localized(drink.brewery, drink.brewery_en), localized(drink.name, drink.name_en)].filter(Boolean).join(' · ')}
               </Text>
-              <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ') || '未知酒吧'}</Text>
+              <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ') || tr(language, '未知酒吧', 'Unknown venue')}</Text>
             </View>
           ))}
         </View>

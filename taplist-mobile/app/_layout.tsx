@@ -12,6 +12,7 @@ import { FirstLaunchLegalGate } from '@/components/taplist/FirstLaunchLegalGate'
 import { AnalyticsTracker } from '@/components/taplist/AnalyticsTracker';
 import { useColorScheme } from '@/components/useColorScheme';
 import { queryClient } from '@/lib/queryClient';
+import { LanguageProvider } from '@/lib/i18n';
 import { setupTaplistQueryFocusManager } from '@/lib/setupQueryFocusManager';
 import { TaplistCityProvider } from '@/lib/taplistCity';
 import { usePushNotificationObserver } from '@/lib/pushNotifications';
@@ -57,12 +58,14 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TaplistCityProvider>
-        <FirstLaunchLegalGate>
-          <AnalyticsTracker />
-          <RootLayoutNav />
-        </FirstLaunchLegalGate>
-      </TaplistCityProvider>
+      <LanguageProvider>
+        <TaplistCityProvider>
+          <FirstLaunchLegalGate>
+            <AnalyticsTracker />
+            <RootLayoutNav />
+          </FirstLaunchLegalGate>
+        </TaplistCityProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

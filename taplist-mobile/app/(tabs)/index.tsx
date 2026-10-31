@@ -20,11 +20,12 @@ import {
   railVenueLabelStyle,
 } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
-import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
+import { TAPLIST_LEGAL_DISCLAIMER, TAPLIST_LEGAL_DISCLAIMER_EN } from '@/constants/compliance'
 import { fetchPublicBars, fetchPublicEvents, fetchPublicNewDrinks } from '@/lib/api/taplist'
 import { trackEvent } from '@/lib/analytics'
 import { formatRelativeUpdatedAt, sortPublicBarsByMenuUpdated } from '@/lib/formatTaplist'
 import { formatDistance, publicBarCoordinates, sortBarsByDistance, type Coordinates } from '@/lib/nearbyBars'
+import { tr, useLanguage } from '@/lib/i18n'
 import { fetchNearbyLocation, getNearbyPermissionState, requestNearbyPermission } from '@/lib/nearbyLocation'
 import { taplistCityMatches, useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
@@ -54,11 +55,11 @@ function comparePickerSortKeys(a: string, b: string) {
   return a.localeCompare(b, 'zh-CN-u-co-pinyin', { sensitivity: 'base' })
 }
 
-function cityRegionMeta(city: PublicTaplistCity): CityRegionMeta | null {
+function cityRegionMeta(city: PublicTaplistCity, language: 'zh' | 'en'): CityRegionMeta | null {
   const cityKey = cityPickerKey(city.city)
   if (MUNICIPALITY_CITY_KEYS.has(cityKey)) return null
 
-  const regionLabel = city.region_label?.trim()
+  const regionLabel = (language === 'en' ? city.region_label_en : city.region_label)?.trim()
   if (!regionLabel) return null
 
   return {
@@ -67,12 +68,12 @@ function cityRegionMeta(city: PublicTaplistCity): CityRegionMeta | null {
   }
 }
 
-function buildCityPickerEntries(cities: PublicTaplistCity[]): CityPickerEntry[] {
+function buildCityPickerEntries(cities: PublicTaplistCity[], language: 'zh' | 'en'): CityPickerEntry[] {
   const entries: CityPickerEntry[] = []
   const regions = new Map<string, Extract<CityPickerEntry, { kind: 'region' }>>()
 
   cities.forEach((city) => {
-    const region = cityRegionMeta(city)
+    const region = cityRegionMeta(city, language)
     if (!region) {
       entries.push({ kind: 'city', city })
       return
@@ -96,18 +97,19 @@ function buildCityPickerEntries(cities: PublicTaplistCity[]): CityPickerEntry[] 
 
   entries.forEach((entry) => {
     if (entry.kind === 'region') {
-      entry.cities.sort((a, b) => comparePickerSortKeys(a.label, b.label))
+      entry.cities.sort((a, b) => comparePickerSortKeys(language === 'en' ? a.label_en || a.city : a.label, language === 'en' ? b.label_en || b.city : b.label))
     }
   })
 
   return entries.sort((a, b) => {
-    const aLabel = a.kind === 'city' ? a.city.label : a.label
-    const bLabel = b.kind === 'city' ? b.city.label : b.label
+    const aLabel = a.kind === 'city' ? (language === 'en' ? a.city.label_en || a.city.city : a.city.label) : a.label
+    const bLabel = b.kind === 'city' ? (language === 'en' ? b.city.label_en || b.city.city : b.city.label) : b.label
     return comparePickerSortKeys(aLabel, bLabel)
   })
 }
 
 export default function TonightScreen() {
+  const { language, localized } = useLanguage()
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
   const { selectedCity, cities, canSelectCity, selectCity } = useTaplistCity()
@@ -287,14 +289,14 @@ export default function TonightScreen() {
         {canSelectCity ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="选择城市"
+            accessibilityLabel={tr(language, '选择城市', 'Select city')}
             onPress={() => setCityPickerVisible(true)}
             style={({ pressed }) => [styles.cityButton, pressed && styles.cityButtonPressed]}>
-            <Text style={styles.city}>{selectedCity.label}</Text>
+            <Text style={styles.city}>{localized(selectedCity.label, selectedCity.label_en)}</Text>
             <FontAwesome name="angle-down" size={18} color={palette.tungsten} />
           </Pressable>
         ) : (
-          <Text style={styles.city}>{selectedCity.label}</Text>
+          <Text style={styles.city}>{localized(selectedCity.label, selectedCity.label_en)}</Text>
         )}
       </View>
       <CityPickerModal
@@ -312,7 +314,7 @@ export default function TonightScreen() {
       />
       <NearbyLocationSheet
         visible={nearbySheetVisible}
-        cityLabel={selectedCity.label}
+        cityLabel={localized(selectedCity.label, selectedCity.label_en)}
         loading={nearbyLoading}
         onClose={() => setNearbySheetVisible(false)}
         onContinue={() => void confirmNearbyPermission()}
@@ -321,7 +323,7 @@ export default function TonightScreen() {
       {barsQuery.isLoading ? (
         <View style={styles.loading}>
           <ActivityIndicator color={palette.amber} />
-          <Text style={styles.muted}>正在加载酒吧...</Text>
+          <Text style={styles.muted}>{tr(language, '正在加载酒吧...', 'Loading venues...')}</Text>
         </View>
       ) : null}
 
@@ -339,12 +341,12 @@ export default function TonightScreen() {
       {bars.length > 0 ? (
         <View style={styles.barListHeader}>
           <View style={styles.barListToolbar}>
-            <Text style={styles.barListTitle}>公开酒单 · {bars.length} 家</Text>
+            <Text style={styles.barListTitle}>{tr(language, `公开酒单 · ${bars.length} 家`, `Public taplists · ${bars.length}`)}</Text>
             {nearbyAvailable ? (
               <View style={styles.sortActions}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="按最新酒单排序"
+                  accessibilityLabel={tr(language, '按最新酒单排序', 'Sort by latest tap list')}
                   accessibilityState={{ selected: sortMode === 'latest' }}
                   onPress={() => {
                     setSortMode('latest')
@@ -356,12 +358,12 @@ export default function TonightScreen() {
                     pressed && styles.cityButtonPressed,
                   ]}>
                   <Text style={[styles.sortActionText, sortMode === 'latest' && styles.sortActionTextSelected]}>
-                    最新
+                    {tr(language, '最新', 'Latest')}
                   </Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="按附近距离排序"
+                  accessibilityLabel={tr(language, '按附近距离排序', 'Sort by nearby distance')}
                   accessibilityState={{ selected: sortMode === 'nearby', busy: nearbyLoading }}
                   onPress={() => void activateNearby()}
                   style={({ pressed }) => [
@@ -375,7 +377,7 @@ export default function TonightScreen() {
                     <FontAwesome name="location-arrow" size={12} color={sortMode === 'nearby' ? palette.amber : palette.faint} />
                   )}
                   <Text style={[styles.sortActionText, sortMode === 'nearby' && styles.sortActionTextSelected]}>
-                    附近
+                    {tr(language, '附近', 'Nearby')}
                   </Text>
                 </Pressable>
               </View>
@@ -384,7 +386,7 @@ export default function TonightScreen() {
           {cityMismatch && detectedCity ? (
             <View style={styles.nearbyNoticeRow}>
               <Text style={styles.nearbyNoticeText} numberOfLines={2}>
-                当前浏览{selectedCity.label} · 你可能在{detectedCity.label}
+                {tr(language, `当前浏览${selectedCity.label} · 你可能在${detectedCity.label}`, `Viewing ${localized(selectedCity.label, selectedCity.label_en)} · You may be in ${localized(detectedCity.label, detectedCity.label_en)}`)}
               </Text>
               <Pressable
                 accessibilityRole="button"
@@ -393,15 +395,15 @@ export default function TonightScreen() {
                   void selectCity(detectedCity)
                 }}
                 style={({ pressed }) => pressed && styles.cityButtonPressed}>
-                <Text style={styles.nearbyNoticeAction}>切换城市</Text>
+                <Text style={styles.nearbyNoticeAction}>{tr(language, '切换城市', 'Switch city')}</Text>
               </Pressable>
             </View>
           ) : nearbyFailure ? (
             <View style={styles.nearbyNoticeRow}>
               <Text accessibilityRole="alert" style={styles.nearbyNoticeText} numberOfLines={2}>
                 {nearbyFailure === 'denied'
-                  ? '未获得位置权限，已按最新酒单展示。'
-                  : '暂时无法获取位置，已按最新酒单展示。'}
+                  ? tr(language, '未获得位置权限，已按最新酒单展示。', 'Location permission was not granted. Showing latest taplists.')
+                  : tr(language, '暂时无法获取位置，已按最新酒单展示。', 'Location is unavailable. Showing latest taplists.')}
               </Text>
               <Pressable
                 accessibilityRole="button"
@@ -410,7 +412,7 @@ export default function TonightScreen() {
                   : void activateNearby()}
                 style={({ pressed }) => pressed && styles.cityButtonPressed}>
                 <Text style={styles.nearbyNoticeAction}>
-                  {nearbyFailure === 'denied' ? '前往设置' : '重试'}
+                  {nearbyFailure === 'denied' ? tr(language, '前往设置', 'Open settings') : tr(language, '重试', 'Retry')}
                 </Text>
               </Pressable>
             </View>
@@ -419,17 +421,17 @@ export default function TonightScreen() {
       ) : null}
 
       {!configured ? (
-        <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看实时公开酒单。" />
+        <EmptyState title={tr(language, '尚未连接酒单服务', 'Taplist service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看实时公开酒单。', 'Configure Supabase to view live public taplists.')} />
       ) : barsQuery.isError ? (
         <EmptyState
-          title="暂时无法加载酒吧"
-          body="若系统询问是否允许使用网络，请选择「无线局域网与蜂窝网络」，然后点重试。"
-          actionLabel="重试"
+          title={tr(language, '暂时无法加载酒吧', 'Unable to load venues')}
+          body={tr(language, '若系统询问是否允许使用网络，请选择「无线局域网与蜂窝网络」，然后点重试。', 'Check network access, then try again.')}
+          actionLabel={tr(language, '重试', 'Retry')}
           onAction={() => void handleRefresh()}
           actionLoading={refreshing}
         />
       ) : bars.length === 0 && !barsQuery.isLoading ? (
-        <EmptyState title="暂无公开酒吧" body="当前城市还没有已发布的公开酒单。" />
+        <EmptyState title={tr(language, '暂无公开酒吧', 'No public venues yet')} body={tr(language, '当前城市还没有已发布的公开酒单。', 'No public taplists have been published in this city.')} />
       ) : (
         <View style={styles.feed}>
           {displayedBars.map(({ bar, distanceMeters }) => (
@@ -444,7 +446,7 @@ export default function TonightScreen() {
       )}
 
       <View style={styles.complianceFootnote}>
-        <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
+        <Text style={styles.complianceText}>{language === 'en' ? TAPLIST_LEGAL_DISCLAIMER_EN : TAPLIST_LEGAL_DISCLAIMER}</Text>
       </View>
     </ScrollView>
   )
@@ -463,7 +465,8 @@ function CityPickerModal({
   onClose: () => void
   onSelect: (city: PublicTaplistCity) => void
 }) {
-  const entries = useMemo(() => buildCityPickerEntries(cities), [cities])
+  const { language, localized, text } = useLanguage()
+  const entries = useMemo(() => buildCityPickerEntries(cities, language), [cities, language])
 
   const renderCity = (city: PublicTaplistCity, nested = false, separated = false) => {
     const selected = taplistCityMatches(city.city, selectedCity.city)
@@ -471,7 +474,7 @@ function CityPickerModal({
       <Pressable
         key={city.city}
         accessibilityRole="button"
-        accessibilityLabel={`切换到${city.label}`}
+        accessibilityLabel={tr(language, `切换到${city.label}`, `Switch to ${localized(city.label, city.label_en)}`)}
         accessibilityState={{ selected }}
         onPress={() => onSelect(city)}
         style={({ pressed }) => [
@@ -484,11 +487,11 @@ function CityPickerModal({
         <Text
           numberOfLines={1}
           style={[styles.cityOptionLabel, selected && styles.cityOptionLabelSelected]}>
-          {city.label}
+          {localized(city.label, city.label_en)}
         </Text>
         <View style={styles.cityOptionTrailing}>
           <Text numberOfLines={1} style={styles.cityOptionMeta}>
-            {city.bar_count} 家公开酒吧
+            {text.publicVenues(city.bar_count)}
           </Text>
           <View style={styles.cityOptionStatus}>
             {selected ? <FontAwesome name="check" size={15} color={palette.amber} /> : null}
@@ -506,10 +509,10 @@ function CityPickerModal({
           style={styles.cityModalPanel}
           onStartShouldSetResponder={() => true}>
           <View style={styles.cityModalHeader}>
-            <Text style={styles.cityModalTitle}>选择城市</Text>
+            <Text style={styles.cityModalTitle}>{text.selectCity}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="关闭城市选择"
+              accessibilityLabel={tr(language, '关闭城市选择', 'Close city picker')}
               hitSlop={10}
               onPress={onClose}
               style={({ pressed }) => [styles.cityCloseButton, pressed && styles.cityButtonPressed]}>
@@ -553,6 +556,7 @@ function TonightEventsSection({
   compactBottom?: boolean
   events: PublicEventRow[]
 }) {
+  const { language } = useLanguage()
   const scrollRef = useRef<ScrollView>(null)
   const [pageWidth, setPageWidth] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
@@ -580,7 +584,7 @@ function TonightEventsSection({
           <Pressable
             hitSlop={{ top: 10, right: 4, bottom: 10, left: 12 }}
             style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
-            <Text style={styles.moreText}>更多 ›</Text>
+            <Text style={styles.moreText}>{tr(language, '更多 ›', 'More ›')}</Text>
           </Pressable>
         </Link>
       </View>
@@ -630,10 +634,11 @@ function TonightEventsSection({
 }
 
 function NewTapTodaySection({ drinks }: { drinks: PublicNewTapRow[] }) {
+  const { language } = useLanguage()
   return (
     <View style={styles.discoverySection}>
       <View style={styles.discoveryHeaderRow}>
-        <Text style={styles.discoveryTitle}>最近上新</Text>
+        <Text style={styles.discoveryTitle}>{tr(language, '最近上新', 'New on tap')}</Text>
       </View>
       <ScrollView
         horizontal
@@ -657,11 +662,12 @@ function BarFeedCard({
   distanceMeters: number | null
   event: PublicEventRow | null
 }) {
-  const location = shortBarLocation(bar)
-  const feedStatus = compactStatusCounts(bar)
+  const { language, localized } = useLanguage()
+  const location = shortBarLocation(bar, language)
+  const feedStatus = compactStatusCounts(bar, language)
   const updatedLabel = formatRelativeUpdatedAt(bar.last_menu_updated_at)
   const distanceLabel = formatDistance(distanceMeters)
-  const openingStatus = bar.is_open_now === true ? '营业中' : null
+  const openingStatus = bar.is_open_now === true ? tr(language, '营业中', 'Open now') : null
 
   return (
     <Link href={`/bar/${bar.slug}`} asChild>
@@ -678,7 +684,7 @@ function BarFeedCard({
           <AtmosphereImage source={bar.cover_image_url} aspectRatio={4 / 3} overlayOpacity={0.24}>
             <View style={styles.cardOverlay}>
               <View style={styles.cardRule} />
-              <Text style={styles.barName}>{bar.display_name || bar.name}</Text>
+              <Text style={styles.barName}>{localized(bar.display_name || bar.name, bar.display_name_en)}</Text>
               <BrewingBadgeFromType
                 brewingType={bar.brewing_type}
                 brewingLabel={bar.brewing_label}
@@ -725,9 +731,9 @@ function BarFeedCard({
   )
 }
 
-function shortBarLocation(bar: PublicBarRow) {
-  const district = bar.district?.trim()
-  const address = bar.address?.trim()
+function shortBarLocation(bar: PublicBarRow, language: 'zh' | 'en') {
+  const district = (language === 'en' ? bar.district_en || bar.district : bar.district)?.trim()
+  const address = (language === 'en' ? bar.address_en || bar.address : bar.address)?.trim()
 
   if (district && address) return `${district} · ${address}`
   if (address) return address
@@ -735,14 +741,14 @@ function shortBarLocation(bar: PublicBarRow) {
   return bar.city
 }
 
-function compactStatusCounts(bar: PublicBarRow) {
+function compactStatusCounts(bar: PublicBarRow, language: 'zh' | 'en') {
   const counts = bar.status_counts
   if (!counts) return null
 
   const activeCount = counts.上新 + counts.在售 + counts.少量
   return counts.上新 > 0
-    ? `${activeCount} 在售 · ${counts.上新} 上新`
-    : `${activeCount} 在售`
+    ? tr(language, `${activeCount} 在售 · ${counts.上新} 上新`, `${activeCount} available · ${counts.上新} new`)
+    : tr(language, `${activeCount} 在售`, `${activeCount} available`)
 }
 
 function firstEventByTenant(events: PublicEventRow[]) {

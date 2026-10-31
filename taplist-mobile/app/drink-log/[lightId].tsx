@@ -11,9 +11,11 @@ import { ShareableDrinkHistoryImage, type ShareableDrinkHistoryImageHandle } fro
 import { ShareImagePreviewModal } from '@/components/taplist/ShareImagePreviewModal'
 import { palette, spacing, typography } from '@/constants/design'
 import { trackEvent } from '@/lib/analytics'
-import { getMyDrinkHistory, removeMyDrinkVenue, unlightMyDrink } from '@/lib/api/drinkLog'
+import { getMyDrinkHistoryItem, removeMyDrinkVenue, unlightMyDrink } from '@/lib/api/drinkLog'
+import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
 
 export default function DrinkLogDetailScreen() {
+  const { language, localized } = useLanguage()
   const { lightId } = useLocalSearchParams<{ lightId: string }>()
   const insets = useSafeAreaInsets()
   const router = useRouter()
@@ -21,8 +23,12 @@ export default function DrinkLogDetailScreen() {
   const shareRef = useRef<ShareableDrinkHistoryImageHandle>(null)
   const [previewUri, setPreviewUri] = useState<string | null>(null)
   const [sharing, setSharing] = useState(false)
-  const historyQuery = useQuery({ queryKey: ['drink-log', 'history'], queryFn: () => getMyDrinkHistory() })
-  const item = historyQuery.data?.find((row) => row.light_id === lightId)
+  const historyQuery = useQuery({
+    queryKey: ['drink-log', 'history-item', lightId],
+    queryFn: () => getMyDrinkHistoryItem(lightId),
+  })
+  const item = historyQuery.data
+  const itemLocation = item ? localizedLocation(language, item) : ''
 
   const refreshAndLeaveIfEmpty = async (isLit: boolean) => {
     await queryClient.invalidateQueries({ queryKey: ['drink-log'] })
@@ -40,9 +46,9 @@ export default function DrinkLogDetailScreen() {
     },
   })
 
-  const confirmUnlight = () => Alert.alert('删除整款 TAP 记录？', '这款酒在所有酒吧的记录都会被删除。', [
-    { text: '取消', style: 'cancel' },
-    { text: '删除', style: 'destructive', onPress: () => unlight.mutate() },
+  const confirmUnlight = () => Alert.alert(tr(language, '删除整款 TAP 记录？', 'Delete this entire TAP record?'), tr(language, '这款酒在所有酒吧的记录都会被删除。', 'This beer will be removed from every venue in your history.'), [
+    { text: tr(language, '取消', 'Cancel'), style: 'cancel' },
+    { text: tr(language, '删除', 'Delete'), style: 'destructive', onPress: () => unlight.mutate() },
   ])
 
   const generateShare = async () => {
@@ -51,7 +57,7 @@ export default function DrinkLogDetailScreen() {
     try {
       const uri = await shareRef.current?.capture()
       if (uri) setPreviewUri(uri)
-      else Alert.alert('生成失败', '分享图暂时无法生成，请稍后重试。')
+      else Alert.alert(tr(language, '生成失败', 'Generation failed'), tr(language, '分享图暂时无法生成，请稍后重试。', 'Unable to create the share image. Please try again.'))
     } finally {
       setSharing(false)
     }
@@ -62,17 +68,17 @@ export default function DrinkLogDetailScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.sm }]}>
         <View style={styles.header}>
           <Pressable
-            accessibilityLabel="返回"
+            accessibilityLabel={tr(language, '返回', 'Back')}
             hitSlop={8}
             onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
             style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}>
             <FontAwesome name="chevron-left" size={16} color={palette.text} />
           </Pressable>
-          <Text style={styles.headerTitle}>TAP 记录</Text>
+          <Text style={styles.headerTitle}>{tr(language, 'TAP 记录', 'TAP history')}</Text>
           <View style={styles.headerSpacer} />
         </View>
         {!item ? (
-          <Text style={styles.loading}>{historyQuery.isLoading ? '正在加载记录…' : '找不到这条记录'}</Text>
+          <Text style={styles.loading}>{historyQuery.isLoading ? tr(language, '正在加载记录…', 'Loading history…') : tr(language, '找不到这条记录', 'Record not found')}</Text>
         ) : (
           <>
             <View style={styles.beerCard}>
@@ -85,32 +91,32 @@ export default function DrinkLogDetailScreen() {
                 />
               </View>
               <View style={styles.identitySection}>
-                <Text style={styles.identityName}>{item.name}</Text>
-                {item.brewery ? <Text style={styles.identityBrewery}>{item.brewery}</Text> : null}
+                <Text style={styles.identityName}>{localized(item.name, item.name_en)}</Text>
+                {item.brewery ? <Text style={styles.identityBrewery}>{localized(item.brewery, item.brewery_en)}</Text> : null}
               </View>
               <View style={styles.factGrid}>
-                {item.beer_style ? <Fact label="风格" value={item.beer_style} /> : null}
+                {item.beer_style ? <Fact label={tr(language, '风格', 'Style')} value={item.beer_style} /> : null}
                 {typeof item.abv === 'number' ? <Fact label="ABV" value={`${item.abv}%`} /> : null}
                 {typeof item.ibu === 'number' ? <Fact label="IBU" value={`${item.ibu}`} /> : null}
-                {item.country ? <Fact label="产地" value={item.country} /> : null}
+                {itemLocation ? <Fact label={tr(language, '产地', 'Origin')} value={itemLocation} /> : null}
               </View>
             </View>
 
             <View style={styles.historyHeader}>
-              <Text style={styles.historyTitle}>喝过记录</Text>
+              <Text style={styles.historyTitle}>{tr(language, '喝过记录', 'Tried at')}</Text>
               <View style={styles.historyHeaderActions}>
-                <Text style={styles.historyCount}>{item.venue_count} 家</Text>
+                <Text style={styles.historyCount}>{tr(language, `${item.venue_count} 家`, `${item.venue_count} venues`)}</Text>
                 {item.source_drink_is_public ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="生成分享图"
+                    accessibilityLabel={tr(language, '生成分享图', 'Create share image')}
                     disabled={sharing}
                     onPress={() => void generateShare()}
                     style={({ pressed }) => [styles.shareAction, pressed && styles.pressed]}>
                     {sharing
                       ? <ActivityIndicator size="small" color={palette.amber} />
                       : <FontAwesome name="share-square-o" size={14} color={palette.amber} />}
-                    <Text style={styles.shareActionText}>分享</Text>
+                    <Text style={styles.shareActionText}>{tr(language, '分享', 'Share')}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -121,19 +127,19 @@ export default function DrinkLogDetailScreen() {
                 <View key={venue.tenant_id} style={styles.venueRow}>
                   <View style={styles.venueCopy}>
                     <Text style={styles.venueDate}>{formatDate(venue.first_drank_at)}</Text>
-                    <Text style={styles.venueName}>{venue.tenant_name}</Text>
-                    <Text numberOfLines={1} style={styles.venueMeta}>{formatVenueLocation(venue)}</Text>
+                    <Text style={styles.venueName}>{localized(venue.tenant_name, venue.tenant_name_en)}</Text>
+                    <Text numberOfLines={1} style={styles.venueMeta}>{formatVenueLocation(venue, language)}</Text>
                   </View>
                   <Pressable
                     disabled={removeVenue.isPending}
                     accessibilityRole="button"
-                    accessibilityLabel={`移除${venue.tenant_name}记录`}
+                    accessibilityLabel={tr(language, `移除${venue.tenant_name}记录`, `Remove ${localized(venue.tenant_name, venue.tenant_name_en)} record`)}
                     style={({ pressed }) => [styles.removeVenueButton, pressed && styles.pressed]}
-                    onPress={() => Alert.alert('移除这家酒吧？', '其他酒吧记录不会受到影响。', [
-                      { text: '取消', style: 'cancel' },
-                      { text: '移除', style: 'destructive', onPress: () => removeVenue.mutate({ tenantId: venue.tenant_id }) },
+                    onPress={() => Alert.alert(tr(language, '移除这家酒吧？', 'Remove this venue?'), tr(language, '其他酒吧记录不会受到影响。', 'Records from other venues will not be affected.'), [
+                      { text: tr(language, '取消', 'Cancel'), style: 'cancel' },
+                      { text: tr(language, '移除', 'Remove'), style: 'destructive', onPress: () => removeVenue.mutate({ tenantId: venue.tenant_id }) },
                     ])}>
-                    <Text style={styles.removeVenueText}>删除</Text>
+                    <Text style={styles.removeVenueText}>{tr(language, '删除', 'Delete')}</Text>
                   </Pressable>
                 </View>
               ))}
@@ -142,10 +148,10 @@ export default function DrinkLogDetailScreen() {
             <Pressable
               disabled={unlight.isPending}
               accessibilityRole="button"
-              accessibilityLabel="删除整款 TAP 记录"
+              accessibilityLabel={tr(language, '删除整款 TAP 记录', 'Delete entire TAP record')}
               onPress={confirmUnlight}
               style={styles.dangerButton}>
-              <Text style={styles.dangerText}>删除整款 TAP 记录</Text>
+              <Text style={styles.dangerText}>{tr(language, '删除整款 TAP 记录', 'Delete entire TAP record')}</Text>
             </Pressable>
           </>
         )}
@@ -169,7 +175,10 @@ function Fact({ label, value }: { label: string; value: string }) {
   )
 }
 
-function formatVenueLocation(venue: { city: string | null; city_label: string | null; district: string | null; address: string | null }) {
+function formatVenueLocation(venue: { city: string | null; city_label: string | null; city_label_en?: string | null; district: string | null; district_en?: string | null; address: string | null; address_en?: string | null }, language: 'zh' | 'en') {
+  if (language === 'en') {
+    return [venue.city_label_en || venue.city, venue.district_en || venue.district, venue.address_en || venue.address].filter(Boolean).join(' · ')
+  }
   const city = venue.city_label || localizeCity(venue.city || '')
   return [city, venue.district, venue.address].filter(Boolean).join(' · ')
 }

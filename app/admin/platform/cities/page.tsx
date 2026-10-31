@@ -8,7 +8,11 @@ import type { AdminTaplistCityRow, UserRole } from '@/lib/types'
 type CityForm = {
   city: string
   label: string
+  label_en: string
   country: string
+  region_code: string
+  region_label: string
+  region_label_en: string
   sort_order: string
   is_enabled: boolean
 }
@@ -16,10 +20,16 @@ type CityForm = {
 const EMPTY_FORM: CityForm = {
   city: '',
   label: '',
+  label_en: '',
   country: 'China',
+  region_code: '',
+  region_label: '',
+  region_label_en: '',
   sort_order: '100',
   is_enabled: true,
 }
+
+const MUNICIPALITY_KEYS = new Set(['beijing', 'chongqing', 'shanghai', 'tianjin'])
 
 function consumerVisible(city: AdminTaplistCityRow) {
   return city.is_enabled && city.public_bar_count > 0
@@ -90,7 +100,11 @@ export default function PlatformCitiesPage() {
     setForm({
       city: city.city,
       label: city.label,
+      label_en: city.label_en ?? '',
       country: city.country,
+      region_code: city.region_code ?? '',
+      region_label: city.region_label ?? '',
+      region_label_en: city.region_label_en ?? '',
       sort_order: String(city.sort_order),
       is_enabled: city.is_enabled,
     })
@@ -111,6 +125,16 @@ export default function PlatformCitiesPage() {
       alert('请填写中文展示名')
       return
     }
+    if (!form.label_en.trim()) {
+      alert('请填写英文展示名')
+      return
+    }
+    if (!MUNICIPALITY_KEYS.has(city.toLowerCase()) && (
+      !form.region_code.trim() || !form.region_label.trim() || !form.region_label_en.trim()
+    )) {
+      alert('非直辖市需要填写省份 key、中文省份和英文省份')
+      return
+    }
     if (!Number.isFinite(sortOrder)) {
       alert('排序值必须是数字')
       return
@@ -126,6 +150,14 @@ export default function PlatformCitiesPage() {
         p_is_enabled: form.is_enabled,
       })
       if (rpcError) throw rpcError
+      const { error: i18nError } = await supabase.rpc('admin_set_taplist_city_i18n', {
+        p_city: city,
+        p_label_en: form.label_en.trim(),
+        p_region_code: form.region_code.trim() || null,
+        p_region_label: form.region_label.trim() || null,
+        p_region_label_en: form.region_label_en.trim() || null,
+      })
+      if (i18nError) throw i18nError
       resetForm()
       await loadCities()
     } catch (err: unknown) {
@@ -232,6 +264,30 @@ export default function PlatformCitiesPage() {
             placeholder="中文展示名（如 北京）"
             value={form.label}
             onChange={(e) => setForm({ ...form, label: e.target.value })}
+          />
+          <input
+            className="admin-input"
+            placeholder="英文展示名（如 Beijing）"
+            value={form.label_en}
+            onChange={(e) => setForm({ ...form, label_en: e.target.value })}
+          />
+          <input
+            className="admin-input"
+            placeholder="省份分组 key（如 shandong；直辖市留空）"
+            value={form.region_code}
+            onChange={(e) => setForm({ ...form, region_code: e.target.value })}
+          />
+          <input
+            className="admin-input"
+            placeholder="省份中文名（如 山东；直辖市留空）"
+            value={form.region_label}
+            onChange={(e) => setForm({ ...form, region_label: e.target.value })}
+          />
+          <input
+            className="admin-input"
+            placeholder="省份英文名（如 Shandong；直辖市留空）"
+            value={form.region_label_en}
+            onChange={(e) => setForm({ ...form, region_label_en: e.target.value })}
           />
           <input
             className="admin-input"

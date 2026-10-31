@@ -10,8 +10,10 @@ import { palette, spacing, typography } from '@/constants/design'
 import { fetchMiniProduct } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
+import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
 
 export default function ProductDetailScreen() {
+  const { language, localized } = useLanguage()
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
   const { selectedCity } = useTaplistCity()
@@ -29,12 +31,13 @@ export default function ProductDetailScreen() {
     .map((brewery) => brewery.trim())
     .filter((brewery) => brewery && brewery !== product?.brewery)
     .slice(0, 3)
+  const location = product ? localizedLocation(language, product) : ''
   const metadata = product
     ? [
-        product.beer_style ? { label: '风格', value: product.beer_style } : null,
+        product.beer_style ? { label: tr(language, '风格', 'Style'), value: product.beer_style } : null,
         typeof product.abv === 'number' ? { label: 'ABV', value: `${product.abv}%` } : null,
         typeof product.ibu === 'number' ? { label: 'IBU', value: `${product.ibu}` } : null,
-        product.country ? { label: '产地', value: product.country } : null,
+        location ? { label: tr(language, '产地', 'Origin'), value: location } : null,
       ].filter((item): item is { label: string; value: string } => item !== null)
     : []
 
@@ -60,26 +63,26 @@ export default function ProductDetailScreen() {
         ) : null}
         <View style={product?.image_url ? styles.body : undefined}>
           {!configured ? (
-            <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看实时公开酒单。" />
+            <EmptyState title={tr(language, '尚未连接酒单服务', 'Taplist service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看实时公开酒单。', 'Configure Supabase to view live public taplists.')} />
           ) : detailQuery.isLoading ? (
             <View style={styles.loading}>
               <ActivityIndicator color={palette.amber} />
-              <Text style={styles.muted}>正在加载酒款...</Text>
+              <Text style={styles.muted}>{tr(language, '正在加载酒款...', 'Loading beer...')}</Text>
             </View>
           ) : detailQuery.isError || result?.ok === false ? (
-            <EmptyState title="找不到这款酒" body="这款酒可能已停止公开展示，或链接已经失效。" />
+            <EmptyState title={tr(language, '找不到这款酒', 'Beer not found')} body={tr(language, '这款酒可能已停止公开展示，或链接已经失效。', 'This beer may no longer be public, or the link has expired.')} />
           ) : product ? (
             <>
-              <Text style={styles.title}>{product.name}</Text>
+              <Text style={styles.title}>{localized(product.name, product.name_en)}</Text>
               {product.brewery || collabBreweries.length > 0 ? (
                 <View style={styles.breweryRow}>
                   {product.brewery ? (
                     <Pressable
                       accessibilityRole="link"
-                      accessibilityLabel={`查看${product.brewery}酒厂`}
+                      accessibilityLabel={tr(language, `查看${product.brewery}酒厂`, `View ${localized(product.brewery, product.brewery_en)}`)}
                       onPress={() => router.push(`/brewery/${encodeURIComponent(product.brewery!)}` as Href)}
                       style={({ pressed }) => [styles.breweryButton, pressed && styles.pressed]}>
-                      <Text style={styles.breweryButtonText}>{product.brewery}</Text>
+                      <Text style={styles.breweryButtonText}>{localized(product.brewery, product.brewery_en)}</Text>
                       <FontAwesome name="angle-right" size={16} color={palette.tungsten} />
                     </Pressable>
                   ) : null}
@@ -100,23 +103,23 @@ export default function ProductDetailScreen() {
                 </View>
               ) : null}
               <Text style={styles.sectionTitle}>
-                {venues.length > 0 ? `${venues.length} 家门店供应` : '供应门店'}
+                {venues.length > 0 ? tr(language, `${venues.length} 家门店供应`, `Available at ${venues.length} venue${venues.length === 1 ? '' : 's'}`) : tr(language, '供应门店', 'Available at')}
               </Text>
               {venues.length > 0 ? venues.map((venue) => (
                 <Pressable
                   key={venue.id}
                   accessibilityRole="link"
-                  accessibilityLabel={`查看${venue.name}酒吧详情`}
+                  accessibilityLabel={tr(language, `查看${venue.name}酒吧详情`, `View ${localized(venue.name, venue.display_name_en)}`)}
                   onPress={() => router.push(`/bar/${venue.slug}` as Href)}
                   style={({ pressed }) => [styles.venueCard, pressed && styles.pressed]}>
                   <View style={styles.venueIcon}>
                     <FontAwesome name="map-marker" size={15} color={palette.amber} />
                   </View>
-                  <Text style={styles.venueName} numberOfLines={1}>{venue.name}</Text>
+                  <Text style={styles.venueName} numberOfLines={1}>{localized(venue.name, venue.display_name_en)}</Text>
                   <FontAwesome name="angle-right" size={18} color={palette.faint} />
                 </Pressable>
               )) : (
-                <Text style={styles.emptySupply}>当前城市暂无供应</Text>
+                <Text style={styles.emptySupply}>{tr(language, '当前城市暂无供应', 'Not available in this city')}</Text>
               )}
             </>
           ) : null}

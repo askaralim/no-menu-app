@@ -6,6 +6,7 @@ import ViewShot from 'react-native-view-shot'
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/lib/formatTaplist'
+import { tr, useLanguage } from '@/lib/i18n'
 import type { PublicDrinkRow, PublicTenantDetail } from '@/lib/types'
 
 export type ShareableBeerImageHandle = {
@@ -21,16 +22,18 @@ type ShareableBeerImageProps = {
 export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, ShareableBeerImageProps>(
   function ShareableBeerImage({ tenant, drink, litAt }, ref) {
     const shotRef = useRef<ViewShot>(null)
-    const title = tenant.display_name || tenant.name
-    const addressLine = [tenant.district, tenant.address].filter(Boolean).join(' · ')
-    const personalRegion = tenant.district?.trim() || localizeCity(tenant.city)
+    const { language, localized } = useLanguage()
+    const title = localized(tenant.display_name || tenant.name, tenant.display_name_en)
+    const addressLine = [localized(tenant.district, tenant.district_en), localized(tenant.address, tenant.address_en)].filter(Boolean).join(' · ')
+    const personalRegion = localized(tenant.district, tenant.district_en).trim()
+      || localized(tenant.city_label || localizeCity(tenant.city), tenant.city_label_en)
     const generatedAtLabel = formatGeneratedAt(new Date())
-    const breweryLine = formatBreweryWithCollab(
+    const breweryLine = localized(formatBreweryWithCollab(
       drink.beer?.brewery,
       drink.beer?.collab_breweries,
       drink.brand_name,
-    )
-    const breweryStyle = beerInfoLine(drink)
+    ), drink.beer?.brewery_en)
+    const breweryStyle = [breweryLine, drink.beer?.beer_style].filter(Boolean).join(' · ')
     const stats = beerStatsLine(drink)
     const personalAbv = typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null
     const servingOptions = displayServingOptions(drink.serving_options)
@@ -53,13 +56,13 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
                   <Text style={styles.personalHeaderDate}>{formatShortDate(litAt)} · </Text>
                   {personalRegion ? <Text style={styles.personalHeaderRegion}>{personalRegion} · </Text> : null}
                   <Text style={styles.personalHeaderVenue}>{title} · </Text>
-                  <Text style={styles.personalHeaderAccent}>新 TAP</Text>
+                  <Text style={styles.personalHeaderAccent}>{tr(language, '新 TAP', 'NEW TAP')}</Text>
                 </Text>
                 <View style={styles.personalHeaderRule} />
               </View>
 
               <View style={styles.personalArtFrame}>
-                <BeerArtwork name={drink.name} source={drink.image_url} size={270} />
+                <BeerArtwork name={localized(drink.name, drink.name_en)} source={drink.image_url} size={270} />
               </View>
 
               <View style={styles.personalBeerCopy}>
@@ -69,7 +72,7 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
                   </Text>
                 ) : null}
                 <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72} style={styles.personalBeerName}>
-                  {drink.name}
+                  {localized(drink.name, drink.name_en)}
                 </Text>
                 {[drink.beer?.beer_style, personalAbv].filter(Boolean).length ? (
                   <Text numberOfLines={1} style={styles.personalFacts}>
@@ -98,13 +101,13 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
 
               <View style={styles.beerPanel}>
                 <View style={styles.hero}>
-                  <BeerArtwork name={drink.name} source={drink.image_url} size={132} />
+                  <BeerArtwork name={localized(drink.name, drink.name_en)} source={drink.image_url} size={132} />
                   <View style={styles.heroCopy}>
                     <View style={styles.titleRow}>
-                      <Text style={styles.beerName}>{drink.name}</Text>
+                      <Text style={styles.beerName}>{localized(drink.name, drink.name_en)}</Text>
                       {status ? (
                         <View style={styles.statusBadge}>
-                          <Text style={styles.statusText}>{status}</Text>
+                          <Text style={styles.statusText}>{localizeStatus(language, status)}</Text>
                         </View>
                       ) : null}
                     </View>
@@ -134,7 +137,7 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
 
           {!litAt ? (
             <View style={styles.footer}>
-              <Text style={styles.footerText}>No Menu · 生成于 {generatedAtLabel}</Text>
+              <Text style={styles.footerText}>No Menu · {tr(language, `生成于 ${generatedAtLabel}`, `Generated ${generatedAtLabel}`)}</Text>
             </View>
           ) : null}
         </View>
@@ -142,15 +145,6 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
     )
   }
 )
-
-function beerInfoLine(drink: PublicDrinkRow) {
-  return [
-    formatBreweryWithCollab(drink.beer?.brewery, drink.beer?.collab_breweries, drink.brand_name),
-    drink.beer?.beer_style,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-}
 
 function beerStatsLine(drink: PublicDrinkRow) {
   return [
@@ -164,6 +158,11 @@ function beerStatsLine(drink: PublicDrinkRow) {
 function servingOptionLine(option: ReturnType<typeof displayServingOptions>[number]) {
   const parts = servingParts(option)
   return parts.length > 0 ? parts.join(' · ') : null
+}
+
+function localizeStatus(language: 'zh' | 'en', status: string) {
+  if (language === 'zh') return status
+  return ({ '上新': 'New', '在售': 'Available', '少量': 'Low stock', '售罄': 'Sold out', '即将上新': 'Coming soon' } as Record<string, string>)[status] ?? status
 }
 
 function formatGeneratedAt(date: Date) {

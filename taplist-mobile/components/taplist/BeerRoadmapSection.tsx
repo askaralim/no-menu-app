@@ -9,6 +9,7 @@ import { navigationUrlForLeg } from '@/lib/navigationLinks'
 import { formatRoadmapHoursLabel } from '@/lib/openingHour'
 import type { BeerRoadmapLeg, BeerRoadmapRoute, BeerRoadmapStop } from '@/lib/types'
 import { trackEvent } from '@/lib/analytics'
+import { tr, useLanguage } from '@/lib/i18n'
 
 type BeerRoadmapSectionProps = {
   startTenantId: string | null | undefined
@@ -38,6 +39,7 @@ export function BeerRoadmapSection({ startTenantId, enabled }: BeerRoadmapSectio
 }
 
 function BeerRoadmapRouteCard({ route }: { route: BeerRoadmapRoute }) {
+  const { language } = useLanguage()
   const startBarName = route.stops[0].displayName
   const legs = Array.isArray(route.legs) ? route.legs : []
 
@@ -46,7 +48,7 @@ function BeerRoadmapRouteCard({ route }: { route: BeerRoadmapRoute }) {
       <View style={styles.header}>
         <Text style={styles.title}>TONIGHT'S BEER ROUTE</Text>
         <Text style={styles.subtitle} numberOfLines={2}>
-          从「{startBarName}」开始，看看附近
+          {tr(language, `从「${startBarName}」开始，看看附近`, `Start at ${startBarName} and explore nearby`)}
         </Text>
       </View>
 
@@ -86,6 +88,7 @@ function RoadmapStopRow({
   isStart: boolean
 }) {
   const router = useRouter()
+  const { language } = useLanguage()
   const hoursLabel = formatRoadmapHoursLabel(stop)
   const navigationUrl =
     Platform.OS === 'ios' && leg ? navigationUrlForLeg(stops, leg) : null
@@ -126,20 +129,20 @@ function RoadmapStopRow({
           <View style={styles.actionRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`查看 ${stop.displayName} 酒单`}
+              accessibilityLabel={tr(language, `查看 ${stop.displayName} 酒单`, `View ${stop.displayName} tap list`)}
               onPress={handleOpenMenu}
               style={({ pressed }) => [styles.menuButton, pressed && styles.menuButtonPressed]}>
-              <Text style={styles.menuButtonLabel}>查看酒单</Text>
+              <Text style={styles.menuButtonLabel}>{tr(language, '查看酒单', 'View tap list')}</Text>
             </Pressable>
 
             {navigationUrl ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`打开 Apple Maps 导航到 ${stop.displayName}`}
+                accessibilityLabel={tr(language, `打开 Apple Maps 导航到 ${stop.displayName}`, `Open Apple Maps to ${stop.displayName}`)}
                 onPress={handleOpenNavigation}
                 style={({ pressed }) => [styles.navButton, pressed && styles.navButtonPressed]}>
                 <FontAwesome name="location-arrow" size={12} color="#E1A94F" />
-                <Text style={styles.navButtonLabel}>打开 Apple Maps</Text>
+                <Text style={styles.navButtonLabel}>{tr(language, '打开 Apple Maps', 'Open Apple Maps')}</Text>
               </Pressable>
             ) : (
               <View style={styles.navButtonSpacer} />

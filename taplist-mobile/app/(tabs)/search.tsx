@@ -30,6 +30,7 @@ import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { MiniProductSearchResult, PublicNewTapRow, PublicTaplistBreweryDiscoveryRow } from '@/lib/types'
 import { trackEvent } from '@/lib/analytics'
 import { formatPrimaryBrewery } from '@/lib/formatTaplist'
+import { tr, useLanguage } from '@/lib/i18n'
 
 const searchPresets = [
   'IPA',
@@ -49,6 +50,12 @@ const expandedSearchPresets = [
   '其他',
 ]
 
+const englishStyleLabels: Record<string, string> = {
+  '酸啤': 'Sour', '世涛': 'Stout', '拉格': 'Lager', '小麦': 'Wheat', '西打': 'Cider',
+  '果泥': 'Smoothie', '赛松 / 农舍': 'Saison / Farmhouse', '比利时艾尔': 'Belgian Ale',
+  '艾尔': 'Ale', '蜂蜜酒': 'Mead', '其他': 'Other',
+}
+
 const SEARCH_DEBOUNCE_MS = 300
 const PAGE_GUTTER = spacing.md
 const GRID_GAP = spacing.md
@@ -57,6 +64,7 @@ const DISCOVERY_RADIUS = 10
 const PULL_BACK_THRESHOLD = 72
 
 export default function SearchScreen() {
+  const { language } = useLanguage()
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
   const { selectedCity } = useTaplistCity()
@@ -203,7 +211,7 @@ export default function SearchScreen() {
             color={pullReady ? palette.amber : palette.faint}
           />
           <Text style={[styles.pullBackHintText, pullReady && styles.pullBackHintTextReady]}>
-            {pullReady ? '释放返回浏览' : '下拉返回浏览'}
+            {pullReady ? tr(language, '释放返回浏览', 'Release to browse') : tr(language, '下拉返回浏览', 'Pull down to browse')}
           </Text>
         </View>
       ) : null}
@@ -231,25 +239,25 @@ export default function SearchScreen() {
       {isSearching ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="返回浏览"
-          accessibilityHint="清空搜索并返回风格、上新与酒厂浏览"
+          accessibilityLabel={tr(language, '返回浏览', 'Back to browse')}
+          accessibilityHint={tr(language, '清空搜索并返回风格、上新与酒厂浏览', 'Clear search and return to discovery')}
           hitSlop={8}
           onPress={clearSearch}
           style={({ pressed }) => [styles.backTitleRow, pressed && styles.backTitlePressed]}>
           <FontAwesome name="chevron-left" size={15} color={palette.text} />
-          <Text style={styles.pageTitleText}>搜索</Text>
+          <Text style={styles.pageTitleText}>{tr(language, '搜索', 'Search')}</Text>
         </Pressable>
       ) : (
-        <Text style={[styles.pageTitleText, styles.pageTitleSpacing]}>搜索</Text>
+        <Text style={[styles.pageTitleText, styles.pageTitleSpacing]}>{tr(language, '搜索', 'Search')}</Text>
       )}
 
       <View style={styles.inputFrame}>
         <FontAwesome name="search" size={17} color={palette.faint} />
         <TextInput
           ref={inputRef}
-          accessibilityLabel="搜索公开酒单"
-          accessibilityHint="可搜索酒款、酒厂或风格"
-          placeholder="搜索风格 / 酒款 / 酒厂"
+          accessibilityLabel={tr(language, '搜索公开酒单', 'Search public taplists')}
+          accessibilityHint={tr(language, '可搜索酒款、酒厂或风格', 'Search beers, breweries, or styles')}
+          placeholder={tr(language, '搜索风格 / 酒款 / 酒厂', 'Search style / beer / brewery')}
           placeholderTextColor={palette.faint}
           style={styles.input}
           selectionColor={palette.amber}
@@ -268,7 +276,7 @@ export default function SearchScreen() {
         {query.length > 0 ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="清空搜索"
+            accessibilityLabel={tr(language, '清空搜索', 'Clear search')}
             hitSlop={10}
             onPress={clearSearch}
             style={({ pressed }) => [styles.clearButton, pressed && styles.clearButtonPressed]}>
@@ -289,27 +297,27 @@ export default function SearchScreen() {
       ) : null}
 
       {!configured ? (
-        <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看实时公开酒单。" />
+        <EmptyState title={tr(language, '尚未连接酒单服务', 'Taplist service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看实时公开酒单。', 'Configure Supabase to view live public taplists.')} />
       ) : null}
 
       {configured && showDrinkSection ? (
         <>
-          <Text style={styles.pullGuide}>下拉可返回浏览</Text>
+          <Text style={styles.pullGuide}>{tr(language, '下拉可返回浏览', 'Pull down to return to browse')}</Text>
           {isDebouncing || drinksQuery.isLoading ? (
             <View style={styles.loading}>
               <ActivityIndicator color={palette.amber} />
-              <Text style={styles.muted}>正在搜索酒款...</Text>
+              <Text style={styles.muted}>{tr(language, '正在搜索酒款...', 'Searching beers...')}</Text>
             </View>
           ) : drinksQuery.isError ? (
             <EmptyState
-              title="酒款搜索不可用"
-              body="暂时无法读取公开酒款目录，请稍后重试。">
-              <RetryButton label="重新搜索" onPress={() => void drinksQuery.refetch()} />
+              title={tr(language, '酒款搜索不可用', 'Beer search is unavailable')}
+              body={tr(language, '暂时无法读取公开酒款目录，请稍后重试。', 'The public beer catalog is temporarily unavailable.')}>
+              <RetryButton label={tr(language, '重新搜索', 'Search again')} onPress={() => void drinksQuery.refetch()} />
             </EmptyState>
           ) : drinkResults.length === 0 ? (
-            <EmptyState title="没有匹配的酒款" body="试试酒厂名、风格或酒款的中英文名。">
+            <EmptyState title={tr(language, '没有匹配的酒款', 'No matching beers')} body={tr(language, '试试酒厂名、风格或酒款的中英文名。', 'Try a brewery, style, or beer name.')}>
               <View style={styles.emptyRecovery}>
-                <Text style={styles.emptyRecoveryLabel}>换个风格试试</Text>
+                <Text style={styles.emptyRecoveryLabel}>{tr(language, '换个风格试试', 'Try another style')}</Text>
                 <PresetSearches onSelect={selectStyle} />
               </View>
             </EmptyState>
@@ -321,10 +329,10 @@ export default function SearchScreen() {
               {drinksQuery.isFetchingNextPage ? (
                 <View style={styles.loadingMore}>
                   <ActivityIndicator size="small" color={palette.amber} />
-                  <Text style={styles.muted}>正在加载更多...</Text>
+                  <Text style={styles.muted}>{tr(language, '正在加载更多...', 'Loading more...')}</Text>
                 </View>
               ) : !drinksQuery.hasNextPage ? (
-                <Text style={styles.listEnd}>已显示全部结果</Text>
+                <Text style={styles.listEnd}>{tr(language, '已显示全部结果', 'All results shown')}</Text>
               ) : null}
             </>
           )}
@@ -351,6 +359,7 @@ function SearchGuide({
   onRetryBreweries: () => void
   onSelectStyle: (style: string) => void
 }) {
+  const { language } = useLanguage()
   const [gridWidth, setGridWidth] = useState(0)
   const [showAllStyles, setShowAllStyles] = useState(false)
   const gap = GRID_GAP
@@ -366,12 +375,12 @@ function SearchGuide({
       }}>
       <View style={styles.guideSection}>
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitle}>风格</Text>
+          <Text style={styles.sectionTitle}>{tr(language, '风格', 'Styles')}</Text>
           <Pressable
             accessibilityRole="button"
             onPress={() => setShowAllStyles((visible) => !visible)}
             hitSlop={8}>
-            <Text style={styles.moreStyles}>{showAllStyles ? '收起' : '更多'}</Text>
+            <Text style={styles.moreStyles}>{showAllStyles ? tr(language, '收起', 'Less') : tr(language, '更多', 'More')}</Text>
           </Pressable>
         </View>
         <PresetSearches
@@ -386,16 +395,16 @@ function SearchGuide({
 
       {breweriesLoading ? (
         <View style={styles.guideSection}>
-          <Text style={styles.sectionTitle}>酒厂</Text>
+          <Text style={styles.sectionTitle}>{tr(language, '酒厂', 'Breweries')}</Text>
           <View style={styles.inlineLoading}>
             <ActivityIndicator size="small" color={palette.amber} />
-            <Text style={styles.muted}>加载中</Text>
+            <Text style={styles.muted}>{tr(language, '加载中', 'Loading')}</Text>
           </View>
         </View>
       ) : breweriesError ? (
         <View style={styles.guideSection}>
-          <Text style={styles.sectionTitle}>酒厂</Text>
-          <RetryButton label="酒厂加载失败，点击重试" onPress={onRetryBreweries} />
+          <Text style={styles.sectionTitle}>{tr(language, '酒厂', 'Breweries')}</Text>
+          <RetryButton label={tr(language, '酒厂加载失败，点击重试', 'Unable to load breweries. Tap to retry.')} onPress={onRetryBreweries} />
         </View>
       ) : tileWidth > 0 ? (
         <BreweryDiscovery
@@ -415,17 +424,18 @@ function PresetSearches({
   onSelect: (query: string) => void
   presets?: string[]
 }) {
+  const { language } = useLanguage()
   return (
     <View style={styles.presetRow}>
       {presets.map((preset) => (
         <Pressable
           key={preset}
           accessibilityRole="button"
-          accessibilityLabel={`筛选${preset}`}
-          accessibilityHint="显示当前公开酒单中的匹配酒款"
+          accessibilityLabel={tr(language, `筛选${preset}`, `Filter by ${englishStyleLabels[preset] || preset}`)}
+          accessibilityHint={tr(language, '显示当前公开酒单中的匹配酒款', 'Show matching beers on public taplists')}
           onPress={() => onSelect(preset)}
           style={({ pressed }) => [styles.presetPill, pressed && styles.presetPillPressed]}>
-          <Text style={styles.presetLabel}>{preset}</Text>
+          <Text style={styles.presetLabel}>{language === 'en' ? englishStyleLabels[preset] || preset : preset}</Text>
         </Pressable>
       ))}
     </View>
@@ -441,12 +451,13 @@ function SearchNewTaps({
   tileWidth: number
   gap: number
 }) {
+  const { language } = useLanguage()
   const rows = chunkRows(drinks, GRID_COLS)
   const tileHeight = tileWidth
 
   return (
     <View style={styles.guideSection}>
-      <Text style={styles.sectionTitle}>上新</Text>
+      <Text style={styles.sectionTitle}>{tr(language, '上新', 'New on tap')}</Text>
       <View style={[styles.newTapGrid, { gap }]}>
         {rows.map((row, rowIndex) => (
           <View key={row.map((drink) => drink.drink_id).join('-')} style={[styles.newTapRow, { gap }]}>
@@ -482,13 +493,14 @@ function SearchNewTapTile({
   width: number
   height: number
 }) {
+  const { localized } = useLanguage()
   const router = useRouter()
-  const breweryLine = formatPrimaryBrewery(drink.brewery, drink.brand_name)
+  const breweryLine = formatPrimaryBrewery(localized(drink.brewery, drink.brewery_en), drink.brand_name)
   const artworkSource = drink.image_url || defaultBeerArtwork
   const copy = (
     <View style={styles.newTapTileCopy}>
       <Text style={styles.newTapTileName} numberOfLines={2} ellipsizeMode="tail">
-        {drink.name}
+        {localized(drink.name, drink.name_en)}
       </Text>
       {breweryLine ? (
         <Text style={styles.newTapTileBrewery} numberOfLines={1} ellipsizeMode="tail">
@@ -550,6 +562,7 @@ function BreweryDiscovery({
   tileWidth: number
   gap: number
 }) {
+  const { language, localized } = useLanguage()
   const router = useRouter()
   const items: Array<PublicTaplistBreweryDiscoveryRow | 'all'> = [...breweries, 'all']
   const rows = chunkRows(items, GRID_COLS)
@@ -557,7 +570,7 @@ function BreweryDiscovery({
 
   return (
     <View style={styles.guideSection}>
-      <Text style={styles.sectionTitle}>酒厂</Text>
+      <Text style={styles.sectionTitle}>{tr(language, '酒厂', 'Breweries')}</Text>
       <View style={[styles.breweryGrid, { gap }]}>
         {rows.map((row, rowIndex) => (
           <View
@@ -567,8 +580,8 @@ function BreweryDiscovery({
               <Pressable
                 key="all-breweries"
                 accessibilityRole="link"
-                accessibilityLabel="查看全部酒厂"
-                accessibilityHint="打开当前城市的完整酒厂列表"
+                accessibilityLabel={tr(language, '查看全部酒厂', 'View all breweries')}
+                accessibilityHint={tr(language, '打开当前城市的完整酒厂列表', 'Open the complete brewery list for this city')}
                 onPress={() => router.push('/breweries' as Href)}
                 style={({ pressed }) => [
                   styles.newTapTile,
@@ -583,8 +596,8 @@ function BreweryDiscovery({
                     <FontAwesome name="ellipsis-h" size={24} color="rgba(211,154,69,0.78)" />
                   </View>
                   <View style={styles.newTapTileCopy}>
-                    <Text style={styles.newTapTileName}>全部酒厂</Text>
-                    <Text style={styles.newTapTileBrewery}>本城有供应</Text>
+                    <Text style={styles.newTapTileName}>{tr(language, '全部酒厂', 'All breweries')}</Text>
+                    <Text style={styles.newTapTileBrewery}>{tr(language, '本城有供应', 'Available in this city')}</Text>
                   </View>
                 </LinearGradient>
               </Pressable>
@@ -592,8 +605,8 @@ function BreweryDiscovery({
               <Pressable
                 key={brewery.brewery_name}
                 accessibilityRole="link"
-                accessibilityLabel={`查看${brewery.brewery_name}酒厂`}
-                accessibilityHint="打开酒厂页"
+                accessibilityLabel={tr(language, `查看${brewery.brewery_name}酒厂`, `View ${localized(brewery.brewery_name, brewery.brewery_name_en)}`)}
+                accessibilityHint={tr(language, '打开酒厂页', 'Open brewery page')}
                 onPress={() => router.push(`/brewery/${encodeURIComponent(brewery.brewery_name)}` as Href)}
                 style={({ pressed }) => [
                   styles.newTapTile,
@@ -602,7 +615,7 @@ function BreweryDiscovery({
                 ]}>
                 {brewery.logo_url ? (
                   <CachedImageBackground
-                    accessibilityLabel={`${brewery.brewery_name}酒厂 Logo`}
+                    accessibilityLabel={tr(language, `${brewery.brewery_name}酒厂 Logo`, `${localized(brewery.brewery_name, brewery.brewery_name_en)} brewery logo`)}
                     ossStyle="nm-card"
                     source={brewery.logo_url}
                     contentFit="contain"
@@ -630,6 +643,7 @@ function BreweryDiscovery({
 }
 
 function BreweryTileCopy({ brewery }: { brewery: PublicTaplistBreweryDiscoveryRow }) {
+  const { language, localized } = useLanguage()
   return (
     <LinearGradient
       colors={['rgba(13,13,13,0.02)', 'rgba(13,13,13,0.38)', 'rgba(13,13,13,0.92)']}
@@ -637,16 +651,17 @@ function BreweryTileCopy({ brewery }: { brewery: PublicTaplistBreweryDiscoveryRo
       style={styles.newTapTileScrim}>
       <View style={styles.newTapTileCopy}>
         <Text style={styles.newTapTileName} numberOfLines={2} ellipsizeMode="tail">
-          {brewery.brewery_name}
+          {localized(brewery.brewery_name, brewery.brewery_name_en)}
         </Text>
-        <Text style={styles.newTapTileBrewery}>{brewery.tap_count} 款</Text>
+        <Text style={styles.newTapTileBrewery}>{tr(language, `${brewery.tap_count} 款`, `${brewery.tap_count} beer${brewery.tap_count === 1 ? '' : 's'}`)}</Text>
       </View>
     </LinearGradient>
   )
 }
 
 function DrinkResult({ drink }: { drink: MiniProductSearchResult }) {
-  const styleLine = [drink.brewery, drink.beer_style, typeof drink.abv === 'number' ? `ABV ${drink.abv}%` : null]
+  const { language, localized } = useLanguage()
+  const styleLine = [localized(drink.brewery, drink.brewery_en), drink.beer_style, typeof drink.abv === 'number' ? `ABV ${drink.abv}%` : null]
     .filter(Boolean)
     .join(' · ')
   const hasSupply = drink.venue_count > 0
@@ -667,7 +682,7 @@ function DrinkResult({ drink }: { drink: MiniProductSearchResult }) {
             <View style={styles.searchArtwork}>
               {drink.image_url ? (
                 <CachedImage
-                  accessibilityLabel={`${drink.name}酒标`}
+                  accessibilityLabel={tr(language, `${drink.name}酒标`, `${localized(drink.name, drink.name_en)} label`)}
                   source={drink.image_url}
                   ossStyle="nm-thumb"
                   style={styles.searchArtworkImage}
@@ -676,17 +691,17 @@ function DrinkResult({ drink }: { drink: MiniProductSearchResult }) {
             </View>
             <View style={styles.drinkCopy}>
               <Text style={styles.resultName} numberOfLines={2}>
-                {drink.name}
+                {localized(drink.name, drink.name_en)}
               </Text>
               {styleLine ? <Text style={styles.drinkStyle}>{styleLine}</Text> : null}
               <Text style={[styles.supplyLine, hasSupply && styles.supplyLineAvailable]}>
-                {hasSupply ? `本城 ${drink.venue_count} 家有售` : '当前城市暂无供应'}
+                {hasSupply ? tr(language, `本城 ${drink.venue_count} 家有售`, `Available at ${drink.venue_count} venue${drink.venue_count === 1 ? '' : 's'}`) : tr(language, '当前城市暂无供应', 'Not available in this city')}
               </Text>
               {drink.venues.length > 0 ? (
                 <View style={styles.venuePills}>
                   {drink.venues.slice(0, 2).map((venue) => (
                     <View key={venue.id} style={styles.venuePill}>
-                      <Text style={styles.venuePillText} numberOfLines={1}>{venue.name}</Text>
+                      <Text style={styles.venuePillText} numberOfLines={1}>{localized(venue.name, venue.display_name_en)}</Text>
                     </View>
                   ))}
                   {drink.venue_count > 2 ? (

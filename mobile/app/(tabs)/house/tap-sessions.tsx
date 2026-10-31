@@ -101,7 +101,7 @@ function tapLabel(value: number | null | undefined): string | null {
 function endReasonLabel(reason: string | null | undefined): string | null {
   switch (reason) {
     case 'sold_out':
-      return '售罄下枪'
+      return '售罄结束'
     case 'replace':
     case 'replaced':
       return '换酒下枪'
@@ -119,13 +119,14 @@ function endReasonLabel(reason: string | null | undefined): string | null {
 function sessionTimeline(session: TapLifecycleSession): string | null {
   const started = formatDateTime(session.started_at)
   const ended = formatDateTime(session.ended_at)
+  const endedLabel = session.end_reason === 'sold_out' ? '售罄' : '下枪'
 
   if (session.accuracy === 'partial_start') {
-    return ended ? `${ended} 下枪` : null
+    return ended ? `${ended} ${endedLabel}` : null
   }
-  if (started && ended) return `${started} 上枪 · ${ended} 下枪`
+  if (started && ended) return `${started} 上枪 · ${ended} ${endedLabel}`
   if (started) return `${started} 上枪`
-  if (ended) return `${ended} 下枪`
+  if (ended) return `${ended} ${endedLabel}`
   return null
 }
 
@@ -153,6 +154,8 @@ function SessionRow({ session, last }: { session: TapLifecycleSession; last: boo
   const isPartial = session.accuracy === 'partial_start'
   const tap = tapLabel(session.current_tap)
   const name = session.drink_name?.trim() || '酒款名称未记录'
+  const brewery = session.brewery_name?.trim()
+  const identity = [brewery, name].filter(Boolean).join(' · ')
   const duration = formatDuration(exactDurationSeconds(session))
   const currentKegDuration = formatDuration(currentKegDurationSeconds(session))
   const rawKegChangeCount = finiteNumber(session.keg_change_count)
@@ -165,7 +168,10 @@ function SessionRow({ session, last }: { session: TapLifecycleSession; last: boo
         ? kegChangeCount > 0
           ? `准确记录后换桶 ${kegChangeCount} 次`
           : null
-        : `共 ${kegChangeCount + 1} 桶 · 换桶 ${kegChangeCount} 次`
+        : kegChangeCount > 0
+          ? `共 ${kegChangeCount + 1} 桶 · 换桶 ${kegChangeCount} 次`
+          : null
+  const showKegDuration = currentKegDuration != null && (kegChangeCount ?? 0) > 0
   const timeline = sessionTimeline(session)
   const endReason = session.state === 'completed' ? endReasonLabel(session.end_reason) : null
 
@@ -173,13 +179,13 @@ function SessionRow({ session, last }: { session: TapLifecycleSession; last: boo
     <View style={[styles.sessionRow, !last && styles.sessionRowBorder]}>
       <View style={styles.sessionTopRow}>
         <Text style={styles.sessionName} numberOfLines={2}>
-          {tap ? `${tap} · ${name}` : name}
+          {tap ? `${tap} · ${identity}` : identity}
         </Text>
-        <View style={[styles.accuracyBadge, isPartial && styles.partialBadge]}>
-          <Text style={[styles.accuracyBadgeText, isPartial && styles.partialBadgeText]}>
-            {isPartial ? '起点不完整' : '准确周期'}
-          </Text>
-        </View>
+        {isPartial ? (
+          <View style={[styles.accuracyBadge, styles.partialBadge]}>
+            <Text style={[styles.accuracyBadgeText, styles.partialBadgeText]}>起点不完整</Text>
+          </View>
+        ) : null}
       </View>
 
       {isPartial ? (
@@ -194,9 +200,9 @@ function SessionRow({ session, last }: { session: TapLifecycleSession; last: boo
         </Text>
       )}
 
-      {currentKegDuration || kegSummary ? (
+      {showKegDuration || kegSummary ? (
         <View style={styles.kegSummary}>
-          {currentKegDuration ? (
+          {showKegDuration ? (
             <Text style={styles.kegDurationText}>
               {session.state === 'active' ? '本桶 ' : '末桶 '}
               {currentKegDuration}
@@ -209,7 +215,7 @@ function SessionRow({ session, last }: { session: TapLifecycleSession; last: boo
       {timeline ? <Text style={styles.sessionMeta}>{timeline}</Text> : null}
       {endReason || session.actor_name?.trim() ? (
         <Text style={styles.sessionMeta}>
-          {[endReason, session.actor_name?.trim() ? `操作人 ${session.actor_name.trim()}` : null]
+          {[endReason, session.actor_name?.trim() ? `操作人【${session.actor_name.trim()}】` : null]
             .filter(Boolean)
             .join(' · ')}
         </Text>
@@ -408,7 +414,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.card,
     overflow: 'hidden',
   },
-  sessionRow: { padding: SPACING.lg },
+  sessionRow: { padding: SPACING.md },
   sessionRowBorder: { borderBottomWidth: 1, borderBottomColor: THEME.borderFaint },
   sessionTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm },
   sessionName: { flex: 1, color: THEME.text, fontSize: 15, lineHeight: 21, fontWeight: '700' },
@@ -423,13 +429,13 @@ const styles = StyleSheet.create({
   partialBadge: { borderColor: THEME.goldBorder, backgroundColor: THEME.goldFill },
   accuracyBadgeText: { color: THEME.success, fontSize: 11, fontWeight: '700' },
   partialBadgeText: { color: THEME.goldSoft },
-  durationText: { color: THEME.goldSoft, fontSize: 20, fontWeight: '800', marginTop: SPACING.md },
-  partialTitle: { color: THEME.goldSoft, fontSize: 15, fontWeight: '700', marginTop: SPACING.md },
+  durationText: { color: THEME.goldSoft, fontSize: 16, lineHeight: 22, fontWeight: '700', marginTop: SPACING.sm },
+  partialTitle: { color: THEME.goldSoft, fontSize: 14, fontWeight: '700', marginTop: SPACING.sm },
   partialText: { color: THEME.muted, fontSize: 12, marginTop: 3 },
-  kegSummary: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm },
+  kegSummary: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.xs },
   kegDurationText: { color: THEME.textSoft, fontSize: 12, fontWeight: '700' },
   kegSummaryText: { color: THEME.muted, fontSize: 12 },
-  sessionMeta: { color: THEME.faint, fontSize: 12, lineHeight: 18, marginTop: SPACING.sm },
+  sessionMeta: { color: THEME.faint, fontSize: 12, lineHeight: 17, marginTop: SPACING.xs },
   emptyCard: {
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,

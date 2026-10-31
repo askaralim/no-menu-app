@@ -11,8 +11,10 @@ import { ShareImagePreviewModal } from '@/components/taplist/ShareImagePreviewMo
 import { palette, spacing, typography } from '@/constants/design'
 import { getMyConsumerProfile } from '@/lib/api/consumerProfile'
 import { getMyDrinkInsights, normalizeBeerStyle } from '@/lib/api/drinkLog'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export default function TapReportScreen() {
+  const { language, localized } = useLanguage()
   const insets = useSafeAreaInsets()
   const { month: monthParam } = useLocalSearchParams<{ month?: string }>()
   const shareRef = useRef<ShareableDrinkLogImageHandle>(null)
@@ -49,10 +51,10 @@ export default function TapReportScreen() {
           <ActivityIndicator color={palette.amber} style={styles.loading} />
         ) : !month?.drink_count ? (
           <>
-            <ReportHeader title="TAP 报告" />
+            <ReportHeader title={tr(language, 'TAP 报告', 'TAP report')} />
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>当月还没有 TAP 记录</Text>
-              <Text style={styles.emptyBody}>记录新的酒款后，月度报告会出现在这里。</Text>
+              <Text style={styles.emptyTitle}>{tr(language, '当月还没有 TAP 记录', 'No TAPs this month')}</Text>
+              <Text style={styles.emptyBody}>{tr(language, '记录新的酒款后，月度报告会出现在这里。', 'Your monthly report will appear after you record a beer.')}</Text>
             </View>
           </>
         ) : (
@@ -60,16 +62,16 @@ export default function TapReportScreen() {
             <ReportHeader
               onShare={() => void generateShare()}
               sharing={sharing}
-              title={`${formatMonth(month.month_start)} TAP 报告`}
+              title={tr(language, `${formatMonth(month.month_start)} TAP 报告`, `${new Date(month.month_start).toLocaleString('en', { month: 'long' })} TAP report`)}
             />
             <Text style={styles.summary}>
-              当月 TAP {month.drink_count} 款 · 来自 {month.bar_count} 家酒吧
+              {tr(language, `当月 TAP ${month.drink_count} 款 · 来自 ${month.bar_count} 家酒吧`, `${month.drink_count} TAPs · ${month.bar_count} venues`) }
             </Text>
 
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>当月喝过</Text>
-                <Text style={styles.sectionMeta}>{visibleDrinks.length} 款</Text>
+                <Text style={styles.sectionTitle}>{tr(language, '当月喝过', 'Tried this month')}</Text>
+                <Text style={styles.sectionMeta}>{tr(language, `${visibleDrinks.length} 款`, `${visibleDrinks.length} beers`)}</Text>
               </View>
               {styleFilters.length ? (
                 <ScrollView
@@ -86,7 +88,7 @@ export default function TapReportScreen() {
                         key={item.style}
                         onPress={() => setSelectedStyle(item.style)}
                         style={({ pressed }) => [styles.filterChip, selected && styles.filterChipSelected, pressed && styles.pressed]}>
-                        <Text style={[styles.filterLabel, selected && styles.filterLabelSelected]}>{item.style}</Text>
+                        <Text style={[styles.filterLabel, selected && styles.filterLabelSelected]}>{item.style === '全部' ? tr(language, '全部', 'All') : item.style}</Text>
                         <Text style={[styles.filterCount, selected && styles.filterCountSelected]}>{item.count}</Text>
                       </Pressable>
                     )
@@ -96,14 +98,14 @@ export default function TapReportScreen() {
               <View style={styles.drinks}>
                 {visibleDrinks.map((drink) => (
                   <Pressable
-                    accessibilityLabel={`查看${drink.name}的 TAP 记录`}
+                    accessibilityLabel={tr(language, `查看${drink.name}的 TAP 记录`, `View TAP record for ${localized(drink.name, drink.name_en)}`)}
                     accessibilityRole="button"
                     key={drink.light_id}
                     onPress={() => router.push(`/drink-log/${drink.light_id}`)}
                     style={({ pressed }) => [styles.drinkItem, pressed && styles.pressed]}>
-                    <BeerArtwork name={drink.name} source={drink.image_url} size={100} />
-                    <Text numberOfLines={2} style={styles.drinkName}>{drink.name}</Text>
-                    <Text numberOfLines={1} style={styles.drinkMeta}>{drink.brewery || drink.beer_style || '精酿啤酒'}</Text>
+                    <BeerArtwork name={localized(drink.name, drink.name_en)} source={drink.image_url} size={100} />
+                    <Text numberOfLines={2} style={styles.drinkName}>{localized(drink.name, drink.name_en)}</Text>
+                    <Text numberOfLines={1} style={styles.drinkMeta}>{localized(drink.brewery, drink.brewery_en) || drink.beer_style || tr(language, '精酿啤酒', 'Craft beer')}</Text>
                     <Text style={styles.drinkDate}>{formatMonthDay(drink.recorded_at)}</Text>
                   </Pressable>
                 ))}
@@ -123,10 +125,11 @@ export default function TapReportScreen() {
 }
 
 function ReportHeader({ onShare, sharing = false, title }: { onShare?: () => void; sharing?: boolean; title: string }) {
+  const { language } = useLanguage()
   return (
     <View style={styles.header}>
       <Pressable
-        accessibilityLabel="返回"
+        accessibilityLabel={tr(language, '返回', 'Back')}
         hitSlop={8}
         onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
         style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}>
@@ -135,7 +138,7 @@ function ReportHeader({ onShare, sharing = false, title }: { onShare?: () => voi
       <Text numberOfLines={1} style={styles.title}>{title}</Text>
       {onShare ? (
         <Pressable
-          accessibilityLabel="分享当月 TAP"
+          accessibilityLabel={tr(language, '分享当月 TAP', 'Share monthly TAPs')}
           disabled={sharing}
           hitSlop={8}
           onPress={onShare}

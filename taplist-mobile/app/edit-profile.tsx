@@ -22,10 +22,12 @@ import {
   updateMyConsumerUsername,
 } from '@/lib/api/consumerProfile'
 import { ensureDrinkLogSession } from '@/lib/drinkLogAuth'
+import { tr, useLanguage } from '@/lib/i18n'
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_\u4E00-\u9FFF]+$/
 
 export default function EditProfileScreen() {
+  const { language } = useLanguage()
   const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
   const [initialUsername, setInitialUsername] = useState('')
@@ -45,7 +47,7 @@ export default function EditProfileScreen() {
         setInitialUsername(profile.consumer_username)
         setUsername(profile.consumer_username)
       } catch {
-        if (active) setErrorMessage('暂时无法读取身份名，请稍后重试')
+        if (active) setErrorMessage(tr(language, '暂时无法读取身份名，请稍后重试', 'Unable to load your username. Please try again.'))
       } finally {
         if (active) setLoading(false)
       }
@@ -59,9 +61,9 @@ export default function EditProfileScreen() {
   const canSave = formatValid && trimmedUsername !== initialUsername && !saving
   const validationMessage = useMemo(() => {
     if (!username || formatValid) return null
-    if (characterCount > 24) return '身份名最多 24 个字符'
-    return '仅支持中文、英文字母、数字和下划线'
-  }, [characterCount, formatValid, username])
+    if (characterCount > 24) return tr(language, '身份名最多 24 个字符', 'Username can contain up to 24 characters')
+    return tr(language, '仅支持中文、英文字母、数字和下划线', 'Use Chinese characters, letters, numbers, or underscores only')
+  }, [characterCount, formatValid, language, username])
 
   const save = async () => {
     if (!canSave) return
@@ -76,13 +78,13 @@ export default function EditProfileScreen() {
     } catch (error) {
       const message = error instanceof ConsumerUsernameError
         ? error.code === 'USERNAME_TAKEN'
-          ? '这个身份名已被使用'
+          ? tr(language, '这个身份名已被使用', 'This username is already in use')
           : error.code === 'USERNAME_RESERVED'
-            ? '这个身份名由 No Menu 保留'
+            ? tr(language, '这个身份名由 No Menu 保留', 'This username is reserved by No Menu')
             : error.code === 'USERNAME_INVALID'
-              ? '仅支持中文、英文字母、数字和下划线'
-              : '暂时无法保存，请稍后重试'
-        : '暂时无法保存，请稍后重试'
+              ? tr(language, '仅支持中文、英文字母、数字和下划线', 'Use Chinese characters, letters, numbers, or underscores only')
+              : tr(language, '暂时无法保存，请稍后重试', 'Unable to save. Please try again.')
+        : tr(language, '暂时无法保存，请稍后重试', 'Unable to save. Please try again.')
       setErrorMessage(message)
       trackEvent('consumer_username_update_failed')
     } finally {
@@ -98,13 +100,13 @@ export default function EditProfileScreen() {
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="返回"
+            accessibilityLabel={tr(language, '返回', 'Back')}
             hitSlop={8}
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <FontAwesome name="angle-left" size={28} color={palette.text} />
           </Pressable>
-          <Text style={styles.headerTitle}>编辑昵称</Text>
+          <Text style={styles.headerTitle}>{tr(language, '编辑昵称', 'Edit profile')}</Text>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -134,7 +136,7 @@ export default function EditProfileScreen() {
               <Text style={styles.counter}>{characterCount}/24</Text>
             </View>
             <Text style={[styles.help, (validationMessage || errorMessage) && styles.error]}>
-              {validationMessage || errorMessage || '支持中文、英文字母、数字和下划线；身份名全局唯一。'}
+              {validationMessage || errorMessage || tr(language, '支持中文、英文字母、数字和下划线；身份名全局唯一。', 'Use Chinese characters, letters, numbers, or underscores. Usernames are unique.')}
             </Text>
 
             <Pressable
@@ -144,7 +146,7 @@ export default function EditProfileScreen() {
               style={({ pressed }) => [styles.saveButton, !canSave && styles.saveButtonDisabled, pressed && canSave && styles.pressed]}>
               {saving
                 ? <ActivityIndicator size="small" color={palette.background} />
-                : <Text style={[styles.saveText, !canSave && styles.saveTextDisabled]}>保存</Text>}
+                : <Text style={[styles.saveText, !canSave && styles.saveTextDisabled]}>{tr(language, '保存', 'Save')}</Text>}
             </Pressable>
           </View>
         )}

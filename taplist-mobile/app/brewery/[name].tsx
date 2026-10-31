@@ -35,8 +35,10 @@ import { fetchMiniBrewery, searchMiniProducts } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { MiniProductSearchResult } from '@/lib/types'
+import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
 
 export default function BreweryScreen() {
+  const { language, localized } = useLanguage()
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
   const { selectedCity, cities, canSelectCity, selectCity } = useTaplistCity()
@@ -62,8 +64,8 @@ export default function BreweryScreen() {
   })
   const brewery = breweryQuery.data?.brewery ?? null
   const products = dedupeProducts(productsQuery.data?.pages.flatMap((page) => page.results) ?? [])
-  const displayName = brewery?.name_zh || breweryName || '未知酒厂'
-  const origin = [brewery?.country, brewery?.city].filter(Boolean).join(' · ')
+  const displayName = localized(brewery?.name_zh || breweryName || '未知酒厂', brewery?.name_en)
+  const origin = brewery ? localizedLocation(language, brewery) : ''
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
@@ -108,33 +110,33 @@ export default function BreweryScreen() {
         <View style={[styles.paddedContent, { paddingTop: brewery?.logo_url ? spacing.lg : insets.top + 74 }]}>
         <View style={styles.header}>
           <Text style={styles.title}>{displayName}</Text>
-          {brewery?.name_en ? <Text style={styles.englishName}>{brewery.name_en}</Text> : null}
+          {language === 'zh' && brewery?.name_en ? <Text style={styles.englishName}>{brewery.name_en}</Text> : null}
           {origin ? <Text style={styles.origin}>{origin}</Text> : null}
         </View>
 
         <View style={styles.toolbar}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={canSelectCity ? `当前城市${selectedCity.label}，选择城市` : `当前城市${selectedCity.label}`}
+            accessibilityLabel={canSelectCity ? tr(language, `当前城市${selectedCity.label}，选择城市`, `Current city: ${localized(selectedCity.label, selectedCity.label_en)}. Select city`) : tr(language, `当前城市${selectedCity.label}`, `Current city: ${localized(selectedCity.label, selectedCity.label_en)}`)}
             disabled={!canSelectCity}
             onPress={() => setCityPickerVisible(true)}
             style={({ pressed }) => [styles.cityButton, pressed && styles.pressed]}>
-            <Text style={styles.cityLabel}>{selectedCity.label}</Text>
+            <Text style={styles.cityLabel}>{localized(selectedCity.label, selectedCity.label_en)}</Text>
             {canSelectCity ? <FontAwesome name="angle-down" size={12} color={palette.gold} /> : null}
           </Pressable>
         </View>
 
         {!configured ? (
-          <EmptyState body="尚未连接酒单服务。" />
+          <EmptyState body={tr(language, '尚未连接酒单服务。', 'Taplist service is not connected.')} />
         ) : breweryQuery.isLoading || productsQuery.isLoading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={palette.amber} />
-            <Text style={styles.muted}>正在加载酒厂酒款...</Text>
+            <Text style={styles.muted}>{tr(language, '正在加载酒厂酒款...', 'Loading brewery beers...')}</Text>
           </View>
         ) : breweryQuery.isError || productsQuery.isError ? (
-          <EmptyState body="暂时无法加载酒厂酒款，请稍后重试。" />
+          <EmptyState body={tr(language, '暂时无法加载酒厂酒款，请稍后重试。', 'Unable to load brewery beers. Please try again.')} />
         ) : products.length === 0 ? (
-          <EmptyState body="这家酒厂暂无公开酒款。" />
+          <EmptyState body={tr(language, '这家酒厂暂无公开酒款。', 'This brewery has no public beers.')} />
         ) : (
           <View style={styles.list}>
             {products.map((product) => (
@@ -143,7 +145,7 @@ export default function BreweryScreen() {
             {productsQuery.isFetchingNextPage ? (
               <View style={styles.loadingMore}>
                 <ActivityIndicator size="small" color={palette.amber} />
-                <Text style={styles.muted}>正在加载更多...</Text>
+                <Text style={styles.muted}>{tr(language, '正在加载更多...', 'Loading more...')}</Text>
               </View>
             ) : null}
           </View>
@@ -155,7 +157,8 @@ export default function BreweryScreen() {
 }
 
 function BreweryProductCard({ product }: { product: MiniProductSearchResult }) {
-  const meta = [product.brewery, product.beer_style].filter(Boolean).join(' · ')
+  const { language, localized } = useLanguage()
+  const meta = [localized(product.brewery, product.brewery_en), product.beer_style].filter(Boolean).join(' · ')
   const abv = typeof product.abv === 'number' ? `ABV ${product.abv}%` : null
 
   return (
@@ -168,7 +171,7 @@ function BreweryProductCard({ product }: { product: MiniProductSearchResult }) {
           {product.image_url ? (
             <View style={listCapsuleCardStyles.artworkFrame}>
               <CachedImage
-                accessibilityLabel={`${product.name}酒款图片`}
+                accessibilityLabel={tr(language, `${product.name}酒款图片`, `${localized(product.name, product.name_en)} image`)}
                 source={product.image_url}
                 ossStyle="nm-thumb"
                 style={listCapsuleCardStyles.artwork}
@@ -183,23 +186,23 @@ function BreweryProductCard({ product }: { product: MiniProductSearchResult }) {
             />
             <View style={listCapsuleCardStyles.panelContent}>
               <Text style={listCapsuleTitleStyle} numberOfLines={2} ellipsizeMode="tail">
-                {product.name}
+                {localized(product.name, product.name_en)}
               </Text>
               {meta ? <Text style={listCapsuleMetaStyle} numberOfLines={1}>{meta}</Text> : null}
               {abv ? <Text style={listCapsuleSecondaryStyle}>{abv}</Text> : null}
               {product.venues.length > 0 ? (
                 <>
-                  <Text style={styles.availability}>{product.venue_count} 家有售</Text>
+                  <Text style={styles.availability}>{tr(language, `${product.venue_count} 家有售`, `Available at ${product.venue_count} venues`)}</Text>
                   <View style={styles.venueRow}>
                     {product.venues.slice(0, 2).map((venue) => (
                       <View key={venue.id} style={styles.venuePill}>
-                        <Text style={styles.venuePillText} numberOfLines={1}>{venue.name}</Text>
+                        <Text style={styles.venuePillText} numberOfLines={1}>{localized(venue.name, venue.display_name_en)}</Text>
                       </View>
                     ))}
                   </View>
                 </>
               ) : (
-                <Text style={styles.unavailable}>当前城市暂无供应</Text>
+                <Text style={styles.unavailable}>{tr(language, '当前城市暂无供应', 'Not available in this city')}</Text>
               )}
             </View>
           </View>

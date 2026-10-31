@@ -5,6 +5,7 @@ import { BEER_CARD_GAP } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
 import type { PublicEventRow } from '@/lib/types'
 import type { AnalyticsSource } from '@/lib/analytics'
+import { tr, useLanguage } from '@/lib/i18n'
 
 type EventListSectionProps = {
   title: string
@@ -17,13 +18,14 @@ type EventListSectionProps = {
 }
 
 export function EventListSection({ title, count, events, hideVenue = false, compact = false, source = 'direct' }: EventListSectionProps) {
+  const { language } = useLanguage()
   const anyVenueHasMultiple = !hideVenue && shouldGroupEventsByVenue(events)
 
   return (
     <View style={[styles.group, compact && !anyVenueHasMultiple && styles.groupCompact]}>
       <Text style={styles.groupTitle}>{title}</Text>
       <Text style={[styles.groupSub, compact && !anyVenueHasMultiple && styles.groupSubCompact]}>
-        {count} 场活动
+        {tr(language, `${count} 场活动`, `${count} event${count === 1 ? '' : 's'}`)}
       </Text>
 
       {anyVenueHasMultiple ? (
@@ -34,7 +36,7 @@ export function EventListSection({ title, count, events, hideVenue = false, comp
                 <Text style={styles.venueName} numberOfLines={1} ellipsizeMode="tail">
                   {venueGroup.name}
                 </Text>
-                <Text style={styles.venueCount}>{venueGroup.events.length} 场</Text>
+                <Text style={styles.venueCount}>{tr(language, `${venueGroup.events.length} 场`, `${venueGroup.events.length} event${venueGroup.events.length === 1 ? '' : 's'}`)}</Text>
               </View>
               <View style={styles.eventStack}>
                 {venueGroup.events.map((event) => (

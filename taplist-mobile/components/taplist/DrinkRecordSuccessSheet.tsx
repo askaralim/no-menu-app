@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CachedImage } from '@/components/taplist/CachedImage'
 import { palette, spacing, typography } from '@/constants/design'
 import type { LightDrinkResult, MyDrinkInsights } from '@/lib/types'
+import { tr, useLanguage } from '@/lib/i18n'
 
 type Props = {
   result: LightDrinkResult | null
@@ -17,6 +18,7 @@ type Props = {
 }
 
 export function DrinkRecordSuccessSheet({ result, insights, insightsLoading, drinkImageUrl, drinkName, onDismiss, onReviewTonight }: Props) {
+  const { language } = useLanguage()
   const insets = useSafeAreaInsets()
   const { height: windowHeight } = useWindowDimensions()
   const compact = windowHeight < 800
@@ -24,12 +26,12 @@ export function DrinkRecordSuccessSheet({ result, insights, insightsLoading, dri
   const recordedDrink = insights?.tonight.drinks.find((drink) => drink.light_id === result?.light_id)
     ?? insights?.tonight.drinks[0]
   const artworkUrl = recordedDrink?.image_url ?? drinkImageUrl
-  const artworkName = recordedDrink?.name ?? drinkName ?? '当前酒款'
+  const artworkName = recordedDrink?.name ?? drinkName ?? tr(language, '当前酒款', 'Current beer')
 
   return (
     <Modal transparent animationType="slide" visible={Boolean(result?.created_venue)} onRequestClose={onDismiss}>
       <View style={styles.overlay}>
-        <Pressable accessibilityLabel="关闭记录结果" style={styles.backdrop} onPress={onDismiss} />
+        <Pressable accessibilityLabel={tr(language, '关闭记录结果', 'Close result')} style={styles.backdrop} onPress={onDismiss} />
         <View style={[
           styles.sheet,
           compact && styles.sheetCompact,
@@ -39,7 +41,7 @@ export function DrinkRecordSuccessSheet({ result, insights, insightsLoading, dri
             {artworkUrl ? (
               <View style={[styles.artFrame, compact && styles.artFrameCompact]}>
                 <CachedImage
-                  accessibilityLabel={`${artworkName}酒款图片`}
+                  accessibilityLabel={tr(language, `${artworkName}酒款图片`, `${artworkName} beer image`)}
                   source={artworkUrl}
                   ossStyle="nm-card"
                   style={styles.art}
@@ -48,17 +50,17 @@ export function DrinkRecordSuccessSheet({ result, insights, insightsLoading, dri
             ) : null}
           </View>
           <View style={[styles.check, compact && styles.checkCompact]}><FontAwesome name="check" size={compact ? 16 : 18} color={palette.tungsten} /></View>
-          <Text style={[styles.title, compact && styles.titleCompact]}>{result?.created_light ? `第 ${result.drink_count} 款 TAP 已记录` : '已新增这家酒吧'}</Text>
+          <Text style={[styles.title, compact && styles.titleCompact]}>{result?.created_light ? tr(language, `第 ${result.drink_count} 款 TAP 已记录`, `TAP #${result.drink_count} recorded`) : tr(language, '已新增这家酒吧', 'Venue added to this TAP')}</Text>
           {insightsLoading ? <ActivityIndicator color={palette.amber} style={styles.insightsLoading} /> : tonightCount > 0 ? (
-            <Text style={styles.tonight}>今晚新记录 {tonightCount} 款</Text>
+            <Text style={styles.tonight}>{tr(language, `今晚新记录 ${tonightCount} 款`, `${tonightCount} new tonight`)}</Text>
           ) : null}
           <Pressable accessibilityRole="button" onPress={onDismiss} style={({ pressed }) => [styles.done, compact && styles.doneCompact, pressed && styles.pressed]}>
-            <Text style={styles.doneText}>完成</Text>
+            <Text style={styles.doneText}>{tr(language, '完成', 'Done')}</Text>
           </Pressable>
           {tonightCount >= 2 ? (
             <Pressable accessibilityRole="button" onPress={onReviewTonight} style={({ pressed }) => [styles.share, compact && styles.shareCompact, pressed && styles.pressed]}>
               <FontAwesome name="clone" size={15} color={palette.amber} />
-              <Text style={styles.shareText}>回顾今晚 {tonightCount} 款</Text>
+              <Text style={styles.shareText}>{tr(language, `回顾今晚 ${tonightCount} 款`, `Review ${tonightCount} tonight`)}</Text>
             </Pressable>
           ) : null}
         </View>

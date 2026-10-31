@@ -18,6 +18,7 @@ import { palette, spacing, typography } from '@/constants/design'
 import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/lib/formatTaplist'
 import { trackEvent } from '@/lib/analytics'
 import type { PublicDrinkRow } from '@/lib/types'
+import { tr, useLanguage } from '@/lib/i18n'
 
 type BeerListCardProps = {
   drink: PublicDrinkRow
@@ -27,11 +28,12 @@ type BeerListCardProps = {
 }
 
 export function BeerListCard({ drink, slug, tenantId, isLit = false }: BeerListCardProps) {
+  const { language, localized } = useLanguage()
   const publicStatus = drink.public_status || null
   const isSoldOut = publicStatus === '售罄'
   const isNew = publicStatus === '上新'
   const brewery = formatBreweryWithCollab(
-    drink.beer?.brewery,
+    localized(drink.beer?.brewery, drink.beer?.brewery_en),
     drink.beer?.collab_breweries,
     drink.brand_name,
   )
@@ -82,7 +84,7 @@ export function BeerListCard({ drink, slug, tenantId, isLit = false }: BeerListC
             <View style={listCapsuleCardStyles.panelContent}>
               <View style={styles.nameRow}>
                 <Text style={[listCapsuleTitleStyle, { flex: 1 }]} numberOfLines={2} ellipsizeMode="tail">
-                  {drink.name}
+                  {localized(drink.name, drink.name_en)}
                 </Text>
                 {publicStatus ? (
                   <View
@@ -99,7 +101,7 @@ export function BeerListCard({ drink, slug, tenantId, isLit = false }: BeerListC
                         isSoldOut && styles.statusTagSoldOut,
                         !isNew && !isSoldOut && styles.statusTagDefault,
                       ]}>
-                      {publicStatus}
+                      {language === 'en' ? ({ 在售: 'Available', 上新: 'New', 即将上新: 'Coming soon', 少量: 'Low stock', 售罄: 'Sold out' }[publicStatus] || publicStatus) : publicStatus}
                     </Text>
                   </View>
                 ) : null}
@@ -114,7 +116,7 @@ export function BeerListCard({ drink, slug, tenantId, isLit = false }: BeerListC
               {abv || isLit ? (
                 <View style={styles.secondaryRow}>
                   {abv ? <Text style={listCapsuleSecondaryStyle}>{abv}</Text> : null}
-                  {isLit ? <Text style={styles.litLabel}>✓ 喝过</Text> : null}
+                  {isLit ? <Text style={styles.litLabel}>✓ {tr(language, '喝过', 'Tried')}</Text> : null}
                 </View>
               ) : null}
 

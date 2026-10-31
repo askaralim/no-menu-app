@@ -12,11 +12,13 @@ import { getMyConsumerProfile } from '@/lib/api/consumerProfile'
 import { getMyDrinkHistory, getMyDrinkInsights, getMyDrinkSummary } from '@/lib/api/drinkLog'
 import { deleteDrinkLogAccount, getAccountProtectionState, isAppleCancellation, protectDrinkLogWithApple } from '@/lib/drinkLogAuth'
 import { getTaplistSupabase } from '@/lib/supabase'
+import { tr, useLanguage, type LanguagePreference } from '@/lib/i18n'
 import type { AccountProtectionState, MyDrinkHistoryRow, MyDrinkInsights } from '@/lib/types'
 
 export default function MineScreen() {
   const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
+  const { language, localized, preference, setPreference, text } = useLanguage()
   const [protection, setProtection] = useState<AccountProtectionState>('unavailable')
 
   const sessionQuery = useQuery({
@@ -55,7 +57,7 @@ export default function MineScreen() {
     void getAccountProtectionState().then(setProtection)
   }, [])
 
-  const groups = useMemo(() => groupByMonth(historyQuery.data ?? []), [historyQuery.data])
+  const groups = useMemo(() => groupByMonth(historyQuery.data ?? [], language), [historyQuery.data, language])
   const linkApple = async () => {
     trackEvent('apple_link_started')
     try {
@@ -66,18 +68,18 @@ export default function MineScreen() {
       trackEvent('apple_link_succeeded')
     } catch (error) {
       if (isAppleCancellation(error)) return
-      Alert.alert('暂时无法使用 Apple 登录', '请确认 Apple 登录和 Supabase Apple Provider 已配置后再试。')
+      Alert.alert(tr(language, '暂时无法使用 Apple 登录', 'Unable to use Sign in with Apple'), tr(language, '请确认 Apple 登录和 Supabase Apple Provider 已配置后再试。', 'Please try again later.'))
       trackEvent('apple_link_failed')
     }
   }
 
   const deleteAccount = () => Alert.alert(
-    '删除账号与全部记录？',
-    '所有喝过记录、关注的酒吧和通知设置都会永久删除，且无法恢复。',
+    tr(language, '删除账号与全部记录？', 'Delete account and all data?'),
+    tr(language, '所有喝过记录、关注的酒吧和通知设置都会永久删除，且无法恢复。', 'All beer history, followed venues, and notification settings will be permanently deleted.'),
     [
-      { text: '取消', style: 'cancel' },
+      { text: tr(language, '取消', 'Cancel'), style: 'cancel' },
       {
-        text: '永久删除',
+        text: tr(language, '永久删除', 'Delete permanently'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -87,7 +89,7 @@ export default function MineScreen() {
             setProtection('anonymous')
           } catch (error) {
             if (isAppleCancellation(error)) return
-            Alert.alert('删除失败', '暂时无法删除账号，请稍后重试。')
+            Alert.alert(tr(language, '删除失败', 'Delete failed'), tr(language, '暂时无法删除账号，请稍后重试。', 'Unable to delete the account. Please try again.'))
           }
         },
       },
@@ -99,8 +101,8 @@ export default function MineScreen() {
   const month = insightsQuery.data?.month
   const tonightCount = insightsQuery.data?.tonight.drink_count ?? 0
   const tapCardMeta = month?.drink_count
-    ? `${formatMonthName(month.month_start)}TAP ${month.drink_count} 款 · 来自 ${month.bar_count} 家酒吧`
-    : '查看月度报告与分享记录'
+    ? tr(language, `${formatMonthName(month.month_start)}TAP ${month.drink_count} 款 · 来自 ${month.bar_count} 家酒吧`, `${month.drink_count} TAPs this month · ${month.bar_count} venues`)
+    : tr(language, '查看月度报告与分享记录', 'View monthly report and share your history')
 
   return (
     <View style={styles.screen}>
@@ -118,20 +120,20 @@ export default function MineScreen() {
               </Text>
               {hasDrinks ? (
                 <Text numberOfLines={1} style={styles.identitySummary}>
-                  {summary?.drink_count} 款酒 · {summary?.bar_count} 家酒吧
+                  {tr(language, `${summary?.drink_count} 款酒 · ${summary?.bar_count} 家酒吧`, `${summary?.drink_count} beers · ${summary?.bar_count} venues`)}
                 </Text>
               ) : null}
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="编辑昵称"
+              accessibilityLabel={tr(language, '编辑昵称', 'Edit profile')}
               onPress={() => router.push('/edit-profile' as Href)}
               style={({ pressed }) => [styles.editProfileButton, pressed && styles.pressed]}>
               <FontAwesome name="pencil" size={20} color={palette.amber} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="关于 No Menu"
+              accessibilityLabel={tr(language, '关于 No Menu', 'About No Menu')}
               onPress={() => router.push('/about' as Href)}
               style={({ pressed }) => [styles.aboutButton, pressed && styles.pressed]}>
               <FontAwesome name="info-circle" size={21} color={palette.faint} />
@@ -145,25 +147,44 @@ export default function MineScreen() {
               style={({ pressed }) => [styles.protectionRow, pressed && protection !== 'apple' && styles.pressed]}>
               <FontAwesome name={protection === 'apple' ? 'check-circle' : 'lock'} size={15} color={palette.tungsten} />
               <Text style={styles.protectionText}>
-                {protection === 'apple' ? '记录已受 Apple 保护' : '使用 Apple 保护记录'}
+                {protection === 'apple' ? tr(language, '记录已受 Apple 保护', 'History protected by Apple') : tr(language, '使用 Apple 保护记录', 'Protect history with Apple')}
               </Text>
               {protection !== 'apple' ? <FontAwesome name="angle-right" size={18} color={palette.faint} /> : null}
             </Pressable>
           ) : null}
         </View>
 
+        <View style={styles.featureCards}>
+          <Text style={styles.historyTitle}>{text.language}</Text>
+          {([
+            ['auto', text.followSystem],
+            ['zh', text.chinese],
+            ['en', text.english],
+          ] as Array<[LanguagePreference, string]>).map(([value, label]) => (
+            <Pressable
+              key={value}
+              accessibilityRole="button"
+              accessibilityState={{ selected: preference === value }}
+              onPress={() => void setPreference(value)}
+              style={({ pressed }) => [styles.protectionRow, pressed && styles.pressed]}>
+              <Text style={styles.protectionText}>{label}</Text>
+              {preference === value ? <FontAwesome name="check" size={15} color={palette.amber} /> : null}
+            </Pressable>
+          ))}
+        </View>
+
         {hasSession ? (
           <View style={styles.featureCards}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="关注酒吧，管理已关注的酒吧"
+              accessibilityLabel={tr(language, '关注酒吧，管理已关注的酒吧', 'Manage followed venues')}
               onPress={() => router.push('/followed-bars' as Href)}
               style={({ pressed }) => [styles.featureCard, pressed && styles.pressed]}>
               <FontAwesome name="bell-o" size={18} color={palette.amber} style={styles.featureIcon} />
               <View style={styles.featureCopy}>
-                <Text style={styles.featureTitle}>关注酒吧</Text>
+                <Text style={styles.featureTitle}>{tr(language, '关注酒吧', 'Followed venues')}</Text>
                 <Text style={styles.featureBody}>
-                  {Platform.OS === 'ios' ? '管理关注和上新通知' : '管理已关注的酒吧'}
+                  {Platform.OS === 'ios' ? tr(language, '管理关注和上新通知', 'Manage follows and new-tap alerts') : tr(language, '管理已关注的酒吧', 'Manage followed venues')}
                 </Text>
               </View>
               <FontAwesome name="angle-right" size={20} color={palette.faint} />
@@ -173,12 +194,12 @@ export default function MineScreen() {
             ) : (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`我的 TAP，${tapCardMeta}`}
+                accessibilityLabel={tr(language, `我的 TAP，${tapCardMeta}`, `My TAPs, ${tapCardMeta}`)}
                 onPress={() => router.push('/tap-report' as Href)}
                 style={({ pressed }) => [styles.featureCard, pressed && styles.pressed]}>
                 <FontAwesome name="check-circle-o" size={18} color={palette.amber} style={styles.featureIcon} />
                 <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>我的 TAP</Text>
+                  <Text style={styles.featureTitle}>{tr(language, '我的 TAP', 'My TAPs')}</Text>
                   <Text numberOfLines={1} style={styles.featureBody}>{tapCardMeta}</Text>
                 </View>
                 <FontAwesome name="angle-right" size={20} color={palette.faint} />
@@ -187,12 +208,12 @@ export default function MineScreen() {
             {tonightCount >= 2 ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`回顾今晚 ${tonightCount} 款 TAP`}
+                accessibilityLabel={tr(language, `回顾今晚 ${tonightCount} 款 TAP`, `Review ${tonightCount} TAPs tonight`)}
                 onPress={() => router.push('/tonight-recap' as Href)}
                 style={({ pressed }) => [styles.tonightRecap, pressed && styles.pressed]}>
                 <FontAwesome name="clone" size={15} color={palette.amber} />
-                <Text style={styles.tonightRecapCount}>今晚 {tonightCount} 款</Text>
-                <Text style={styles.tonightRecapAction}>回顾今晚 TAP</Text>
+                <Text style={styles.tonightRecapCount}>{tr(language, `今晚 ${tonightCount} 款`, `${tonightCount} tonight`)}</Text>
+                <Text style={styles.tonightRecapAction}>{tr(language, '回顾今晚 TAP', 'Review tonight')}</Text>
                 <FontAwesome name="angle-right" size={18} color={palette.faint} />
               </Pressable>
             ) : null}
@@ -200,18 +221,18 @@ export default function MineScreen() {
         ) : null}
 
         <View style={styles.historyHeader}>
-          <Text style={styles.historyTitle}>TAP 记录</Text>
+          <Text style={styles.historyTitle}>{tr(language, 'TAP 记录', 'TAP history')}</Text>
         </View>
 
         {sessionQuery.isLoading || (hasSession && historyQuery.isLoading) ? (
           <ActivityIndicator color={palette.amber} style={styles.loading} />
         ) : groups.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>还没有 TAP 记录</Text>
-            <Text style={styles.emptyBody}>看到喝过的酒，点一下“喝过”，它就会留在这里。</Text>
+            <Text style={styles.emptyTitle}>{tr(language, '还没有 TAP 记录', 'No TAP history yet')}</Text>
+            <Text style={styles.emptyBody}>{tr(language, '看到喝过的酒，点一下“喝过”，它就会留在这里。', 'Tap “Tried” on a beer to keep it here.')}</Text>
             <Link href="/search" asChild>
               <Pressable style={styles.emptyButton}>
-                <Text style={styles.emptyButtonText}>去搜索酒款</Text>
+                <Text style={styles.emptyButtonText}>{tr(language, '去搜索酒款', 'Search beers')}</Text>
               </Pressable>
             </Link>
           </View>
@@ -224,7 +245,7 @@ export default function MineScreen() {
                   <View style={[styles.timelineDot, isCurrentMonth && styles.timelineDotCurrent]} />
                   <View style={styles.monthHeader}>
                     <Text style={[styles.monthLabel, isCurrentMonth && styles.monthLabelCurrent]}>{group.label}</Text>
-                    <Text style={styles.monthCount}>{group.items.length} 款</Text>
+                    <Text style={styles.monthCount}>{tr(language, `${group.items.length} 款`, `${group.items.length} beers`)}</Text>
                   </View>
                   {isCurrentMonth ? group.days.map((day) => (
                     <View key={day.key} style={styles.day}>
@@ -251,10 +272,10 @@ export default function MineScreen() {
                       ))}
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel={`展开${group.label}全部记录`}
+                        accessibilityLabel={tr(language, `展开${group.label}全部记录`, `Show all records for ${group.label}`)}
                         onPress={() => router.push({ pathname: '/tap-report', params: { month: group.key } } as Href)}
                         style={({ pressed }) => [styles.expandMonth, pressed && styles.pressed]}>
-                        <Text style={styles.expandMonthText}>展开全部</Text>
+                        <Text style={styles.expandMonthText}>{tr(language, '展开全部', 'View all')}</Text>
                         <FontAwesome name="angle-right" size={14} color={palette.faint} />
                       </Pressable>
                     </View>
@@ -267,7 +288,7 @@ export default function MineScreen() {
 
         {hasSession ? (
           <Pressable onPress={deleteAccount} style={styles.deleteAccount}>
-            <Text style={styles.deleteAccountText}>删除账号与全部记录</Text>
+            <Text style={styles.deleteAccountText}>{tr(language, '删除账号与全部记录', 'Delete account and all data')}</Text>
           </Pressable>
         ) : null}
       </ScrollView>
@@ -277,13 +298,14 @@ export default function MineScreen() {
 }
 
 function MonthlyArchiveCard({ month }: { month: MyDrinkInsights['month'] }) {
+  const { language } = useLanguage()
   const archiveMonth = formatArchiveMonth(month.month_start)
   const artwork = month.drinks.filter((drink) => Boolean(drink.image_url)).slice(0, 3)
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`我的 TAP，${archiveMonth.year}年${Number(archiveMonth.month)}月，${month.drink_count}款，来自${month.bar_count}家酒吧，查看月报`}
+      accessibilityLabel={tr(language, `我的 TAP，${archiveMonth.year}年${Number(archiveMonth.month)}月，${month.drink_count}款，来自${month.bar_count}家酒吧，查看月报`, `My TAPs, ${archiveMonth.month}/${archiveMonth.year}, ${month.drink_count} beers from ${month.bar_count} venues. View report`)}
       onPress={() => router.push('/tap-report' as Href)}
       style={({ pressed }) => [styles.monthArchiveCard, pressed && styles.pressed]}>
       <View pointerEvents="none" style={styles.archiveAtmosphere} />
@@ -298,10 +320,10 @@ function MonthlyArchiveCard({ month }: { month: MyDrinkInsights['month'] }) {
           <Text style={styles.archiveCountUnit}>TAP</Text>
         </View>
         <Text style={styles.archiveBars}>
-          来自 <Text style={styles.archiveBarsAccent}>{month.bar_count}</Text> 家酒吧
+          {tr(language, '来自 ', 'From ')}<Text style={styles.archiveBarsAccent}>{month.bar_count}</Text>{tr(language, ' 家酒吧', ` venue${month.bar_count === 1 ? '' : 's'}`)}
         </Text>
         <View style={styles.archiveShareChip}>
-          <Text style={styles.archiveShareText}>查看月报</Text>
+          <Text style={styles.archiveShareText}>{tr(language, '查看月报', 'View report')}</Text>
           <FontAwesome name="angle-right" size={14} color={palette.amber} />
         </View>
       </View>
@@ -327,6 +349,7 @@ function MonthlyArchiveCard({ month }: { month: MyDrinkInsights['month'] }) {
 }
 
 function DrinkGridItem({ item }: { item: MyDrinkHistoryRow }) {
+  const { language, localized } = useLanguage()
   const href = `/drink-log/${item.light_id}` as Href
   return (
     <View style={styles.gridItem}>
@@ -335,15 +358,15 @@ function DrinkGridItem({ item }: { item: MyDrinkHistoryRow }) {
           <View style={styles.artSlot}>
             {item.image_url ? <CachedImage source={item.image_url} ossStyle="nm-card" style={styles.art} /> : null}
           </View>
-          <Text numberOfLines={2} style={styles.drinkName}>{item.name}</Text>
-          <Text numberOfLines={1} style={styles.drinkMeta}>{item.brewery || item.beer_style || '精酿啤酒'}</Text>
+          <Text numberOfLines={2} style={styles.drinkName}>{localized(item.name, item.name_en)}</Text>
+          <Text numberOfLines={1} style={styles.drinkMeta}>{localized(item.brewery, item.brewery_en) || item.beer_style || tr(language, '精酿啤酒', 'Craft beer')}</Text>
         </Pressable>
       </Link>
     </View>
   )
 }
 
-function groupByMonth(items: MyDrinkHistoryRow[]) {
+function groupByMonth(items: MyDrinkHistoryRow[], language: 'zh' | 'en') {
   const map = new Map<string, Map<string, MyDrinkHistoryRow[]>>()
   items.forEach((item) => {
     const activityByMonth = new Map<string, string>()
@@ -380,7 +403,9 @@ function groupByMonth(items: MyDrinkHistoryRow[]) {
       }))
     return {
       key,
-      label: `${year}年${Number(monthNumber)}月`,
+      label: language === 'en'
+        ? new Date(Number(year), Number(monthNumber) - 1, 1).toLocaleString('en', { month: 'long', year: 'numeric' })
+        : `${year}年${Number(monthNumber)}月`,
       items: days.flatMap((day) => day.items),
       days,
     }

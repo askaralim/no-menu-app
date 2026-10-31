@@ -1,6 +1,6 @@
 # No Menu 消费者行为分析
 
-最后更新：2026-10-25（Asia/Shanghai）
+最后更新：2026-10-29（Asia/Shanghai）
 
 本文是 Taplist iOS、微信小程序和 Taplist Web 产品分析的当前事实来源。历史基线见
 [`ANALYTICS_BASELINE_2026-10-08.md`](ANALYTICS_BASELINE_2026-10-08.md)。
@@ -10,8 +10,8 @@
 | Surface | 状态 | 数据边界 |
 |---|---|---|
 | Taplist iOS | P0 与 P1-A 已通过 production OTA 发布并验证 | 只有用户打开「匿名产品分析」后才向 PostHog 发送事件 |
-| 微信小程序 | P1-B 已验证；审核通过并正式发布 | 匿名事件使用本地随机 visitor；登录后关联现有 Supabase user ID |
-| Taplist Web | 生产二维码落地页事件已验证 | PostHog cookieless；不会与 iOS 或小程序匿名 ID 自动合并 |
+| 微信小程序 | `1.3.0` 已通过审核并正式发布 | 使用微信官方 We 分析；不生成 visitor/session ID，不执行 identify；Supabase 仍是 TAP、关注和账号的事实来源 |
+| Taplist Web | 生产二维码落地页事件已验证 | PostHog cookieless；不会与 iOS 或小程序数据自动合并 |
 | Supabase | TAP、关注、账号和门店等业务事实来源 | 不用 PostHog 事件替代业务记录或计算精确用户总数 |
 
 iOS production OTA：runtime `ee7f9707efde823e12a9ee09ecebacef7af96f79`，update group
@@ -21,19 +21,20 @@ iOS production OTA：runtime `ee7f9707efde823e12a9ee09ecebacef7af96f79`，update
 
 | 能力 | iOS | 微信小程序 | Web | 结论 |
 |---|---|---|---|---|
-| App / 页面打开 | `Application Opened`, `screen_viewed` | `Application Opened`, `screen_viewed` | 页面专用 view 事件 | 已完成 |
+| App / 页面打开 | `Application Opened`, `screen_viewed` | 由微信平台访问与页面数据负责 | 页面专用 view 事件 | 已完成；小程序不重复上报页面曝光事件 |
 | 酒吧打开 | `bar_opened` | `bar_opened` | `web_bar_viewed` | 已完成；名称按 surface 保留 |
 | 酒款打开 | `beer_opened` | `beer_opened` | 不适用 | 已实现 |
 | 搜索 | `search_completed` | `search_completed` | 不适用 | 已实现；不上传搜索词 |
 | 活动打开 | `event_opened` | `event_opened` | 不适用 | 已实现 |
 | 门店二维码入口 | 不适用 | `qr_entry_opened` | `web_bar_viewed` | 已真机验证 |
 | TAP | `drink_light_started/succeeded/failed` | 同名事件 | 不适用 | 已实现；Supabase 才是业务事实来源 |
+| 酒标识别与录入 | 不适用 | `beer_label_recognition_started/finished`、`beer_entry_saved` | 不适用 | `1.3.0` 已实现；后台事件质量仍按小程序发布清单复查 |
 | 地图导航意图 | `apple_maps_opened` | 尚未埋点 | 不适用 | 部分完成 |
 | Push 打开 | 尚未埋点 | 不适用 | 不适用 | 未完成 |
 | 列表/card impression | 尚未埋点 | 尚未埋点 | 尚未埋点 | 未完成；`screen_viewed` 只表示页面曝光 |
 
-“核心事件管道完成”只指匿名身份、页面浏览、酒吧/酒款打开、二维码入口和 TAP 行为可以发送到
-PostHog。不要把它表述为 impression、navigation、push open 全部完成。
+“核心事件管道完成”只指各端既定的页面/入口和关键业务事件可进入对应分析平台。iOS 与 Web 使用
+PostHog，小程序使用微信 We 分析；不要把它表述为 impression、navigation、push open 全部完成。
 
 ## 匿名身份与会话
 
@@ -47,15 +48,15 @@ PostHog。不要把它表述为 impression、navigation、push open 全部完成
 
 ### 微信小程序
 
-- 每个安装生成并持久保存随机 `mini_` visitor ID。
-- 30 分钟无活动后轮换 session，并发送同一个 `$session_id` / `session_id`。
-- 未登录事件设置 `$process_person_profile=false`；微信消费者登录后才关联现有 Supabase user ID。
-- 退出或 session 失效时重置身份并轮换匿名 visitor。
+- `1.3.0` 使用微信官方 We 分析，不生成分析 visitor/session ID，不执行 identify，也不保存分析身份 storage。
+- 自定义事件不主动提交 OpenID、UnionID、No Menu 用户 ID、搜索原文、联系方式、图片、识别正文或认证 token。
+- 页面访问、来源和平台留存交给微信平台数据；TAP、关注和账号等业务事实继续以 Supabase 为准。
+- 小程序 We 分析事件字典、属性白名单和发布后复查清单以小程序项目的 `docs/analytics/we-analysis.md` 为准。
 
 ### Taplist Web
 
 - 使用 PostHog cookieless 模式；`Distinct ID=$posthog_cookieless`，设备值仅用于该 cookieless 会话。
-- Web、iOS、小程序属于不同 surface，匿名 ID 不能跨端拼接成同一个人。
+- Web、iOS、小程序属于不同 surface，不能把不同平台的数据拼接成同一个人。
 - 应按入口、门店、二维码和时间窗口分析跨端转化，不声称实现确定的个人级跨端归因。
 
 ## 二维码事件语义
@@ -63,9 +64,8 @@ PostHog。不要把它表述为 impression、navigation、push open 全部完成
 永久门店码 `FR73UGDP` 的体验版验证链路如下：
 
 ```text
-Application Opened
-  entry_path=pages/bar/bar
-  wechat_scene=1047
+微信平台入口 / 页面访问
+  scene=1047
     ↓
 qr_entry_opened
   bar_slug=zj-jx-didi
@@ -77,8 +77,8 @@ bar_opened
   source=qr
 ```
 
-三条事件在真机测试中具有相同 distinct ID 和 session ID。`qr_entry_opened` 只有在永久二维码通过
-服务端成功解析后才发送；它表示“有效二维码入口已打开”，不表示到店。
+`qr_entry_opened` 只有在永久二维码通过服务端成功解析后才发送；它表示“有效二维码入口已打开”，
+不表示到店。当前小程序 We 分析不提供与 iOS/Web 通用的 distinct ID 或 session ID。
 
 Web 事件的含义不同：
 
@@ -87,12 +87,11 @@ Web 事件的含义不同：
 - `follow_cta_viewed` / `follow_cta_clicked`：关注引导已展示 / 被点击。
 - `app_open_clicked`：网页上的 App 打开操作被点击，不表示安装或 App Store 转化完成。
 
-Web 与小程序可以通过 `tenant_slug`、二维码编号和时间窗口做汇总分析，但不能把两个 cookieless / anonymous
-distinct ID 当作同一用户。
+Web 与小程序可以通过门店 slug、二维码编号和时间窗口做汇总分析，但不能把两端数据当作同一用户。
 
 ## 公共属性与隐私边界
 
-客户端事件在可用时包含：
+PostHog 客户端事件在可用时包含：
 
 - `analytics_schema_version`
 - `surface`、`platform`
@@ -100,6 +99,8 @@ distinct ID 当作同一用户。
 - `city`
 - `session_id` / `$session_id`
 - `is_internal`
+
+小程序 We 分析只使用事件字典允许的字符和整数属性，不使用上述 PostHog visitor/session 公共属性。
 
 不得发送：搜索原文、精确经纬度、完整地址、手机号、邮箱、微信登录 code、access token、refresh token、
 Apple contact data 或完整私人 TAP 历史。GeoIP、session replay、surveys、remote config 和自动错误采集保持关闭，
@@ -114,7 +115,7 @@ Apple contact data 或完整私人 TAP 历史。GeoIP、session replay、surveys
 
 ## 查询与解释规则
 
-- PostHog 用于可观测行为和漏斗；Supabase 用于 retained TAP、账号、关注和门店等事实。
+- PostHog 用于 iOS/Web 的可观测行为和漏斗，微信 We 分析用于小程序聚合行为；Supabase 用于 retained TAP、账号、关注和门店等事实。
 - 生产分析默认排除 `is_internal=true`、`environment=trial/develop`。
 - `drink_light_succeeded` 表示 RPC 成功；必须结合 `created_drink`、`created_venue` 判断是否新建记录。
 - QR、地图、分享、App 打开按钮都是意图或入口信号，不是到店、安装或消费证明。

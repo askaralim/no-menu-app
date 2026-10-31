@@ -5,6 +5,7 @@ import ViewShot from 'react-native-view-shot'
 import { CachedImage } from '@/components/taplist/CachedImage'
 import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
+import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
 import type { MyDrinkHistoryRow } from '@/lib/types'
 
 export type ShareableDrinkHistoryImageHandle = { capture: () => Promise<string | undefined> }
@@ -14,6 +15,7 @@ export const ShareableDrinkHistoryImage = forwardRef<
   { item: MyDrinkHistoryRow }
 >(function ShareableDrinkHistoryImage({ item }, ref) {
   const shotRef = useRef<ViewShot>(null)
+  const { language, localized } = useLanguage()
   const venues = [...item.venues]
     .sort((left, right) => new Date(right.first_drank_at).getTime() - new Date(left.first_drank_at).getTime())
   const visibleVenues = venues.slice(0, 2)
@@ -28,7 +30,7 @@ export const ShareableDrinkHistoryImage = forwardRef<
     <ViewShot ref={shotRef} options={{ format: 'png', quality: 1, width: 1080, height: 1440 }}>
       <View collapsable={false} style={styles.card}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{formatDate(item.first_lit_at)} · 我喝过</Text>
+          <Text style={styles.headerTitle}>{formatDate(item.first_lit_at)} · {tr(language, '我喝过', 'Tried')}</Text>
           <View style={styles.headerRule} />
         </View>
 
@@ -42,22 +44,22 @@ export const ShareableDrinkHistoryImage = forwardRef<
 
         <View style={styles.copy}>
           <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72} style={styles.identityLine}>
-            {item.brewery ? <Text style={styles.brewery}>{item.brewery} · </Text> : null}
-            <Text style={styles.name}>{item.name}</Text>
+            {localized(item.brewery, item.brewery_en) ? <Text style={styles.brewery}>{localized(item.brewery, item.brewery_en)} · </Text> : null}
+            <Text style={styles.name}>{localized(item.name, item.name_en)}</Text>
           </Text>
-          {item.country ? <Text numberOfLines={1} style={styles.origin}>{item.country}</Text> : null}
+          {localizedLocation(language, item) ? <Text numberOfLines={1} style={styles.origin}>{localizedLocation(language, item)}</Text> : null}
           {facts ? <Text numberOfLines={1} style={styles.facts}>{facts}</Text> : null}
           {visibleVenues.length ? (
             <View style={styles.venueBlock}>
-              <Text style={styles.venueLabel}>喝过的酒吧</Text>
+              <Text style={styles.venueLabel}>{tr(language, '喝过的酒吧', 'VENUES')}</Text>
               {visibleVenues.map((venue) => (
                 <View key={venue.tenant_id} style={styles.venueRow}>
-                  <Text numberOfLines={1} style={styles.venueName}>{formatVenueTitle(venue)}</Text>
+                  <Text numberOfLines={1} style={styles.venueName}>{formatVenueTitle(venue, language)}</Text>
                   <Text style={styles.venueDate}>{formatDateShort(venue.first_drank_at)}</Text>
                 </View>
               ))}
               {hiddenVenueCount > 0 ? (
-                <Text style={styles.moreVenues}>还在另外 {hiddenVenueCount} 家酒吧喝过</Text>
+                <Text style={styles.moreVenues}>{tr(language, `还在另外 ${hiddenVenueCount} 家酒吧喝过`, `Plus ${hiddenVenueCount} more venue${hiddenVenueCount === 1 ? '' : 's'}`)}</Text>
               ) : null}
             </View>
           ) : null}
@@ -81,8 +83,10 @@ function formatDateShort(value: string) {
   return `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
 }
 
-function formatVenueTitle(venue: MyDrinkHistoryRow['venues'][number]) {
-  return [venue.city_label || localizeCity(venue.city || ''), venue.tenant_name].filter(Boolean).join(' · ')
+function formatVenueTitle(venue: MyDrinkHistoryRow['venues'][number], language: 'zh' | 'en') {
+  const city = language === 'en' ? venue.city_label_en || venue.city_label || venue.city : venue.city_label || localizeCity(venue.city || '')
+  const name = language === 'en' ? venue.tenant_name_en || venue.tenant_name : venue.tenant_name
+  return [city, name].filter(Boolean).join(' · ')
 }
 
 function localizeCity(city: string) {

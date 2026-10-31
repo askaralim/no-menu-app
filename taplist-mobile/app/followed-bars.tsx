@@ -12,8 +12,10 @@ import { getMyFollowedBars, setBarNewTapNotifications, unfollowBar } from '@/lib
 import { enablePushNotifications, getPushPermissionState, openNotificationSettings } from '@/lib/pushNotifications'
 import { getTaplistSupabase } from '@/lib/supabase'
 import type { FollowedBarRow } from '@/lib/types'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export default function FollowedBarsScreen() {
+  const { language, localized } = useLanguage()
   const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
   const [busyState, setBusyState] = useState<{ tenantId: string; action: 'notification' | 'unfollow' } | null>(null)
@@ -41,9 +43,9 @@ export default function FollowedBarsScreen() {
       } else {
         const permission = await getPushPermissionState()
         if (permission === 'denied') {
-          Alert.alert('通知尚未开启', '请先在 iOS 系统设置中允许 No Menu 发送通知。', [
-            { text: '取消', style: 'cancel' },
-            { text: '前往设置', onPress: () => void openNotificationSettings() },
+          Alert.alert(tr(language, '通知尚未开启', 'Notifications are off'), tr(language, '请先在 iOS 系统设置中允许 No Menu 发送通知。', 'Allow No Menu notifications in iOS Settings first.'), [
+            { text: tr(language, '取消', 'Cancel'), style: 'cancel' },
+            { text: tr(language, '前往设置', 'Open settings'), onPress: () => void openNotificationSettings() },
           ])
           return
         }
@@ -54,17 +56,17 @@ export default function FollowedBarsScreen() {
       await queryClient.invalidateQueries({ queryKey: ['bar-follow', bar.tenant_id] })
     } catch (error) {
       console.warn('Update bar notification failed', error)
-      Alert.alert('设置失败', '请稍后重试')
+      Alert.alert(tr(language, '设置失败', 'Update failed'), tr(language, '请稍后重试', 'Please try again.'))
     } finally {
       setBusyState(null)
     }
   }
 
   const removeFollow = (bar: FollowedBarRow) => {
-    Alert.alert('取消关注这家酒吧？', '取消后将不再收到这家酒吧的上新通知。', [
-      { text: '保留关注', style: 'cancel' },
+    Alert.alert(tr(language, '取消关注这家酒吧？', 'Unfollow this venue?'), tr(language, '取消后将不再收到这家酒吧的上新通知。', 'You will no longer receive new-tap alerts from this venue.'), [
+      { text: tr(language, '保留关注', 'Keep following'), style: 'cancel' },
       {
-        text: '取消关注',
+        text: tr(language, '取消关注', 'Unfollow'),
         style: 'destructive',
         onPress: async () => {
           setBusyState({ tenantId: bar.tenant_id, action: 'unfollow' })
@@ -76,7 +78,7 @@ export default function FollowedBarsScreen() {
             })
           } catch (error) {
             console.warn('Unfollow bar failed', error)
-            Alert.alert('暂时无法取消关注', '请稍后重试')
+            Alert.alert(tr(language, '暂时无法取消关注', 'Unable to unfollow'), tr(language, '请稍后重试', 'Please try again.'))
           } finally {
             setBusyState(null)
           }
@@ -94,10 +96,10 @@ export default function FollowedBarsScreen() {
           <View style={styles.backButtonSpace} />
           <View style={styles.headerCopy}>
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} style={styles.followCount}>
-              已关注 {bars.length} 家 · 仅自己可见
+              {tr(language, `已关注 ${bars.length} 家 · 仅自己可见`, `${bars.length} followed · Private`) }
             </Text>
             <Text style={styles.intro}>
-              {Platform.OS === 'ios' ? '关闭通知不会取消关注' : '关注列表仅自己可见'}
+              {Platform.OS === 'ios' ? tr(language, '关闭通知不会取消关注', 'Turning off alerts does not unfollow') : tr(language, '关注列表仅自己可见', 'Only you can see this list')}
             </Text>
           </View>
         </View>
@@ -105,19 +107,19 @@ export default function FollowedBarsScreen() {
         {sessionQuery.isLoading || barsQuery.isLoading ? (
           <ActivityIndicator color={palette.amber} style={styles.loading} />
         ) : barsQuery.isError ? (
-          <View style={styles.empty}><Text style={styles.emptyTitle}>暂时无法加载</Text><Text style={styles.emptyBody}>请稍后重试。</Text></View>
+          <View style={styles.empty}><Text style={styles.emptyTitle}>{tr(language, '暂时无法加载', 'Unable to load')}</Text><Text style={styles.emptyBody}>{tr(language, '请稍后重试。', 'Please try again.')}</Text></View>
         ) : bars.length === 0 ? (
-          <View style={styles.empty}><Text style={styles.emptyTitle}>还没有关注酒吧</Text><Text style={styles.emptyBody}>在酒吧详情页点“关注”，它就会出现在这里。</Text></View>
+          <View style={styles.empty}><Text style={styles.emptyTitle}>{tr(language, '还没有关注酒吧', 'No followed venues yet')}</Text><Text style={styles.emptyBody}>{tr(language, '在酒吧详情页点“关注”，它就会出现在这里。', 'Tap Follow on a venue page to keep it here.')}</Text></View>
         ) : (
           <View style={styles.list}>
             {bars.map((bar) => {
               const busy = busyState?.tenantId === bar.tenant_id
               const updatingNotification = busy && busyState.action === 'notification'
               const removingFollow = busy && busyState.action === 'unfollow'
-              const locationLabel = bar.tenant_district?.trim()
-                || bar.tenant_city_label?.trim()
+              const locationLabel = localized(bar.tenant_district, bar.tenant_district_en)?.trim()
+                || localized(bar.tenant_city_label, bar.tenant_city_label_en)?.trim()
                 || bar.tenant_city?.trim()
-                || '地区未标注'
+                || tr(language, '地区未标注', 'Location not listed')
               return (
                 <View key={bar.tenant_id} style={[styles.row, removingFollow && styles.rowBusy]}>
                   <Pressable
@@ -128,10 +130,10 @@ export default function FollowedBarsScreen() {
                       {bar.cover_image_url ? <CachedImage source={bar.cover_image_url} ossStyle="nm-thumb" style={styles.art} /> : null}
                     </View>
                     <View style={styles.copy}>
-                      <Text style={styles.barName} numberOfLines={1}>{bar.tenant_display_name}</Text>
+                      <Text style={styles.barName} numberOfLines={1}>{localized(bar.tenant_display_name, bar.tenant_display_name_en)}</Text>
                       <Text style={styles.meta} numberOfLines={1}>
                         {Platform.OS === 'ios'
-                          ? `${locationLabel} · ${bar.notify_new_taps ? '通知已开启' : '通知已关闭'}`
+                          ? `${locationLabel} · ${bar.notify_new_taps ? tr(language, '通知已开启', 'Alerts on') : tr(language, '通知已关闭', 'Alerts off')}`
                           : locationLabel}
                       </Text>
                     </View>
@@ -148,7 +150,7 @@ export default function FollowedBarsScreen() {
                   ) : null}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`取消关注 ${bar.tenant_display_name}`}
+                    accessibilityLabel={tr(language, `取消关注 ${bar.tenant_display_name}`, `Unfollow ${localized(bar.tenant_display_name, bar.tenant_display_name_en)}`)}
                     accessibilityState={{ disabled: busy }}
                     disabled={busy}
                     onPress={() => removeFollow(bar)}

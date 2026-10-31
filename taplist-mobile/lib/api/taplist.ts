@@ -30,18 +30,25 @@ export async function fetchPublicCities() {
 }
 
 export async function fetchPublicBars(city?: string | null) {
-  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_bars', {
+  const client = getTaplistSupabase()
+  let { data, error } = await client.rpc('get_public_taplist_bars_i18n', {
     p_city: city ?? null,
   })
+  if (error && isMissingPublicDrinkRpc(error)) {
+    ;({ data, error } = await client.rpc('get_public_taplist_bars', { p_city: city ?? null }))
+  }
   if (error) throw error
   return (data ?? []) as PublicBarRow[]
 }
 
 export async function fetchPublicTenantBySlug(slug: string) {
   const client = getTaplistSupabase()
-  const { data, error } = await client.rpc('get_public_taplist_tenant', {
+  let { data, error } = await client.rpc('get_public_taplist_tenant_i18n', {
     p_slug: slug,
   })
+  if (error && isMissingPublicDrinkRpc(error)) {
+    ;({ data, error } = await client.rpc('get_public_taplist_tenant', { p_slug: slug }))
+  }
   if (error) throw error
   const payload = data as PublicTaplistTenantRpc
   if (payload?.ok && !payload.tenant.qr_image_url && payload.tenant.qr_image_path) {
@@ -59,9 +66,12 @@ export async function fetchPublicDrinks(tenantId: string, signal?: AbortSignal) 
   signal?.addEventListener('abort', abortRequest, { once: true })
 
   try {
-    const { data, error } = await getTaplistSupabase()
-      .rpc('get_public_taplist_drinks', { p_tenant_id: tenantId })
-      .abortSignal(controller.signal)
+    const client = getTaplistSupabase()
+    let request = client.rpc('get_public_taplist_drinks_i18n', { p_tenant_id: tenantId }).abortSignal(controller.signal)
+    let { data, error } = await request
+    if (error && isMissingPublicDrinkRpc(error)) {
+      ;({ data, error } = await client.rpc('get_public_taplist_drinks', { p_tenant_id: tenantId }).abortSignal(controller.signal))
+    }
     if (error) throw error
     return data as PublicTaplistDrinksRpc
   } finally {
@@ -80,10 +90,14 @@ function isMissingPublicDrinkRpc(error: { code?: string; message?: string }) {
  */
 export async function fetchPublicDrink(slug: string, drinkId: string): Promise<PublicTaplistDrinkRpc> {
   const client = getTaplistSupabase()
-  const { data, error } = await client.rpc('get_public_taplist_drink', {
+  let { data, error } = await client.rpc('get_public_taplist_drink_i18n', {
     p_slug: slug,
     p_drink_id: drinkId,
   })
+
+  if (error && isMissingPublicDrinkRpc(error)) {
+    ;({ data, error } = await client.rpc('get_public_taplist_drink', { p_slug: slug, p_drink_id: drinkId }))
+  }
 
   if (!error) return data as PublicTaplistDrinkRpc
   if (!isMissingPublicDrinkRpc(error)) throw error
@@ -101,9 +115,13 @@ export async function fetchPublicDrink(slug: string, drinkId: string): Promise<P
 }
 
 export async function fetchPublicNewDrinks(city?: string | null) {
-  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_new_drinks', {
+  const client = getTaplistSupabase()
+  let { data, error } = await client.rpc('get_public_taplist_new_drinks_i18n', {
     p_city: city ?? null,
   })
+  if (error && isMissingPublicDrinkRpc(error)) {
+    ;({ data, error } = await client.rpc('get_public_taplist_new_drinks', { p_city: city ?? null }))
+  }
   if (error) throw error
   const payload = data as PublicTaplistNewDrinksRpc
   if (!payload || payload.ok !== true) return []
@@ -111,9 +129,13 @@ export async function fetchPublicNewDrinks(city?: string | null) {
 }
 
 export async function fetchPublicTaplistBreweries(city?: string | null) {
-  const { data, error } = await getTaplistSupabase().rpc('get_mini_breweries', {
+  const client = getTaplistSupabase()
+  let { data, error } = await client.rpc('get_mini_breweries_i18n', {
     p_city: city ?? null,
   })
+  if (error && isMissingPublicDrinkRpc(error)) {
+    ;({ data, error } = await client.rpc('get_mini_breweries', { p_city: city ?? null }))
+  }
   if (error) throw error
   const payload = data as PublicTaplistBreweriesRpc
   if (!payload || payload.ok !== true) return []
@@ -129,11 +151,16 @@ export async function listMiniBreweries(
   offset: number,
   signal?: AbortSignal,
 ) {
-  const request = getTaplistSupabase().rpc('list_mini_breweries', {
+  const client = getTaplistSupabase()
+  let request = client.rpc('list_mini_breweries_i18n', {
     p_city: city,
     p_offset: offset,
   })
-  const { data, error } = await (signal ? request.abortSignal(signal) : request)
+  let { data, error } = await (signal ? request.abortSignal(signal) : request)
+  if (error && isMissingPublicDrinkRpc(error)) {
+    request = client.rpc('list_mini_breweries', { p_city: city, p_offset: offset })
+    ;({ data, error } = await (signal ? request.abortSignal(signal) : request))
+  }
   if (error) throw error
   const payload = data as MiniBreweryListRpc
   if (!payload || payload.ok !== true) {
@@ -155,9 +182,13 @@ export async function fetchPublicBrewery(brewery: string, city?: string | null) 
 }
 
 export async function fetchMiniBrewery(name: string) {
-  const { data, error } = await getTaplistSupabase().rpc('get_mini_brewery', {
+  const client = getTaplistSupabase()
+  let { data, error } = await client.rpc('get_mini_brewery_i18n', {
     p_name: name,
   })
+  if (error && isMissingPublicDrinkRpc(error)) {
+    ;({ data, error } = await client.rpc('get_mini_brewery', { p_name: name }))
+  }
   if (error) throw error
   return data as MiniBreweryRpc
 }
@@ -220,15 +251,22 @@ export async function searchMiniProducts({
   offset?: number
   signal?: AbortSignal
 }) {
-  let request = getTaplistSupabase().rpc('search_mini_products', {
+  const client = getTaplistSupabase()
+  const args = {
     p_city: city ?? null,
     p_query: query,
     p_style: style,
     p_brewery: brewery,
     p_offset: offset,
-  })
+  }
+  let request = client.rpc('search_mini_products_i18n', args)
   if (signal) request = request.abortSignal(signal)
-  const { data, error } = await request
+  let { data, error } = await request
+  if (error && isMissingPublicDrinkRpc(error)) {
+    let fallback = client.rpc('search_mini_products', args)
+    if (signal) fallback = fallback.abortSignal(signal)
+    ;({ data, error } = await fallback)
+  }
   if (error) throw error
   const payload = data as MiniProductSearchRpc
   if (!payload || payload.ok !== true) {
@@ -247,12 +285,17 @@ export async function fetchMiniProduct(key: string, city: string | null) {
   if (!id || (kind !== 'product' && kind !== 'drink')) {
     return { ok: false, code: 'invalid_key' } as const
   }
-  const { data, error } = await getTaplistSupabase().rpc('get_mini_product', {
+  const client = getTaplistSupabase()
+  const args = {
     p_product_id: kind === 'product' ? id : null,
     p_drink_id: kind === 'drink' ? id : null,
     p_city: city,
     p_source_slug: null,
-  })
+  }
+  let { data, error } = await client.rpc('get_mini_product_i18n', args)
+  if (error && isMissingPublicDrinkRpc(error)) {
+    ;({ data, error } = await client.rpc('get_mini_product', args))
+  }
   if (error) throw error
   return data as MiniProductDetailRpc
 }

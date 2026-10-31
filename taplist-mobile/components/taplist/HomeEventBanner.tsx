@@ -14,6 +14,7 @@ import {
 import { palette, spacing, typography } from '@/constants/design'
 import { trackEvent } from '@/lib/analytics'
 import type { PublicEventRow } from '@/lib/types'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export const HOME_EVENT_BANNER_HEIGHT = 184
 
@@ -24,15 +25,12 @@ type HomeEventBannerProps = {
   total: number
 }
 
-function homeEventStateLabel(event: PublicEventRow) {
-  return event.display_state === 'UPCOMING' ? '即将开始' : '进行中'
-}
-
 export function HomeEventBanner({ event, width, index, total }: HomeEventBannerProps) {
   const router = useRouter()
-  const stateLabel = homeEventStateLabel(event)
+  const { language } = useLanguage()
+  const stateLabel = event.display_state === 'UPCOMING' ? tr(language, '即将开始', 'Upcoming') : tr(language, '进行中', 'Now')
   const dateLabel = compactEventDateLabel(event)
-  const pageLabel = total > 1 ? `第 ${index + 1} 场，共 ${total} 场` : null
+  const pageLabel = total > 1 ? tr(language, `第 ${index + 1} 场，共 ${total} 场`, `Event ${index + 1} of ${total}`) : null
   const copy = (
     <>
       <View style={styles.stateBadge}>

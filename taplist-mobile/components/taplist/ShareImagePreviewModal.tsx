@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { palette, spacing, typography } from '@/constants/design'
 import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/saveImageToPhotoLibrary'
+import { tr, useLanguage, type Language } from '@/lib/i18n'
 
 type Props = {
   uri: string | null
@@ -12,6 +13,7 @@ type Props = {
 }
 
 export function ShareImagePreviewModal({ uri, onClose }: Props) {
+  const { language } = useLanguage()
   const insets = useSafeAreaInsets()
   const pendingShareUri = useRef<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -32,7 +34,7 @@ export function ShareImagePreviewModal({ uri, onClose }: Props) {
     if (!shareUri) return
     pendingShareUri.current = null
     try {
-      await shareImage(shareUri)
+      await shareImage(shareUri, language)
     } finally {
       setSharing(false)
     }
@@ -43,11 +45,11 @@ export function ShareImagePreviewModal({ uri, onClose }: Props) {
     setSaving(true)
     try {
       await saveImageUriToPhotoLibrary(uri)
-      Alert.alert('保存成功', '图片已保存到相册')
+      Alert.alert(tr(language, '保存成功', 'Saved'), tr(language, '图片已保存到相册', 'Image saved to your photo library.'))
     } catch (error) {
       Alert.alert(
-        error instanceof PhotoLibraryPermissionError ? '无法保存分享图' : '保存失败',
-        error instanceof PhotoLibraryPermissionError ? '请在系统设置中允许 No Menu 添加照片。' : '暂时无法保存到相册，请稍后重试。',
+        error instanceof PhotoLibraryPermissionError ? tr(language, '无法保存分享图', 'Unable to save image') : tr(language, '保存失败', 'Save failed'),
+        error instanceof PhotoLibraryPermissionError ? tr(language, '请在系统设置中允许 No Menu 添加照片。', 'Allow No Menu to add photos in system settings.') : tr(language, '暂时无法保存到相册，请稍后重试。', 'Unable to save to your photo library. Please try again.'),
       )
     } finally {
       setSaving(false)
@@ -62,16 +64,16 @@ export function ShareImagePreviewModal({ uri, onClose }: Props) {
       onRequestClose={onClose}>
       <View style={[styles.preview, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.md }]}>
         <View style={styles.header}>
-          <Text style={styles.title}>分享图预览</Text>
-          <Pressable accessibilityRole="button" onPress={onClose}><Text style={styles.close}>关闭</Text></Pressable>
+          <Text style={styles.title}>{tr(language, '分享图预览', 'Share image preview')}</Text>
+          <Pressable accessibilityRole="button" onPress={onClose}><Text style={styles.close}>{tr(language, '关闭', 'Close')}</Text></Pressable>
         </View>
         {uri ? <Image source={{ uri }} resizeMode="contain" style={styles.image} /> : null}
         <View style={styles.actions}>
           <Pressable disabled={sharing} style={styles.primary} onPress={beginShare}>
-            <Text style={styles.primaryText}>分享图片</Text>
+            <Text style={styles.primaryText}>{tr(language, '分享图片', 'Share image')}</Text>
           </Pressable>
           <Pressable disabled={saving} style={styles.secondary} onPress={() => void save()}>
-            {saving ? <ActivityIndicator size="small" color={palette.text} /> : <Text style={styles.secondaryText}>保存图片</Text>}
+            {saving ? <ActivityIndicator size="small" color={palette.text} /> : <Text style={styles.secondaryText}>{tr(language, '保存图片', 'Save image')}</Text>}
           </Pressable>
         </View>
       </View>
@@ -79,15 +81,15 @@ export function ShareImagePreviewModal({ uri, onClose }: Props) {
   )
 }
 
-async function shareImage(uri: string) {
+async function shareImage(uri: string, language: Language) {
   try {
     if (!await Sharing.isAvailableAsync()) {
-      Alert.alert('暂时无法分享', '当前设备无法打开系统分享面板。')
+      Alert.alert(tr(language, '暂时无法分享', 'Sharing is unavailable'), tr(language, '当前设备无法打开系统分享面板。', 'This device cannot open the share sheet.'))
       return
     }
     await Sharing.shareAsync(uri)
   } catch {
-    Alert.alert('分享失败', '暂时无法打开分享面板，请稍后重试。')
+    Alert.alert(tr(language, '分享失败', 'Share failed'), tr(language, '暂时无法打开分享面板，请稍后重试。', 'Unable to open the share sheet. Please try again.'))
   }
 }
 

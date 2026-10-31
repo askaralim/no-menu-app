@@ -23,8 +23,10 @@ import { listMiniBreweries } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import type { MiniBreweryListRow } from '@/lib/types'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export default function BreweriesScreen() {
+  const { language, localized } = useLanguage()
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const configured = useTaplistSupabaseReady()
@@ -94,14 +96,14 @@ export default function BreweriesScreen() {
         scrollEventThrottle={16}
         onScroll={handleScroll}>
         <View style={styles.header}>
-          <Text style={styles.title}>酒厂</Text>
+          <Text style={styles.title}>{tr(language, '酒厂', 'Breweries')}</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={canSelectCity ? `当前城市${selectedCity.label}，选择城市` : `当前城市${selectedCity.label}`}
+            accessibilityLabel={canSelectCity ? tr(language, `当前城市${selectedCity.label}，选择城市`, `Current city: ${localized(selectedCity.label, selectedCity.label_en)}. Select city`) : tr(language, `当前城市${selectedCity.label}`, `Current city: ${localized(selectedCity.label, selectedCity.label_en)}`)}
             disabled={!canSelectCity}
             onPress={() => setCityPickerVisible(true)}
             style={({ pressed }) => [styles.cityButton, pressed && styles.pressed]}>
-            <Text style={styles.cityLabel}>{selectedCity.label}</Text>
+            <Text style={styles.cityLabel}>{localized(selectedCity.label, selectedCity.label_en)}</Text>
             {canSelectCity ? <FontAwesome name="angle-down" size={12} color={palette.gold} /> : null}
           </Pressable>
         </View>
@@ -109,8 +111,8 @@ export default function BreweriesScreen() {
         <View style={styles.searchFrame}>
           <FontAwesome name="search" size={15} color={palette.faint} />
           <TextInput
-            accessibilityLabel="搜索本城酒厂"
-            placeholder="搜索酒厂"
+            accessibilityLabel={tr(language, '搜索本城酒厂', 'Search breweries in this city')}
+            placeholder={tr(language, '搜索酒厂', 'Search breweries')}
             placeholderTextColor={palette.faint}
             value={filter}
             onChangeText={setFilter}
@@ -123,7 +125,7 @@ export default function BreweriesScreen() {
           {filter.length > 0 ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="清空酒厂搜索"
+              accessibilityLabel={tr(language, '清空酒厂搜索', 'Clear brewery search')}
               hitSlop={10}
               onPress={() => setFilter('')}
               style={({ pressed }) => pressed && styles.pressed}>
@@ -133,25 +135,25 @@ export default function BreweriesScreen() {
         </View>
 
         {!configured ? (
-          <EmptyState body="尚未连接酒单服务。" />
+          <EmptyState body={tr(language, '尚未连接酒单服务。', 'Taplist service is not connected.')} />
         ) : breweriesQuery.isLoading ? (
-          <Loading label="正在加载酒厂..." />
+          <Loading label={tr(language, '正在加载酒厂...', 'Loading breweries...')} />
         ) : breweriesQuery.isError ? (
           <View style={styles.empty}>
-            <Text style={styles.muted}>暂时无法加载酒厂，请稍后重试。</Text>
+            <Text style={styles.muted}>{tr(language, '暂时无法加载酒厂，请稍后重试。', 'Unable to load breweries. Please try again.')}</Text>
             <Pressable
               accessibilityRole="button"
               onPress={() => void breweriesQuery.refetch()}
               style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
-              <Text style={styles.retryText}>重新加载</Text>
+              <Text style={styles.retryText}>{tr(language, '重新加载', 'Reload')}</Text>
             </Pressable>
           </View>
         ) : breweries.length === 0 ? (
-          <EmptyState body={`${selectedCity.label}暂无公开在售酒厂。`} />
+          <EmptyState body={tr(language, `${selectedCity.label}暂无公开在售酒厂。`, `No public breweries are on tap in ${localized(selectedCity.label, selectedCity.label_en)}.`)} />
         ) : visibleBreweries.length === 0 && breweriesQuery.isFetchingNextPage ? (
-          <Loading label="正在搜索本城酒厂..." />
+          <Loading label={tr(language, '正在搜索本城酒厂...', 'Searching breweries...')} />
         ) : visibleBreweries.length === 0 ? (
-          <EmptyState body={`没有找到与“${filter.trim()}”匹配的酒厂。`} />
+          <EmptyState body={tr(language, `没有找到与“${filter.trim()}”匹配的酒厂。`, `No brewery matches “${filter.trim()}”.`)} />
         ) : (
           <View style={styles.list}>
             {visibleBreweries.map((brewery) => (
@@ -161,9 +163,9 @@ export default function BreweriesScreen() {
                 onPress={() => router.push(`/brewery/${encodeURIComponent(brewery.brewery)}` as Href)}
               />
             ))}
-            {breweriesQuery.isFetchingNextPage ? <Loading label="正在加载更多..." compact /> : null}
+            {breweriesQuery.isFetchingNextPage ? <Loading label={tr(language, '正在加载更多...', 'Loading more...')} compact /> : null}
             {!breweriesQuery.hasNextPage ? (
-              <Text style={styles.listEnd}>{normalizedFilter ? '已搜索全部本城酒厂' : '已显示全部酒厂'}</Text>
+              <Text style={styles.listEnd}>{normalizedFilter ? tr(language, '已搜索全部本城酒厂', 'All city breweries searched') : tr(language, '已显示全部酒厂', 'All breweries shown')}</Text>
             ) : null}
           </View>
         )}
@@ -179,20 +181,21 @@ function BreweryRow({
   brewery: MiniBreweryListRow
   onPress: () => void
 }) {
+  const { language, localized } = useLanguage()
   const showEnglishName = brewery.name_en
     && brewery.name_en.trim().toLocaleLowerCase() !== brewery.display_name.trim().toLocaleLowerCase()
 
   return (
     <Pressable
       accessibilityRole="link"
-      accessibilityLabel={`查看${brewery.display_name}酒厂，本城在售${brewery.product_count}款`}
-      accessibilityHint="打开酒厂在售酒款页"
+      accessibilityLabel={tr(language, `查看${brewery.display_name}酒厂，本城在售${brewery.product_count}款`, `View ${localized(brewery.display_name, brewery.name_en)}, ${brewery.product_count} beers available`)}
+      accessibilityHint={tr(language, '打开酒厂在售酒款页', 'Open brewery beer list')}
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
       {brewery.logo_url ? (
         <View style={styles.logoFrame}>
           <CachedImage
-            accessibilityLabel={`${brewery.display_name}酒厂 Logo`}
+            accessibilityLabel={tr(language, `${brewery.display_name}酒厂 Logo`, `${localized(brewery.display_name, brewery.name_en)} brewery logo`)}
             source={brewery.logo_url}
             ossStyle="nm-thumb"
             contentFit="contain"
@@ -201,11 +204,11 @@ function BreweryRow({
         </View>
       ) : <View style={styles.logoSpacer} />}
       <View style={styles.rowCopy}>
-        <Text style={styles.rowTitle} numberOfLines={2}>{brewery.display_name}</Text>
+        <Text style={styles.rowTitle} numberOfLines={2}>{localized(brewery.display_name, brewery.name_en)}</Text>
         {showEnglishName ? (
           <Text style={styles.rowEnglish} numberOfLines={1}>{brewery.name_en}</Text>
         ) : null}
-        <Text style={styles.rowCount}>本城在售 {brewery.product_count} 款</Text>
+        <Text style={styles.rowCount}>{tr(language, `本城在售 ${brewery.product_count} 款`, `${brewery.product_count} available in this city`)}</Text>
       </View>
       <FontAwesome name="angle-right" size={17} color={palette.faint} />
     </Pressable>

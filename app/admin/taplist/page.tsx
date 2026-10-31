@@ -34,8 +34,11 @@ type TenantTaplistRow = {
   slug: string
   is_public_visible: boolean
   display_name: string | null
+  display_name_en: string | null
   district: string | null
+  district_en: string | null
   address: string | null
+  address_en: string | null
   cover_image_url: string | null
   city: string
   country: string
@@ -116,8 +119,11 @@ function TaplistAdminPageInner() {
   const [tenant, setTenant] = useState<TenantTaplistRow | null>(null)
   const [tenantForm, setTenantForm] = useState({
     display_name: '',
+    display_name_en: '',
     district: '',
+    district_en: '',
     address: '',
+    address_en: '',
     cover_image_url: '',
     city: 'Shanghai',
     description: '',
@@ -213,7 +219,7 @@ function TaplistAdminPageInner() {
 
     const { data, error } = await supabase
       .from('tenants')
-      .select('id,name,slug,is_public_visible,display_name,district,address,opening_hour,description,cover_image_url,city,country,brewing_type')
+      .select('id,name,slug,is_public_visible,display_name,display_name_en,district,district_en,address,address_en,opening_hour,description,cover_image_url,city,country,brewing_type')
       .eq('id', tid)
       .single()
     if (loadGen !== storefrontLoadGenRef.current) return
@@ -229,8 +235,11 @@ function TaplistAdminPageInner() {
     loadedCoverUrlRef.current = row.cover_image_url ?? ''
     setTenantForm({
       display_name: row.display_name ?? '',
+      display_name_en: row.display_name_en ?? '',
       district: row.district ?? '',
+      district_en: row.district_en ?? '',
       address: row.address ?? '',
+      address_en: row.address_en ?? '',
       cover_image_url: row.cover_image_url ?? '',
       city: row.city ?? 'Shanghai',
       description: row.description ?? '',
@@ -362,6 +371,13 @@ function TaplistAdminPageInner() {
         p_cover_image_url: publicUrl,
       })
       if (error) throw error
+      const { error: englishError } = await supabase.rpc('set_tenant_storefront_english', {
+        p_tenant_id: tenantId,
+        p_display_name_en: tenantForm.display_name_en.trim() || null,
+        p_district_en: tenantForm.district_en.trim() || null,
+        p_address_en: tenantForm.address_en.trim() || null,
+      })
+      if (englishError) throw englishError
       alert('封面已上传并保存')
       const loadGen = ++storefrontLoadGenRef.current
       await loadTenant(tenantId, loadGen)
@@ -386,6 +402,13 @@ function TaplistAdminPageInner() {
         ...buildStorefrontRpcPayload(coverPayload),
       })
       if (error) throw error
+      const { error: englishError } = await supabase.rpc('set_tenant_storefront_english', {
+        p_tenant_id: tenantId,
+        p_display_name_en: tenantForm.display_name_en.trim() || null,
+        p_district_en: tenantForm.district_en.trim() || null,
+        p_address_en: tenantForm.address_en.trim() || null,
+      })
+      if (englishError) throw englishError
       alert('门店 Tap List 信息已保存')
       const loadGen = ++storefrontLoadGenRef.current
       await loadTenant(tenantId, loadGen)
@@ -580,15 +603,33 @@ function TaplistAdminPageInner() {
           />
           <input
             className="admin-input"
+            placeholder="英文展示名称"
+            value={tenantForm.display_name_en}
+            onChange={(e) => setTenantForm({ ...tenantForm, display_name_en: e.target.value })}
+          />
+          <input
+            className="admin-input"
             placeholder="区域 / 商圈"
             value={tenantForm.district}
             onChange={(e) => setTenantForm({ ...tenantForm, district: e.target.value })}
           />
           <input
             className="admin-input"
+            placeholder="区域 / 商圈（英文）"
+            value={tenantForm.district_en}
+            onChange={(e) => setTenantForm({ ...tenantForm, district_en: e.target.value })}
+          />
+          <input
+            className="admin-input"
             placeholder="详细地址"
             value={tenantForm.address}
             onChange={(e) => setTenantForm({ ...tenantForm, address: e.target.value })}
+          />
+          <input
+            className="admin-input"
+            placeholder="详细地址（英文，可留空依赖地图导航）"
+            value={tenantForm.address_en}
+            onChange={(e) => setTenantForm({ ...tenantForm, address_en: e.target.value })}
           />
           <textarea
             className="admin-input"
@@ -1348,15 +1389,6 @@ function DrinkTaplistPanel({
                       className="admin-input"
                       value={beer.ibu}
                       onChange={(e) => setBeer({ ...beer, ibu: e.target.value })}
-                    />
-                  </div>
-                  <div className="taplist-field">
-                    <label htmlFor={`${drink.id}-country`}>国家</label>
-                    <input
-                      id={`${drink.id}-country`}
-                      className="admin-input"
-                      value={beer.country}
-                      onChange={(e) => setBeer({ ...beer, country: e.target.value })}
                     />
                   </div>
                   <div className="taplist-field taplist-field-span-2">

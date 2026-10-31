@@ -8,6 +8,7 @@ import { trackEvent } from '@/lib/analytics'
 import { getMyDrinkState, lightMyDrink, removeMyDrinkVenue } from '@/lib/api/drinkLog'
 import { ensureDrinkLogSession } from '@/lib/drinkLogAuth'
 import type { LightDrinkResult } from '@/lib/types'
+import { tr, useLanguage } from '@/lib/i18n'
 
 type Props = {
   drinkId: string
@@ -15,6 +16,7 @@ type Props = {
 }
 
 export function useDrinkLightController({ drinkId, tenantId }: Props) {
+  const { language } = useLanguage()
   const queryClient = useQueryClient()
   const [message, setMessage] = useState<string | null>(null)
   const [showUndo, setShowUndo] = useState(false)
@@ -57,7 +59,7 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
       if (!result.created_light && result.created_venue) trackEvent('drink_venue_added')
     },
     onError: () => {
-      setMessage('暂时无法保存记录，请检查网络后重试')
+      setMessage(tr(language, '暂时无法保存记录，请检查网络后重试', 'Unable to save this record. Please try again.'))
       trackEvent('drink_light_failed')
     },
   })
@@ -77,10 +79,10 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
   })
 
   const buttonLabel = state?.is_current_venue_lit
-    ? '已喝过'
+    ? tr(language, '已喝过', 'Tried')
     : state?.is_lit
-      ? '记录这里'
-      : '喝过'
+      ? tr(language, '记录这里', 'Tried here')
+      : tr(language, '喝过', 'Tried')
   return {
     state,
     buttonLabel,
@@ -102,17 +104,18 @@ export function DrinkLightAction({
   controller: Controller
   onOpenHistory?: () => void
 }) {
+  const { language } = useLanguage()
   const { state, buttonLabel, showUndo, lightMutation, undoMutation } = controller
 
   if (state?.is_current_venue_lit && state.light_id && onOpenHistory) {
     return (
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel="查看喝过记录"
+        accessibilityLabel={tr(language, '查看喝过记录', 'View beer history')}
         onPress={onOpenHistory}
         style={({ pressed }) => [styles.historyButton, pressed && styles.buttonPressed]}>
         <FontAwesome name="check-circle-o" size={14} color={palette.amber} />
-        <Text style={styles.historyButtonText}>已喝过</Text>
+        <Text style={styles.historyButtonText}>{tr(language, '已喝过', 'Tried')}</Text>
         <FontAwesome name="angle-right" size={15} color={palette.faint} />
       </Pressable>
     )
@@ -138,15 +141,15 @@ export function DrinkLightAction({
       </Pressable>
       {showUndo && state?.light_id ? (
         <View style={styles.stateRow}>
-          <Text style={[styles.buttonText, styles.completeText]}>已喝过</Text>
+          <Text style={[styles.buttonText, styles.completeText]}>{tr(language, '已喝过', 'Tried')}</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="撤销刚才的喝过"
+            accessibilityLabel={tr(language, '撤销刚才的喝过', 'Undo the latest record')}
             disabled={undoMutation.isPending}
             hitSlop={10}
             onPress={() => undoMutation.mutate()}
             style={styles.undoButton}>
-            <Text style={styles.undo}>{undoMutation.isPending ? '撤销中' : '撤销'}</Text>
+            <Text style={styles.undo}>{undoMutation.isPending ? tr(language, '撤销中', 'Undoing') : tr(language, '撤销', 'Undo')}</Text>
           </Pressable>
         </View>
       ) : (

@@ -14,8 +14,7 @@ import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicEvent } from '@/lib/api/taplist'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import { trackEvent } from '@/lib/analytics'
-
-const EVENT_INFORMATION_DISCLAIMER = '活动信息由门店提供，时间、内容与供应情况以门店现场为准。'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export default function EventDetailScreen() {
   const insets = useSafeAreaInsets()
@@ -23,6 +22,7 @@ export default function EventDetailScreen() {
   const { eventId } = useLocalSearchParams<{ slug: string; eventId: string }>()
   const configured = useTaplistSupabaseReady()
   const [imageViewerVisible, setImageViewerVisible] = useState(false)
+  const { language } = useLanguage()
 
   const eventQuery = useQuery({
     queryKey: ['taplist', 'event', eventId],
@@ -41,20 +41,20 @@ export default function EventDetailScreen() {
         style={styles.screen}
         contentContainerStyle={event?.image_url ? { paddingBottom: insets.bottom + 48 } : [styles.paddedContent, { paddingTop: insets.top + spacing.xxxl, paddingBottom: insets.bottom + 48 }]}>
         {!configured ? (
-          <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看公开活动。" />
+          <EmptyState title={tr(language, '尚未连接酒单服务', 'Tap list service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看公开活动。', 'Configure Supabase to view public events.')} />
         ) : eventQuery.isLoading ? (
-          <Text style={styles.loadingText}>正在加载活动...</Text>
+          <Text style={styles.loadingText}>{tr(language, '正在加载活动...', 'Loading event...')}</Text>
         ) : eventQuery.isError ? (
-          <EmptyState title="暂时无法加载活动" body="请稍后重试，或以门店现场信息为准。" />
+          <EmptyState title={tr(language, '暂时无法加载活动', 'Unable to load event')} body={tr(language, '请稍后重试，或以门店现场信息为准。', 'Try again later. Venue information takes precedence.')} />
         ) : result?.ok === false ? (
-          <EmptyState title={eventErrorTitle(result.code)} body="该活动可能已结束、取消，或不再公开展示。" />
+          <EmptyState title={eventErrorTitle(result.code, language)} body={tr(language, '该活动可能已结束、取消，或不再公开展示。', 'This event may have ended, been cancelled, or is no longer public.')} />
         ) : event ? (
           <>
             {event.image_url ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`查看活动图片：${event.title}`}
-                accessibilityHint="打开完整图片"
+                accessibilityLabel={tr(language, `查看活动图片：${event.title}`, `View event image: ${event.title}`)}
+                accessibilityHint={tr(language, '打开完整图片', 'Open full image')}
                 onPress={() => setImageViewerVisible(true)}
                 style={({ pressed }) => [styles.cover, pressed && styles.coverPressed]}>
                 <CachedImageBackground
@@ -73,14 +73,14 @@ export default function EventDetailScreen() {
 
             <View style={event.image_url ? styles.paddedContent : undefined}>
               <View style={styles.stateBadge}>
-                <Text style={styles.typeLabel}>{eventMetaLine(event)}</Text>
+                <Text style={styles.typeLabel}>{eventMetaLine(event, language)}</Text>
               </View>
               <Text style={styles.title}>{event.title}</Text>
               {event.subtitle ? <Text style={styles.subtitle}>{event.subtitle}</Text> : null}
 
               <Pressable
                 accessibilityRole="link"
-                accessibilityLabel={`查看${event.tenant_display_name}酒吧详情`}
+                accessibilityLabel={tr(language, `查看${event.tenant_display_name}酒吧详情`, `View ${event.tenant_display_name} venue`)}
                 onPress={() => {
                   trackEvent('bar_opened', {
                     tenant_id: event.tenant_id,
@@ -114,13 +114,13 @@ export default function EventDetailScreen() {
 
               {event.description ? (
                 <View style={styles.descriptionSection}>
-                  <Text style={styles.sectionLabel}>活动介绍</Text>
+                  <Text style={styles.sectionLabel}>{tr(language, '活动介绍', 'ABOUT THE EVENT')}</Text>
                   <Text style={styles.description}>{event.description}</Text>
                 </View>
               ) : null}
 
               <View style={styles.complianceFooter}>
-                <Text style={styles.eventDisclaimer}>{EVENT_INFORMATION_DISCLAIMER}</Text>
+                <Text style={styles.eventDisclaimer}>{tr(language, '活动信息由门店提供，时间、内容与供应情况以门店现场为准。', 'Event details are provided by the venue. On-site information takes precedence.')}</Text>
                 <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
               </View>
             </View>
@@ -136,11 +136,11 @@ export default function EventDetailScreen() {
           visible={imageViewerVisible}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="关闭完整图片"
+            accessibilityLabel={tr(language, '关闭完整图片', 'Close full image')}
             onPress={() => setImageViewerVisible(false)}
             style={styles.imageViewer}>
             <CachedImage
-              accessibilityLabel={`活动完整图片：${event.title}`}
+              accessibilityLabel={tr(language, `活动完整图片：${event.title}`, `Full event image: ${event.title}`)}
               contentFit="contain"
               pointerEvents="none"
               source={event.image_url}
@@ -149,7 +149,7 @@ export default function EventDetailScreen() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="关闭完整图片"
+              accessibilityLabel={tr(language, '关闭完整图片', 'Close full image')}
               hitSlop={10}
               onPress={() => setImageViewerVisible(false)}
               style={({ pressed }) => [
@@ -166,10 +166,10 @@ export default function EventDetailScreen() {
   )
 }
 
-function eventErrorTitle(code: string) {
-  if (code === 'cancelled') return '活动已取消'
-  if (code === 'expired') return '活动已结束'
-  return '找不到这个活动'
+function eventErrorTitle(code: string, language: 'zh' | 'en') {
+  if (code === 'cancelled') return tr(language, '活动已取消', 'Event cancelled')
+  if (code === 'expired') return tr(language, '活动已结束', 'Event ended')
+  return tr(language, '找不到这个活动', 'Event not found')
 }
 
 function EmptyState({ title, body }: { title: string; body: string }) {

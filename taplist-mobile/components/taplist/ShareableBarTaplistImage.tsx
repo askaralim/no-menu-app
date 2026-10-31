@@ -5,6 +5,7 @@ import ViewShot from 'react-native-view-shot'
 import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/lib/formatTaplist'
+import { tr, useLanguage } from '@/lib/i18n'
 import type { PublicDrinkRow, PublicTenantDetail } from '@/lib/types'
 
 export type ShareableBarTaplistImageHandle = {
@@ -21,7 +22,8 @@ export const ShareableBarTaplistImage = forwardRef<
   ShareableBarTaplistImageProps
 >(function ShareableBarTaplistImage({ tenant, drinks }, ref) {
   const shotRef = useRef<ViewShot>(null)
-  const title = tenant.display_name || tenant.name
+  const { language, localized } = useLanguage()
+  const title = localized(tenant.display_name || tenant.name, tenant.display_name_en)
   const generatedAtLabel = formatGeneratedAt(new Date())
   const isDense = drinks.length >= 13
   const drinkRows = chunkDrinks(drinks)
@@ -40,7 +42,7 @@ export const ShareableBarTaplistImage = forwardRef<
           <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
             {title}
           </Text>
-          <Text style={styles.headerCount}>今晚 {drinks.length} 款在售</Text>
+          <Text style={styles.headerCount}>{tr(language, `今晚 ${drinks.length} 款在售`, `${drinks.length} on tap tonight`)}</Text>
         </View>
 
         <View style={[styles.list, isDense && styles.listDense]}>
@@ -66,6 +68,7 @@ export const ShareableBarTaplistImage = forwardRef<
 })
 
 function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boolean }) {
+  const { language, localized } = useLanguage()
   const servingOptions = displayServingOptions(drink.serving_options)
   const publicStatus = drink.public_status ? drink.public_status : null
   const isSoldOut = publicStatus === '售罄'
@@ -85,7 +88,7 @@ function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boo
     <View style={[styles.beerRow, isDense && styles.beerRowDense, isSoldOut && styles.beerRowSoldOut]}>
       <View style={[styles.beerContent, isDense && styles.beerContentDense]}>
         <View style={styles.artworkWrap}>
-          <BeerArtwork name={drink.name} source={drink.image_url} size={isDense ? 40 : 44} />
+          <BeerArtwork name={localized(drink.name, drink.name_en)} source={drink.image_url} size={isDense ? 40 : 44} />
           {tapNumber ? (
             <View style={styles.tapNumberBadge}>
               <Text style={styles.tapNumberText}>{tapNumber}</Text>
@@ -98,13 +101,13 @@ function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boo
               style={[styles.beerName, isDense && styles.beerNameDense]}
               numberOfLines={2}
               ellipsizeMode="tail">
-              {drink.name}
+              {localized(drink.name, drink.name_en)}
             </Text>
             <View style={styles.beerRightRail}>
               {publicStatus ? (
                 <View style={[styles.statusBadge, isDense && styles.statusBadgeDense, isSoldOut && styles.statusBadgeSoldOut]}>
                   <Text style={[styles.statusTag, isDense && styles.statusTagDense, isSoldOut && styles.statusTagSoldOut]}>
-                    {publicStatus}
+                    {localizeStatus(language, publicStatus)}
                   </Text>
                 </View>
               ) : null}
@@ -134,6 +137,11 @@ function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boo
       </View>
     </View>
   )
+}
+
+function localizeStatus(language: 'zh' | 'en', status: string) {
+  if (language === 'zh') return status
+  return ({ '上新': 'New', '在售': 'Available', '少量': 'Low stock', '售罄': 'Sold out', '即将上新': 'Coming soon' } as Record<string, string>)[status] ?? status
 }
 
 function servingOptionLine(option: ReturnType<typeof displayServingOptions>[number]) {

@@ -476,7 +476,7 @@ export function newTapOperationId(): string {
   })
 }
 
-/** Record a new keg for the same beer on the same tap without ending its tap session. */
+/** Record a new keg on the same tap; sold-out beer starts a new session and returns to available. */
 export async function recordTapKegChange(
   drinkId: string,
   operationId: string,

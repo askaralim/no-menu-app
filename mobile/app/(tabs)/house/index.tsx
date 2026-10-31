@@ -12,6 +12,12 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { useAuth } from '../../../lib/authProvider'
 import { THEME, SPACING, RADIUS } from '../../../lib/theme'
 import { Screen, Title, SectionLabel, Card } from '../../../components/ui'
+import { MerchantUpdateSheet } from '../../../components/house/MerchantUpdateSheet'
+import {
+  getUnseenMerchantUpdate,
+  markMerchantUpdateSeen,
+  type MerchantUpdate,
+} from '../../../lib/merchantUpdates'
 import {
   getTenantPublicPriceMode,
   getTenantPublishReadiness,
@@ -44,7 +50,7 @@ function roleLabel(r: string): string {
 
 export default function HouseHubScreen() {
   const router = useRouter()
-  const { tenantId, role, orderingEnabled, memberships, refreshMembership } = useAuth()
+  const { user, tenantId, role, orderingEnabled, memberships, refreshMembership } = useAuth()
   const tenant = memberships.find((m) => m.tenant_id === tenantId) ?? null
   const canSwitchStore = memberships.length > 1
 
@@ -54,6 +60,8 @@ export default function HouseHubScreen() {
   const [publicVisible, setPublicVisible] = useState(false)
   const [publicBusy, setPublicBusy] = useState(false)
   const [eventSummary, setEventSummary] = useState<{ showing: number; draft: number } | null>(null)
+  const [merchantUpdate, setMerchantUpdate] = useState<MerchantUpdate | null>(null)
+  const [merchantUpdateSheet, setMerchantUpdateSheet] = useState<MerchantUpdate | null>(null)
 
   useEffect(() => {
     setPublicVisible(!!tenant?.is_public_visible)
@@ -93,6 +101,33 @@ export default function HouseHubScreen() {
       void fetchEventSummary()
     }, [fetchEventSummary]),
   )
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false
+      void getUnseenMerchantUpdate(user?.id, role).then((update) => {
+        if (!cancelled) setMerchantUpdate(update)
+      })
+      return () => {
+        cancelled = true
+      }
+    }, [role, user?.id]),
+  )
+
+  const openMerchantUpdate = () => {
+    if (!merchantUpdate) return
+    void markMerchantUpdateSeen(user?.id, merchantUpdate.id)
+    setMerchantUpdate(null)
+    setMerchantUpdateSheet(merchantUpdate)
+  }
+
+  const closeMerchantUpdate = () => setMerchantUpdateSheet(null)
+
+  const openMerchantUpdateCta = () => {
+    const href = merchantUpdateSheet?.ctaHref
+    setMerchantUpdateSheet(null)
+    if (href) router.push(href as any)
+  }
 
   const applyGoLive = async (v: boolean) => {
     if (!tenantId || publicBusy) return
@@ -323,6 +358,23 @@ export default function HouseHubScreen() {
         </View>
       </Card>
 
+      {merchantUpdate ? (
+        <TouchableOpacity
+          style={styles.featureUpdateStrip}
+          onPress={openMerchantUpdate}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={`新功能，${merchantUpdate.title}`}
+        >
+          <View style={styles.featureUpdateDot} />
+          <Text style={styles.featureUpdateKicker}>新功能</Text>
+          <Text style={styles.featureUpdateTitle} numberOfLines={1}>
+            {merchantUpdate.title}
+          </Text>
+          <Ionicons name="chevron-forward" size={17} color={THEME.faint} />
+        </TouchableOpacity>
+      ) : null}
+
       <SectionLabel>快捷入口</SectionLabel>
       <View style={styles.grid}>
         {hubItems.map((item) => (
@@ -351,6 +403,12 @@ export default function HouseHubScreen() {
         <Ionicons name="shield-checkmark-outline" size={15} color={THEME.faint} />
         <Text style={styles.roleFooterText}>当前角色：{roleLabel(role || 'staff')}</Text>
       </View>
+
+      <MerchantUpdateSheet
+        update={merchantUpdateSheet}
+        onClose={closeMerchantUpdate}
+        onCta={openMerchantUpdateCta}
+      />
     </Screen>
   )
 }
@@ -400,6 +458,31 @@ const styles = StyleSheet.create({
   },
   choiceChipText: { color: THEME.muted, fontSize: 14, fontWeight: '600' },
   choiceChipTextActive: { color: THEME.gold },
+  featureUpdateStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 58,
+    marginTop: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: THEME.goldBorder,
+    backgroundColor: THEME.goldFill,
+  },
+  featureUpdateDot: {
+    width: 7,
+    height: 7,
+    marginRight: 10,
+    borderRadius: RADIUS.pill,
+    backgroundColor: THEME.gold,
+  },
+  featureUpdateKicker: {
+    marginRight: SPACING.md,
+    color: THEME.gold,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  featureUpdateTitle: { flex: 1, color: THEME.textSoft, fontSize: 14, fontWeight: '600' },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

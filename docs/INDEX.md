@@ -1,6 +1,6 @@
 # Documentation index (source of truth)
 
-Last updated: 2026-10-27 (next POS OTA queue records the tap-list header store switcher; current production releases are unchanged).
+Last updated: 2026-10-29 (微信小程序 `1.3.0` 已通过审核并正式上线；下一版本待发布范围不变).
 
 Use this file to find the **canonical** doc for a topic. Prefer current ops docs over design-era `docs/` archives.
 
@@ -12,7 +12,7 @@ Current POS release: [`mobile/docs/POS_RECOGNITION_OTA_2026-10-23.md`](../mobile
 
 ---
 
-## Release status (2026-10-25)
+## Release status (2026-10-29)
 
 | Surface | Version | Status |
 |---------|---------|--------|
@@ -21,7 +21,7 @@ Current POS release: [`mobile/docs/POS_RECOGNITION_OTA_2026-10-23.md`](../mobile
 | **No Menu Tonight** (POS) | `1.1.0` (build ≥20) | Superseded by `1.1.1` — fixed tap slots release |
 | **No Menu Tonight** (POS) | `1.0.0` (build ≥16) | Superseded — baseline metadata in [`mobile/docs/APP_STORE_LISTED_V1.md`](../mobile/docs/APP_STORE_LISTED_V1.md) |
 | **No Menu** (consumer) | App Store `1.3.2` (build 48) + production OTA | **Live** — brewery discovery plus clearer “喝过” state in tap lists, beer-detail actions and TAP record layout |
-| **No Menu** (微信小程序) | `1.2.2` | **Live / review passed** — consumer analytics, brewery discovery, “喝过” and TAP record flows available |
+| **No Menu** (微信小程序) | `1.3.0` | **Live / review passed** — AI 酒标识别上酒、酒单状态操作、“喝过”与 TAP 记录、员工邀请和微信 We 分析已上线 |
 | Taplist Web | Production | Cookieless QR landing, follow CTA and mini-program-code display events verified 2026-10-09 |
 | ECS Supabase proxy | `nomenuapp.com/api/supabase` | **Live / verified 2026-10-08** — mini-program, POS iOS, consumer iOS, and public Taplist Web; Android intentionally excluded |
 | Production DB | Recorded migrations through `20260817130000_…`; both `20261009...` brewery Migration behaviors are live | **Applied / verified** — no remaining database step for the brewery rollout |
@@ -184,6 +184,6 @@ POS 1.0.0 round deliberately deferred these; do not treat as review blockers.
 |---------|------|----------------|
 | Tonight (POS / owner) | `mobile/` | `com.taklip.nomenuapp` — **1.1.2 (build 24) + 2026-10-23 production OTA live** |
 | No Menu (consumer) | `taplist-mobile/` | `com.nomenuapp.taplist` — **1.3.2 (build 48) App Store live** |
-| No Menu (微信小程序) | `../no-menu-miniprogram/` | `1.2.2` live; analytics and brewery discovery verified |
+| No Menu (微信小程序) | `../no-menu-miniprogram/` | `1.3.0` live; AI 识图上酒、消费者 TAP 体验与微信 We 分析已上线 |
 | Admin / platform web | `app/` | Next static export |
 | Public web menu | `../taplist-web/` | `/bar/{slug}`, `/tonight`, `/support`; cookieless QR analytics live |

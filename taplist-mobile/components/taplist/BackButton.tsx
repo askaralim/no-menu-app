@@ -4,13 +4,15 @@ import { Pressable, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { palette } from '@/constants/design'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export function BackButton() {
+  const { language } = useLanguage()
   const insets = useSafeAreaInsets()
 
   return (
     <Pressable
-      accessibilityLabel="返回"
+      accessibilityLabel={tr(language, '返回', 'Back')}
       hitSlop={10}
       onPress={() => {
         if (router.canGoBack()) {

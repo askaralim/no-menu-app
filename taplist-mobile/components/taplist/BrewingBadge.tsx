@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native'
 
 import { palette, spacing, typography } from '@/constants/design'
 import type { BrewingType } from '@/lib/types'
+import { tr, useLanguage } from '@/lib/i18n'
 
 const BREWING_LABELS: Record<BrewingType, string> = {
   house_brand: '自有品牌',
@@ -15,7 +16,10 @@ type BrewingBadgeProps = {
 }
 
 export function BrewingBadge({ brewingType, label, variant = 'hero' }: BrewingBadgeProps) {
-  const displayLabel = label ?? BREWING_LABELS[brewingType]
+  const { language } = useLanguage()
+  const displayLabel = language === 'en'
+    ? (brewingType === 'on_site_brewery' ? 'BREWED ON SITE' : 'HOUSE BRAND')
+    : label ?? BREWING_LABELS[brewingType]
   const isOnSite = brewingType === 'on_site_brewery'
 
   return (
@@ -50,11 +54,12 @@ export function BrewingBadgeFromType({
   brewingLabel,
   variant = 'hero',
 }: BrewingBadgeFromTypeProps) {
+  const { language } = useLanguage()
   if (!brewingType) return null
   return (
     <BrewingBadge
       brewingType={brewingType}
-      label={brewingLabel ?? BREWING_LABELS[brewingType]}
+      label={language === 'en' ? tr(language, BREWING_LABELS[brewingType], brewingType === 'on_site_brewery' ? 'BREWED ON SITE' : 'HOUSE BRAND') : brewingLabel ?? BREWING_LABELS[brewingType]}
       variant={variant}
     />
   )

@@ -4,6 +4,7 @@ import ViewShot from 'react-native-view-shot'
 
 import { CachedImage } from '@/components/taplist/CachedImage'
 import { palette, spacing, typography } from '@/constants/design'
+import { tr, useLanguage } from '@/lib/i18n'
 import type { MyDrinkInsights } from '@/lib/types'
 
 export type ShareableTonightImageHandle = { capture: () => Promise<string | undefined> }
@@ -13,6 +14,7 @@ export const ShareableTonightImage = forwardRef<
   { tonight: MyDrinkInsights['tonight']; username: string }
 >(function ShareableTonightImage({ tonight, username }, ref) {
   const shotRef = useRef<ViewShot>(null)
+  const { language, localized } = useLanguage()
   const drinks = tonight.drinks.slice(0, 9)
   const columns = drinks.length === 1 ? 1 : drinks.length <= 4 ? 2 : 3
   const itemWidth = columns === 1 ? 230 : drinks.length === 2 ? 166 : columns === 2 ? 150 : 106
@@ -26,13 +28,13 @@ export const ShareableTonightImage = forwardRef<
           <Text style={styles.headerDate}>{formatDate(tonight.business_day_start)}</Text>
           <Text style={styles.headerSeparator}> · </Text>
           <Text style={styles.headerUsername}>{username}</Text>
-          <Text style={styles.headerCopy}> 今晚的 </Text>
+          <Text style={styles.headerCopy}> {tr(language, '今晚的', "tonight's")} </Text>
           <Text style={styles.headerCount}>{tonight.drink_count}</Text>
-          <Text style={styles.headerCopy}> 款 </Text>
+          <Text style={styles.headerCopy}> {language === 'zh' ? '款 ' : ''}</Text>
           <Text style={styles.headerTap}>TAP</Text>
         </Text>
         <View style={styles.headerRule} />
-        {tonight.drink_count > drinks.length ? <Text style={styles.recentLabel}>最近 {drinks.length} 款</Text> : null}
+        {tonight.drink_count > drinks.length ? <Text style={styles.recentLabel}>{tr(language, `最近 ${drinks.length} 款`, `Latest ${drinks.length}`)}</Text> : null}
         <View style={[styles.grid, columns < 3 && styles.gridCentered, drinks.length <= 2 && styles.gridSpacious]}>
           {drinks.map((drink) => (
             <View key={drink.light_id} style={[styles.item, { width: itemWidth }]}>
@@ -42,9 +44,9 @@ export const ShareableTonightImage = forwardRef<
                 ) : null}
               </View>
               <Text numberOfLines={1} style={styles.name}>
-                {[drink.brewery, drink.name].filter(Boolean).join(' · ')}
+                {[localized(drink.brewery, drink.brewery_en), localized(drink.name, drink.name_en)].filter(Boolean).join(' · ')}
               </Text>
-              <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ') || '未知酒吧'}</Text>
+              <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ') || tr(language, '未知酒吧', 'Unknown venue')}</Text>
             </View>
           ))}
         </View>

@@ -15,6 +15,7 @@ DECLARE
   v_orphan_drink_id uuid;
   v_replacement_drink_id uuid;
   v_exact_session_id uuid;
+  v_resumed_session_id uuid;
   v_partial_session_id uuid := gen_random_uuid();
   v_idempotency_operation_id uuid := gen_random_uuid();
   v_session_after uuid;
@@ -39,6 +40,10 @@ DECLARE
   v_operation jsonb;
   v_before_keg_count integer;
   v_after_keg_count integer;
+  v_before_assign_count integer;
+  v_after_assign_count integer;
+  v_before_resume_keg_count integer;
+  v_after_resume_keg_count integer;
   v_before_event_count integer;
   v_after_event_count integer;
 BEGIN
@@ -299,8 +304,50 @@ BEGIN
     RAISE EXCEPTION 'Exact active session keg fields are incorrect: %', v_item;
   END IF;
 
-  -- Sold-out keg change resumes availability without starting a new session.
+  -- sold_out is a hard lifecycle boundary. "Change keg and resume" starts a
+  -- fresh exact session while preserving the sold-out drink's tap assignment.
   PERFORM public.set_drink_taplist_status(v_exact_drink_id, true, 'sold_out');
+
+  SELECT max(e.occurred_at)
+  INTO v_ended_event_at
+  FROM public.tap_lifecycle_events e
+  WHERE e.tenant_id = v_tenant_id
+    AND e.session_id = v_exact_session_id
+    AND e.action = 'sold_out'
+    AND e.end_reason = 'sold_out'
+    AND e.from_tap = v_taps[1]
+    AND e.to_tap IS NULL;
+
+  SELECT public.list_tap_lifecycle_sessions(v_tenant_id, 'completed')
+  INTO v_sessions;
+
+  SELECT item
+  INTO v_item
+  FROM jsonb_array_elements(v_sessions->'items') AS item
+  WHERE item->>'session_id' = v_exact_session_id::text;
+
+  IF v_ended_event_at IS NULL
+     OR v_item IS NULL
+     OR v_item->>'end_reason' IS DISTINCT FROM 'sold_out'
+     OR (v_item->>'ended_at')::timestamptz IS DISTINCT FROM v_ended_event_at
+     OR (v_item->>'keg_change_count')::integer <> 1
+     OR v_item->'duration_seconds' = 'null'::jsonb
+     OR EXISTS (
+       SELECT 1
+       FROM public.tap_lifecycle_sessions_v1 s
+       WHERE s.tenant_id = v_tenant_id
+         AND s.drink_id = v_exact_drink_id
+         AND s.ended_at IS NULL
+         AND s.canceled IS NOT TRUE
+     ) THEN
+    RAISE EXCEPTION 'Sold-out status did not close the original exact session: %', v_item;
+  END IF;
+
+  SELECT public.get_tap_lifecycle_overview(v_tenant_id)
+  INTO v_overview;
+  v_before_assign_count := coalesce((v_overview->'counts'->>'assign')::integer, 0);
+  v_before_resume_keg_count := coalesce((v_overview->'counts'->>'keg_change')::integer, 0);
+
   SELECT public.record_tap_keg_change(v_exact_drink_id, gen_random_uuid())
   INTO v_result;
 
@@ -315,14 +362,15 @@ BEGIN
   WHERE d.id = v_exact_drink_id;
 
   SELECT s.session_id
-  INTO v_session_after
+  INTO v_resumed_session_id
   FROM public.tap_lifecycle_sessions_v1 s
   WHERE s.tenant_id = v_tenant_id
     AND s.drink_id = v_exact_drink_id
-    AND s.ended_at IS NULL;
+    AND s.ended_at IS NULL
+    AND s.canceled IS NOT TRUE;
 
-  SELECT e.from_status, e.to_status
-  INTO v_from_status, v_to_status
+  SELECT e.from_tap, e.to_tap, e.from_status, e.to_status, e.occurred_at
+  INTO v_from_tap, v_to_tap, v_from_status, v_to_status, v_event_at
   FROM public.tap_lifecycle_events e
   WHERE e.tenant_id = v_tenant_id
     AND e.drink_id = v_exact_drink_id
@@ -330,14 +378,50 @@ BEGIN
   ORDER BY e.occurred_at DESC, e.id DESC
   LIMIT 1;
 
-  IF v_session_after IS DISTINCT FROM v_exact_session_id
+  IF v_resumed_session_id IS NULL
+     OR v_resumed_session_id = v_exact_session_id
+     OR v_resumed_session_id IS DISTINCT FROM (v_result->>'session_id')::uuid
      OR v_status IS DISTINCT FROM 'available'
      OR v_visible IS NOT TRUE
+     OR v_from_tap IS NOT NULL
+     OR v_to_tap IS DISTINCT FROM v_taps[1]
      OR v_from_status IS DISTINCT FROM 'sold_out'
      OR v_to_status IS DISTINCT FROM 'available'
      OR v_last_menu_updated_at IS DISTINCT FROM
        (v_result->>'keg_changed_at')::timestamptz THEN
-    RAISE EXCEPTION 'Sold-out keg change must resume available in the same session';
+    RAISE EXCEPTION 'Sold-out keg change must start a fresh available session: %', v_result;
+  END IF;
+
+  SELECT public.get_tap_lifecycle_overview(v_tenant_id)
+  INTO v_overview;
+  v_after_assign_count := coalesce((v_overview->'counts'->>'assign')::integer, 0);
+  v_after_resume_keg_count := coalesce((v_overview->'counts'->>'keg_change')::integer, 0);
+
+  SELECT operation
+  INTO v_operation
+  FROM jsonb_array_elements(v_overview->'operations') AS operation
+  WHERE operation->>'operation_id' = v_result->>'operation_id';
+
+  SELECT public.list_tap_lifecycle_sessions(v_tenant_id, 'active')
+  INTO v_sessions;
+
+  SELECT item
+  INTO v_item
+  FROM jsonb_array_elements(v_sessions->'items') AS item
+  WHERE item->>'session_id' = v_resumed_session_id::text;
+
+  IF v_operation IS NULL
+     OR v_operation->>'action' IS DISTINCT FROM 'keg_change'
+     OR v_operation->'duration_seconds' <> 'null'::jsonb
+     OR v_after_assign_count IS DISTINCT FROM v_before_assign_count + 1
+     OR v_after_resume_keg_count IS DISTINCT FROM v_before_resume_keg_count + 1
+     OR v_item IS NULL
+     OR (v_item->>'keg_change_count')::integer <> 0
+     OR (v_item->>'current_keg_started_at')::timestamptz IS DISTINCT FROM v_event_at
+     OR v_item->'current_keg_duration_seconds' = 'null'::jsonb THEN
+    RAISE EXCEPTION 'Fresh keg-resume session analytics are incorrect: operation %, session %',
+      v_operation,
+      v_item;
   END IF;
 
   -- A hidden on-tap drink stays hidden and keeps its current status.
@@ -357,7 +441,7 @@ BEGIN
     AND s.drink_id = v_exact_drink_id
     AND s.ended_at IS NULL;
 
-  IF v_session_after IS DISTINCT FROM v_exact_session_id
+  IF v_session_after IS DISTINCT FROM v_resumed_session_id
      OR v_status IS DISTINCT FROM 'available'
      OR v_visible IS NOT FALSE THEN
     RAISE EXCEPTION 'Hidden keg change must preserve visibility, status and session';
@@ -672,22 +756,25 @@ BEGIN
     RAISE EXCEPTION 'Rejected non-member call wrote a keg-change event';
   END IF;
 
-  -- Completing a changed-keg session preserves the full tap duration and the
-  -- final keg's independently measured duration.
+  -- Completing the resumed session preserves its full duration and the final
+  -- keg's independently measured duration. Its start-boundary keg change is
+  -- the first keg, not a change inside the new session.
   PERFORM public.remove_drink_from_tonight(v_exact_drink_id);
 
   SELECT max(e.occurred_at)
   INTO v_last_keg_at
   FROM public.tap_lifecycle_events e
   WHERE e.tenant_id = v_tenant_id
-    AND e.session_id = v_exact_session_id
-    AND e.action = 'keg_change';
+    AND e.session_id = v_resumed_session_id
+    AND e.action = 'keg_change'
+    AND e.from_tap IS NOT NULL
+    AND e.to_tap IS NOT NULL;
 
   SELECT max(e.occurred_at)
   INTO v_ended_event_at
   FROM public.tap_lifecycle_events e
   WHERE e.tenant_id = v_tenant_id
-    AND e.session_id = v_exact_session_id
+    AND e.session_id = v_resumed_session_id
     AND e.from_tap IS NOT NULL
     AND e.to_tap IS NULL;
 
@@ -697,12 +784,12 @@ BEGIN
   SELECT item
   INTO v_item
   FROM jsonb_array_elements(v_sessions->'items') AS item
-  WHERE item->>'session_id' = v_exact_session_id::text;
+  WHERE item->>'session_id' = v_resumed_session_id::text;
 
   IF v_item IS NULL
      OR v_item->>'state' IS DISTINCT FROM 'completed'
      OR (v_item->>'ended_at')::timestamptz IS DISTINCT FROM v_ended_event_at
-     OR (v_item->>'keg_change_count')::integer <> 3
+     OR (v_item->>'keg_change_count')::integer <> 1
      OR (v_item->>'current_keg_started_at')::timestamptz IS DISTINCT FROM v_last_keg_at
      OR (v_item->>'duration_seconds')::bigint IS DISTINCT FROM greatest(
        0,
@@ -727,7 +814,7 @@ BEGIN
   IF EXISTS (
     SELECT 1
     FROM jsonb_array_elements(v_sessions->'items') AS item
-    WHERE item->>'session_id' = v_exact_session_id::text
+    WHERE item->>'session_id' = v_resumed_session_id::text
   ) THEN
     RAISE EXCEPTION 'Completed session remained visible as active';
   END IF;

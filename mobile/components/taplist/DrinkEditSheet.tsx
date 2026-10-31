@@ -1164,14 +1164,6 @@ export default function DrinkEditSheet({
                   />
                 </View>
               </View>
-              <View style={{ width: 12 }} />
-              <View style={{ flex: 1 }}>
-                <Field
-                  label="产地"
-                  value={local.profile.country}
-                  onChange={(t) => patchProfile({ country: t })}
-                />
-              </View>
             </View>
             <Field
               label="简介"

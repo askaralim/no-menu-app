@@ -131,7 +131,11 @@ export interface TenantInfo {
 export interface AdminTaplistCityRow {
   city: string
   label: string
+  label_en: string | null
   country: string
+  region_code: string | null
+  region_label: string | null
+  region_label_en: string | null
   sort_order: number
   is_enabled: boolean
   updated_at: string
@@ -175,8 +179,10 @@ export interface AdminDrinkCompanyRow {
   display_name: string
   entity_type: DrinkCompanyEntityType
   country: string | null
+  country_en: string | null
   country_code: string | null
   origin_region: string | null
+  origin_region_en: string | null
   raw_country_values: string[]
   confidence: DrinkCompanyConfidence
   review_status: DrinkCompanyReviewStatus
@@ -219,6 +225,7 @@ export interface AdminDrinkProductRow {
   abv: number | null
   ibu: number | null
   country: string | null
+  country_en: string | null
   origin_region: string | null
   image_url: string | null
   description: string | null

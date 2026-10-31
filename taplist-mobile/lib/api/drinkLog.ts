@@ -9,6 +9,7 @@ import type {
 } from '@/lib/types'
 
 type HistoryResponse = { ok: true; results: MyDrinkHistoryRow[] }
+type HistoryItemResponse = { ok: true; result: MyDrinkHistoryRow | null }
 type ListStateResponse = { ok: true; results: MyDrinkListState[] }
 
 export async function getMyDrinkState(drinkId: string) {
@@ -52,13 +53,32 @@ export async function lightMyDrink(drinkId: string) {
 }
 
 export async function getMyDrinkHistory(cursor?: string | null, limit = 60) {
-  const { data, error } = await getTaplistSupabase().rpc('get_my_drink_history', {
+  const client = getTaplistSupabase()
+  let { data, error } = await client.rpc('get_my_drink_history_i18n', {
     p_cursor: cursor ?? null,
     p_limit: limit,
   })
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) {
+    ;({ data, error } = await client.rpc('get_my_drink_history', {
+      p_cursor: cursor ?? null,
+      p_limit: limit,
+    }))
+  }
   if (error) throw error
   const payload = data as HistoryResponse
   return payload.results ?? []
+}
+
+export async function getMyDrinkHistoryItem(lightId: string) {
+  const client = getTaplistSupabase()
+  let { data, error } = await client.rpc('get_my_drink_history_item_i18n', {
+    p_light_id: lightId,
+  })
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) {
+    ;({ data, error } = await client.rpc('get_my_drink_history_item', { p_light_id: lightId }))
+  }
+  if (error) throw error
+  return (data as HistoryItemResponse).result ?? null
 }
 
 export async function getMyDrinkSummary() {
@@ -104,6 +124,8 @@ export async function getMyDrinkInsights(at?: string) {
       ...insights.tonight,
       drinks: insights.tonight.drinks.map((drink) => ({
         ...drink,
+        name_en: historyByLightId.get(drink.light_id)?.name_en ?? null,
+        brewery_en: historyByLightId.get(drink.light_id)?.brewery_en ?? null,
         bar_names: [...new Set(
           (historyByLightId.get(drink.light_id)?.venues ?? [])
             .filter((venue) => new Date(venue.first_drank_at).getTime() >= businessDayStart)
@@ -118,6 +140,8 @@ export async function getMyDrinkInsights(at?: string) {
       style_counts: normalizedStyleCounts,
       drinks: monthDrinks.map((drink) => ({
         ...drink,
+        name_en: historyByLightId.get(drink.light_id)?.name_en ?? null,
+        brewery_en: historyByLightId.get(drink.light_id)?.brewery_en ?? null,
         bar_names: [...new Set(
           (historyByLightId.get(drink.light_id)?.venues ?? [])
             .filter((venue) => {

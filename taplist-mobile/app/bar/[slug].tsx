@@ -21,7 +21,7 @@ import {
 import { palette, spacing, typography } from '@/constants/design'
 import { formatOpeningStatusLabel } from '@/lib/openingHour'
 import { buildAppleMapsPlaceUrl } from '@/lib/navigationLinks'
-import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
+import { TAPLIST_LEGAL_DISCLAIMER, TAPLIST_LEGAL_DISCLAIMER_EN } from '@/constants/compliance'
 import { fetchPublicDrinks, fetchPublicTenantBySlug, fetchPublicTenantEvents } from '@/lib/api/taplist'
 import { getMyDrinkStates } from '@/lib/api/drinkLog'
 import { followBar, getMyBarFollowState, setBarNewTapNotifications, unfollowBar } from '@/lib/api/barFollows'
@@ -31,8 +31,10 @@ import { PhotoLibraryPermissionError, saveImageUriToPhotoLibrary } from '@/lib/s
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import { trackEvent } from '@/lib/analytics'
 import { partitionPublicDrinks, type FollowedBarRow, type PublicEventRow } from '@/lib/types'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export default function BarDetailScreen() {
+  const { language, localized } = useLanguage()
   const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
   const shareableRef = useRef<ShareableBarTaplistImageHandle>(null)
@@ -125,13 +127,13 @@ export default function BarDetailScreen() {
     })
     void Linking.openURL(appleMapsUrl).catch((error) => {
       console.warn('Open Apple Maps place failed', error)
-      Alert.alert('暂时无法打开 Apple Maps', '请稍后重试')
+      Alert.alert(tr(language, '暂时无法打开 Apple Maps', 'Unable to open Apple Maps'), tr(language, '请稍后重试', 'Please try again.'))
     })
   }
 
   const handleSaveTaplistImage = async () => {
     if (!tenant || shareDrinks.length === 0) {
-      Alert.alert('暂无可保存的酒单')
+      Alert.alert(tr(language, '暂无可保存的酒单', 'No tap list to save'))
       return
     }
     if (isSavingTaplist) return
@@ -144,25 +146,25 @@ export default function BarDetailScreen() {
           tenant_id: tenant.id,
           reason: 'capture_failed',
         })
-        Alert.alert('保存失败', '酒单图片生成失败，请稍后再试')
+        Alert.alert(tr(language, '保存失败', 'Save failed'), tr(language, '酒单图片生成失败，请稍后再试', 'Could not generate the tap list image. Please try again.'))
         return
       }
 
       await saveImageUriToPhotoLibrary(uri)
       trackEvent('taplist_image_save_succeeded', { tenant_id: tenant.id })
-      Alert.alert('保存成功', '酒单已保存到相册')
+      Alert.alert(tr(language, '保存成功', 'Saved'), tr(language, '酒单已保存到相册', 'The tap list was saved to your photo library.'))
     } catch (error) {
       if (error instanceof PhotoLibraryPermissionError) {
         trackEvent('taplist_image_save_failed', {
           tenant_id: tenant.id,
           reason: 'permission_denied',
         })
-        Alert.alert('无法保存', '需要相册权限才能保存酒单')
+        Alert.alert(tr(language, '无法保存', 'Unable to save'), tr(language, '需要相册权限才能保存酒单', 'Photo library permission is required.'))
         return
       }
       trackEvent('taplist_image_save_failed', { tenant_id: tenant.id, reason: 'unknown' })
       console.error('Save taplist image failed', error)
-      Alert.alert('保存失败', '酒单图片生成失败，请稍后再试')
+      Alert.alert(tr(language, '保存失败', 'Save failed'), tr(language, '酒单图片生成失败，请稍后再试', 'Could not generate the tap list image. Please try again.'))
     } finally {
       setIsSavingTaplist(false)
     }
@@ -186,7 +188,7 @@ export default function BarDetailScreen() {
       }
     } catch (error) {
       console.warn('Follow bar failed', error)
-      Alert.alert('暂时无法关注', '请稍后重试')
+      Alert.alert(tr(language, '暂时无法关注', 'Unable to follow'), tr(language, '请稍后重试', 'Please try again.'))
     } finally {
       setFollowBusy(false)
     }
@@ -206,11 +208,11 @@ export default function BarDetailScreen() {
           notify_new_taps: true,
         })
       } else {
-        Alert.alert('已关注，通知尚未开启', '你可以稍后在「关注的酒吧」或系统设置中开启。')
+        Alert.alert(tr(language, '已关注，通知尚未开启', 'Followed; notifications are off'), tr(language, '你可以稍后在「关注的酒吧」或系统设置中开启。', 'You can enable them later under Followed venues or system settings.'))
       }
     } catch (error) {
       console.warn('Enable notifications failed', error)
-      Alert.alert('通知开启失败', '关注已经保存，请稍后在「关注的酒吧」中重试。')
+      Alert.alert(tr(language, '通知开启失败', 'Could not enable notifications'), tr(language, '关注已经保存，请稍后在「关注的酒吧」中重试。', 'Your follow was saved. Try again later under Followed venues.'))
     } finally {
       setFollowBusy(false)
     }
@@ -218,10 +220,10 @@ export default function BarDetailScreen() {
 
   const handleUnfollow = () => {
     if (!tenant || followBusy) return
-    Alert.alert('取消关注这家酒吧？', '取消后将不再收到这家酒吧的上新通知。', [
-      { text: '保留关注', style: 'cancel' },
+    Alert.alert(tr(language, '取消关注这家酒吧？', 'Unfollow this venue?'), tr(language, '取消后将不再收到这家酒吧的上新通知。', 'You will no longer receive new-tap notifications from this venue.'), [
+      { text: tr(language, '保留关注', 'Keep following'), style: 'cancel' },
       {
-        text: '取消关注',
+        text: tr(language, '取消关注', 'Unfollow'),
         style: 'destructive',
         onPress: async () => {
           setFollowBusy(true)
@@ -239,7 +241,7 @@ export default function BarDetailScreen() {
             await queryClient.invalidateQueries({ queryKey: ['bar-follows'] })
           } catch (error) {
             console.warn('Unfollow bar failed', error)
-            Alert.alert('暂时无法取消关注', '请稍后重试')
+            Alert.alert(tr(language, '暂时无法取消关注', 'Unable to unfollow'), tr(language, '请稍后重试', 'Please try again.'))
           } finally {
             setFollowBusy(false)
           }
@@ -253,7 +255,7 @@ export default function BarDetailScreen() {
       <BackButton />
       {tenant ? (
         <Pressable
-          accessibilityLabel="保存酒单图片"
+          accessibilityLabel={tr(language, '保存酒单图片', 'Save taplist image')}
           hitSlop={10}
           disabled={!canSaveTaplist}
           onPress={handleSaveTaplistImage}
@@ -277,7 +279,7 @@ export default function BarDetailScreen() {
           <>
             <AtmosphereImage source={tenant.cover_image_url} aspectRatio={4 / 3} overlayOpacity={0.54} borderRadius={0}>
               <View style={styles.heroCopy}>
-                <Text style={styles.title} numberOfLines={2}>{tenant.display_name || tenant.name}</Text>
+                <Text style={styles.title} numberOfLines={2}>{localized(tenant.display_name || tenant.name, tenant.display_name_en)}</Text>
                 <BrewingBadgeFromType
                   brewingType={tenant.brewing_type}
                   brewingLabel={tenant.brewing_label}
@@ -289,7 +291,7 @@ export default function BarDetailScreen() {
                       {tenant.address ? (
                         <Pressable
                           accessibilityRole={appleMapsUrl ? 'link' : undefined}
-                          accessibilityLabel={appleMapsUrl ? `在 Apple Maps 中查看 ${tenant.display_name || tenant.name}` : undefined}
+                          accessibilityLabel={appleMapsUrl ? tr(language, `在 Apple Maps 中查看 ${tenant.display_name || tenant.name}`, `View ${localized(tenant.display_name || tenant.name, tenant.display_name_en)} in Apple Maps`) : undefined}
                           disabled={!appleMapsUrl}
                           hitSlop={8}
                           onPress={handleOpenAppleMaps}
@@ -299,7 +301,7 @@ export default function BarDetailScreen() {
                             pressed && appleMapsUrl && styles.heroAddressPressed,
                           ]}>
                           <FontAwesome name="map-marker" size={13} color={palette.muted} />
-                          <Text style={[styles.heroMetaText, appleMapsUrl && styles.heroAddressText]}>{tenant.address}</Text>
+                          <Text style={[styles.heroMetaText, appleMapsUrl && styles.heroAddressText]}>{localized(tenant.address, tenant.address_en)}</Text>
                           {appleMapsUrl ? (
                             <View style={styles.heroMapHint}>
                               <FontAwesome name="location-arrow" size={13} color={palette.amber} />
@@ -316,7 +318,7 @@ export default function BarDetailScreen() {
                     </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={followQuery.data?.followed ? '取消关注这家酒吧' : '关注这家酒吧'}
+                      accessibilityLabel={followQuery.data?.followed ? tr(language, '取消关注这家酒吧', 'Unfollow this venue') : tr(language, '关注这家酒吧', 'Follow this venue')}
                       disabled={followBusy || followQuery.isLoading}
                       onPress={followQuery.data?.followed ? handleUnfollow : () => void handleFollow()}
                       style={({ pressed }) => [
@@ -328,7 +330,7 @@ export default function BarDetailScreen() {
                         <ActivityIndicator size="small" color={palette.amber} />
                       ) : (
                         <Text style={[styles.followButtonText, followQuery.data?.followed && styles.followButtonTextActive]}>
-                          {followQuery.data?.followed ? '✓ 已关注' : '＋ 关注'}
+                          {followQuery.data?.followed ? tr(language, '✓ 已关注', '✓ Following') : tr(language, '＋ 关注', '＋ Follow')}
                         </Text>
                       )}
                     </Pressable>
@@ -355,32 +357,32 @@ export default function BarDetailScreen() {
           {(tenantQuery.isLoading || drinksQuery.isLoading) && configured ? (
             <View style={styles.loading}>
               <ActivityIndicator color={palette.amber} />
-              <Text style={styles.muted}>正在加载实时酒单...</Text>
+              <Text style={styles.muted}>{tr(language, '正在加载实时酒单...', 'Loading live taplist...')}</Text>
             </View>
           ) : null}
 
           {!configured ? (
-            <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看实时公开酒单。" />
+            <EmptyState title={tr(language, '尚未连接酒单服务', 'Taplist service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看实时公开酒单。', 'Configure Supabase to view live public taplists.')} />
           ) : tenantQuery.isError || tenantResult?.ok === false ? (
-            <EmptyState title="找不到这家酒吧" body="该酒吧可能尚未发布公开酒单，或链接已经失效。" />
+            <EmptyState title={tr(language, '找不到这家酒吧', 'Venue not found')} body={tr(language, '该酒吧可能尚未发布公开酒单，或链接已经失效。', 'This venue may not have a public taplist, or the link has expired.')} />
           ) : tenant ? (
             <>
               {drinksQuery.isError || drinkResult?.ok === false ? (
                 <EmptyState
-                  title="暂时无法加载酒单"
-                  body="网络连接较慢，请重新加载，或以门店实际供应为准。"
-                  actionLabel="重新加载"
+                  title={tr(language, '暂时无法加载酒单', 'Unable to load taplist')}
+                  body={tr(language, '网络连接较慢，请重新加载，或以门店实际供应为准。', 'Please reload, or check availability with the venue.')}
+                  actionLabel={tr(language, '重新加载', 'Reload')}
                   onAction={() => void drinksQuery.refetch()}
                 />
               ) : !hasAnyDrinks && !drinksQuery.isLoading ? (
-                <EmptyState title="暂无公开酒款" body="这家酒吧当前还没有发布可展示的酒单。" />
+                <EmptyState title={tr(language, '暂无公开酒款', 'No public beers')} body={tr(language, '这家酒吧当前还没有发布可展示的酒单。', 'This venue has not published any beers yet.')} />
               ) : (
                 <>
                   {drinks.length > 0 ? (
                     <TapListSection
                       title={newDrinkCount > 0
-                        ? `${drinks.length} 在售 · ${newDrinkCount} 上新`
-                        : `${drinks.length} 在售`}>
+                        ? tr(language, `${drinks.length} 在售 · ${newDrinkCount} 上新`, `${drinks.length} available · ${newDrinkCount} new`)
+                        : tr(language, `${drinks.length} 在售`, `${drinks.length} available`)}>
                       {drinks.map((drink) => (
                         <BeerListCard
                           key={drink.id}
@@ -393,7 +395,7 @@ export default function BarDetailScreen() {
                     </TapListSection>
                   ) : null}
                   {comingSoon.length > 0 ? (
-                    <TapListSection title={`即将上新 ${comingSoon.length}`}>
+                    <TapListSection title={tr(language, `即将上新 ${comingSoon.length}`, `Coming soon ${comingSoon.length}`)}>
                       {comingSoon.map((drink) => (
                         <BeerListCard
                           key={drink.id}
@@ -406,7 +408,7 @@ export default function BarDetailScreen() {
                     </TapListSection>
                   ) : null}
                   {recentlySoldOut.length > 0 ? (
-                    <TapListSection title={`刚售罄 ${recentlySoldOut.length}`} muted>
+                    <TapListSection title={tr(language, `刚售罄 ${recentlySoldOut.length}`, `Recently sold out ${recentlySoldOut.length}`)} muted>
                       {recentlySoldOut.map((drink) => (
                         <BeerListCard
                           key={drink.id}
@@ -425,7 +427,7 @@ export default function BarDetailScreen() {
           ) : null}
 
           <View style={styles.complianceFooter}>
-            <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
+            <Text style={styles.complianceText}>{language === 'en' ? TAPLIST_LEGAL_DISCLAIMER_EN : TAPLIST_LEGAL_DISCLAIMER}</Text>
           </View>
         </View>
       </ScrollView>
@@ -438,7 +440,7 @@ export default function BarDetailScreen() {
         <View style={styles.saveOverlay} pointerEvents="none">
           <View style={styles.saveToast}>
             <ActivityIndicator size="small" color={palette.amber} />
-            <Text style={styles.saveText}>正在保存酒单</Text>
+            <Text style={styles.saveText}>{tr(language, '正在保存酒单', 'Saving tap list')}</Text>
           </View>
         </View>
       ) : null}
@@ -452,15 +454,15 @@ export default function BarDetailScreen() {
             <View style={styles.notificationBell}>
               <FontAwesome name="bell-o" size={21} color={palette.amber} />
             </View>
-            <Text style={styles.notificationPromptTitle}>不错过这家酒吧的上新</Text>
+            <Text style={styles.notificationPromptTitle}>{tr(language, '不错过这家酒吧的上新', 'Never miss a new tap')}</Text>
             <Text style={styles.notificationPromptBody}>
-              只在这家酒吧正式发布新酒时通知你。你可以随时在「我的－关注的酒吧」中关闭。
+              {tr(language, '只在这家酒吧正式发布新酒时通知你。你可以随时在「我的－关注的酒吧」中关闭。', 'We will notify you only when this venue publishes a new tap. Turn it off anytime under Mine → Followed venues.')}
             </Text>
             <Pressable disabled={followBusy} onPress={() => void handleEnableNotifications()} style={styles.notificationPrimary}>
-              <Text style={styles.notificationPrimaryText}>开启上新通知</Text>
+              <Text style={styles.notificationPrimaryText}>{tr(language, '开启上新通知', 'Enable notifications')}</Text>
             </Pressable>
             <Pressable disabled={followBusy} onPress={() => setShowNotificationPrompt(false)} style={styles.notificationSecondary}>
-              <Text style={styles.notificationSecondaryText}>暂不开启</Text>
+              <Text style={styles.notificationSecondaryText}>{tr(language, '暂不开启', 'Not now')}</Text>
             </Pressable>
           </View>
         </View>
@@ -489,6 +491,7 @@ function TapListSection({
 }
 
 function BarEventsSection({ slug, events }: { slug: string; events: PublicEventRow[] }) {
+  const { language } = useLanguage()
   const visibleEvents = events.slice(0, 3)
   const showMore = events.length > 3
 
@@ -498,7 +501,7 @@ function BarEventsSection({ slug, events }: { slug: string; events: PublicEventR
         <View style={styles.eventsHeader}>
           <Link href={{ pathname: '/bar/[slug]/events', params: { slug } }} asChild>
             <Pressable style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
-              <Text style={styles.moreText}>更多 ›</Text>
+              <Text style={styles.moreText}>{tr(language, '更多 ›', 'More ›')}</Text>
             </Pressable>
           </Link>
         </View>

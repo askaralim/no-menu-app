@@ -31,6 +31,7 @@ import {
 } from '@/components/taplist/railCardStyle'
 import type { PublicEventRow } from '@/lib/types'
 import { trackEvent, type AnalyticsSource } from '@/lib/analytics'
+import { tr, useLanguage, type Language } from '@/lib/i18n'
 
 type EventCardProps = {
   event: PublicEventRow
@@ -39,20 +40,20 @@ type EventCardProps = {
   source?: AnalyticsSource
 }
 
-export function compactEventTypeLabel(event: PublicEventRow) {
+export function compactEventTypeLabel(event: PublicEventRow, language: Language = 'zh') {
   switch (event.event_type) {
     case 'happy_hour':
       return 'Happy Hour'
     case 'tap_takeover':
-      return '酒头接管'
+      return tr(language, '酒头接管', 'Tap Takeover')
     case 'dj':
       return 'DJ Night'
     case 'new_tap':
-      return '新酒发布'
+      return tr(language, '新酒发布', 'New Release')
     case 'party':
-      return '派对'
+      return tr(language, '派对', 'Party')
     case 'tasting':
-      return '品鉴'
+      return tr(language, '品鉴', 'Tasting')
     case 'guest_shift':
       return 'Guest Shift'
     case 'live_music':
@@ -60,16 +61,18 @@ export function compactEventTypeLabel(event: PublicEventRow) {
     case 'quiz':
       return 'Quiz Night'
     case 'other':
-      return '活动'
+      return tr(language, '活动', 'Event')
     default:
-      return event.event_type_label?.split('/')[0]?.trim() || '活动'
+      return event.event_type_label?.split('/')[language === 'en' ? 1 : 0]?.trim()
+        || event.event_type_label?.split('/')[0]?.trim()
+        || tr(language, '活动', 'Event')
   }
 }
 
 /** Specific type or subtitle for list cards — skips generic "活动". */
-export function eventListDetailLine(event: PublicEventRow): string | null {
-  const typeLabel = compactEventTypeLabel(event)
-  if (typeLabel && typeLabel !== '活动') return typeLabel
+export function eventListDetailLine(event: PublicEventRow, language: Language = 'zh'): string | null {
+  const typeLabel = compactEventTypeLabel(event, language)
+  if (typeLabel && typeLabel !== tr(language, '活动', 'Event')) return typeLabel
   const subtitle = event.subtitle?.trim()
   return subtitle || null
 }
@@ -83,12 +86,12 @@ export function shouldGroupEventsByVenue(events: PublicEventRow[]) {
   return [...counts.values()].some((count) => count > 1)
 }
 
-export function eventDisplayStateLabel(state: PublicEventRow['display_state']) {
-  return state === 'UPCOMING' ? '即将开始' : '进行中'
+export function eventDisplayStateLabel(state: PublicEventRow['display_state'], language: Language = 'zh') {
+  return state === 'UPCOMING' ? tr(language, '即将开始', 'Upcoming') : tr(language, '进行中', 'Now')
 }
 
-export function eventMetaLine(event: PublicEventRow) {
-  return eventDisplayStateLabel(event.display_state)
+export function eventMetaLine(event: PublicEventRow, language: Language = 'zh') {
+  return eventDisplayStateLabel(event.display_state, language)
 }
 
 export function eventDateLabel(event: PublicEventRow) {
@@ -162,6 +165,7 @@ function shortCalendarDateLabel(date: EventCalendarDateParts) {
 
 export function EventCard({ event, compact = false, showVenue = true, source = 'direct' }: EventCardProps) {
   const router = useRouter()
+  const { language } = useLanguage()
   const hasImage = Boolean(event.image_url)
   const titleLines = compact ? 2 : 2
 
@@ -170,7 +174,7 @@ export function EventCard({ event, compact = false, showVenue = true, source = '
       <View style={styles.badgeRow}>
         <View style={[styles.stateBadge, (event.display_state === 'ONGOING' || event.display_state === 'TONIGHT') && styles.ongoingBadge]}>
           <Text style={styles.stateText} numberOfLines={1} ellipsizeMode="tail">
-            {eventMetaLine(event)}
+            {eventMetaLine(event, language)}
           </Text>
         </View>
       </View>
@@ -237,9 +241,10 @@ export function EventListCard({
   showVenue?: boolean
   source?: AnalyticsSource
 }) {
+  const { language } = useLanguage()
   const hasImage = Boolean(event.image_url)
   const artworkWidth = hasImage ? EVENT_CARD_ARTWORK_WIDTH : BEER_CARD_ARTWORK_WIDTH
-  const detailLine = eventListDetailLine(event)
+  const detailLine = eventListDetailLine(event, language)
   const venueLine = event.tenant_display_name
 
   return (

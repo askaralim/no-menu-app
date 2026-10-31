@@ -6,13 +6,16 @@ import { HouseSubheader } from '../../../components/house/HouseSubheader'
 import { Screen } from '../../../components/ui'
 import { useAuth } from '../../../lib/authProvider'
 import {
-  getTapLifecycleOverview,
+  getTapLifecycleDashboardPage,
+  type TapLifecycleCursor,
   type TapLifecycleOperation,
   type TapLifecycleOverview,
+  type TapLifecyclePagination,
 } from '../../../lib/tapLifecycleApi'
 import { LAYOUT, RADIUS, SPACING, THEME } from '../../../lib/theme'
 
 const SHANGHAI_TIME_ZONE = 'Asia/Shanghai'
+const OPERATION_PAGE_SIZE = 20
 
 type OperationVisual = {
   title: string
@@ -134,7 +137,7 @@ function operationDetail(operation: TapLifecycleOperation): string | null {
 function clearLabel(reason: string | null | undefined): string {
   switch (reason) {
     case 'sold_out':
-      return '售罄下枪'
+      return '售罄结束'
     case 'archive':
     case 'archived':
       return '归档下枪'
@@ -148,6 +151,22 @@ function clearLabel(reason: string | null | undefined): string {
 function operationVisual(operation: TapLifecycleOperation): OperationVisual {
   const detail = operationDetail(operation)
   switch (operation.action) {
+    case 'plan': {
+      const from = tapLabel(operation.from_tap)
+      const to = tapLabel(operation.to_tap)
+      if (!from && to) {
+        return { title: `${to} 安排即将上新`, detail, icon: 'time-outline', color: THEME.goldSoft }
+      }
+      if (from && !to) {
+        return { title: `${from} 取消即将上新`, detail, icon: 'close-outline', color: THEME.faint }
+      }
+      return {
+        title: from && to ? `${from} → ${to} 调整预告位置` : '调整即将上新',
+        detail,
+        icon: 'time-outline',
+        color: THEME.goldSoft,
+      }
+    }
     case 'assign':
       return {
         title: withTap('上枪', operation.to_tap),
@@ -217,6 +236,13 @@ function operationVisual(operation: TapLifecycleOperation): OperationVisual {
         icon: 'reload-outline',
         color: THEME.gold,
       }
+    case 'cancel':
+      return {
+        title: withTap('撤销上枪', operation.from_tap ?? operation.to_tap),
+        detail,
+        icon: 'arrow-undo-outline',
+        color: THEME.faint,
+      }
     case 'baseline':
       return {
         title: withTap('记录起点', operation.to_tap ?? operation.from_tap),
@@ -265,6 +291,39 @@ function groupOperations(operations: TapLifecycleOperation[]): OperationGroup[] 
   }))
 }
 
+function operationIdentity(operation: TapLifecycleOperation): string {
+  const operationId = operation.operation_id?.trim()
+  if (operationId) return `id:${operationId}`
+
+  const operationKey = operation.operation_key?.trim()
+  if (operationKey) return `key:${operationKey}`
+
+  return [
+    operation.occurred_at,
+    operation.action,
+    operation.from_tap ?? '',
+    operation.to_tap ?? '',
+    operation.drink_id ?? '',
+    operation.previous_drink_id ?? '',
+    operation.next_drink_id ?? '',
+  ].join('|')
+}
+
+function mergeOperations(
+  current: TapLifecycleOperation[],
+  incoming: TapLifecycleOperation[],
+): TapLifecycleOperation[] {
+  const seen = new Set(current.map(operationIdentity))
+  const merged = current.slice()
+  for (const operation of incoming) {
+    const key = operationIdentity(operation)
+    if (seen.has(key)) continue
+    seen.add(key)
+    merged.push(operation)
+  }
+  return merged
+}
+
 function MetricCard({ label, value }: { label: string; value: number | null | undefined }) {
   const count = finiteNumber(value)
   return (
@@ -282,12 +341,13 @@ function OperationRow({ operation, last }: { operation: TapLifecycleOperation; l
   const visual = operationVisual(operation)
   const isUnclassified = operation.accuracy === 'unclassified'
   const time = formatTime(operation.occurred_at)
-  const meta = [time, operation.actor_name?.trim()].filter(Boolean).join(' · ')
+  const actor = operation.actor_name?.trim()
+  const meta = [time, actor ? `操作人【${actor}】` : null].filter(Boolean).join(' · ')
   const duration = formatDuration(operation.duration_seconds)
   const showsDuration =
     !isUnclassified &&
     duration != null &&
-    ['clear', 'replace', 'archive', 'keg_change'].includes(operation.action)
+    ['clear', 'replace', 'sold_out', 'archive', 'keg_change'].includes(operation.action)
 
   return (
     <View style={[styles.operationRow, isUnclassified && styles.operationRowMuted, !last && styles.operationRowBorder]}>
@@ -320,14 +380,24 @@ export default function TapDataScreen() {
   const router = useRouter()
   const { tenantId } = useAuth()
   const [overview, setOverview] = useState<TapLifecycleOverview | null>(null)
+  const [pagination, setPagination] = useState<TapLifecyclePagination | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
   const requestIdRef = useRef(0)
+  const loadingMoreRef = useRef(false)
+  const loadedTenantIdRef = useRef<string | null>(null)
 
   const load = useCallback(async () => {
     const requestId = ++requestIdRef.current
+    loadingMoreRef.current = false
+    setLoadingMore(false)
+    setPagination(null)
+    setLoadMoreError(null)
     if (!tenantId) {
       if (requestId === requestIdRef.current) {
+        loadedTenantIdRef.current = null
         setOverview(null)
         setError('未找到当前门店')
         setLoading(false)
@@ -335,11 +405,22 @@ export default function TapDataScreen() {
       return
     }
 
+    if (loadedTenantIdRef.current !== tenantId) setOverview(null)
+
     setLoading(true)
     setError(null)
     try {
-      const next = await getTapLifecycleOverview(tenantId)
-      if (requestId === requestIdRef.current) setOverview(next)
+      const page = await getTapLifecycleDashboardPage(tenantId, {
+        limit: OPERATION_PAGE_SIZE,
+        beforeCursor: null,
+        includeSummary: true,
+      })
+      if (!page.summary) throw new Error('酒头数据概览不完整')
+      if (requestId === requestIdRef.current) {
+        loadedTenantIdRef.current = tenantId
+        setOverview({ ...page.summary, operations: page.operations })
+        setPagination(page.pagination)
+      }
     } catch (e) {
       if (requestId === requestIdRef.current) {
         setError(e instanceof Error ? e.message : '加载酒头数据失败')
@@ -348,6 +429,48 @@ export default function TapDataScreen() {
       if (requestId === requestIdRef.current) setLoading(false)
     }
   }, [tenantId])
+
+  const loadMore = useCallback(async () => {
+    const cursor: TapLifecycleCursor | null = pagination?.next_cursor ?? null
+    if (
+      !tenantId ||
+      loading ||
+      loadingMoreRef.current ||
+      pagination?.has_more !== true ||
+      !cursor
+    ) {
+      return
+    }
+
+    const requestId = requestIdRef.current
+    loadingMoreRef.current = true
+    setLoadingMore(true)
+    setLoadMoreError(null)
+    try {
+      const page = await getTapLifecycleDashboardPage(tenantId, {
+        limit: OPERATION_PAGE_SIZE,
+        beforeCursor: cursor,
+        includeSummary: false,
+      })
+      if (requestId !== requestIdRef.current) return
+
+      setOverview((current) =>
+        current
+          ? { ...current, operations: mergeOperations(current.operations, page.operations) }
+          : current,
+      )
+      setPagination(page.pagination)
+    } catch (e) {
+      if (requestId === requestIdRef.current) {
+        setLoadMoreError(e instanceof Error ? e.message : '加载更多记录失败')
+      }
+    } finally {
+      if (requestId === requestIdRef.current) {
+        loadingMoreRef.current = false
+        setLoadingMore(false)
+      }
+    }
+  }, [loading, pagination, tenantId])
 
   useFocusEffect(
     useCallback(() => {
@@ -358,23 +481,24 @@ export default function TapDataScreen() {
     }, [load]),
   )
 
+  const visibleOverview = loadedTenantIdRef.current === tenantId ? overview : null
   const operationGroups = useMemo(
-    () => groupOperations(overview?.operations ?? []),
-    [overview?.operations],
+    () => groupOperations(visibleOverview?.operations ?? []),
+    [visibleOverview?.operations],
   )
 
-  const assignedCount = finiteNumber(overview?.current_on_tap_count)
-  const capacityConfirmed = overview?.tap_count_confirmed === true
-  const tapCount = capacityConfirmed ? finiteNumber(overview?.tap_count) : null
-  const emptyTapCount = capacityConfirmed ? finiteNumber(overview?.empty_tap_count) : null
-  const dataSince = formatLongDate(overview?.data_since)
-  const windowDays = finiteNumber(overview?.window_days) ?? 30
+  const assignedCount = finiteNumber(visibleOverview?.current_on_tap_count)
+  const capacityConfirmed = visibleOverview?.tap_count_confirmed === true
+  const tapCount = capacityConfirmed ? finiteNumber(visibleOverview?.tap_count) : null
+  const emptyTapCount = capacityConfirmed ? finiteNumber(visibleOverview?.empty_tap_count) : null
+  const dataSince = formatLongDate(visibleOverview?.data_since)
+  const windowDays = finiteNumber(visibleOverview?.window_days) ?? 30
 
   return (
     <Screen scroll contentStyle={styles.screenContent}>
       <HouseSubheader title="酒头数据" />
 
-      {loading && !overview ? (
+      {loading && !visibleOverview ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={THEME.gold} />
         </View>
@@ -393,11 +517,8 @@ export default function TapDataScreen() {
         </View>
       ) : null}
 
-      {overview ? (
+      {visibleOverview ? (
         <>
-          <Text style={styles.eyebrow}>操作账本</Text>
-          <Text style={styles.intro}>只呈现在 No Menu 内完成的酒头操作，不使用销量或推测数据。</Text>
-
           <View style={styles.currentCard}>
             <Text style={styles.currentLabel}>当前在枪</Text>
             <View style={styles.currentValueRow}>
@@ -443,11 +564,11 @@ export default function TapDataScreen() {
             <Text style={styles.sectionHint}>仅准确记录</Text>
           </View>
           <View style={styles.metricGrid}>
-            <MetricCard label="上枪" value={overview.counts.assign} />
-            <MetricCard label="下枪" value={overview.counts.clear} />
-            <MetricCard label="换酒" value={overview.counts.replace} />
-            <MetricCard label="移枪" value={overview.counts.move} />
-            <MetricCard label="换桶" value={overview.counts.keg_change} />
+            <MetricCard label="上枪" value={visibleOverview.counts.assign} />
+            <MetricCard label="下枪" value={visibleOverview.counts.clear} />
+            <MetricCard label="换酒" value={visibleOverview.counts.replace} />
+            <MetricCard label="移枪" value={visibleOverview.counts.move} />
+            <MetricCard label="换桶" value={visibleOverview.counts.keg_change} />
           </View>
           <Text style={styles.metricFootnote}>换酒会同时计入一次上枪和一次下枪。</Text>
 
@@ -456,7 +577,11 @@ export default function TapDataScreen() {
             <Text style={styles.sectionHint}>近 {windowDays} 天</Text>
           </View>
 
-          {operationGroups.length === 0 ? (
+          {operationGroups.length === 0 && pagination?.has_more ? (
+            <View style={styles.emptyPageCard}>
+              <Text style={styles.emptyPageText}>本页没有可显示的准确记录，可继续查看更早操作。</Text>
+            </View>
+          ) : operationGroups.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="receipt-outline" size={28} color={THEME.faint} />
               <Text style={styles.emptyTitle}>还没有准确操作记录</Text>
@@ -478,6 +603,41 @@ export default function TapDataScreen() {
               </View>
             ))
           )}
+
+          {pagination && (visibleOverview.operations.length > 0 || pagination.has_more) ? (
+            <View style={styles.paginationFooter}>
+              {loadingMore ? (
+                <View style={styles.paginationLoading}>
+                  <ActivityIndicator size="small" color={THEME.gold} />
+                  <Text style={styles.paginationText}>正在加载更早记录…</Text>
+                </View>
+              ) : loadMoreError ? (
+                <View style={styles.paginationError}>
+                  <Text style={styles.paginationErrorText}>{loadMoreError}</Text>
+                  <TouchableOpacity
+                    onPress={() => void loadMore()}
+                    accessibilityRole="button"
+                    accessibilityLabel="重试加载更早记录"
+                  >
+                    <Text style={styles.paginationRetryText}>重试</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : pagination?.has_more ? (
+                <TouchableOpacity
+                  onPress={() => void loadMore()}
+                  activeOpacity={0.75}
+                  style={styles.loadMoreButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="加载更早记录"
+                >
+                  <Text style={styles.loadMoreText}>加载更早记录</Text>
+                  <Ionicons name="chevron-down" size={16} color={THEME.goldSoft} />
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.paginationEndText}>已显示近 {windowDays} 天全部记录</Text>
+              )}
+            </View>
+          ) : null}
         </>
       ) : null}
     </Screen>
@@ -487,20 +647,6 @@ export default function TapDataScreen() {
 const styles = StyleSheet.create({
   screenContent: { paddingBottom: LAYOUT.listPadBottom },
   loadingWrap: { paddingVertical: 64, alignItems: 'center' },
-  eyebrow: {
-    color: THEME.gold,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 2,
-    marginTop: SPACING.xs,
-  },
-  intro: {
-    color: THEME.muted,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.lg,
-  },
   errorCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -622,4 +768,28 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { color: THEME.text, fontSize: 15, fontWeight: '700', marginTop: SPACING.md },
   emptyText: { color: THEME.muted, fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: SPACING.sm },
+  emptyPageCard: {
+    padding: SPACING.lg,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: THEME.borderFaint,
+    backgroundColor: THEME.surfaceMuted,
+  },
+  emptyPageText: { color: THEME.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  paginationFooter: { alignItems: 'center', minHeight: 48, justifyContent: 'center' },
+  paginationLoading: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  paginationText: { color: THEME.muted, fontSize: 12 },
+  paginationError: { alignItems: 'center', gap: SPACING.xs },
+  paginationErrorText: { color: THEME.danger, fontSize: 12, textAlign: 'center' },
+  paginationRetryText: { color: THEME.gold, fontSize: 13, fontWeight: '700' },
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    minHeight: 40,
+    paddingHorizontal: SPACING.xl,
+  },
+  loadMoreText: { color: THEME.goldSoft, fontSize: 13, fontWeight: '600' },
+  paginationEndText: { color: THEME.faint, fontSize: 12 },
 })

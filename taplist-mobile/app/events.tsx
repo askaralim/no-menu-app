@@ -6,13 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { EventListSection } from '@/components/taplist/EventListSection'
 import { SPARSE_EVENT_LIST_THRESHOLD } from '@/components/taplist/railCardStyle'
-import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
+import { TAPLIST_LEGAL_DISCLAIMER, TAPLIST_LEGAL_DISCLAIMER_EN } from '@/constants/compliance'
 import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicEvents } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export default function EventsScreen() {
+  const { language, localized } = useLanguage()
   const insets = useSafeAreaInsets()
   const configured = useTaplistSupabaseReady()
   const { selectedCity } = useTaplistCity()
@@ -38,7 +40,7 @@ export default function EventsScreen() {
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="返回"
+            accessibilityLabel={tr(language, '返回', 'Back')}
             hitSlop={10}
             onPress={() => {
               if (router.canGoBack()) {
@@ -51,26 +53,26 @@ export default function EventsScreen() {
             <FontAwesome name="chevron-left" size={16} color={palette.text} />
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
-            {selectedCity.label} · 近期活动
+            {localized(selectedCity.label, selectedCity.label_en)} · {tr(language, '近期活动', 'Events')}
           </Text>
         </View>
 
         {!configured ? (
-          <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看公开活动。" />
+          <EmptyState title={tr(language, '尚未连接酒单服务', 'Taplist service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看公开活动。', 'Configure Supabase to view public events.')} />
         ) : eventsQuery.isLoading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={palette.amber} />
-            <Text style={styles.loadingText}>正在加载活动...</Text>
+            <Text style={styles.loadingText}>{tr(language, '正在加载活动...', 'Loading events...')}</Text>
           </View>
         ) : eventsQuery.isError ? (
-          <EmptyState title="暂时无法加载活动" body="请稍后重试，或以门店现场信息为准。" />
+          <EmptyState title={tr(language, '暂时无法加载活动', 'Unable to load events')} body={tr(language, '请稍后重试，或以门店现场信息为准。', 'Please try again, or confirm details with the venue.')} />
         ) : events.length === 0 ? (
-          <EmptyState title="暂无公开活动" body="今晚还没有酒吧发布活动。" />
+          <EmptyState title={tr(language, '暂无公开活动', 'No public events')} body={tr(language, '今晚还没有酒吧发布活动。', 'No venues have published events for tonight.')} />
         ) : (
           <>
             {tonightEvents.length > 0 ? (
               <EventListSection
-                title="进行中"
+                title={tr(language, '进行中', 'Ongoing')}
                 count={tonightEvents.length}
                 events={tonightEvents}
                 compact={sparseList}
@@ -79,7 +81,7 @@ export default function EventsScreen() {
             ) : null}
             {upcomingEvents.length > 0 ? (
               <EventListSection
-                title="即将开始"
+                title={tr(language, '即将开始', 'Upcoming')}
                 count={upcomingEvents.length}
                 events={upcomingEvents}
                 compact={sparseList}
@@ -90,7 +92,7 @@ export default function EventsScreen() {
         )}
 
         <View style={styles.complianceFooter}>
-          <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
+          <Text style={styles.complianceText}>{language === 'en' ? TAPLIST_LEGAL_DISCLAIMER_EN : TAPLIST_LEGAL_DISCLAIMER}</Text>
         </View>
       </ScrollView>
     </View>

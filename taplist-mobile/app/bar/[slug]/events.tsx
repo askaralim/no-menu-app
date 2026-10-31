@@ -10,11 +10,13 @@ import { TAPLIST_LEGAL_DISCLAIMER } from '@/constants/compliance'
 import { palette, spacing, typography } from '@/constants/design'
 import { fetchPublicTenantBySlug, fetchPublicTenantEvents } from '@/lib/api/taplist'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export default function BarEventsScreen() {
   const insets = useSafeAreaInsets()
   const { slug } = useLocalSearchParams<{ slug: string }>()
   const configured = useTaplistSupabaseReady()
+  const { language, localized } = useLanguage()
 
   const tenantQuery = useQuery({
     queryKey: ['taplist', 'tenant', slug],
@@ -44,22 +46,22 @@ export default function BarEventsScreen() {
         style={styles.screen}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xxxl }]}>
         <Text style={styles.kicker}>TONIGHT EVENTS</Text>
-        <Text style={styles.title}>{tenant?.display_name || tenant?.name || '酒吧活动'}</Text>
-        <Text style={styles.subtitle}>看看这家店今晚和近期有什么活动</Text>
+        <Text style={styles.title}>{tenant ? localized(tenant.display_name || tenant.name, tenant.display_name_en) : tr(language, '酒吧活动', 'Venue events')}</Text>
+        <Text style={styles.subtitle}>{tr(language, '看看这家店今晚和近期有什么活动', 'See what is happening here tonight and soon.')}</Text>
 
         {!configured ? (
-          <EmptyState title="尚未连接酒单服务" body="请配置 Supabase 环境变量后查看公开活动。" />
+          <EmptyState title={tr(language, '尚未连接酒单服务', 'Tap list service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看公开活动。', 'Configure Supabase to view public events.')} />
         ) : tenantQuery.isLoading || (!!tenant && eventsQuery.isLoading) ? (
           <View style={styles.loading}>
             <ActivityIndicator color={palette.amber} />
-            <Text style={styles.loadingText}>正在加载活动...</Text>
+            <Text style={styles.loadingText}>{tr(language, '正在加载活动...', 'Loading events...')}</Text>
           </View>
         ) : tenantQuery.isError || tenantResult?.ok === false ? (
-          <EmptyState title="找不到这家酒吧" body="该酒吧可能尚未发布公开酒单，或链接已经失效。" />
+          <EmptyState title={tr(language, '找不到这家酒吧', 'Venue not found')} body={tr(language, '该酒吧可能尚未发布公开酒单，或链接已经失效。', 'Its public tap list may be unavailable or this link has expired.')} />
         ) : eventsQuery.isError ? (
-          <EmptyState title="暂时无法加载活动" body="请稍后重试，或以门店现场信息为准。" />
+          <EmptyState title={tr(language, '暂时无法加载活动', 'Unable to load events')} body={tr(language, '请稍后重试，或以门店现场信息为准。', 'Try again later. Venue information takes precedence.')} />
         ) : events.length === 0 ? (
-          <EmptyState title="暂无公开活动" body="这家酒吧当前还没有发布今晚活动。" />
+          <EmptyState title={tr(language, '暂无公开活动', 'No public events')} body={tr(language, '这家酒吧当前还没有发布今晚活动。', 'This venue has not published an event for tonight.')} />
         ) : (
           <>
             {tonightEvents.length > 0 ? (

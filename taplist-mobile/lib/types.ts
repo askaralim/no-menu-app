@@ -24,15 +24,18 @@ export type BrewingType = 'house_brand' | 'on_site_brewery'
 export type PublicBarTag = {
   key: string
   label: string
+  label_en?: string | null
 }
 
 export type PublicTaplistCity = {
   city: string
   label: string
+  label_en?: string | null
   country: string
   /** Optional province-level metadata from the city catalog. */
   region_code?: string | null
   region_label?: string | null
+  region_label_en?: string | null
   sort_order: number
   bar_count: number
 }
@@ -42,8 +45,11 @@ export type PublicBarRow = {
   slug: string
   name: string
   display_name: string
+  display_name_en?: string | null
   district: string | null
+  district_en?: string | null
   address: string | null
+  address_en?: string | null
   opening_hour: OpeningHourJson | null
   opening_hour_source?: 'tenant_opening_periods' | 'tenants.opening_hour' | 'none' | null
   is_open_now?: boolean | null
@@ -64,8 +70,11 @@ export type PublicTenantDetail = {
   slug: string
   name: string
   display_name: string
+  display_name_en?: string | null
   district: string | null
+  district_en?: string | null
   address: string | null
+  address_en?: string | null
   opening_hour: OpeningHourJson | null
   opening_hour_source?: 'tenant_opening_periods' | 'tenants.opening_hour' | 'none' | null
   is_open_now?: boolean | null
@@ -74,6 +83,7 @@ export type PublicTenantDetail = {
   city: string
   /** Localized display name from taplist_public_cities.label */
   city_label?: string | null
+  city_label_en?: string | null
   country: string
   latitude?: number | null
   longitude?: number | null
@@ -87,12 +97,16 @@ export type PublicTenantDetail = {
 
 export type PublicBeerProfile = {
   brewery: string | null
+  brewery_en?: string | null
   /** Co-breweries (0–3); bar taplist / detail / share as `主酒厂 × 合酿…`. */
   collab_breweries?: string[] | null
   beer_style: string | null
   abv: number | null
   ibu: number | null
   country: string | null
+  country_en?: string | null
+  origin_region?: string | null
+  origin_region_en?: string | null
   description: string | null
 }
 
@@ -119,6 +133,7 @@ export type PublicDrinkRow = {
   category_id: string
   brand_name: string | null
   name: string
+  name_en?: string | null
   image_url: string | null
   /** Chinese label from RPC (`上新` / `在售` / `少量` / `售罄` / `即将上新`). */
   public_status: string
@@ -193,6 +208,7 @@ export function partitionPublicDrinks(payload: Extract<PublicTaplistDrinksRpc, {
 export type PublicTaplistSearchResult = {
   drink_id: string
   name: string
+  name_en?: string | null
   brand_name: string | null
   image_url: string | null
   public_status: string
@@ -201,9 +217,15 @@ export type PublicTaplistSearchResult = {
   tenant_id: string
   tenant_slug: string
   tenant_display_name: string
+  tenant_display_name_en?: string | null
   tenant_district: string | null
   tenant_address: string | null
   brewery: string | null
+  brewery_en?: string | null
+  country?: string | null
+  country_en?: string | null
+  origin_region?: string | null
+  origin_region_en?: string | null
   /**
    * Not returned by search / NEW ON TAP RPCs (bar taplist only).
    * Kept optional so older payloads remain type-safe.
@@ -221,6 +243,7 @@ export type PublicProductVenue = {
   tenant_id: string
   tenant_slug: string
   tenant_display_name: string
+  tenant_display_name_en?: string | null
   tenant_district: string | null
   tenant_address: string | null
   public_status: string
@@ -232,6 +255,7 @@ export type PublicNewTapRow = PublicTaplistSearchResult
 
 export type PublicTaplistBreweryDiscoveryRow = {
   brewery_name: string
+  brewery_name_en?: string | null
   tap_count: number
   logo_url: string | null
 }
@@ -255,6 +279,7 @@ export type MiniBreweryListRpc =
 export type MiniProductSearchVenue = {
   id: string
   name: string
+  display_name_en?: string | null
   slug: string
 }
 
@@ -263,8 +288,14 @@ export type MiniProductSearchResult = {
   product_id: string | null
   drink_id: string | null
   name: string
+  name_en?: string | null
   image_url: string | null
   brewery: string | null
+  brewery_en?: string | null
+  country?: string | null
+  country_en?: string | null
+  origin_region?: string | null
+  origin_region_en?: string | null
   beer_style: string | null
   abv: number | null
   venue_count: number
@@ -283,6 +314,7 @@ export type MiniProductSearchRpc =
 export type MiniProductDetailVenue = {
   id: string
   name: string
+  display_name_en?: string | null
   slug: string
   district: string | null
   is_source: boolean
@@ -300,13 +332,18 @@ export type MiniProductDetail = {
   product_id: string | null
   drink_id: string | null
   name: string
+  name_en?: string | null
   image_url: string | null
   brewery: string | null
+  brewery_en?: string | null
   collab_breweries: string[] | null
   beer_style: string | null
   abv: number | null
   ibu: number | null
   country: string | null
+  country_en?: string | null
+  origin_region?: string | null
+  origin_region_en?: string | null
   description: string | null
 }
 
@@ -373,6 +410,9 @@ export type MiniBrewery = {
   name_zh: string | null
   name_en: string | null
   country: string | null
+  country_en?: string | null
+  origin_region?: string | null
+  origin_region_en?: string | null
   city: string | null
   logo_url: string | null
 }
@@ -436,12 +476,16 @@ export type BeerRoadmapResponse =
 export type MyDrinkVenue = {
   tenant_id: string
   tenant_name: string
+  tenant_name_en?: string | null
   tenant_slug: string
   country: string | null
   city: string | null
   city_label: string | null
+  city_label_en?: string | null
   district: string | null
+  district_en?: string | null
   address: string | null
+  address_en?: string | null
   first_drank_at: string
 }
 
@@ -452,11 +496,16 @@ export type MyDrinkHistoryRow = {
   source_drink_is_public: boolean
   tenant_slug: string | null
   name: string
+  name_en?: string | null
   brewery: string | null
+  brewery_en?: string | null
   beer_style: string | null
   abv: number | null
   ibu: number | null
   country: string | null
+  country_en?: string | null
+  origin_region?: string | null
+  origin_region_en?: string | null
   image_url: string | null
   first_lit_at: string
   last_activity_at: string
@@ -498,7 +547,9 @@ export type MyDrinkSummary = {
 export type MyDrinkInsightRow = {
   light_id: string
   name: string
+  name_en?: string | null
   brewery: string | null
+  brewery_en?: string | null
   beer_style: string | null
   image_url: string | null
   recorded_at: string
@@ -550,9 +601,12 @@ export type FollowedBarRow = {
   tenant_id: string
   tenant_slug: string
   tenant_display_name: string
+  tenant_display_name_en?: string | null
   tenant_district: string | null
+  tenant_district_en?: string | null
   tenant_city: string | null
   tenant_city_label: string | null
+  tenant_city_label_en?: string | null
   cover_image_url: string | null
   notify_new_taps: boolean
   followed_at: string

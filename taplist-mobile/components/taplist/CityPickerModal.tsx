@@ -4,6 +4,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 
 import { palette, spacing, typography } from '@/constants/design'
 import { taplistCityMatches } from '@/lib/taplistCity'
+import { useLanguage } from '@/lib/i18n'
 import type { PublicTaplistCity } from '@/lib/types'
 
 type CityPickerEntry =
@@ -25,7 +26,8 @@ export function CityPickerModal({
   onClose: () => void
   onSelect: (city: PublicTaplistCity) => void
 }) {
-  const entries = useMemo(() => buildCityPickerEntries(cities), [cities])
+  const { language, localized, text } = useLanguage()
+  const entries = useMemo(() => buildCityPickerEntries(cities, language), [cities, language])
 
   const renderCity = (city: PublicTaplistCity, nested = false, separated = false) => {
     const selected = taplistCityMatches(city.city, selectedCity.city)
@@ -33,7 +35,7 @@ export function CityPickerModal({
       <Pressable
         key={city.city}
         accessibilityRole="button"
-        accessibilityLabel={`切换到${city.label}`}
+        accessibilityLabel={`${text.selectCity}: ${localized(city.label, city.label_en || city.city)}`}
         accessibilityState={{ selected }}
         onPress={() => onSelect(city)}
         style={({ pressed }) => [
@@ -44,11 +46,11 @@ export function CityPickerModal({
           pressed && styles.pressed,
         ]}>
         <Text numberOfLines={1} style={[styles.cityOptionLabel, selected && styles.cityOptionLabelSelected]}>
-          {city.label}
+          {localized(city.label, city.label_en || city.city)}
         </Text>
         <View style={styles.cityOptionTrailing}>
           <Text numberOfLines={1} style={styles.cityOptionMeta}>
-            {city.bar_count} 家公开酒吧
+            {text.publicVenues(city.bar_count)}
           </Text>
           <View style={styles.cityOptionStatus}>
             {selected ? <FontAwesome name="check" size={15} color={palette.amber} /> : null}
@@ -63,10 +65,10 @@ export function CityPickerModal({
       <Pressable style={styles.backdrop} onPress={onClose}>
         <View accessibilityViewIsModal style={styles.panel} onStartShouldSetResponder={() => true}>
           <View style={styles.header}>
-            <Text style={styles.title}>选择城市</Text>
+            <Text style={styles.title}>{text.selectCity}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="关闭城市选择"
+              accessibilityLabel={text.close}
               hitSlop={10}
               onPress={onClose}
               style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
@@ -97,13 +99,13 @@ export function CityPickerModal({
   )
 }
 
-function buildCityPickerEntries(cities: PublicTaplistCity[]): CityPickerEntry[] {
+function buildCityPickerEntries(cities: PublicTaplistCity[], language: 'zh' | 'en'): CityPickerEntry[] {
   const entries: CityPickerEntry[] = []
   const regions = new Map<string, Extract<CityPickerEntry, { kind: 'region' }>>()
 
   cities.forEach((city) => {
     const cityKey = normalizeKey(city.city)
-    const regionLabel = city.region_label?.trim()
+    const regionLabel = (language === 'en' ? city.region_label_en : city.region_label)?.trim()
     const regionKey = normalizeKey(city.region_code) || regionLabel
 
     if (MUNICIPALITY_CITY_KEYS.has(cityKey) || !regionLabel || !regionKey) {
@@ -128,13 +130,17 @@ function buildCityPickerEntries(cities: PublicTaplistCity[]): CityPickerEntry[] 
   })
 
   entries.forEach((entry) => {
-    if (entry.kind === 'region') entry.cities.sort((a, b) => compareLabels(a.label, b.label))
+    if (entry.kind === 'region') entry.cities.sort((a, b) => compareLabels(
+      language === 'en' ? a.label_en || a.city : a.label,
+      language === 'en' ? b.label_en || b.city : b.label,
+      language,
+    ))
   })
 
   return entries.sort((a, b) => {
-    const aLabel = a.kind === 'city' ? a.city.label : a.label
-    const bLabel = b.kind === 'city' ? b.city.label : b.label
-    return compareLabels(aLabel, bLabel)
+    const aLabel = a.kind === 'city' ? (language === 'en' ? a.city.label_en || a.city.city : a.city.label) : a.label
+    const bLabel = b.kind === 'city' ? (language === 'en' ? b.city.label_en || b.city.city : b.city.label) : b.label
+    return compareLabels(aLabel, bLabel, language)
   })
 }
 
@@ -142,8 +148,8 @@ function normalizeKey(value: string | null | undefined) {
   return value?.trim().toLowerCase() ?? ''
 }
 
-function compareLabels(a: string, b: string) {
-  return a.localeCompare(b, 'zh-CN-u-co-pinyin', { sensitivity: 'base' })
+function compareLabels(a: string, b: string, language: 'zh' | 'en') {
+  return a.localeCompare(b, language === 'en' ? 'en' : 'zh-CN-u-co-pinyin', { sensitivity: 'base' })
 }
 
 const styles = StyleSheet.create({

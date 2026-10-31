@@ -147,7 +147,11 @@ export default function DrinkStatusSheet({
                     <Text style={styles.settingTitle}>
                       {drink.public_status === 'sold_out' ? '换桶并恢复在售' : '记录换桶'}
                     </Text>
-                    <Text style={styles.settingHint}>同一款酒留在当前酒头，重新开始本桶计时</Text>
+                    <Text style={styles.settingHint}>
+                      {drink.public_status === 'sold_out'
+                        ? '同一款酒留在当前酒头，记录新桶并开启新的在枪周期'
+                        : '同一款酒留在当前酒头，重新开始本桶计时'}
+                    </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={T.faint} />
                 </TouchableOpacity>

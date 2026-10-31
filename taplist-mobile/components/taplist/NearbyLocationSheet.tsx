@@ -3,6 +3,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { palette, spacing, typography } from '@/constants/design'
+import { tr, useLanguage } from '@/lib/i18n'
 
 export function NearbyLocationSheet({
   visible,
@@ -17,6 +18,7 @@ export function NearbyLocationSheet({
   onContinue: () => void
   onClose: () => void
 }) {
+  const { language } = useLanguage()
   const insets = useSafeAreaInsets()
 
   return (
@@ -28,13 +30,13 @@ export function NearbyLocationSheet({
           <View style={styles.iconWrap}>
             <FontAwesome name="location-arrow" size={24} color={palette.amber} />
           </View>
-          <Text style={styles.title}>查看离你最近的酒吧</Text>
+          <Text style={styles.title}>{tr(language, '查看离你最近的酒吧', 'Find nearby venues')}</Text>
           <Text style={styles.body}>
-            No Menu 会使用你当前的大致位置，为{cityLabel}的酒吧按直线距离排序。
+            {tr(language, `No Menu 会使用你当前的大致位置，为${cityLabel}的酒吧按直线距离排序。`, `No Menu uses your approximate location to sort venues in ${cityLabel} by distance.`)}
           </Text>
           <View style={styles.privacyRow}>
             <FontAwesome name="shield" size={14} color={palette.tungsten} />
-            <Text style={styles.privacyText}>位置只在本机使用，不会保存。</Text>
+            <Text style={styles.privacyText}>{tr(language, '位置只在本机使用，不会保存。', 'Your location is used on this device only and is not stored.')}</Text>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -44,7 +46,7 @@ export function NearbyLocationSheet({
             {loading ? (
               <ActivityIndicator color={palette.background} />
             ) : (
-              <Text style={styles.primaryText}>使用当前位置</Text>
+              <Text style={styles.primaryText}>{tr(language, '使用当前位置', 'Use current location')}</Text>
             )}
           </Pressable>
           <Pressable
@@ -52,7 +54,7 @@ export function NearbyLocationSheet({
             disabled={loading}
             onPress={onClose}
             style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
-            <Text style={styles.secondaryText}>暂不使用</Text>
+            <Text style={styles.secondaryText}>{tr(language, '暂不使用', 'Not now')}</Text>
           </Pressable>
         </View>
       </Pressable>

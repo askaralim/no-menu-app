@@ -30,7 +30,11 @@ export async function unfollowBar(tenantId: string) {
 }
 
 export async function getMyFollowedBars() {
-  const { data, error } = await getTaplistSupabase().rpc('get_my_followed_bars')
+  const client = getTaplistSupabase()
+  let { data, error } = await client.rpc('get_my_followed_bars_i18n')
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) {
+    ;({ data, error } = await client.rpc('get_my_followed_bars'))
+  }
   if (error) throw error
   return ((data as { ok: true; results: FollowedBarRow[] }).results ?? [])
 }
