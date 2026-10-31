@@ -85,12 +85,20 @@ export function useLanguage() {
 
 export function localizedLocation(
   language: Language,
-  value: { country?: string | null; country_en?: string | null; origin_region?: string | null; origin_region_en?: string | null },
+  value: {
+    country?: string | null
+    country_en?: string | null
+    origin_region?: string | null
+    origin_region_en?: string | null
+    origin_city?: string | null
+    origin_city_en?: string | null
+  },
 ) {
   const country = language === 'en' ? value.country_en || value.country : value.country
   const region = language === 'en' ? value.origin_region_en || value.origin_region : value.origin_region
+  const city = language === 'en' ? value.origin_city_en || value.origin_city : value.origin_city
   const seen = new Set<string>()
-  return [country, region].map((item) => item?.trim()).filter((item): item is string => {
+  return [country, city || region].map((item) => item?.trim()).filter((item): item is string => {
     if (!item) return false
     const key = item.toLocaleLowerCase()
     if (seen.has(key)) return false

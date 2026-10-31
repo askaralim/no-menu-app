@@ -194,10 +194,12 @@ function SessionRow({ session, last }: { session: TapLifecycleSession; last: boo
           <Text style={styles.partialText}>不计算完整在枪时长</Text>
         </>
       ) : (
-        <Text style={styles.durationText}>
-          {session.state === 'active' ? '已在枪 ' : '在枪 '}
-          {duration ?? '—'}
-        </Text>
+        <View style={styles.durationRow}>
+          <Text style={styles.durationLabel}>
+            {session.state === 'active' ? '已在枪' : '在枪时长'}
+          </Text>
+          <Text style={styles.durationValue}>{duration ?? '—'}</Text>
+        </View>
       )}
 
       {showKegDuration || kegSummary ? (
@@ -429,7 +431,15 @@ const styles = StyleSheet.create({
   partialBadge: { borderColor: THEME.goldBorder, backgroundColor: THEME.goldFill },
   accuracyBadgeText: { color: THEME.success, fontSize: 11, fontWeight: '700' },
   partialBadgeText: { color: THEME.goldSoft },
-  durationText: { color: THEME.goldSoft, fontSize: 16, lineHeight: 22, fontWeight: '700', marginTop: SPACING.sm },
+  durationRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
+  },
+  durationLabel: { color: THEME.muted, fontSize: 12, lineHeight: 18, fontWeight: '600' },
+  durationValue: { flexShrink: 1, color: THEME.goldSoft, fontSize: 17, lineHeight: 22, fontWeight: '700' },
   partialTitle: { color: THEME.goldSoft, fontSize: 14, fontWeight: '700', marginTop: SPACING.sm },
   partialText: { color: THEME.muted, fontSize: 12, marginTop: 3 },
   kegSummary: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.xs },

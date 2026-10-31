@@ -28,6 +28,8 @@ type CompanyForm = {
   country_code: string
   origin_region: string
   origin_region_en: string
+  origin_city: string
+  origin_city_en: string
   raw_country_values_text: string
   confidence: DrinkCompanyConfidence
   review_status: DrinkCompanyReviewStatus
@@ -129,6 +131,8 @@ const EMPTY_FORM: CompanyForm = {
   country_code: '',
   origin_region: '',
   origin_region_en: '',
+  origin_city: '',
+  origin_city_en: '',
   raw_country_values_text: '',
   confidence: 'medium',
   review_status: 'reviewed',
@@ -209,7 +213,7 @@ export default function PlatformCompaniesPage() {
     }
     const { data: i18nRows, error: i18nError } = await supabase
       .from('drink_companies')
-      .select('id,country_en,origin_region_en')
+      .select('id,country_en,origin_region_en,origin_city,origin_city_en')
       .in('id', ids)
     if (i18nError) throw i18nError
     const i18nById = new Map((i18nRows ?? []).map((row) => [row.id as string, row]))
@@ -217,6 +221,8 @@ export default function PlatformCompaniesPage() {
       ...company,
       country_en: (i18nById.get(company.id)?.country_en as string | null) ?? null,
       origin_region_en: (i18nById.get(company.id)?.origin_region_en as string | null) ?? null,
+      origin_city: (i18nById.get(company.id)?.origin_city as string | null) ?? null,
+      origin_city_en: (i18nById.get(company.id)?.origin_city_en as string | null) ?? null,
     })))
   }, [filters])
 
@@ -351,6 +357,8 @@ export default function PlatformCompaniesPage() {
       country_code: company.country_code ?? '',
       origin_region: company.origin_region ?? '',
       origin_region_en: company.origin_region_en ?? '',
+      origin_city: company.origin_city ?? '',
+      origin_city_en: company.origin_city_en ?? '',
       raw_country_values_text: rawValuesToText(company.raw_country_values ?? []),
       confidence: company.confidence,
       review_status: company.review_status,
@@ -433,6 +441,12 @@ export default function PlatformCompaniesPage() {
           p_origin_region_en: form.origin_region_en.trim() || null,
         })
         if (i18nError) throw i18nError
+        const { error: cityError } = await supabase.rpc('admin_set_drink_company_origin_city', {
+          p_company_id: savedId,
+          p_origin_city: form.origin_city.trim() || null,
+          p_origin_city_en: form.origin_city_en.trim() || null,
+        })
+        if (cityError) throw cityError
       }
 
       if (savedId && pendingLogoFile) {
@@ -1047,20 +1061,38 @@ export default function PlatformCompaniesPage() {
                     />
                   </Field>
                 </div>
-                <Field label="产区/城市">
-                  <input
-                    className="admin-input"
-                    value={form.origin_region}
-                    onChange={(e) => setForm({ ...form, origin_region: e.target.value })}
-                  />
-                </Field>
-                <Field label="产区/城市（英文）">
-                  <input
-                    className="admin-input"
-                    value={form.origin_region_en}
-                    onChange={(e) => setForm({ ...form, origin_region_en: e.target.value })}
-                  />
-                </Field>
+                <div style={{ display: 'grid', gap: 10, gridTemplateColumns: '1fr 1fr' }}>
+                  <Field label="省/州">
+                    <input
+                      className="admin-input"
+                      value={form.origin_region}
+                      onChange={(e) => setForm({ ...form, origin_region: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="省/州（英文）">
+                    <input
+                      className="admin-input"
+                      value={form.origin_region_en}
+                      onChange={(e) => setForm({ ...form, origin_region_en: e.target.value })}
+                    />
+                  </Field>
+                </div>
+                <div style={{ display: 'grid', gap: 10, gridTemplateColumns: '1fr 1fr' }}>
+                  <Field label="城市" hint="国产酒优先维护">
+                    <input
+                      className="admin-input"
+                      value={form.origin_city}
+                      onChange={(e) => setForm({ ...form, origin_city: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="城市（英文）">
+                    <input
+                      className="admin-input"
+                      value={form.origin_city_en}
+                      onChange={(e) => setForm({ ...form, origin_city_en: e.target.value })}
+                    />
+                  </Field>
+                </div>
                 <Field label="原始产地值" hint="逗号分隔">
                   <textarea
                     className="admin-input"

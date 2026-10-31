@@ -183,6 +183,8 @@ export interface AdminDrinkCompanyRow {
   country_code: string | null
   origin_region: string | null
   origin_region_en: string | null
+  origin_city: string | null
+  origin_city_en: string | null
   raw_country_values: string[]
   confidence: DrinkCompanyConfidence
   review_status: DrinkCompanyReviewStatus
@@ -227,6 +229,8 @@ export interface AdminDrinkProductRow {
   country: string | null
   country_en: string | null
   origin_region: string | null
+  origin_city: string | null
+  origin_city_en: string | null
   image_url: string | null
   description: string | null
   tasting_note: string | null

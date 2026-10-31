@@ -163,7 +163,7 @@ export default function PlatformProductsPage() {
       }
       const { data: i18nRows, error: i18nError } = await supabase
         .from('drink_companies')
-        .select('id,country_en,origin_region_en')
+        .select('id,country_en,origin_region_en,origin_city,origin_city_en')
         .in('id', ids)
       if (i18nError) throw i18nError
       const i18nById = new Map((i18nRows ?? []).map((row) => [row.id as string, row]))
@@ -171,6 +171,8 @@ export default function PlatformProductsPage() {
         ...company,
         country_en: (i18nById.get(company.id)?.country_en as string | null) ?? null,
         origin_region_en: (i18nById.get(company.id)?.origin_region_en as string | null) ?? null,
+        origin_city: (i18nById.get(company.id)?.origin_city as string | null) ?? null,
+        origin_city_en: (i18nById.get(company.id)?.origin_city_en as string | null) ?? null,
       })))
     } finally {
       setCompanyLoading(false)
@@ -872,7 +874,11 @@ export default function PlatformProductsPage() {
               <Field label="酒厂所在地">
                 <div className="admin-input" style={{ margin: 0, background: '#f8fafc', color: '#475569' }}>
                   {selectedCompany
-                    ? [selectedCompany.country_en || selectedCompany.country, selectedCompany.origin_region_en || selectedCompany.origin_region]
+                    ? [
+                        selectedCompany.country_en || selectedCompany.country,
+                        selectedCompany.origin_city_en || selectedCompany.origin_city
+                          || selectedCompany.origin_region_en || selectedCompany.origin_region,
+                      ]
                         .filter(Boolean).join(' · ') || '关联酒厂尚未填写所在地'
                     : '请先关联标准酒厂；未关联时消费端不显示所在地'}
                 </div>

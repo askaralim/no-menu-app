@@ -107,6 +107,8 @@ export type PublicBeerProfile = {
   country_en?: string | null
   origin_region?: string | null
   origin_region_en?: string | null
+  origin_city?: string | null
+  origin_city_en?: string | null
   description: string | null
 }
 
@@ -226,6 +228,8 @@ export type PublicTaplistSearchResult = {
   country_en?: string | null
   origin_region?: string | null
   origin_region_en?: string | null
+  origin_city?: string | null
+  origin_city_en?: string | null
   /**
    * Not returned by search / NEW ON TAP RPCs (bar taplist only).
    * Kept optional so older payloads remain type-safe.
@@ -296,6 +300,8 @@ export type MiniProductSearchResult = {
   country_en?: string | null
   origin_region?: string | null
   origin_region_en?: string | null
+  origin_city?: string | null
+  origin_city_en?: string | null
   beer_style: string | null
   abv: number | null
   venue_count: number
@@ -344,6 +350,8 @@ export type MiniProductDetail = {
   country_en?: string | null
   origin_region?: string | null
   origin_region_en?: string | null
+  origin_city?: string | null
+  origin_city_en?: string | null
   description: string | null
 }
 
@@ -413,6 +421,8 @@ export type MiniBrewery = {
   country_en?: string | null
   origin_region?: string | null
   origin_region_en?: string | null
+  origin_city?: string | null
+  origin_city_en?: string | null
   city: string | null
   logo_url: string | null
 }
@@ -506,6 +516,8 @@ export type MyDrinkHistoryRow = {
   country_en?: string | null
   origin_region?: string | null
   origin_region_en?: string | null
+  origin_city?: string | null
+  origin_city_en?: string | null
   image_url: string | null
   first_lit_at: string
   last_activity_at: string
