@@ -50,6 +50,23 @@ test('seen state is isolated per merchant user', async () => {
   assert.ok(await updates.getUnseenMerchantUpdate('user-b', 'owner'))
 })
 
+test('opening an update immediately notifies the tab badge', async () => {
+  const updates = loadMerchantUpdates()
+  const notifications = []
+  const unsubscribe = updates.subscribeMerchantUpdateSeen((userId, updateId) => {
+    notifications.push(`${userId}:${updateId}`)
+  })
+
+  const current = await updates.getUnseenMerchantUpdate('user-a', 'owner')
+  const persistence = updates.markMerchantUpdateSeen('user-a', current.id)
+  assert.deepEqual(notifications, [`user-a:${current.id}`])
+  assert.equal(await persistence, true)
+
+  unsubscribe()
+  await updates.markMerchantUpdateSeen('user-b', current.id)
+  assert.equal(notifications.length, 1)
+})
+
 test('current guide covers the release behavior and supersedes the old guide', async () => {
   const updates = loadMerchantUpdates(JSON.stringify({
     'user-a': 'merchant-2026-10-29-tap-data',
@@ -69,6 +86,10 @@ test('invalid or unavailable storage does not block the guide', async () => {
   assert.ok(await invalid.getUnseenMerchantUpdate('user-a', 'staff'))
 
   const unavailable = loadMerchantUpdates(null, true)
+  let notified = false
+  unavailable.subscribeMerchantUpdateSeen(() => { notified = true })
   assert.ok(await unavailable.getUnseenMerchantUpdate('user-a', 'owner'))
-  assert.equal(await unavailable.markMerchantUpdateSeen('user-a', 'update'), false)
+  const persistence = unavailable.markMerchantUpdateSeen('user-a', 'update')
+  assert.equal(notified, true)
+  assert.equal(await persistence, false)
 })

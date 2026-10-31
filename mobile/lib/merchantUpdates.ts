@@ -3,6 +3,20 @@ import type { UserRole } from './types'
 
 export const MERCHANT_UPDATE_STORAGE_KEY = 'nomenu.merchantUpdates.seen.v1'
 
+type MerchantUpdateSeenListener = (userId: string, updateId: string) => void
+
+const merchantUpdateSeenListeners = new Set<MerchantUpdateSeenListener>()
+
+function notifyMerchantUpdateSeen(userId: string, updateId: string): void {
+  merchantUpdateSeenListeners.forEach((listener) => {
+    try {
+      listener(userId, updateId)
+    } catch {
+      /* one listener must not block the remaining UI updates */
+    }
+  })
+}
+
 export type MerchantUpdate = {
   id: string
   audience: UserRole[]
@@ -78,12 +92,22 @@ export async function markMerchantUpdateSeen(
   updateId: string | null | undefined,
 ): Promise<boolean> {
   if (!userId || !updateId) return false
+  notifyMerchantUpdateSeen(userId, updateId)
+  let persisted = false
   try {
     const seen = await readSeenMap()
     seen[userId] = updateId
     await AsyncStorage.setItem(MERCHANT_UPDATE_STORAGE_KEY, JSON.stringify(seen))
-    return true
+    persisted = true
   } catch {
-    return false
+    /* keep the current session responsive even when local storage is unavailable */
+  }
+  return persisted
+}
+
+export function subscribeMerchantUpdateSeen(listener: MerchantUpdateSeenListener): () => void {
+  merchantUpdateSeenListeners.add(listener)
+  return () => {
+    merchantUpdateSeenListeners.delete(listener)
   }
 }

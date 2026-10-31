@@ -1,7 +1,14 @@
+import { useEffect, useState } from 'react'
+import { StyleSheet, View } from 'react-native'
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { THEME } from '../../lib/theme'
 import { useAuth } from '../../lib/authProvider'
+import {
+  getUnseenMerchantUpdate,
+  latestMerchantUpdate,
+  subscribeMerchantUpdateSeen,
+} from '../../lib/merchantUpdates'
 
 /** Nested stack tabs: tapping the tab always returns to that stack's root. */
 function popStackToRoot(
@@ -19,7 +26,36 @@ function popStackToRoot(
 }
 
 export default function TabLayout() {
-  const { orderingEnabled } = useAuth()
+  const { user, role, orderingEnabled } = useAuth()
+  const [hasUnseenMerchantUpdate, setHasUnseenMerchantUpdate] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    let requestId = 0
+    const currentUserId = user?.id
+    const currentUpdateId = latestMerchantUpdate(role)?.id
+    setHasUnseenMerchantUpdate(false)
+    const checkForUpdate = async () => {
+      const currentRequestId = ++requestId
+      const update = await getUnseenMerchantUpdate(currentUserId, role)
+      if (active && currentRequestId === requestId) {
+        setHasUnseenMerchantUpdate(update != null)
+      }
+    }
+
+    void checkForUpdate()
+    const unsubscribe = subscribeMerchantUpdateSeen((seenUserId, seenUpdateId) => {
+      if (seenUserId !== currentUserId || seenUpdateId !== currentUpdateId) return
+      requestId += 1
+      setHasUnseenMerchantUpdate(false)
+    })
+
+    return () => {
+      active = false
+      requestId += 1
+      unsubscribe()
+    }
+  }, [role, user?.id])
 
   return (
     <Tabs
@@ -78,8 +114,12 @@ export default function TabLayout() {
         name="house"
         options={{
           title: '门店',
+          tabBarAccessibilityLabel: hasUnseenMerchantUpdate ? '门店，有新功能' : '门店',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="storefront-outline" size={size} color={color} />
+            <View style={styles.houseTabIcon}>
+              <Ionicons name="storefront-outline" size={size} color={color} />
+              {hasUnseenMerchantUpdate ? <View style={styles.merchantUpdateDot} /> : null}
+            </View>
           ),
         }}
         listeners={({ navigation }) => popStackToRoot(navigation, 'house')}
@@ -109,3 +149,23 @@ export default function TabLayout() {
     </Tabs>
   )
 }
+
+const styles = StyleSheet.create({
+  houseTabIcon: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  merchantUpdateDot: {
+    position: 'absolute',
+    top: 1,
+    right: 1,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: THEME.background,
+    backgroundColor: THEME.gold,
+  },
+})
