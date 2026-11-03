@@ -33,7 +33,6 @@ type CreateForm = {
   beer_style: string
   abv: string
   ibu: string
-  country: string
   description: string
   image_url: string
   product_id: string | null
@@ -54,7 +53,6 @@ function emptyForm(categoryId: string): CreateForm {
     beer_style: '',
     abv: '',
     ibu: '',
-    country: '',
     description: '',
     image_url: '',
     product_id: null,
@@ -147,7 +145,6 @@ function applyProductToForm(form: CreateForm, product: DrinkProductDetail): Crea
     beer_style: product.beer_style || form.beer_style,
     abv: product.abv != null ? String(product.abv) : form.abv,
     ibu: product.ibu != null ? String(product.ibu) : form.ibu,
-    country: product.country || form.country,
     description: product.tasting_note || product.description || form.description,
     image_url: form.image_url || product.image_url || '',
   }
@@ -367,7 +364,7 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
           beer_style: form.beer_style.trim() || null,
           abv: numOrNull(form.abv),
           ibu: intOrNull(form.ibu),
-          country: form.country.trim() || null,
+          country: null,
           description: form.description.trim() || null,
         },
       }
@@ -604,15 +601,6 @@ export function TaplistDrinkCreateForm({ tenantId, categories, drinks, onDrinkRe
               className="admin-input"
               value={form.ibu}
               onChange={(e) => setForm({ ...form, ibu: e.target.value })}
-            />
-          </div>
-          <div className="taplist-field">
-            <label htmlFor="taplist-create-country">国家 / 产地</label>
-            <input
-              id="taplist-create-country"
-              className="admin-input"
-              value={form.country}
-              onChange={(e) => setForm({ ...form, country: e.target.value })}
             />
           </div>
           <div className="taplist-field taplist-field-span-2">

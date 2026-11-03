@@ -52,7 +52,6 @@ type CreateForm = {
   beer_style: string
   abv: string
   ibu: string
-  country: string
   image_url: string
   description: string
   tasting_note: string
@@ -68,7 +67,6 @@ function emptyCreateForm(): CreateForm {
     beer_style: '',
     abv: '',
     ibu: '',
-    country: '',
     image_url: '',
     description: '',
     tasting_note: '',
@@ -88,7 +86,6 @@ function createFormFromDrink(
     beer_style: beerProfile.beer_style,
     abv: beerProfile.abv === '' ? '' : String(beerProfile.abv),
     ibu: beerProfile.ibu === '' ? '' : String(beerProfile.ibu),
-    country: beerProfile.country,
     image_url: drink.image_url ?? '',
     description: beerProfile.description,
     tasting_note: '',
@@ -275,7 +272,7 @@ export function ProductPoolLinkSection({
         p_beer_style: createForm.beer_style || null,
         p_abv: createForm.abv === '' ? null : Number(createForm.abv),
         p_ibu: createForm.ibu === '' ? null : Number(createForm.ibu),
-        p_country: createForm.country || null,
+        p_country: null,
         p_origin_region: null,
         p_image_url: shouldPromoteImage ? null : sourceImageUrl || null,
         p_description: createForm.description || null,
@@ -597,14 +594,6 @@ export function ProductPoolLinkSection({
                 className="admin-input"
                 value={createForm.ibu}
                 onChange={(e) => setCreateForm({ ...createForm, ibu: e.target.value })}
-              />
-            </div>
-            <div className="taplist-field">
-              <label>国家</label>
-              <input
-                className="admin-input"
-                value={createForm.country}
-                onChange={(e) => setCreateForm({ ...createForm, country: e.target.value })}
               />
             </div>
             <div className="taplist-field taplist-field-span-2">
