@@ -38,6 +38,7 @@ type CampaignRow = {
   card_image_url: string | null
   detail_image_urls: string[] | null
   purchase_qr_url: string | null
+  purchase_short_link: string | null
   mini_program_code_url: string | null
   start_at: string
   end_at: string
@@ -58,6 +59,7 @@ type CampaignForm = {
   detail_image_1: string
   detail_image_2: string
   purchase_qr_url: string
+  purchase_short_link: string
   mini_program_code_url: string
   start_at: string
   end_at: string
@@ -92,6 +94,7 @@ function blankForm(): CampaignForm {
     detail_image_1: '',
     detail_image_2: '',
     purchase_qr_url: '',
+    purchase_short_link: '#小程序://快团团/pqcSzp0XmnRV6Tj',
     mini_program_code_url: '',
     start_at: '2026-11-13T00:00',
     end_at: '2026-11-26T23:59',
@@ -129,6 +132,7 @@ function rowToForm(row: CampaignRow, stops: CampaignStop[]): CampaignForm {
     detail_image_1: row.detail_image_urls?.[0] || '',
     detail_image_2: row.detail_image_urls?.[1] || '',
     purchase_qr_url: row.purchase_qr_url || '',
+    purchase_short_link: row.purchase_short_link || '',
     mini_program_code_url: row.mini_program_code_url || '',
     start_at: toLocal(row.start_at),
     end_at: toLocal(row.end_at),
@@ -255,6 +259,10 @@ export default function CampaignsAdminPage() {
   }
 
   const validate = () => {
+    if (form.purchase_short_link.trim() && !/^#小程序:\/\/[^/\s]+\/\S+$/.test(form.purchase_short_link.trim())) {
+      alert('请粘贴微信复制的小程序链接，以 #小程序:// 开头；也可以留空只使用二维码')
+      return false
+    }
     if (!form.title.trim() || !form.slug.trim() || !form.qr_code.trim()) {
       alert('请填写标题、slug 和8位活动码')
       return false
@@ -303,6 +311,7 @@ export default function CampaignsAdminPage() {
         card_image_url: form.card_image_url.trim() || null,
         detail_image_urls: detailImages,
         purchase_qr_url: form.purchase_qr_url.trim() || null,
+        purchase_short_link: form.purchase_short_link.trim() || null,
         mini_program_code_url: form.mini_program_code_url.trim() || null,
         start_at: toIso(form.start_at),
         end_at: toIso(form.end_at),
@@ -401,6 +410,7 @@ export default function CampaignsAdminPage() {
           </div>
 
           <h3 style={{ marginTop: 20 }}>活动素材</h3>
+          <Field label="快团团小程序链接（可选，点击购买时直接打开）" value={form.purchase_short_link} onChange={(purchase_short_link) => setForm({ ...form, purchase_short_link })} />
           <div className="taplist-panel-grid">
             <AssetField label="活动主图（支持长图，仅此一张即可）" role="card" value={form.card_image_url} busy={uploading} onUpload={handleUpload} onChange={(card_image_url) => setForm({ ...form, card_image_url })} />
             <AssetField label="详情图1（可选）" role="detail-1" value={form.detail_image_1} busy={uploading} onUpload={handleUpload} onChange={(detail_image_1) => setForm({ ...form, detail_image_1 })} />

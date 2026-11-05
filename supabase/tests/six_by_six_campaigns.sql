@@ -1,4 +1,4 @@
--- 6x6 campaign regression checks (run locally after 20261105152448).
+-- 6x6 campaign regression checks (run locally after 20261105190425).
 -- Usage: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/six_by_six_campaigns.sql
 
 BEGIN;
@@ -53,11 +53,11 @@ BEGIN
 
   INSERT INTO public.campaign_events(
     id, slug, qr_code, city, title, card_image_url, detail_image_urls,
-    purchase_qr_url, mini_program_code_url, start_at, end_at
+    purchase_qr_url, purchase_short_link, mini_program_code_url, start_at, end_at
   ) VALUES (
     v_campaign_id, 'six-by-six-test', 'T6X6TEST', 'Shanghai', '__6x6_test__',
     'https://example.invalid/card.jpg', '{}'::text[],
-    'https://example.invalid/purchase.png', 'https://example.invalid/mini.png',
+    'https://example.invalid/purchase.png', '#小程序://快团团/pqcSzp0XmnRV6Tj', 'https://example.invalid/mini.png',
     now() - interval '1 hour', now() + interval '1 hour'
   );
 
@@ -126,7 +126,8 @@ DECLARE
 BEGIN
   v_payload := public.get_public_campaign(v_campaign_id::text);
   IF NOT coalesce((v_payload->>'ok')::boolean, false)
-    OR jsonb_array_length(v_payload->'campaign'->'stops') <> 6 THEN
+    OR jsonb_array_length(v_payload->'campaign'->'stops') <> 6
+    OR v_payload->'campaign'->>'purchase_short_link' IS DISTINCT FROM '#小程序://快团团/pqcSzp0XmnRV6Tj' THEN
     RAISE EXCEPTION 'Anonymous campaign DTO is invalid: %', v_payload;
   END IF;
   BEGIN
