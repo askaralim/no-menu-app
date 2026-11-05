@@ -1,0 +1,682 @@
+-- Isolated multi-venue campaign domain for the 2026 Shanghai 6x6 event.
+-- Existing bar_events and drink logging APIs remain backwards compatible.
+
+ALTER TABLE public.bar_events
+  ADD COLUMN IF NOT EXISTS card_image_url text,
+  ADD COLUMN IF NOT EXISTS detail_image_urls text[] NOT NULL DEFAULT '{}'::text[];
+
+ALTER TABLE public.bar_events
+  DROP CONSTRAINT IF EXISTS bar_events_detail_image_urls_max_two;
+ALTER TABLE public.bar_events
+  ADD CONSTRAINT bar_events_detail_image_urls_max_two
+  CHECK (coalesce(cardinality(detail_image_urls), 0) <= 2);
+
+COMMENT ON COLUMN public.bar_events.card_image_url IS
+  'Optional landscape image for discovery cards. image_url remains the legacy fallback.';
+COMMENT ON COLUMN public.bar_events.detail_image_urls IS
+  'Up to two event detail images. Empty arrays fall back to image_url in clients.';
+
+CREATE OR REPLACE FUNCTION public.taplist_public_event_row(e public.bar_events, t public.tenants)
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $$
+  SELECT jsonb_build_object(
+    'id', e.id,
+    'title', e.title,
+    'subtitle', e.subtitle,
+    'description', e.description,
+    'event_type', e.event_type,
+    'event_type_label', public.taplist_event_type_label(e.event_type),
+    'image_url', e.image_url,
+    'card_image_url', e.card_image_url,
+    'detail_image_urls', e.detail_image_urls,
+    'start_at', e.start_at,
+    'end_at', e.end_at,
+    'date_label', e.date_label,
+    'time_label', e.time_label,
+    'display_state', public.taplist_event_display_state(e.start_at, e.end_at, e.visible_until_at),
+    'display_time', public.taplist_event_display_time(e.start_at, e.end_at, e.date_label, e.time_label),
+    'tenant_id', t.id,
+    'tenant_slug', t.slug,
+    'tenant_display_name', coalesce(nullif(trim(t.display_name), ''), t.name),
+    'tenant_district', t.district,
+    'tenant_address', t.address,
+    'tenant_cover_image_url', t.cover_image_url
+  );
+$$;
+
+CREATE TABLE public.campaign_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text NOT NULL UNIQUE,
+  qr_code text NOT NULL UNIQUE,
+  city text NOT NULL DEFAULT 'Shanghai',
+  title text NOT NULL,
+  subtitle text,
+  description text,
+  badge_label text NOT NULL DEFAULT '6×6限定',
+  card_image_url text,
+  detail_image_urls text[] NOT NULL DEFAULT '{}'::text[],
+  purchase_qr_url text,
+  mini_program_code_url text,
+  start_at timestamptz NOT NULL,
+  end_at timestamptz NOT NULL,
+  status text NOT NULL DEFAULT 'scheduled',
+  is_public_visible boolean NOT NULL DEFAULT false,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT campaign_events_slug_check CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+  CONSTRAINT campaign_events_qr_code_check CHECK (qr_code ~ '^[A-Za-z0-9]{8}$'),
+  CONSTRAINT campaign_events_status_check CHECK (status IN ('scheduled', 'cancelled')),
+  CONSTRAINT campaign_events_time_check CHECK (end_at > start_at),
+  CONSTRAINT campaign_events_detail_images_check CHECK (coalesce(cardinality(detail_image_urls), 0) <= 2)
+);
+
+CREATE TABLE public.campaign_stops (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id uuid NOT NULL REFERENCES public.campaign_events(id) ON DELETE CASCADE,
+  tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
+  drink_id uuid NOT NULL REFERENCES public.drinks(id) ON DELETE RESTRICT,
+  brewery_label text NOT NULL,
+  sort_order integer NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (campaign_id, tenant_id),
+  UNIQUE (campaign_id, drink_id),
+  UNIQUE (campaign_id, sort_order),
+  CONSTRAINT campaign_stops_sort_order_check CHECK (sort_order BETWEEN 1 AND 99),
+  CONSTRAINT campaign_stops_brewery_label_check CHECK (nullif(trim(brewery_label), '') IS NOT NULL)
+);
+
+CREATE TABLE public.user_campaign_stop_completions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  campaign_id uuid NOT NULL REFERENCES public.campaign_events(id) ON DELETE CASCADE,
+  stop_id uuid NOT NULL REFERENCES public.campaign_stops(id) ON DELETE CASCADE,
+  drink_id uuid NOT NULL REFERENCES public.drinks(id) ON DELETE RESTRICT,
+  user_drink_venue_id uuid REFERENCES public.user_drink_venues(id) ON DELETE SET NULL,
+  user_drink_light_id uuid REFERENCES public.user_drink_lights(id) ON DELETE SET NULL,
+  verification_method text NOT NULL DEFAULT 'self_confirmed',
+  created_drink_venue boolean NOT NULL DEFAULT false,
+  created_drink_light boolean NOT NULL DEFAULT false,
+  completed_at timestamptz NOT NULL DEFAULT now(),
+  undone_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT campaign_completion_verification_check
+    CHECK (verification_method IN ('self_confirmed', 'venue_qr'))
+);
+
+CREATE TABLE public.campaign_interactions (
+  id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  campaign_id uuid NOT NULL REFERENCES public.campaign_events(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  event_type text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT campaign_interactions_type_check
+    CHECK (event_type IN ('purchase_qr_viewed', 'purchase_qr_saved'))
+);
+
+CREATE UNIQUE INDEX campaign_completions_active_stop_uidx
+  ON public.user_campaign_stop_completions(user_id, campaign_id, stop_id)
+  WHERE undone_at IS NULL;
+CREATE INDEX campaign_completions_user_campaign_idx
+  ON public.user_campaign_stop_completions(user_id, campaign_id, completed_at DESC)
+  WHERE undone_at IS NULL;
+CREATE INDEX campaign_stops_campaign_sort_idx
+  ON public.campaign_stops(campaign_id, sort_order);
+CREATE INDEX campaign_events_public_idx
+  ON public.campaign_events(is_public_visible, status, city, end_at, sort_order);
+CREATE INDEX campaign_interactions_campaign_type_idx
+  ON public.campaign_interactions(campaign_id, event_type, created_at DESC);
+
+CREATE OR REPLACE FUNCTION public.campaign_set_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER campaign_events_set_updated_at
+BEFORE UPDATE ON public.campaign_events
+FOR EACH ROW EXECUTE FUNCTION public.campaign_set_updated_at();
+
+CREATE TRIGGER campaign_stops_set_updated_at
+BEFORE UPDATE ON public.campaign_stops
+FOR EACH ROW EXECUTE FUNCTION public.campaign_set_updated_at();
+
+CREATE OR REPLACE FUNCTION public.validate_campaign_for_publication(p_campaign_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_campaign public.campaign_events%ROWTYPE;
+  v_stop_count integer;
+  v_valid_stop_count integer;
+BEGIN
+  SELECT * INTO v_campaign FROM public.campaign_events WHERE id = p_campaign_id;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'NOT_FOUND');
+  END IF;
+
+  IF v_campaign.status <> 'scheduled' OR v_campaign.end_at <= v_campaign.start_at THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'INVALID_SCHEDULE');
+  END IF;
+  IF nullif(trim(v_campaign.card_image_url), '') IS NULL
+    OR coalesce(cardinality(v_campaign.detail_image_urls), 0) < 1
+    OR nullif(trim(v_campaign.purchase_qr_url), '') IS NULL
+    OR nullif(trim(v_campaign.mini_program_code_url), '') IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'MISSING_MEDIA');
+  END IF;
+
+  SELECT count(*), count(*) FILTER (
+    WHERE t.status = 'active'
+      AND t.is_public_visible
+      AND t.roadmap_latitude IS NOT NULL
+      AND t.roadmap_longitude IS NOT NULL
+      AND d.tenant_id = s.tenant_id
+  )
+  INTO v_stop_count, v_valid_stop_count
+  FROM public.campaign_stops s
+  JOIN public.tenants t ON t.id = s.tenant_id
+  JOIN public.drinks d ON d.id = s.drink_id
+  WHERE s.campaign_id = p_campaign_id;
+
+  IF v_stop_count <> 6 THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'REQUIRES_SIX_STOPS');
+  END IF;
+  IF v_valid_stop_count <> 6 THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'INVALID_STOP_CONFIGURATION');
+  END IF;
+
+  RETURN jsonb_build_object('ok', true);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.campaign_enforce_publication_readiness()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_result jsonb;
+BEGIN
+  IF NEW.is_public_visible THEN
+    v_result := public.validate_campaign_for_publication(NEW.id);
+    IF NOT coalesce((v_result->>'ok')::boolean, false) THEN
+      RAISE EXCEPTION 'Campaign cannot be published: %', v_result->>'code'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE CONSTRAINT TRIGGER campaign_events_publication_readiness
+AFTER INSERT OR UPDATE OF is_public_visible, card_image_url, detail_image_urls,
+  purchase_qr_url, mini_program_code_url, start_at, end_at, status
+ON public.campaign_events
+DEFERRABLE INITIALLY IMMEDIATE
+FOR EACH ROW EXECUTE FUNCTION public.campaign_enforce_publication_readiness();
+
+CREATE OR REPLACE FUNCTION public.campaign_enforce_stop_readiness()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_campaign_id uuid := coalesce(NEW.campaign_id, OLD.campaign_id);
+  v_is_public boolean;
+  v_result jsonb;
+BEGIN
+  SELECT c.is_public_visible INTO v_is_public
+  FROM public.campaign_events c
+  WHERE c.id = v_campaign_id;
+  IF coalesce(v_is_public, false) THEN
+    v_result := public.validate_campaign_for_publication(v_campaign_id);
+    IF NOT coalesce((v_result->>'ok')::boolean, false) THEN
+      RAISE EXCEPTION 'Published campaign stop change is invalid: %', v_result->>'code'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+  RETURN coalesce(NEW, OLD);
+END;
+$$;
+
+CREATE CONSTRAINT TRIGGER campaign_stops_publication_readiness
+AFTER INSERT OR UPDATE OR DELETE ON public.campaign_stops
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION public.campaign_enforce_stop_readiness();
+
+ALTER TABLE public.campaign_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.campaign_stops ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_campaign_stop_completions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.campaign_interactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY campaign_events_super_admin_all
+ON public.campaign_events FOR ALL TO authenticated
+USING ((SELECT public.is_super_admin()))
+WITH CHECK ((SELECT public.is_super_admin()));
+
+CREATE POLICY campaign_stops_super_admin_all
+ON public.campaign_stops FOR ALL TO authenticated
+USING ((SELECT public.is_super_admin()))
+WITH CHECK ((SELECT public.is_super_admin()));
+
+CREATE POLICY campaign_completions_super_admin_all
+ON public.user_campaign_stop_completions FOR ALL TO authenticated
+USING ((SELECT public.is_super_admin()))
+WITH CHECK ((SELECT public.is_super_admin()));
+
+CREATE POLICY campaign_interactions_super_admin_select
+ON public.campaign_interactions FOR SELECT TO authenticated
+USING ((SELECT public.is_super_admin()));
+
+REVOKE ALL ON public.campaign_events FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.campaign_stops FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.user_campaign_stop_completions FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.campaign_interactions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.campaign_events TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.campaign_stops TO authenticated;
+GRANT SELECT ON public.user_campaign_stop_completions TO authenticated;
+GRANT SELECT ON public.campaign_interactions TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.list_public_campaigns(p_city text DEFAULT NULL)
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT jsonb_build_object(
+    'ok', true,
+    'results', coalesce(jsonb_agg(jsonb_build_object(
+      'id', c.id,
+      'slug', c.slug,
+      'title', c.title,
+      'subtitle', c.subtitle,
+      'badge_label', c.badge_label,
+      'card_image_url', c.card_image_url,
+      'start_at', c.start_at,
+      'end_at', c.end_at,
+      'stop_count', 6,
+      'kind', 'campaign'
+    ) ORDER BY c.sort_order, c.start_at, lower(c.title)), '[]'::jsonb)
+  )
+  FROM public.campaign_events c
+  WHERE c.is_public_visible
+    AND c.status = 'scheduled'
+    AND c.end_at >= now()
+    AND (nullif(trim(p_city), '') IS NULL OR lower(trim(c.city)) = lower(trim(p_city)));
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_public_campaign(p_id_or_slug text)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_campaign public.campaign_events%ROWTYPE;
+  v_stops jsonb;
+BEGIN
+  SELECT * INTO v_campaign
+  FROM public.campaign_events c
+  WHERE c.is_public_visible
+    AND c.status = 'scheduled'
+    AND (c.id::text = p_id_or_slug OR c.slug = p_id_or_slug OR c.qr_code = p_id_or_slug)
+  LIMIT 1;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'NOT_PUBLIC');
+  END IF;
+
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+    'id', s.id,
+    'sort_order', s.sort_order,
+    'tenant_id', t.id,
+    'tenant_slug', t.slug,
+    'tenant_name', coalesce(nullif(trim(t.display_name), ''), t.name),
+    'tenant_address', t.address,
+    'tenant_district', t.district,
+    'latitude', t.roadmap_latitude,
+    'longitude', t.roadmap_longitude,
+    'brewery_label', s.brewery_label,
+    'drink_id', d.id,
+    'drink_name', coalesce(nullif(trim(d.display_name), ''), d.name),
+    'drink_image_url', d.image_url,
+    'beer_style', p.beer_style,
+    'abv', p.abv,
+    'public_status', d.public_status,
+    'is_available', d.enabled AND d.is_public_visible AND d.public_status IN ('new', 'available', 'low')
+  ) ORDER BY s.sort_order), '[]'::jsonb)
+  INTO v_stops
+  FROM public.campaign_stops s
+  JOIN public.tenants t ON t.id = s.tenant_id
+  JOIN public.drinks d ON d.id = s.drink_id
+  LEFT JOIN public.drink_beer_profiles p ON p.drink_id = d.id AND p.tenant_id = d.tenant_id
+  WHERE s.campaign_id = v_campaign.id;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'campaign', jsonb_build_object(
+      'id', v_campaign.id,
+      'slug', v_campaign.slug,
+      'qr_code', v_campaign.qr_code,
+      'title', v_campaign.title,
+      'subtitle', v_campaign.subtitle,
+      'description', v_campaign.description,
+      'city', v_campaign.city,
+      'badge_label', v_campaign.badge_label,
+      'card_image_url', v_campaign.card_image_url,
+      'detail_image_urls', v_campaign.detail_image_urls,
+      'purchase_qr_url', v_campaign.purchase_qr_url,
+      'mini_program_code_url', v_campaign.mini_program_code_url,
+      'start_at', v_campaign.start_at,
+      'end_at', v_campaign.end_at,
+      'has_started', v_campaign.start_at <= now(),
+      'has_ended', v_campaign.end_at < now(),
+      'stops', v_stops
+    )
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_active_campaign_badges(
+  p_tenant_id uuid,
+  p_drink_ids uuid[] DEFAULT '{}'::uuid[]
+)
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT jsonb_build_object(
+    'ok', true,
+    'results', coalesce(jsonb_agg(jsonb_build_object(
+      'campaign_id', c.id,
+      'campaign_slug', c.slug,
+      'stop_id', s.id,
+      'drink_id', s.drink_id,
+      'label', c.badge_label
+    ) ORDER BY c.sort_order, s.sort_order), '[]'::jsonb)
+  )
+  FROM public.campaign_stops s
+  JOIN public.campaign_events c ON c.id = s.campaign_id
+  WHERE s.tenant_id = p_tenant_id
+    AND s.drink_id = ANY(coalesce(p_drink_ids, '{}'::uuid[]))
+    AND c.is_public_visible
+    AND c.status = 'scheduled'
+    AND c.start_at <= now()
+    AND c.end_at >= now();
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_my_campaign_progress(p_campaign_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_results jsonb;
+  v_count integer;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'AUTH_REQUIRED');
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.campaign_events c
+    WHERE c.id = p_campaign_id AND c.is_public_visible AND c.status = 'scheduled'
+  ) THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'NOT_PUBLIC');
+  END IF;
+
+  SELECT count(*)::integer, coalesce(jsonb_agg(jsonb_build_object(
+    'completion_id', x.id,
+    'stop_id', x.stop_id,
+    'drink_id', x.drink_id,
+    'completed_at', x.completed_at
+  ) ORDER BY x.completed_at), '[]'::jsonb)
+  INTO v_count, v_results
+  FROM public.user_campaign_stop_completions x
+  WHERE x.user_id = v_user_id
+    AND x.campaign_id = p_campaign_id
+    AND x.undone_at IS NULL;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'campaign_id', p_campaign_id,
+    'completed_count', v_count,
+    'total_count', 6,
+    'is_complete', v_count = 6,
+    'completions', v_results
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.complete_my_campaign_stop(
+  p_campaign_id uuid,
+  p_stop_id uuid
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_campaign public.campaign_events%ROWTYPE;
+  v_stop public.campaign_stops%ROWTYPE;
+  v_drink public.drinks%ROWTYPE;
+  v_existing public.user_campaign_stop_completions%ROWTYPE;
+  v_light_result jsonb;
+  v_light_id uuid;
+  v_venue_id uuid;
+  v_completion public.user_campaign_stop_completions%ROWTYPE;
+  v_progress jsonb;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'AUTH_REQUIRED');
+  END IF;
+
+  SELECT * INTO v_campaign
+  FROM public.campaign_events c
+  WHERE c.id = p_campaign_id
+  FOR SHARE;
+  IF NOT FOUND OR NOT v_campaign.is_public_visible OR v_campaign.status <> 'scheduled' THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'NOT_PUBLIC');
+  END IF;
+  IF now() < v_campaign.start_at THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'NOT_STARTED');
+  END IF;
+  IF now() > v_campaign.end_at THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'ENDED');
+  END IF;
+
+  SELECT * INTO v_stop
+  FROM public.campaign_stops s
+  WHERE s.id = p_stop_id AND s.campaign_id = p_campaign_id;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'STOP_NOT_FOUND');
+  END IF;
+
+  SELECT * INTO v_drink FROM public.drinks d WHERE d.id = v_stop.drink_id;
+  IF NOT FOUND
+    OR v_drink.tenant_id <> v_stop.tenant_id
+    OR NOT v_drink.enabled
+    OR NOT v_drink.is_public_visible
+    OR v_drink.public_status NOT IN ('new', 'available', 'low', 'sold_out') THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'DRINK_NOT_AVAILABLE');
+  END IF;
+
+  SELECT * INTO v_existing
+  FROM public.user_campaign_stop_completions x
+  WHERE x.user_id = v_user_id
+    AND x.campaign_id = p_campaign_id
+    AND x.stop_id = p_stop_id
+    AND x.undone_at IS NULL;
+  IF FOUND THEN
+    v_progress := public.get_my_campaign_progress(p_campaign_id);
+    RETURN v_progress || jsonb_build_object(
+      'code', 'ALREADY_COMPLETED',
+      'completion_id', v_existing.id,
+      'created_light', false,
+      'created_venue', false
+    );
+  END IF;
+
+  v_light_result := public.light_my_drink(v_stop.drink_id);
+  IF NOT coalesce((v_light_result->>'ok')::boolean, false) THEN
+    RETURN jsonb_build_object('ok', false, 'code', coalesce(v_light_result->>'code', 'DRINK_NOT_AVAILABLE'));
+  END IF;
+  v_light_id := (v_light_result->>'light_id')::uuid;
+
+  SELECT uv.id INTO v_venue_id
+  FROM public.user_drink_venues uv
+  WHERE uv.user_id = v_user_id
+    AND uv.light_id = v_light_id
+    AND uv.tenant_id = v_stop.tenant_id;
+
+  BEGIN
+    INSERT INTO public.user_campaign_stop_completions(
+      user_id, campaign_id, stop_id, drink_id,
+      user_drink_venue_id, user_drink_light_id,
+      created_drink_venue, created_drink_light
+    ) VALUES (
+      v_user_id, p_campaign_id, p_stop_id, v_stop.drink_id,
+      v_venue_id, v_light_id,
+      coalesce((v_light_result->>'created_venue')::boolean, false),
+      coalesce((v_light_result->>'created_light')::boolean, false)
+    )
+    RETURNING * INTO v_completion;
+  EXCEPTION WHEN unique_violation THEN
+    SELECT * INTO v_completion
+    FROM public.user_campaign_stop_completions x
+    WHERE x.user_id = v_user_id
+      AND x.campaign_id = p_campaign_id
+      AND x.stop_id = p_stop_id
+      AND x.undone_at IS NULL;
+  END;
+
+  v_progress := public.get_my_campaign_progress(p_campaign_id);
+  RETURN v_progress || jsonb_build_object(
+    'completion_id', v_completion.id,
+    'created_light', coalesce((v_light_result->>'created_light')::boolean, false),
+    'created_venue', coalesce((v_light_result->>'created_venue')::boolean, false)
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.undo_my_campaign_stop(p_completion_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_completion public.user_campaign_stop_completions%ROWTYPE;
+  v_progress jsonb;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'AUTH_REQUIRED');
+  END IF;
+
+  SELECT * INTO v_completion
+  FROM public.user_campaign_stop_completions x
+  WHERE x.id = p_completion_id
+    AND x.user_id = v_user_id
+    AND x.undone_at IS NULL
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'STOP_NOT_FOUND');
+  END IF;
+  IF v_completion.completed_at < now() - interval '5 minutes' THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'UNDO_EXPIRED');
+  END IF;
+
+  UPDATE public.user_campaign_stop_completions
+  SET undone_at = now()
+  WHERE id = v_completion.id;
+
+  IF v_completion.created_drink_venue AND v_completion.user_drink_venue_id IS NOT NULL THEN
+    DELETE FROM public.user_drink_venues
+    WHERE id = v_completion.user_drink_venue_id
+      AND user_id = v_user_id;
+  END IF;
+
+  IF v_completion.created_drink_light AND v_completion.user_drink_light_id IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM public.user_drink_venues uv
+      WHERE uv.light_id = v_completion.user_drink_light_id
+    ) THEN
+    DELETE FROM public.user_drink_lights
+    WHERE id = v_completion.user_drink_light_id
+      AND user_id = v_user_id;
+  END IF;
+
+  v_progress := public.get_my_campaign_progress(v_completion.campaign_id);
+  RETURN v_progress || jsonb_build_object('undone_completion_id', v_completion.id);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.record_campaign_interaction(
+  p_campaign_id uuid,
+  p_event_type text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF p_event_type NOT IN ('purchase_qr_viewed', 'purchase_qr_saved') THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'INVALID_EVENT_TYPE');
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.campaign_events c
+    WHERE c.id = p_campaign_id AND c.is_public_visible AND c.status = 'scheduled'
+  ) THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'NOT_PUBLIC');
+  END IF;
+  INSERT INTO public.campaign_interactions(campaign_id, user_id, event_type)
+  VALUES (p_campaign_id, auth.uid(), p_event_type);
+  RETURN jsonb_build_object('ok', true);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.validate_campaign_for_publication(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.campaign_enforce_publication_readiness() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.campaign_enforce_stop_readiness() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.list_public_campaigns(text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.get_public_campaign(text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.get_active_campaign_badges(uuid, uuid[]) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.get_my_campaign_progress(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.complete_my_campaign_stop(uuid, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.undo_my_campaign_stop(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.record_campaign_interaction(uuid, text) FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.validate_campaign_for_publication(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.list_public_campaigns(text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_public_campaign(text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_active_campaign_badges(uuid, uuid[]) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_campaign_progress(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.complete_my_campaign_stop(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.undo_my_campaign_stop(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.record_campaign_interaction(uuid, text) TO anon, authenticated;
+
+NOTIFY pgrst, 'reload schema';
