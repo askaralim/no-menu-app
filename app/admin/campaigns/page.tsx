@@ -282,8 +282,8 @@ export default function CampaignsAdminPage() {
         return false
       }
       if (!form.card_image_url
-        || !form.purchase_qr_url || !form.mini_program_code_url) {
-        alert('公开前需要活动主图、快团团二维码和活动小程序码；详情图可不填')
+        || !form.purchase_qr_url) {
+        alert('公开前需要活动主图和快团团二维码；详情图及活动小程序码可后补')
         return false
       }
     }

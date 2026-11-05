@@ -1,4 +1,4 @@
--- 6x6 campaign regression checks (run locally after 20261105190425).
+-- 6x6 campaign regression checks (run locally after 20261105192649).
 -- Usage: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/six_by_six_campaigns.sql
 
 BEGIN;
@@ -57,7 +57,7 @@ BEGIN
   ) VALUES (
     v_campaign_id, 'six-by-six-test', 'T6X6TEST', 'Shanghai', '__6x6_test__',
     'https://example.invalid/card.jpg', '{}'::text[],
-    'https://example.invalid/purchase.png', '#小程序://快团团/pqcSzp0XmnRV6Tj', 'https://example.invalid/mini.png',
+    'https://example.invalid/purchase.png', '#小程序://快团团/pqcSzp0XmnRV6Tj', NULL,
     now() - interval '1 hour', now() + interval '1 hour'
   );
 
@@ -192,4 +192,59 @@ END
 $$;
 
 RESET ROLE;
+-- Run boundary cases as the fixture owner while varying the caller identity.
+DO $$
+DECLARE
+  c uuid := current_setting('six_by_six_test.campaign_id')::uuid;
+  u uuid := current_setting('six_by_six_test.user_id')::uuid;
+  s public.campaign_stops%ROWTYPE;
+  result jsonb;
+  completion uuid;
+  ordinary_venue uuid;
+BEGIN
+  SELECT * INTO s FROM public.campaign_stops WHERE campaign_id = c ORDER BY sort_order LIMIT 1;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claims', '{}', true);
+  IF public.complete_my_campaign_stop(c,s.id)->>'code' IS DISTINCT FROM 'AUTH_REQUIRED' THEN
+    RAISE EXCEPTION 'Missing authentication not rejected';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', u::text, true);
+  PERFORM set_config('request.jwt.claims', jsonb_build_object('sub',u,'role','authenticated')::text, true);
+  UPDATE public.campaign_events SET start_at=now()+interval '1 hour',end_at=now()+interval '2 hours' WHERE id=c;
+  IF public.complete_my_campaign_stop(c,s.id)->>'code' IS DISTINCT FROM 'NOT_STARTED' THEN RAISE EXCEPTION 'Early completion allowed'; END IF;
+  UPDATE public.campaign_events SET start_at=now()-interval '2 hours',end_at=now()-interval '1 hour' WHERE id=c;
+  IF public.complete_my_campaign_stop(c,s.id)->>'code' IS DISTINCT FROM 'ENDED' THEN RAISE EXCEPTION 'Late completion allowed'; END IF;
+  IF NOT (public.get_public_campaign(c::text)->>'ok')::boolean THEN RAISE EXCEPTION 'Ended detail inaccessible'; END IF;
+  IF EXISTS (SELECT 1 FROM jsonb_array_elements(public.list_public_campaigns('Shanghai')->'results') e WHERE e->>'id'=c::text) THEN RAISE EXCEPTION 'Ended campaign still listed'; END IF;
+  UPDATE public.campaign_events SET start_at=now()-interval '1 hour',end_at=now()+interval '1 hour' WHERE id=c;
+  IF public.complete_my_campaign_stop(c,gen_random_uuid())->>'code' IS DISTINCT FROM 'STOP_NOT_FOUND' THEN RAISE EXCEPTION 'Unknown stop allowed'; END IF;
+  UPDATE public.drinks SET is_public_visible=false WHERE id=s.drink_id;
+  IF public.complete_my_campaign_stop(c,s.id)->>'code' IS DISTINCT FROM 'DRINK_NOT_AVAILABLE' THEN RAISE EXCEPTION 'Hidden drink allowed'; END IF;
+  UPDATE public.drinks SET is_public_visible=true WHERE id=s.drink_id;
+
+  -- An ordinary drink record must survive activity undo.
+  result := public.light_my_drink(s.drink_id);
+  SELECT id INTO ordinary_venue FROM public.user_drink_venues WHERE user_id=u AND light_id=(result->>'light_id')::uuid AND tenant_id=s.tenant_id;
+  result := public.complete_my_campaign_stop(c,s.id);
+  IF (result->>'created_venue')::boolean THEN RAISE EXCEPTION 'Duplicate ordinary venue created'; END IF;
+  PERFORM public.undo_my_campaign_stop((result->>'completion_id')::uuid);
+  IF NOT EXISTS (SELECT 1 FROM public.user_drink_venues WHERE id=ordinary_venue) THEN RAISE EXCEPTION 'Existing ordinary venue removed'; END IF;
+
+  FOR s IN SELECT * FROM public.campaign_stops WHERE campaign_id=c ORDER BY sort_order LOOP
+    result := public.complete_my_campaign_stop(c,s.id);
+    IF NOT (result->>'ok')::boolean THEN RAISE EXCEPTION 'Six-stop completion failed: %', result; END IF;
+  END LOOP;
+  IF (result->>'completed_count')::integer <> 6 OR NOT (result->>'is_complete')::boolean THEN RAISE EXCEPTION '6/6 not reached'; END IF;
+  completion := (result->>'completion_id')::uuid;
+  PERFORM set_config('request.jwt.claim.sub', gen_random_uuid()::text, true);
+  IF (public.get_my_campaign_progress(c)->>'completed_count')::integer <> 0 THEN RAISE EXCEPTION 'Cross-user progress disclosed'; END IF;
+  IF public.undo_my_campaign_stop(completion)->>'code' IS DISTINCT FROM 'STOP_NOT_FOUND' THEN RAISE EXCEPTION 'Cross-user undo allowed'; END IF;
+  PERFORM set_config('request.jwt.claim.sub', u::text, true);
+  UPDATE public.user_campaign_stop_completions SET completed_at=now()-interval '6 minutes' WHERE id=completion;
+  IF public.undo_my_campaign_stop(completion)->>'code' IS DISTINCT FROM 'UNDO_EXPIRED' THEN RAISE EXCEPTION 'Expired undo allowed'; END IF;
+  UPDATE public.user_campaign_stop_completions SET completed_at=now() WHERE id=completion;
+  IF (public.undo_my_campaign_stop(completion)->>'completed_count')::integer <> 5 THEN RAISE EXCEPTION 'Undo did not restore 5/6'; END IF;
+  UPDATE public.campaign_events SET is_public_visible=false WHERE id=c;
+  IF public.get_public_campaign(c::text)->>'code' IS DISTINCT FROM 'NOT_PUBLIC' THEN RAISE EXCEPTION 'Hidden campaign exposed'; END IF;
+END $$;
 ROLLBACK;
