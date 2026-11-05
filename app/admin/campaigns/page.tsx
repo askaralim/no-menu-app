@@ -273,9 +273,9 @@ export default function CampaignsAdminPage() {
         alert('六家门店和六款联名酒均不得重复')
         return false
       }
-      if (!form.card_image_url || !form.detail_image_1
+      if (!form.card_image_url
         || !form.purchase_qr_url || !form.mini_program_code_url) {
-        alert('公开前需要横图、至少1张详情图、快团团二维码和活动小程序码')
+        alert('公开前需要活动主图、快团团二维码和活动小程序码；详情图可不填')
         return false
       }
     }
@@ -402,8 +402,8 @@ export default function CampaignsAdminPage() {
 
           <h3 style={{ marginTop: 20 }}>活动素材</h3>
           <div className="taplist-panel-grid">
-            <AssetField label="首页横图" role="card" value={form.card_image_url} busy={uploading} onUpload={handleUpload} onChange={(card_image_url) => setForm({ ...form, card_image_url })} />
-            <AssetField label="详情图1（必填）" role="detail-1" value={form.detail_image_1} busy={uploading} onUpload={handleUpload} onChange={(detail_image_1) => setForm({ ...form, detail_image_1 })} />
+            <AssetField label="活动主图（支持长图，仅此一张即可）" role="card" value={form.card_image_url} busy={uploading} onUpload={handleUpload} onChange={(card_image_url) => setForm({ ...form, card_image_url })} />
+            <AssetField label="详情图1（可选）" role="detail-1" value={form.detail_image_1} busy={uploading} onUpload={handleUpload} onChange={(detail_image_1) => setForm({ ...form, detail_image_1 })} />
             <AssetField label="详情图2（可选）" role="detail-2" value={form.detail_image_2} busy={uploading} onUpload={handleUpload} onChange={(detail_image_2) => setForm({ ...form, detail_image_2 })} />
             <AssetField label="快团团二维码" role="purchase-qr" value={form.purchase_qr_url} busy={uploading} onUpload={handleUpload} onChange={(purchase_qr_url) => setForm({ ...form, purchase_qr_url })} />
             <AssetField label="活动小程序码" role="mini-code" value={form.mini_program_code_url} busy={uploading} onUpload={handleUpload} onChange={(mini_program_code_url) => setForm({ ...form, mini_program_code_url })} />

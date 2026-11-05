@@ -2,7 +2,7 @@ import { writeFile } from 'node:fs/promises'
 import { EXPECTED_APP_ID, detectImage, fetchAccessToken } from './venue-miniprogram-code.mjs'
 
 const CAMPAIGN_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-const QR_CODE = /^[A-Z2-7]{8}$/
+const QR_CODE = /^[A-Za-z0-9]{8}$/
 const ENV_VERSIONS = new Set(['develop', 'trial', 'release'])
 
 export function validateInput(campaignId, qrCode, envVersion) {
@@ -40,7 +40,7 @@ export async function generateCode(accessToken, qrCode, envVersion) {
 
 async function main() {
   const [campaignId, rawQrCode, envVersion, imageOutput, reportOutput] = process.argv.slice(2)
-  const qrCode = String(rawQrCode || '').toUpperCase()
+  const qrCode = String(rawQrCode || '')
   if (!campaignId || !rawQrCode || !envVersion || !imageOutput || !reportOutput) {
     throw new Error('Usage: campaign-miniprogram-code.mjs CAMPAIGN_ID QR_CODE develop|trial|release IMAGE_OUTPUT REPORT_OUTPUT')
   }

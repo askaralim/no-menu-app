@@ -253,7 +253,7 @@ export default function EventEditScreen() {
     <Screen scroll keyboard>
       <HouseSubheader title={isNew ? '新建活动' : '编辑活动'} />
 
-      <SectionLabel>首页横图</SectionLabel>
+      <SectionLabel>活动主图（横图或长图均可）</SectionLabel>
       <Card>
         {(form.card_image_url || form.image_url) ? (
           <Image source={{ uri: withOssImageStyle(form.card_image_url || form.image_url, 'nm-poster') || form.card_image_url || form.image_url || '' }} style={styles.poster} resizeMode="cover" />
@@ -264,7 +264,7 @@ export default function EventEditScreen() {
           </View>
         )}
         <Button
-          label={(form.card_image_url || form.image_url) ? '更换横图' : '从相册选择横图'}
+          label={(form.card_image_url || form.image_url) ? '更换活动图' : '从相册选择活动图'}
           variant="secondary"
           icon="images-outline"
           loading={uploading}
@@ -274,7 +274,7 @@ export default function EventEditScreen() {
         />
       </Card>
 
-      <SectionLabel>详情图片（最多2张）</SectionLabel>
+      <SectionLabel>详情图片（可不填，最多2张）</SectionLabel>
       <Card style={{ gap: SPACING.md }}>
         {[0, 1].map((index) => {
           const url = form.detail_image_urls?.[index]

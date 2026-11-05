@@ -1,4 +1,4 @@
--- 6x6 campaign regression checks (run locally after 20261105110326).
+-- 6x6 campaign regression checks (run locally after 20261105152448).
 -- Usage: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/six_by_six_campaigns.sql
 
 BEGIN;
@@ -56,7 +56,7 @@ BEGIN
     purchase_qr_url, mini_program_code_url, start_at, end_at
   ) VALUES (
     v_campaign_id, 'six-by-six-test', 'T6X6TEST', 'Shanghai', '__6x6_test__',
-    'https://example.invalid/card.jpg', ARRAY['https://example.invalid/detail.jpg'],
+    'https://example.invalid/card.jpg', '{}'::text[],
     'https://example.invalid/purchase.png', 'https://example.invalid/mini.png',
     now() - interval '1 hour', now() + interval '1 hour'
   );

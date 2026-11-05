@@ -537,7 +537,7 @@ function EventsAdminPageInner() {
               />
             </div>
             <div className="taplist-field taplist-field-span-2">
-              <label>首页横图</label>
+              <label>活动主图（支持长图，仅此一张即可）</label>
               <EventImageUploadField
                 busy={uploading}
                 previewUrl={form.card_image_url || form.image_url || null}
@@ -546,7 +546,7 @@ function EventsAdminPageInner() {
               />
               <input
                 className="admin-input"
-                placeholder="横图 URL（保存时同步兼容旧 image_url）"
+                placeholder="活动图片 URL（横图或长图均可）"
                 value={form.card_image_url}
                 onChange={(e) => setForm({ ...form, card_image_url: e.target.value, image_url: e.target.value })}
               />

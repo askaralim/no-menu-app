@@ -12,7 +12,8 @@ test('campaign code targets the isolated campaign page', () => {
   assert.equal(buildRequestBody('ABC23456', 'release').check_path, true)
 })
 
-test('campaign code rejects guessable or malformed identifiers', () => {
+test('campaign code accepts WebAdmin hexadecimal codes and rejects malformed identifiers', () => {
+  validateInput(campaignId, '01AB89EF', 'release')
   assert.throws(() => validateInput('campaign', 'ABC23456', 'release'), /campaign id/)
-  assert.throws(() => validateInput(campaignId, '12345678', 'release'), /QR code/)
+  assert.throws(() => validateInput(campaignId, '1234567!', 'release'), /QR code/)
 })
