@@ -139,6 +139,28 @@ export async function uploadTaplistEventImage(
   return uploadTaplistObject(supabase, path, file)
 }
 
+export type CampaignAssetRole =
+  | 'card'
+  | 'detail-1'
+  | 'detail-2'
+  | 'purchase-qr'
+  | 'mini-code'
+
+export async function uploadCampaignImage(
+  supabase: SupabaseClient,
+  campaignId: string,
+  assetRole: CampaignAssetRole,
+  file: File
+): Promise<string> {
+  const ext = extensionForMime(file.type)
+  const objectPath = `prod/campaigns/${campaignId}/${assetRole}/${createUploadId()}.${ext}`
+  return uploadSignedObject(supabase, file, {
+    objectPath,
+    contentType: file.type,
+    contentLength: file.size,
+  })
+}
+
 export function isPromotableProductImageSource(value: string | null | undefined): boolean {
   if (!value) return false
   try {

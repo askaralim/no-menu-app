@@ -54,6 +54,7 @@ export default function AdminLayout({
   ]
 
   if (userRole === 'super_admin') {
+    navItems.push({ href: '/admin/campaigns', label: '联合活动' })
     navItems.push({ href: '/admin/platform', label: '🔧 平台管理' })
     navItems.push({ href: '/admin/platform/cities', label: '城市管理' })
     navItems.push({ href: '/admin/platform/companies', label: '品牌/酒厂' })

@@ -14,6 +14,8 @@ export type BarEventRow = {
   description: string | null
   event_type: string
   image_url: string | null
+  card_image_url: string | null
+  detail_image_urls: string[]
   start_at: string | null
   end_at: string | null
   visible_until_at: string | null
@@ -34,6 +36,8 @@ export type BarEventSaveInput = {
   description?: string
   event_type: string
   image_url?: string | null
+  card_image_url?: string | null
+  detail_image_urls?: string[]
   /** YYYY-MM-DD in Asia/Shanghai calendar, optional */
   startDate?: string | null
   /** YYYY-MM-DD in Asia/Shanghai calendar, optional */
@@ -173,8 +177,12 @@ export function buildBarEventPayload(
     if (endDate < startDate) throw new Error('结束日期不能早于开始日期')
   }
 
-  if (input.is_public_visible && !input.image_url?.trim()) {
+  const cardImageUrl = input.card_image_url?.trim() || input.image_url?.trim() || null
+  if (input.is_public_visible && !cardImageUrl) {
     throw new Error('公开活动需要上传海报图')
+  }
+  if ((input.detail_image_urls || []).filter(Boolean).length > 2) {
+    throw new Error('活动详情图最多2张')
   }
 
   const start_at = hasDates ? shanghaiDayStartIso(startDate) : null
@@ -190,7 +198,10 @@ export function buildBarEventPayload(
     subtitle: input.subtitle?.trim() || null,
     description: input.description?.trim() || null,
     event_type: input.event_type || 'other',
-    image_url: input.image_url?.trim() || null,
+    // Keep legacy image_url synchronized for installed consumer clients.
+    image_url: cardImageUrl,
+    card_image_url: cardImageUrl,
+    detail_image_urls: (input.detail_image_urls || []).map((url) => url.trim()).filter(Boolean),
     start_at,
     end_at,
     visible_until_at,
@@ -235,7 +246,7 @@ export async function setBarEventPublicVisible(
   if (visible) {
     const existing = await getBarEvent(tenantId, eventId)
     if (!existing) throw new Error('活动不存在')
-    if (!existing.image_url?.trim()) throw new Error('公开活动需要上传海报图')
+    if (!(existing.card_image_url || existing.image_url)?.trim()) throw new Error('公开活动需要上传海报图')
   }
 
   const { error } = await supabase

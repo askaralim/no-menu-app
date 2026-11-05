@@ -106,6 +106,10 @@ export function createSupabaseProductService(config, fetchImpl = fetch) {
       return assertSuperAdmin(accessToken, '只有平台管理员可以上传酒厂 Logo')
     },
 
+    authorizeCampaignMedia(accessToken) {
+      return assertSuperAdmin(accessToken, '只有平台管理员可以上传联合活动素材')
+    },
+
     async setProductImage(accessToken, productId, imageUrl) {
       const response = await fetchImpl(`${config.supabaseUrl}/rest/v1/rpc/admin_set_drink_product_image`, {
         method: 'POST',

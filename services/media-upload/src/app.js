@@ -48,6 +48,7 @@ export function createMediaUploadServer({
   signPutUrl,
   authorizeProductAdmin,
   authorizeCompanyLogo,
+  authorizeCampaignMedia,
   promoteProductImage,
   setProductImage,
   promoteTenantCover,
@@ -115,6 +116,11 @@ export function createMediaUploadServer({
           throw new RequestError(500, 'internal_error', '暂时无法生成上传地址')
         }
         await authorizeCompanyLogo(accessToken)
+      } else if (upload.kind === 'campaign_media') {
+        if (typeof authorizeCampaignMedia !== 'function') {
+          throw new RequestError(500, 'internal_error', '暂时无法生成上传地址')
+        }
+        await authorizeCampaignMedia(accessToken)
       } else {
         await authorizeTenant(accessToken, upload.tenantId)
       }

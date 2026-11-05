@@ -25,6 +25,8 @@ type BarEventRow = {
   description: string | null
   event_type: string
   image_url: string | null
+  card_image_url: string | null
+  detail_image_urls: string[]
   start_at: string | null
   end_at: string | null
   visible_until_at: string | null
@@ -44,6 +46,9 @@ type EventForm = {
   description: string
   event_type: string
   image_url: string
+  card_image_url: string
+  detail_image_1: string
+  detail_image_2: string
   start_at: string
   end_at: string
   visible_until_at: string
@@ -77,6 +82,9 @@ function blankEventForm(): EventForm {
     description: '',
     event_type: 'other',
     image_url: '',
+    card_image_url: '',
+    detail_image_1: '',
+    detail_image_2: '',
     start_at: '',
     end_at: '',
     visible_until_at: '',
@@ -96,6 +104,9 @@ function rowToForm(row: BarEventRow): EventForm {
     description: row.description ?? '',
     event_type: row.event_type || 'other',
     image_url: row.image_url ?? '',
+    card_image_url: row.card_image_url ?? row.image_url ?? '',
+    detail_image_1: row.detail_image_urls?.[0] ?? '',
+    detail_image_2: row.detail_image_urls?.[1] ?? '',
     start_at: toDatetimeLocal(row.start_at),
     end_at: toDatetimeLocal(row.end_at),
     visible_until_at: toDatetimeLocal(row.visible_until_at),
@@ -135,6 +146,8 @@ function EventsAdminPageInner() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const eventFileRef = useRef<HTMLInputElement>(null)
+  const detailOneFileRef = useRef<HTMLInputElement>(null)
+  const detailTwoFileRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -257,7 +270,12 @@ function EventsAdminPageInner() {
         subtitle: form.subtitle.trim() || null,
         description: form.description.trim() || null,
         event_type: form.event_type,
-        image_url: form.image_url.trim() || null,
+        // Keep the legacy field synchronized so installed clients still render the card.
+        image_url: form.card_image_url.trim() || form.image_url.trim() || null,
+        card_image_url: form.card_image_url.trim() || form.image_url.trim() || null,
+        detail_image_urls: [form.detail_image_1, form.detail_image_2]
+          .map((value) => value.trim())
+          .filter(Boolean),
         start_at: fromDatetimeLocal(form.start_at),
         end_at: fromDatetimeLocal(form.end_at),
         visible_until_at: fromDatetimeLocal(form.visible_until_at),
@@ -306,12 +324,19 @@ function EventsAdminPageInner() {
     if (form.id === event.id) setForm((prev) => ({ ...prev, status: 'cancelled', is_public_visible: false }))
   }
 
-  const handleEventImageFile = async (file: File) => {
+  const handleEventImageFile = async (
+    file: File,
+    role: 'card' | 'detail-1' | 'detail-2',
+  ) => {
     if (!tenantId) return
     setUploading(true)
     try {
       const publicUrl = await uploadTaplistEventImage(supabase, tenantId, form.id, file)
-      setForm((prev) => ({ ...prev, image_url: publicUrl }))
+      setForm((prev) => {
+        if (role === 'detail-1') return { ...prev, detail_image_1: publicUrl }
+        if (role === 'detail-2') return { ...prev, detail_image_2: publicUrl }
+        return { ...prev, card_image_url: publicUrl, image_url: publicUrl }
+      })
       alert('活动图片已上传。保存活动后消费者可见。')
     } catch (err) {
       console.error(err)
@@ -319,6 +344,8 @@ function EventsAdminPageInner() {
     } finally {
       setUploading(false)
       if (eventFileRef.current) eventFileRef.current.value = ''
+      if (detailOneFileRef.current) detailOneFileRef.current.value = ''
+      if (detailTwoFileRef.current) detailTwoFileRef.current.value = ''
     }
   }
 
@@ -510,19 +537,39 @@ function EventsAdminPageInner() {
               />
             </div>
             <div className="taplist-field taplist-field-span-2">
-              <label>活动图片</label>
+              <label>首页横图</label>
               <EventImageUploadField
                 busy={uploading}
-                previewUrl={form.image_url || null}
+                previewUrl={form.card_image_url || form.image_url || null}
                 inputRef={eventFileRef}
-                onFileSelected={handleEventImageFile}
+                onFileSelected={(file) => handleEventImageFile(file, 'card')}
               />
               <input
                 className="admin-input"
-                placeholder="图片 URL（可粘贴外链，或上方上传）"
-                value={form.image_url}
-                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                placeholder="横图 URL（保存时同步兼容旧 image_url）"
+                value={form.card_image_url}
+                onChange={(e) => setForm({ ...form, card_image_url: e.target.value, image_url: e.target.value })}
               />
+            </div>
+            <div className="taplist-field">
+              <label>详情图1（可选）</label>
+              <EventImageUploadField
+                busy={uploading}
+                previewUrl={form.detail_image_1 || null}
+                inputRef={detailOneFileRef}
+                onFileSelected={(file) => handleEventImageFile(file, 'detail-1')}
+              />
+              <input className="admin-input" placeholder="详情图1 URL" value={form.detail_image_1} onChange={(e) => setForm({ ...form, detail_image_1: e.target.value })} />
+            </div>
+            <div className="taplist-field">
+              <label>详情图2（可选）</label>
+              <EventImageUploadField
+                busy={uploading}
+                previewUrl={form.detail_image_2 || null}
+                inputRef={detailTwoFileRef}
+                onFileSelected={(file) => handleEventImageFile(file, 'detail-2')}
+              />
+              <input className="admin-input" placeholder="详情图2 URL" value={form.detail_image_2} onChange={(e) => setForm({ ...form, detail_image_2: e.target.value })} />
             </div>
           </div>
 

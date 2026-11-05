@@ -77,6 +77,29 @@ test('signs a company logo upload only after platform-admin authorization', asyn
   })
 })
 
+test('signs campaign media only after platform-admin authorization', async () => {
+  let campaignAuthorized = false
+  const campaignId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+  await withServer({
+    authorizeTenant: async () => { throw new Error('tenant authorization should not run') },
+    authorizeCampaignMedia: async (token) => { campaignAuthorized = token },
+    signPutUrl: async () => 'https://bucket.oss-cn-shanghai.aliyuncs.com/signed',
+  }, async (baseUrl) => {
+    const objectPath = `prod/campaigns/${campaignId}/card/upload.png`
+    const response = await fetch(`${baseUrl}/api/media/upload-url`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer access-token',
+        'Content-Type': 'application/json',
+        Origin: 'https://nomenuapp.com',
+      },
+      body: JSON.stringify({ objectPath, contentType: 'image/png', contentLength: 100 }),
+    })
+    assert.equal(response.status, 200)
+    assert.equal(campaignAuthorized, 'access-token')
+  })
+})
+
 test('rejects unapproved browser origins before authorization', async () => {
   let called = false
   await withServer({

@@ -18,6 +18,10 @@ const OBJECT_PATHS = [
   new RegExp(`^(${UUID})/(?:cover/${SAFE_FILE}|(?:drinks|events)/${UUID}/${SAFE_FILE})$`, 'i'),
 ]
 const COMPANY_LOGO_PATH = new RegExp(`^prod/companies/(${UUID})/${SAFE_FILE}$`, 'i')
+const CAMPAIGN_MEDIA_PATH = new RegExp(
+  `^prod/campaigns/(${UUID})/(card|detail-1|detail-2|purchase-qr|mini-code)/${SAFE_FILE}$`,
+  'i',
+)
 
 export class RequestError extends Error {
   constructor(status, code, message) {
@@ -59,12 +63,26 @@ export function validateUploadRequest(body) {
   const contentType = typeof body.contentType === 'string' ? body.contentType.trim().toLowerCase() : ''
   const contentLength = body.contentLength
   const companyMatch = COMPANY_LOGO_PATH.exec(objectPath)
+  const campaignMatch = CAMPAIGN_MEDIA_PATH.exec(objectPath)
 
   if (companyMatch) {
     assertImagePayload(objectPath, contentType, contentLength)
     return {
       kind: 'company_logo',
       companyId: companyMatch[1].toLowerCase(),
+      tenantId: null,
+      objectPath,
+      contentType,
+      contentLength,
+    }
+  }
+
+  if (campaignMatch) {
+    assertImagePayload(objectPath, contentType, contentLength)
+    return {
+      kind: 'campaign_media',
+      campaignId: campaignMatch[1].toLowerCase(),
+      assetRole: campaignMatch[2].toLowerCase(),
       tenantId: null,
       objectPath,
       contentType,

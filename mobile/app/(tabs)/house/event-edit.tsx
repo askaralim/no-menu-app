@@ -43,6 +43,8 @@ function blankForm(): BarEventSaveInput & { id: string } {
     description: '',
     event_type: 'party',
     image_url: null,
+    card_image_url: null,
+    detail_image_urls: [],
     startDate: '',
     endDate: '',
     timeLabel: '',
@@ -88,6 +90,8 @@ export default function EventEditScreen() {
           description: row.description || '',
           event_type: row.event_type || 'other',
           image_url: row.image_url,
+          card_image_url: row.card_image_url || row.image_url,
+          detail_image_urls: row.detail_image_urls || [],
           startDate: toShanghaiYmd(row.start_at),
           endDate: toShanghaiYmd(row.end_at) || toShanghaiYmd(row.start_at),
           timeLabel: row.time_label || '',
@@ -144,7 +148,7 @@ export default function EventEditScreen() {
       )
     })
 
-  const pickImage = async () => {
+  const pickImage = async (role: 'card' | 'detail-1' | 'detail-2') => {
     if (!tenantId) return
     const ok = await ensurePhotoLibraryPermission()
     if (!ok) return
@@ -164,7 +168,18 @@ export default function EventEditScreen() {
         fileName: asset.fileName,
         fileSize: asset.fileSize,
       })
-      setForm((prev) => ({ ...prev, image_url: url, id: prev.id || resolvedId }))
+      setForm((prev) => {
+        if (role === 'card') {
+          return { ...prev, image_url: url, card_image_url: url, id: prev.id || resolvedId }
+        }
+        const detailImages = [...(prev.detail_image_urls || [])]
+        detailImages[role === 'detail-1' ? 0 : 1] = url
+        return {
+          ...prev,
+          detail_image_urls: detailImages.filter(Boolean).slice(0, 2),
+          id: prev.id || resolvedId,
+        }
+      })
     } catch (e: any) {
       Alert.alert('图片未上传成功', translateImageUploadError(e))
     } finally {
@@ -216,7 +231,7 @@ export default function EventEditScreen() {
 
   const onSaveDraft = () => void persist(false)
   const onSavePublish = () => {
-    if (!form.image_url?.trim()) {
+    if (!(form.card_image_url || form.image_url)?.trim()) {
       Alert.alert('需要海报', '公开活动请先上传海报图')
       return
     }
@@ -238,10 +253,10 @@ export default function EventEditScreen() {
     <Screen scroll keyboard>
       <HouseSubheader title={isNew ? '新建活动' : '编辑活动'} />
 
-      <SectionLabel>海报</SectionLabel>
+      <SectionLabel>首页横图</SectionLabel>
       <Card>
-        {form.image_url ? (
-          <Image source={{ uri: withOssImageStyle(form.image_url, 'nm-poster') || form.image_url }} style={styles.poster} resizeMode="cover" />
+        {(form.card_image_url || form.image_url) ? (
+          <Image source={{ uri: withOssImageStyle(form.card_image_url || form.image_url, 'nm-poster') || form.card_image_url || form.image_url || '' }} style={styles.poster} resizeMode="cover" />
         ) : (
           <View style={[styles.poster, styles.posterEmpty]}>
             <Ionicons name="image-outline" size={28} color={THEME.faint} />
@@ -249,14 +264,42 @@ export default function EventEditScreen() {
           </View>
         )}
         <Button
-          label={form.image_url ? '更换海报' : '从相册选择'}
+          label={(form.card_image_url || form.image_url) ? '更换横图' : '从相册选择横图'}
           variant="secondary"
           icon="images-outline"
           loading={uploading}
           disabled={uploading}
-          onPress={() => void pickImage()}
+          onPress={() => void pickImage('card')}
           style={{ marginTop: SPACING.md }}
         />
+      </Card>
+
+      <SectionLabel>详情图片（最多2张）</SectionLabel>
+      <Card style={{ gap: SPACING.md }}>
+        {[0, 1].map((index) => {
+          const url = form.detail_image_urls?.[index]
+          return (
+            <View key={index}>
+              {url ? (
+                <Image source={{ uri: withOssImageStyle(url, 'nm-poster') || url }} style={styles.detailImage} resizeMode="cover" />
+              ) : (
+                <View style={[styles.detailImage, styles.posterEmpty]}>
+                  <Ionicons name="image-outline" size={24} color={THEME.faint} />
+                  <Text style={styles.hint}>详情图 {index + 1}（可选）</Text>
+                </View>
+              )}
+              <Button
+                label={url ? `更换详情图 ${index + 1}` : `选择详情图 ${index + 1}`}
+                variant="secondary"
+                icon="images-outline"
+                loading={uploading}
+                disabled={uploading}
+                onPress={() => void pickImage(index === 0 ? 'detail-1' : 'detail-2')}
+                style={{ marginTop: SPACING.sm }}
+              />
+            </View>
+          )
+        })}
       </Card>
 
       <SectionLabel>基本信息</SectionLabel>
@@ -406,6 +449,12 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     borderWidth: 1,
     borderColor: THEME.border,
+  },
+  detailImage: {
+    width: '100%',
+    height: 140,
+    borderRadius: RADIUS.md,
+    backgroundColor: THEME.surface,
   },
   hint: { color: THEME.muted, fontSize: 13, lineHeight: 18 },
   fieldLabel: { color: THEME.muted, fontSize: 13, fontWeight: '600' },

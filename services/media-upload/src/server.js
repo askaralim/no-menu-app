@@ -11,6 +11,7 @@ const server = createMediaUploadServer({
   signPutUrl: createOssSigner(config),
   authorizeProductAdmin: productService.authorizeAdmin,
   authorizeCompanyLogo: productService.authorizeCompanyLogo,
+  authorizeCampaignMedia: productService.authorizeCampaignMedia,
   promoteProductImage: createProductImagePromoter(config),
   setProductImage: productService.setProductImage,
   promoteTenantCover: createTenantCoverPromoter(config),

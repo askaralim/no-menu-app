@@ -102,6 +102,23 @@ test('rejects company logo paths outside the OSS prefix', () => {
   }), /图片路径无效/)
 })
 
+test('accepts isolated campaign media paths without a tenant id', () => {
+  const campaignId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+  assert.deepEqual(validateUploadRequest({
+    objectPath: `prod/campaigns/${campaignId}/detail-1/upload.png`,
+    contentType: 'image/png',
+    contentLength: 100,
+  }), {
+    kind: 'campaign_media',
+    campaignId,
+    assetRole: 'detail-1',
+    tenantId: null,
+    objectPath: `prod/campaigns/${campaignId}/detail-1/upload.png`,
+    contentType: 'image/png',
+    contentLength: 100,
+  })
+})
+
 test('requires a strict bearer token', () => {
   assert.equal(parseBearerToken('Bearer abc.def'), 'abc.def')
   assert.throws(() => parseBearerToken('Basic abc'), /登录凭证/)
