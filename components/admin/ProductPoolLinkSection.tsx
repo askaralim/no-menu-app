@@ -284,6 +284,13 @@ export function ProductPoolLinkSection({
       const payload = (data ?? {}) as { ok?: boolean; product_id?: string }
       if (!payload.product_id) throw new Error('创建失败')
 
+      const { error: localizationError } = await supabase.rpc('admin_set_drink_product_style_localization', {
+        p_product_id: payload.product_id,
+        p_mode: 'auto',
+        p_style_en: null,
+      })
+      if (localizationError) throw localizationError
+
       if (shouldPromoteImage) {
         await promoteProductImage(supabase, payload.product_id, sourceImageUrl)
       }
@@ -322,6 +329,12 @@ export function ProductPoolLinkSection({
       if (error) throw error
       const payload = (data ?? {}) as { product_id?: string }
       if (!payload.product_id) throw new Error('创建失败')
+      const { error: localizationError } = await supabase.rpc('admin_set_drink_product_style_localization', {
+        p_product_id: payload.product_id,
+        p_mode: 'auto',
+        p_style_en: null,
+      })
+      if (localizationError) throw localizationError
       if (isPromotableProductImageSource(sourceImageUrl)) {
         await promoteProductImage(supabase, payload.product_id, sourceImageUrl)
       }

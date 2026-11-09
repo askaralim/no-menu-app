@@ -341,6 +341,12 @@ export default function UnlinkedDrinksInboxPage() {
       const payload = (data ?? {}) as { ok?: boolean; product_id?: string }
       if (!payload.ok && !payload.product_id) throw new Error('创建失败')
       if (!payload.product_id) throw new Error('创建失败')
+      const { error: localizationError } = await supabase.rpc('admin_set_drink_product_style_localization', {
+        p_product_id: payload.product_id,
+        p_mode: 'auto',
+        p_style_en: null,
+      })
+      if (localizationError) throw localizationError
       const sourceImageUrl = form?.image_url.trim() || row.image_url?.trim()
       if (sourceImageUrl) {
         await promoteProductImage(supabase, payload.product_id, sourceImageUrl)

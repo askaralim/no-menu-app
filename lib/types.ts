@@ -224,6 +224,10 @@ export interface AdminDrinkProductRow {
   brewery: string | null
   collab_breweries: string[]
   beer_style: string | null
+  beer_style_en: string | null
+  beer_style_en_source: 'dictionary' | 'style_key_fallback' | 'manual' | null
+  beer_style_en_status: 'approved' | 'needs_review'
+  beer_style_en_version: string | null
   abv: number | null
   ibu: number | null
   country: string | null

@@ -23,6 +23,10 @@ type ProductForm = {
   brewery: string
   collab_breweries_text: string
   beer_style: string
+  beer_style_en: string
+  beer_style_en_source: 'dictionary' | 'style_key_fallback' | 'manual' | null
+  beer_style_en_status: 'approved' | 'needs_review'
+  beer_style_en_version: string
   abv: string
   ibu: string
   country: string
@@ -63,6 +67,10 @@ const EMPTY_FORM: ProductForm = {
   brewery: '',
   collab_breweries_text: '',
   beer_style: '',
+  beer_style_en: '',
+  beer_style_en_source: null,
+  beer_style_en_status: 'needs_review',
+  beer_style_en_version: '',
   abv: '',
   ibu: '',
   country: '',
@@ -141,7 +149,30 @@ export default function PlatformProductsPage() {
     if (!payload || payload.ok !== true || !Array.isArray(payload.products)) {
       throw new Error('产品池列表返回格式异常')
     }
-    setProducts(payload.products)
+    const listed = payload.products
+    if (!listed.length) {
+      setProducts([])
+      return
+    }
+    const { data: localizationData, error: localizationError } = await supabase.rpc(
+      'admin_get_drink_product_style_localizations',
+      { p_product_ids: listed.map((product) => product.id) }
+    )
+    if (localizationError) throw localizationError
+    const localizationPayload = localizationData as {
+      ok?: boolean
+      products?: Array<Pick<AdminDrinkProductRow, 'id' | 'beer_style_en' | 'beer_style_en_source' | 'beer_style_en_status' | 'beer_style_en_version'>>
+    }
+    const localizationById = new Map(
+      (localizationPayload.products ?? []).map((product) => [product.id, product])
+    )
+    setProducts(listed.map((product) => ({
+      ...product,
+      beer_style_en: localizationById.get(product.id)?.beer_style_en ?? null,
+      beer_style_en_source: localizationById.get(product.id)?.beer_style_en_source ?? null,
+      beer_style_en_status: localizationById.get(product.id)?.beer_style_en_status ?? 'needs_review',
+      beer_style_en_version: localizationById.get(product.id)?.beer_style_en_version ?? null,
+    })))
   }, [filters])
 
   const loadCompanies = useCallback(async (query: string) => {
@@ -294,6 +325,10 @@ export default function PlatformProductsPage() {
       brewery: product.brewery ?? '',
       collab_breweries_text: aliasesToText(product.collab_breweries ?? []),
       beer_style: product.beer_style ?? '',
+      beer_style_en: product.beer_style_en ?? '',
+      beer_style_en_source: product.beer_style_en_source,
+      beer_style_en_status: product.beer_style_en_status,
+      beer_style_en_version: product.beer_style_en_version ?? '',
       abv: product.abv != null ? String(product.abv) : '',
       ibu: product.ibu != null ? String(product.ibu) : '',
       country: product.country ?? '',
@@ -360,6 +395,10 @@ export default function PlatformProductsPage() {
       alert('请填写 normalized_key')
       return
     }
+    if (form.beer_style_en_source === 'manual' && !form.beer_style_en.trim()) {
+      alert('人工英文风格不能为空；如需取消人工覆盖，请使用“恢复词典”')
+      return
+    }
 
     setSaving(true)
     try {
@@ -401,6 +440,24 @@ export default function PlatformProductsPage() {
       const savedId = result?.id ?? editingId
       const wasCreate = !editingId
 
+      if (savedId) {
+        const localizationMode = form.beer_style_en_source === 'manual' ? 'manual' : 'auto'
+        const { data: localizationData, error: localizationError } = await supabase.rpc('admin_set_drink_product_style_localization', {
+          p_product_id: savedId,
+          p_mode: localizationMode,
+          p_style_en: localizationMode === 'manual' ? form.beer_style_en.trim() || null : null,
+        })
+        if (localizationError) throw localizationError
+        const localization = localizationData as Pick<AdminDrinkProductRow, 'beer_style_en' | 'beer_style_en_source' | 'beer_style_en_status' | 'beer_style_en_version'>
+        setForm((prev) => ({
+          ...prev,
+          beer_style_en: localization.beer_style_en ?? '',
+          beer_style_en_source: localization.beer_style_en_source ?? null,
+          beer_style_en_status: localization.beer_style_en_status ?? 'needs_review',
+          beer_style_en_version: localization.beer_style_en_version ?? '',
+        }))
+      }
+
       if (!editingId && savedId) {
         setEditingId(savedId)
         setNormalizedKeyTouched(true)
@@ -414,6 +471,41 @@ export default function PlatformProductsPage() {
       alert(wasCreate ? '已创建产品' : '已保存修改')
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const restoreStyleLocalization = async () => {
+    if (!editingId) {
+      setForm((prev) => ({
+        ...prev,
+        beer_style_en: '',
+        beer_style_en_source: null,
+        beer_style_en_status: 'needs_review',
+        beer_style_en_version: '',
+      }))
+      return
+    }
+    setSaving(true)
+    try {
+      const { data, error: rpcError } = await supabase.rpc('admin_set_drink_product_style_localization', {
+        p_product_id: editingId,
+        p_mode: 'restore_dictionary',
+        p_style_en: null,
+      })
+      if (rpcError) throw rpcError
+      const result = data as Pick<AdminDrinkProductRow, 'beer_style_en' | 'beer_style_en_source' | 'beer_style_en_status' | 'beer_style_en_version'>
+      setForm((prev) => ({
+        ...prev,
+        beer_style_en: result.beer_style_en ?? '',
+        beer_style_en_source: result.beer_style_en_source ?? null,
+        beer_style_en_status: result.beer_style_en_status ?? 'needs_review',
+        beer_style_en_version: result.beer_style_en_version ?? '',
+      }))
+      await loadProducts()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '恢复词典匹配失败')
     } finally {
       setSaving(false)
     }
@@ -853,6 +945,35 @@ export default function PlatformProductsPage() {
                     onChange={(e) => setForm({ ...form, beer_style: e.target.value })}
                     style={{ margin: 0 }}
                   />
+                </Field>
+                <Field
+                  label="英文风格"
+                  hint={`来源：${form.beer_style_en_source ?? '未匹配'} · 状态：${form.beer_style_en_status} · 版本：${form.beer_style_en_version || '—'}`}
+                >
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      className="admin-input"
+                      value={form.beer_style_en}
+                      onChange={(e) => setForm({
+                        ...form,
+                        beer_style_en: e.target.value,
+                        beer_style_en_source: 'manual',
+                        beer_style_en_status: e.target.value.trim() ? 'approved' : 'needs_review',
+                        beer_style_en_version: e.target.value.trim() ? 'manual' : '',
+                      })}
+                      placeholder="按 V1.2 自动匹配，或人工修正"
+                      style={{ margin: 0, flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="admin-button admin-button-secondary"
+                      onClick={() => void restoreStyleLocalization()}
+                      disabled={saving}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      恢复词典
+                    </button>
+                  </div>
                 </Field>
                 <Field label="ABV">
                   <input
