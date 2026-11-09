@@ -130,6 +130,12 @@ BEGIN
     OR v_payload->'campaign'->>'purchase_short_link' IS DISTINCT FROM '#小程序://快团团/pqcSzp0XmnRV6Tj' THEN
     RAISE EXCEPTION 'Anonymous campaign DTO is invalid: %', v_payload;
   END IF;
+  IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v_payload->'campaign'->'stops') s
+    WHERE NOT (s ?& ARRAY['description', 'brewery', 'country', 'origin_region', 'ibu', 'collab_breweries'])
+  ) THEN
+    RAISE EXCEPTION 'Campaign beer details are missing from the public response';
+  END IF;
   BEGIN
     PERFORM 1 FROM public.campaign_events WHERE id = v_campaign_id;
     RAISE EXCEPTION 'Anonymous role unexpectedly has direct campaign_events access';
@@ -219,6 +225,13 @@ BEGIN
   UPDATE public.campaign_events SET start_at=now()-interval '1 hour',end_at=now()+interval '1 hour' WHERE id=c;
   IF public.complete_my_campaign_stop(c,gen_random_uuid())->>'code' IS DISTINCT FROM 'STOP_NOT_FOUND' THEN RAISE EXCEPTION 'Unknown stop allowed'; END IF;
   UPDATE public.drinks SET is_public_visible=false WHERE id=s.drink_id;
+  IF NOT EXISTS (
+    SELECT 1 FROM jsonb_array_elements(public.get_public_campaign(c::text)->'campaign'->'stops') item
+    LEFT JOIN public.drink_beer_profiles profile ON profile.drink_id=(item->>'drink_id')::uuid
+    WHERE item->>'id'=s.id::text AND item ? 'description'
+      AND item->>'description' IS NOT DISTINCT FROM profile.description
+      AND (item->>'is_available')::boolean=false
+  ) THEN RAISE EXCEPTION 'Hidden collaboration lost its campaign details or became available'; END IF;
   IF public.complete_my_campaign_stop(c,s.id)->>'code' IS DISTINCT FROM 'DRINK_NOT_AVAILABLE' THEN RAISE EXCEPTION 'Hidden drink allowed'; END IF;
   UPDATE public.drinks SET is_public_visible=true WHERE id=s.drink_id;
 
