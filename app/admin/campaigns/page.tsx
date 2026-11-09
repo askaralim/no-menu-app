@@ -58,6 +58,7 @@ type CampaignForm = {
   card_image_url: string
   detail_image_1: string
   detail_image_2: string
+  detail_image_3: string
   purchase_qr_url: string
   purchase_short_link: string
   mini_program_code_url: string
@@ -93,6 +94,7 @@ function blankForm(): CampaignForm {
     card_image_url: '',
     detail_image_1: '',
     detail_image_2: '',
+    detail_image_3: '',
     purchase_qr_url: '',
     purchase_short_link: '#小程序://快团团/pqcSzp0XmnRV6Tj',
     mini_program_code_url: '',
@@ -131,6 +133,7 @@ function rowToForm(row: CampaignRow, stops: CampaignStop[]): CampaignForm {
     card_image_url: row.card_image_url || '',
     detail_image_1: row.detail_image_urls?.[0] || '',
     detail_image_2: row.detail_image_urls?.[1] || '',
+    detail_image_3: row.detail_image_urls?.[2] || '',
     purchase_qr_url: row.purchase_qr_url || '',
     purchase_short_link: row.purchase_short_link || '',
     mini_program_code_url: row.mini_program_code_url || '',
@@ -248,6 +251,7 @@ export default function CampaignsAdminPage() {
         if (assetRole === 'card') return { ...current, card_image_url: url }
         if (assetRole === 'detail-1') return { ...current, detail_image_1: url }
         if (assetRole === 'detail-2') return { ...current, detail_image_2: url }
+        if (assetRole === 'detail-3') return { ...current, detail_image_3: url }
         if (assetRole === 'purchase-qr') return { ...current, purchase_qr_url: url }
         return { ...current, mini_program_code_url: url }
       })
@@ -296,7 +300,7 @@ export default function CampaignsAdminPage() {
     setSaving(true)
     try {
       const publishAfterSave = form.is_public_visible
-      const detailImages = [form.detail_image_1, form.detail_image_2]
+      const detailImages = [form.detail_image_1, form.detail_image_2, form.detail_image_3]
         .map((value) => value.trim())
         .filter(Boolean)
       const payload = {
@@ -415,6 +419,7 @@ export default function CampaignsAdminPage() {
             <AssetField label="活动主图（支持长图，仅此一张即可）" role="card" value={form.card_image_url} busy={uploading} onUpload={handleUpload} onChange={(card_image_url) => setForm({ ...form, card_image_url })} />
             <AssetField label="详情图1（可选）" role="detail-1" value={form.detail_image_1} busy={uploading} onUpload={handleUpload} onChange={(detail_image_1) => setForm({ ...form, detail_image_1 })} />
             <AssetField label="详情图2（可选）" role="detail-2" value={form.detail_image_2} busy={uploading} onUpload={handleUpload} onChange={(detail_image_2) => setForm({ ...form, detail_image_2 })} />
+            <AssetField label="详情图3（可选）" role="detail-3" value={form.detail_image_3} busy={uploading} onUpload={handleUpload} onChange={(detail_image_3) => setForm({ ...form, detail_image_3 })} />
             <AssetField label="快团团二维码" role="purchase-qr" value={form.purchase_qr_url} busy={uploading} onUpload={handleUpload} onChange={(purchase_qr_url) => setForm({ ...form, purchase_qr_url })} />
             <AssetField label="活动小程序码" role="mini-code" value={form.mini_program_code_url} busy={uploading} onUpload={handleUpload} onChange={(mini_program_code_url) => setForm({ ...form, mini_program_code_url })} />
           </div>

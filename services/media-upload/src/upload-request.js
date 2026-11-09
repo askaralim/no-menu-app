@@ -19,7 +19,7 @@ const OBJECT_PATHS = [
 ]
 const COMPANY_LOGO_PATH = new RegExp(`^prod/companies/(${UUID})/${SAFE_FILE}$`, 'i')
 const CAMPAIGN_MEDIA_PATH = new RegExp(
-  `^prod/campaigns/(${UUID})/(card|detail-1|detail-2|purchase-qr|mini-code)/${SAFE_FILE}$`,
+  `^prod/campaigns/(${UUID})/(card|detail-1|detail-2|detail-3|purchase-qr|mini-code)/${SAFE_FILE}$`,
   'i',
 )
 

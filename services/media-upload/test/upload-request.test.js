@@ -119,6 +119,18 @@ test('accepts isolated campaign media paths without a tenant id', () => {
   })
 })
 
+test('accepts the third campaign detail image and rejects unsupported slots', () => {
+  const body = {
+    objectPath: 'prod/campaigns/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee/detail-3/upload.jpg',
+    contentType: 'image/jpeg',
+    contentLength: 499044,
+  }
+  assert.equal(validateUploadRequest(body).assetRole, 'detail-3')
+  assert.throws(() => validateUploadRequest({
+    ...body, objectPath: body.objectPath.replace('/detail-3/', '/detail-4/'),
+  }), /图片路径无效/)
+})
+
 test('requires a strict bearer token', () => {
   assert.equal(parseBearerToken('Bearer abc.def'), 'abc.def')
   assert.throws(() => parseBearerToken('Basic abc'), /登录凭证/)

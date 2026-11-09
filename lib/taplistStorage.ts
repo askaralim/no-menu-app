@@ -143,6 +143,7 @@ export type CampaignAssetRole =
   | 'card'
   | 'detail-1'
   | 'detail-2'
+  | 'detail-3'
   | 'purchase-qr'
   | 'mini-code'
 
