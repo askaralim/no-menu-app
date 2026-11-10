@@ -1,0 +1,20 @@
+[Unit]
+Description=No Menu Consumer Intelligence read-only projection health check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=nomenu-ci
+Group=nomenu-ci
+WorkingDirectory=/opt/no-menu/consumer-intelligence
+EnvironmentFile=/etc/no-menu/consumer-intelligence-api.env
+ExecStart=/opt/node26/bin/node src/ops-check.js
+TimeoutStartSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=128M
+CPUQuota=25%
+TasksMax=32

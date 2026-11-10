@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/events/event.schema.json",
+  "oneOf": [
+    {
+      "$ref": "./beer-opened-v1.schema.json"
+    },
+    {
+      "$ref": "./bar-opened-v1.schema.json"
+    },
+    {
+      "$ref": "./search-result-opened-v1.schema.json"
+    },
+    {
+      "$ref": "./activity-opened-v1.schema.json"
+    },
+    {
+      "$ref": "./city-changed-v1.schema.json"
+    },
+    {
+      "$ref": "./map-navigation-clicked-v1.schema.json"
+    },
+    {
+      "$ref": "./feed-shown-v1.schema.json"
+    },
+    {
+      "$ref": "./feed-item-impression-v1.schema.json"
+    },
+    {
+      "$ref": "./feed-item-opened-v1.schema.json"
+    },
+    {
+      "$ref": "./campaign-interaction-v1.schema.json"
+    }
+  ]
+}

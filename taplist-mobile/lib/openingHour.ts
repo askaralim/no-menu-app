@@ -35,10 +35,16 @@ export function formatOpeningHourLabel(value: OpeningHourJson | null | undefined
 export function formatOpeningStatusLabel(value: {
   opening_hour?: OpeningHourJson | null
   is_open_now?: boolean | null
-}): string | null {
+}, language: 'zh' | 'en' = 'zh'): string | null {
   const range = formatOpeningHourLabel(value.opening_hour)
-  if (value.is_open_now === true) return range ? `营业中 · ${range}` : '营业中'
-  if (value.is_open_now === false) return range ? `已打烊 · ${range}` : '已打烊'
+  if (value.is_open_now === true) {
+    const status = language === 'en' ? 'Open now' : '营业中'
+    return range ? `${status} · ${range}` : status
+  }
+  if (value.is_open_now === false) {
+    const status = language === 'en' ? 'Closed' : '已打烊'
+    return range ? `${status} · ${range}` : status
+  }
   return range
 }
 
@@ -47,7 +53,7 @@ export function formatRoadmapHoursLabel(stop: {
   todayOpensAt?: string | null
   todayClosesAt?: string | null
   opensLaterToday?: boolean | null
-}): string | null {
+}, language: 'zh' | 'en' = 'zh'): string | null {
   if (stop.isOpenNow == null && !stop.todayOpensAt && !stop.todayClosesAt) return null
 
   const range = formatOpeningHourLabel(
@@ -57,11 +63,13 @@ export function formatRoadmapHoursLabel(stop: {
   )
 
   if (stop.isOpenNow === true) {
-    return range ? `营业中 · ${range}` : '营业中'
+    const status = language === 'en' ? 'Open now' : '营业中'
+    return range ? `${status} · ${range}` : status
   }
   if (stop.opensLaterToday === true) {
     const open = stop.todayOpensAt ? formatHm24(stop.todayOpensAt) : null
-    return open ? `${open} 营业` : range
+    if (!open) return range
+    return language === 'en' ? `Opens at ${open}` : `${open} 营业`
   }
   return range
 }

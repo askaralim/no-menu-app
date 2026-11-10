@@ -7,6 +7,7 @@ import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/lib/formatTaplist'
 import { tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 import type { PublicDrinkRow, PublicTenantDetail } from '@/lib/types'
 
 export type ShareableBeerImageHandle = {
@@ -33,7 +34,8 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
       drink.beer?.collab_breweries,
       drink.brand_name,
     ), drink.beer?.brewery_en)
-    const breweryStyle = [breweryLine, drink.beer?.beer_style].filter(Boolean).join(' · ')
+    const localizedStyle = localizeBeerStyle(drink.beer?.beer_style, language, drink.beer?.beer_style_en)
+    const breweryStyle = [breweryLine, localizedStyle].filter(Boolean).join(' · ')
     const stats = beerStatsLine(drink)
     const personalAbv = typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null
     const servingOptions = displayServingOptions(drink.serving_options)
@@ -74,9 +76,9 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
                 <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.72} style={styles.personalBeerName}>
                   {localized(drink.name, drink.name_en)}
                 </Text>
-                {[drink.beer?.beer_style, personalAbv].filter(Boolean).length ? (
+                {[localizedStyle, personalAbv].filter(Boolean).length ? (
                   <Text numberOfLines={1} style={styles.personalFacts}>
-                    {[drink.beer?.beer_style, personalAbv].filter(Boolean).join(' · ')}
+                    {[localizedStyle, personalAbv].filter(Boolean).join(' · ')}
                   </Text>
                 ) : null}
 

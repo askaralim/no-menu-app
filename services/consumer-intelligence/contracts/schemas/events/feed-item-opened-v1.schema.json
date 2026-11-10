@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/events/feed-item-opened-v1.schema.json",
+  "allOf": [
+    {
+      "$ref": "./envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "feed_item_opened"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "feed": {
+          "type": "object",
+          "properties": {
+            "feed_instance_id": {
+              "$ref": "../common/primitives.schema.json#/$defs/uuid"
+            },
+            "item_id": {
+              "$ref": "../common/primitives.schema.json#/$defs/opaque"
+            },
+            "display_position": {
+              "$ref": "../common/primitives.schema.json#/$defs/positive"
+            }
+          },
+          "required": [
+            "feed_instance_id",
+            "item_id",
+            "display_position"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "event_name",
+        "schema_version",
+        "feed"
+      ]
+    }
+  ],
+  "unevaluatedProperties": false
+}

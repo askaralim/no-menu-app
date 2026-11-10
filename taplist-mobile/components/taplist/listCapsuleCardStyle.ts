@@ -98,3 +98,13 @@ export const listCapsuleVenueStyle = {
   ...typography.micro,
   color: palette.muted,
 }
+
+export const listCapsuleVenueBadgeStyle = {
+  maxWidth: '100%' as const,
+  paddingHorizontal: spacing.xs,
+  paddingVertical: spacing.xxs,
+  borderRadius: 6,
+  borderWidth: 1,
+  borderColor: 'rgba(214,176,105,0.16)',
+  backgroundColor: 'rgba(255,255,255,0.04)',
+}

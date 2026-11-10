@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/feed/item.schema.json",
+  "type": "object",
+  "properties": {
+    "item_id": {
+      "$ref": "../common/primitives.schema.json#/$defs/opaque"
+    },
+    "rank": {
+      "$ref": "../common/primitives.schema.json#/$defs/positive"
+    },
+    "tenant_id": {
+      "$ref": "../common/primitives.schema.json#/$defs/uuid"
+    },
+    "tenant_slug": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "tenant_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "tenant_name_en": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_drink_id": {
+      "$ref": "../common/primitives.schema.json#/$defs/uuid"
+    },
+    "product_id": {
+      "anyOf": [
+        {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "beer_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "beer_name_en": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "brewery": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "brewery_en": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "style": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "style_en": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "style_family": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "image_url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "current_cycle_started_at": {
+      "$ref": "../common/primitives.schema.json#/$defs/time"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "$ref": "./reason.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "deep_link": {
+      "type": "string",
+      "format": "uri",
+      "description": "Existing supported navigation target; never execute arbitrary content."
+    }
+  },
+  "required": [
+    "item_id",
+    "rank",
+    "tenant_id",
+    "tenant_slug",
+    "tenant_name",
+    "source_drink_id",
+    "product_id",
+    "beer_name",
+    "brewery",
+    "style",
+    "style_family",
+    "image_url",
+    "current_cycle_started_at",
+    "reason",
+    "deep_link"
+  ],
+  "not": {
+    "anyOf": [
+      {
+        "required": [
+          "public_status"
+        ]
+      },
+      {
+        "required": [
+          "score"
+        ]
+      },
+      {
+        "required": [
+          "follow_multiplier"
+        ]
+      }
+    ]
+  }
+}

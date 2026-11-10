@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/consumer/profile-patch.schema.json",
+  "type": "object",
+  "properties": {
+    "consumer_username": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 24,
+      "pattern": "^[A-Za-z0-9_\\u4e00-\\u9fff]+$"
+    },
+    "home_city_code": {
+      "anyOf": [
+        {
+          "$ref": "../common/primitives.schema.json#/$defs/city"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+}

@@ -1,0 +1,14 @@
+extends:
+  - minimal
+rules:
+  operation-operationId: error
+  operation-summary: error
+  operation-4xx-response: error
+  security-defined: error
+  no-unresolved-refs: error
+  struct: error
+  # External $id example validation is handled by the shared Ajv registry in
+  # schemas.test.js. Structural/reference checks remain enabled here.
+  no-invalid-media-type-examples: off
+  # Required fields are composed through allOf/anyOf/not and checked by Ajv.
+  no-required-schema-properties-undefined: off

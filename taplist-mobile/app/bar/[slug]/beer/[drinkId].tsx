@@ -1,5 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
+import { useIntelligenceDetail } from '@/lib/useIntelligenceDetail'
 import { type Href, router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -22,6 +23,7 @@ import { getMyDrinkInsights, getMyDrinkState } from '@/lib/api/drinkLog'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { PublicDrinkRow, PublicProductVenue, PublicServingOption, PublicTenantDetail } from '@/lib/types'
 import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 
 export default function BeerDetailScreen() {
   const { language, localized } = useLanguage()
@@ -46,12 +48,16 @@ export default function BeerDetailScreen() {
   const detailResult = detailQuery.data
   const tenant = detailResult?.ok ? detailResult.tenant : null
   const drink = detailResult?.ok ? detailResult.drink : null
+  useIntelligenceDetail('beer_opened', { tenant_id: tenant?.id, source_drink_id: drink?.id, product_id: drink?.product_id }, fromPush === '1' ? 'push' : 'direct')
+  const primaryBreweryKey = drink
+    ? formatPrimaryBrewery(drink.beer?.brewery, drink.brand_name)
+    : null
   const primaryBrewery = drink
     ? formatPrimaryBrewery(localized(drink.beer?.brewery, drink.beer?.brewery_en), drink.brand_name)
     : null
   const collabBreweries = (drink?.beer?.collab_breweries ?? [])
     .map((brewery) => brewery.trim())
-    .filter((brewery) => brewery && brewery !== primaryBrewery)
+    .filter((brewery) => brewery && brewery !== primaryBreweryKey)
     .slice(0, 3)
   const artworkUrl = drink?.image_url
   const servingOptions = drink ? displayServingOptions(drink.serving_options) : []
@@ -190,14 +196,14 @@ export default function BeerDetailScreen() {
               <Text style={styles.loadingText}>{tr(language, '正在加载酒款...', 'Loading beer...')}</Text>
             </View>
           ) : detailQuery.isError ? (
-            <EmptyState title={tr(language, '暂时无法加载酒款', 'Unable to load beer')} body={tr(language, '请稍后重试，或以门店实际供应为准。', 'Please try again, or check availability with the venue.')} />
+            <EmptyState title={tr(language, '暂时无法加载酒款', 'Unable to load beer')} body={tr(language, '请稍后重试，或以门店实际供应为准。', 'Please try again, or check availability with the bar.')} />
           ) : detailResult?.ok === false && detailResult.code.startsWith('tenant_') ? (
-            <EmptyState title={tr(language, '找不到这家酒吧', 'Venue not found')} body={tr(language, '该酒吧可能尚未发布公开酒单，或链接已经失效。', 'This venue may not have a public taplist, or the link has expired.')} />
+            <EmptyState title={tr(language, '找不到这家酒吧', 'Bar not found')} body={tr(language, '该酒吧可能尚未发布公开酒单，或链接已经失效。', 'This bar may not have a public taplist, or the link has expired.')} />
           ) : detailResult?.ok === false || (!drink && !detailQuery.isLoading) ? (
             <EmptyState title={tr(language, '找不到这款酒', 'Beer not found')} body={tr(language, '这款酒可能已经下架，或不再公开展示。', 'This beer may be off tap or no longer public.')} />
           ) : drink ? (
             <>
-              <Text style={styles.kicker}>{tenant ? localized(tenant.display_name || tenant.name, tenant.display_name_en) : tr(language, '酒吧', 'Venue')}</Text>
+              <Text style={styles.kicker}>{tenant ? localized(tenant.display_name || tenant.name, tenant.display_name_en) : tr(language, '酒吧', 'Bar')}</Text>
               <View style={styles.titleRow}>
                 <View style={styles.titleCopy}>
                   <Text style={styles.title}>{localized(drink.name, drink.name_en)}</Text>
@@ -207,7 +213,7 @@ export default function BeerDetailScreen() {
                         <Pressable
                           accessibilityRole="link"
                           accessibilityLabel={tr(language, `查看${primaryBrewery}酒厂`, `View ${primaryBrewery}`)}
-                          onPress={() => router.push(`/brewery/${encodeURIComponent(primaryBrewery)}` as Href)}
+                          onPress={() => router.push(`/brewery/${encodeURIComponent(primaryBreweryKey || primaryBrewery)}` as Href)}
                           style={({ pressed }) => [styles.breweryButton, pressed && styles.breweryButtonPressed]}>
                           <Text style={styles.breweryButtonText}>{primaryBrewery}</Text>
                           <FontAwesome name="angle-right" size={16} color={palette.tungsten} />
@@ -232,10 +238,10 @@ export default function BeerDetailScreen() {
                   drinkLightController.state.light_id ? (
                     <Pressable
                       accessibilityRole="link"
-                      accessibilityLabel={tr(language, '查看喝过记录', 'View beer history')}
+                      accessibilityLabel={tr(language, '查看 TAP 记录', 'View TAP history')}
                       onPress={() => router.push(`/drink-log/${drinkLightController.state!.light_id}` as Href)}
                       style={({ pressed }) => [styles.historyTextLink, pressed && styles.drinkHistoryLinkPressed]}>
-                      <Text style={styles.historyTextLinkLabel}>{tr(language, '喝过记录', 'Beer history')}</Text>
+                      <Text style={styles.historyTextLinkLabel}>{tr(language, 'TAP 记录', 'TAP history')}</Text>
                       <FontAwesome name="angle-right" size={13} color={palette.faint} />
                     </Pressable>
                   ) : null}
@@ -296,7 +302,7 @@ export default function BeerDetailScreen() {
             {productVenues.length > 0 ? (
               <View style={[styles.venueSection, discovery !== 'product' && styles.venueSectionCompact]}>
                 {discovery === 'product' && productVenues.length > 1 ? (
-                  <Text style={styles.sectionTitle}>{tr(language, `${productVenues.length} 家门店供应`, `Available at ${productVenues.length} venues`)}</Text>
+                  <Text style={styles.sectionTitle}>{tr(language, `${productVenues.length} 家门店供应`, `Available at ${productVenues.length} bars`)}</Text>
                 ) : null}
                 {productVenues.map((venue) => (
                   <Pressable
@@ -395,7 +401,7 @@ function groupServingOptions(options: PublicServingOption[]) {
 function beerMetadata(drink: PublicDrinkRow, language: 'zh' | 'en') {
   const location = drink.beer ? localizedLocation(language, drink.beer) : ''
   return [
-    drink.beer?.beer_style ? { label: tr(language, '风格', 'Style'), value: drink.beer.beer_style } : null,
+    drink.beer?.beer_style ? { label: tr(language, '风格', 'Style'), value: localizeBeerStyle(drink.beer.beer_style, language, drink.beer.beer_style_en) } : null,
     typeof drink.beer?.abv === 'number' ? { label: 'ABV', value: `${drink.beer.abv}%` } : null,
     typeof drink.beer?.ibu === 'number' ? { label: 'IBU', value: `${drink.beer.ibu}` } : null,
     location ? { label: tr(language, '产地', 'Origin'), value: location } : null,
@@ -522,8 +528,8 @@ const styles = StyleSheet.create({
   title: {
     ...typography.displayL,
     color: palette.text,
-    fontSize: 46,
-    lineHeight: 52,
+    fontSize: 40,
+    lineHeight: 47,
   },
   titleRow: {
     flexDirection: 'row',
@@ -573,17 +579,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   detailActions: {
-    minWidth: 94,
+    minWidth: 72,
     alignItems: 'flex-end',
     gap: spacing.xs,
   },
   supplyStatus: {
-    minHeight: 28,
+    minHeight: 20,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: palette.hairline,
-    backgroundColor: 'rgba(17,17,17,0.74)',
-    paddingHorizontal: spacing.sm,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 4,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,

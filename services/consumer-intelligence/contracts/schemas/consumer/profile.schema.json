@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/consumer/profile.schema.json",
+  "allOf": [
+    {
+      "$ref": "../common/primitives.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "consumer_username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 24
+        },
+        "is_default": {
+          "type": "boolean"
+        },
+        "home_city_code": {
+          "anyOf": [
+            {
+              "$ref": "../common/primitives.schema.json#/$defs/city"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "consumer_username",
+        "is_default",
+        "home_city_code"
+      ]
+    }
+  ]
+}

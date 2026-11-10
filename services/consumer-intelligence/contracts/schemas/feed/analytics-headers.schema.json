@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/feed/analytics-headers.schema.json",
+  "type": "object",
+  "properties": {
+    "X-Installation-ID": {
+      "$ref": "../common/primitives.schema.json#/$defs/uuid"
+    },
+    "X-Analytics-Session-ID": {
+      "$ref": "../common/primitives.schema.json#/$defs/uuid"
+    }
+  },
+  "required": [],
+  "additionalProperties": false,
+  "dependentRequired": {
+    "X-Installation-ID": [
+      "X-Analytics-Session-ID"
+    ],
+    "X-Analytics-Session-ID": [
+      "X-Installation-ID"
+    ]
+  }
+}

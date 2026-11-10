@@ -110,3 +110,4 @@ supabase/.temp/
 # Use /docs so mobile/docs/ (ASC listed v1) is not ignored.
 /docs/*
 !/docs/INDEX.md
+!/docs/CONSUMER_STYLE_LOCALIZATION_RUNTIME.md

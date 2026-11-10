@@ -1,5 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useIntelligenceDetail } from '@/lib/useIntelligenceDetail'
 
 import { Link, router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -52,6 +53,7 @@ export default function BarDetailScreen() {
 
   const tenantResult = tenantQuery.data
   const tenant = tenantResult?.ok ? tenantResult.tenant : null
+  useIntelligenceDetail('bar_opened', { tenant_id: tenant?.id }, fromPush === '1' ? 'push' : 'direct')
 
   const drinksQuery = useQuery({
     queryKey: ['taplist', 'drinks', tenant?.id],
@@ -99,7 +101,7 @@ export default function BarDetailScreen() {
   const litDrinkIds = new Set(
     (drinkStatesQuery.data ?? []).filter((state) => state.is_lit).map((state) => state.drink_id),
   )
-  const openingHoursLabel = tenant ? formatOpeningStatusLabel(tenant) : null
+  const openingHoursLabel = tenant ? formatOpeningStatusLabel(tenant, language) : null
   const canSaveTaplist = Boolean(tenant && shareDrinks.length > 0 && !isSavingTaplist)
   const appleMapsUrl =
     Platform.OS === 'ios' &&
@@ -208,11 +210,11 @@ export default function BarDetailScreen() {
           notify_new_taps: true,
         })
       } else {
-        Alert.alert(tr(language, '已关注，通知尚未开启', 'Followed; notifications are off'), tr(language, '你可以稍后在「关注的酒吧」或系统设置中开启。', 'You can enable them later under Followed venues or system settings.'))
+        Alert.alert(tr(language, '已关注，通知尚未开启', 'Followed; notifications are off'), tr(language, '你可以稍后在「关注的酒吧」或系统设置中开启。', 'You can enable them later under Followed bars or system settings.'))
       }
     } catch (error) {
       console.warn('Enable notifications failed', error)
-      Alert.alert(tr(language, '通知开启失败', 'Could not enable notifications'), tr(language, '关注已经保存，请稍后在「关注的酒吧」中重试。', 'Your follow was saved. Try again later under Followed venues.'))
+      Alert.alert(tr(language, '通知开启失败', 'Could not enable notifications'), tr(language, '关注已经保存，请稍后在「关注的酒吧」中重试。', 'Your follow was saved. Try again later under Followed bars.'))
     } finally {
       setFollowBusy(false)
     }
@@ -220,7 +222,7 @@ export default function BarDetailScreen() {
 
   const handleUnfollow = () => {
     if (!tenant || followBusy) return
-    Alert.alert(tr(language, '取消关注这家酒吧？', 'Unfollow this venue?'), tr(language, '取消后将不再收到这家酒吧的上新通知。', 'You will no longer receive new-tap notifications from this venue.'), [
+    Alert.alert(tr(language, '取消关注这家酒吧？', 'Unfollow this bar?'), tr(language, '取消后将不再收到这家酒吧的上新通知。', 'You will no longer receive new-tap notifications from this bar.'), [
       { text: tr(language, '保留关注', 'Keep following'), style: 'cancel' },
       {
         text: tr(language, '取消关注', 'Unfollow'),
@@ -318,7 +320,7 @@ export default function BarDetailScreen() {
                     </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={followQuery.data?.followed ? tr(language, '取消关注这家酒吧', 'Unfollow this venue') : tr(language, '关注这家酒吧', 'Follow this venue')}
+                      accessibilityLabel={followQuery.data?.followed ? tr(language, '取消关注这家酒吧', 'Unfollow this bar') : tr(language, '关注这家酒吧', 'Follow this bar')}
                       disabled={followBusy || followQuery.isLoading}
                       onPress={followQuery.data?.followed ? handleUnfollow : () => void handleFollow()}
                       style={({ pressed }) => [
@@ -364,18 +366,18 @@ export default function BarDetailScreen() {
           {!configured ? (
             <EmptyState title={tr(language, '尚未连接酒单服务', 'Taplist service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看实时公开酒单。', 'Configure Supabase to view live public taplists.')} />
           ) : tenantQuery.isError || tenantResult?.ok === false ? (
-            <EmptyState title={tr(language, '找不到这家酒吧', 'Venue not found')} body={tr(language, '该酒吧可能尚未发布公开酒单，或链接已经失效。', 'This venue may not have a public taplist, or the link has expired.')} />
+            <EmptyState title={tr(language, '找不到这家酒吧', 'Bar not found')} body={tr(language, '该酒吧可能尚未发布公开酒单，或链接已经失效。', 'This bar may not have a public taplist, or the link has expired.')} />
           ) : tenant ? (
             <>
               {drinksQuery.isError || drinkResult?.ok === false ? (
                 <EmptyState
                   title={tr(language, '暂时无法加载酒单', 'Unable to load taplist')}
-                  body={tr(language, '网络连接较慢，请重新加载，或以门店实际供应为准。', 'Please reload, or check availability with the venue.')}
+                  body={tr(language, '网络连接较慢，请重新加载，或以门店实际供应为准。', 'Please reload, or check availability with the bar.')}
                   actionLabel={tr(language, '重新加载', 'Reload')}
                   onAction={() => void drinksQuery.refetch()}
                 />
               ) : !hasAnyDrinks && !drinksQuery.isLoading ? (
-                <EmptyState title={tr(language, '暂无公开酒款', 'No public beers')} body={tr(language, '这家酒吧当前还没有发布可展示的酒单。', 'This venue has not published any beers yet.')} />
+                <EmptyState title={tr(language, '暂无公开酒款', 'No public beers')} body={tr(language, '这家酒吧当前还没有发布可展示的酒单。', 'This bar has not published any beers yet.')} />
               ) : (
                 <>
                   {drinks.length > 0 ? (
@@ -456,7 +458,7 @@ export default function BarDetailScreen() {
             </View>
             <Text style={styles.notificationPromptTitle}>{tr(language, '不错过这家酒吧的上新', 'Never miss a new tap')}</Text>
             <Text style={styles.notificationPromptBody}>
-              {tr(language, '只在这家酒吧正式发布新酒时通知你。你可以随时在「我的－关注的酒吧」中关闭。', 'We will notify you only when this venue publishes a new tap. Turn it off anytime under Mine → Followed venues.')}
+              {tr(language, '只在这家酒吧正式发布新酒时通知你。你可以随时在「我的－关注的酒吧」中关闭。', 'We will notify you only when this bar publishes a new tap. Turn it off anytime under Mine → Followed bars.')}
             </Text>
             <Pressable disabled={followBusy} onPress={() => void handleEnableNotifications()} style={styles.notificationPrimary}>
               <Text style={styles.notificationPrimaryText}>{tr(language, '开启上新通知', 'Enable notifications')}</Text>
@@ -618,6 +620,8 @@ const styles = StyleSheet.create({
   title: {
     ...typography.displayL,
     color: palette.text,
+    fontSize: 36,
+    lineHeight: 43,
   },
   heroMetaBar: {
     flexDirection: 'row',

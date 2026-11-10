@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 import PostHog, { PostHogPersistedProperty } from 'posthog-react-native'
+import { initializeIntelligence, observeIntelligenceClick, setIntelligenceCity, setIntelligenceConsent } from '@/lib/intelligenceAnalytics'
 
 const ANALYTICS_ENABLED_KEY = '@taplist/analytics_enabled_v1'
 const DEFAULT_POSTHOG_HOST = 'https://us.i.posthog.com'
@@ -18,6 +19,7 @@ export type AnalyticsSource =
   | 'bar_event'
   | 'beer_route'
   | 'direct'
+  | 'feed'
 
 export type AnalyticsScreenName =
   | 'home'
@@ -31,6 +33,7 @@ export type AnalyticsScreenName =
   | 'event_detail'
   | 'beer_detail'
   | 'not_found'
+  | 'new_beers'
 
 type AnalyticsPrimitive = string | number | boolean
 export type AnalyticsProperties = Record<string, AnalyticsPrimitive | null | undefined>
@@ -140,6 +143,7 @@ export async function initializeAnalytics(): Promise<void> {
   try {
     const stored = await AsyncStorage.getItem(ANALYTICS_ENABLED_KEY)
     analyticsEnabled = stored === '1'
+    void initializeIntelligence(analyticsEnabled)
     if (!analyticsEnabled) return
     const posthog = getClient()
     if (!posthog) return
@@ -147,11 +151,13 @@ export async function initializeAnalytics(): Promise<void> {
     await posthog.optIn()
   } catch {
     // Analytics must never block the consumer app.
+    void initializeIntelligence(false)
   }
 }
 
 export function setAnalyticsCity(city: string | null | undefined): void {
   currentCity = city?.trim() || null
+  setIntelligenceCity(currentCity)
 }
 
 export function trackScreen(
@@ -167,6 +173,7 @@ export function trackEvent(
 ): void {
   if (analyticsEnabled !== true) return
   try {
+    observeIntelligenceClick(name, properties)
     getClient()?.capture(name, cleanProperties(properties))
   } catch {
     // Analytics failures are intentionally soft.
@@ -202,6 +209,7 @@ export async function resetUser(): Promise<void> {
 
 export async function setAnalyticsEnabled(enabled: boolean): Promise<void> {
   analyticsEnabled = enabled
+  void setIntelligenceConsent(enabled)
   try {
     await AsyncStorage.setItem(ANALYTICS_ENABLED_KEY, enabled ? '1' : '0')
     if (enabled) {

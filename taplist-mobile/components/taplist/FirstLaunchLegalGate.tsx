@@ -126,9 +126,9 @@ export function FirstLaunchLegalGate({ children }: Props) {
               <View style={styles.analyticsContent}>
                 <FontAwesome name="shield" size={28} color={palette.tungsten} />
                 <View style={styles.analyticsCopy}>
-                  <Text style={styles.analyticsTitle}>{tr(language, '匿名使用分析', 'Anonymous usage analytics')}</Text>
+                  <Text style={styles.analyticsTitle}>{tr(language, '使用情况分析', 'Usage analytics')}</Text>
                   <Text style={styles.analyticsBody}>
-                    {tr(language, '帮助我们了解页面和功能使用情况，不记录搜索词、姓名、电话或邮箱。', 'Helps us understand feature usage without recording search terms, names, phone numbers, or email addresses.')}
+                    {tr(language, '帮助我们了解浏览与 TAP 的关联。使用账号标识关联记录，不记录搜索词、姓名、电话或邮箱。关闭后仍可浏览上新与酒单。', 'Helps us understand how browsing relates to TAP records using your account identifier. No search terms, names, phone numbers or email addresses are recorded. New arrivals and taplists work with analytics off.')}
                   </Text>
                 </View>
               </View>
@@ -149,7 +149,7 @@ export function FirstLaunchLegalGate({ children }: Props) {
             ]}
             onPress={() => void onContinue(true)}
             accessibilityRole="button">
-            <Text style={styles.primaryButtonText}>{tr(language, '同意匿名分析并继续', 'Allow analytics and continue')}</Text>
+            <Text style={styles.primaryButtonText}>{tr(language, '同意使用分析并继续', 'Allow analytics and continue')}</Text>
           </Pressable>
           <Pressable
             disabled={submitting}

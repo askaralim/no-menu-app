@@ -1,0 +1,19 @@
+name: nomenu-consumer-intelligence-local
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ci_local
+      POSTGRES_PASSWORD: ci_local_only
+      POSTGRES_DB: nomenu_ci_test
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - ci-local-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ci_local -d nomenu_ci_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  ci-local-data:

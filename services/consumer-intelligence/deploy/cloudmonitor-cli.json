@@ -1,0 +1,10 @@
+{
+  "current": "default",
+  "profiles": [
+    {
+      "name": "default",
+      "mode": "EcsRamRole",
+      "region_id": "cn-shanghai"
+    }
+  ]
+}

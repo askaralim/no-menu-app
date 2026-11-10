@@ -12,6 +12,12 @@ import { palette, spacing, typography } from '@/constants/design'
 import { getMyConsumerProfile } from '@/lib/api/consumerProfile'
 import { getMyDrinkInsights, normalizeBeerStyle } from '@/lib/api/drinkLog'
 import { tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
+
+const STYLE_CATEGORY_EN: Record<string, string> = {
+  IPA: 'IPA', 酸啤: 'Sour', 拉格: 'Lager', 小麦: 'Wheat', '世涛 / 波特': 'Stout / Porter',
+  '赛松 / 农舍': 'Saison / Farmhouse', 比利时艾尔: 'Belgian Ale', 西打: 'Cider', 蜂蜜酒: 'Mead', 艾尔: 'Ale', 其他: 'Other',
+}
 
 export default function TapReportScreen() {
   const { language, localized } = useLanguage()
@@ -65,7 +71,7 @@ export default function TapReportScreen() {
               title={tr(language, `${formatMonth(month.month_start)} TAP 报告`, `${new Date(month.month_start).toLocaleString('en', { month: 'long' })} TAP report`)}
             />
             <Text style={styles.summary}>
-              {tr(language, `当月 TAP ${month.drink_count} 款 · 来自 ${month.bar_count} 家酒吧`, `${month.drink_count} TAPs · ${month.bar_count} venues`) }
+              {tr(language, `当月 TAP ${month.drink_count} 款 · 来自 ${month.bar_count} 家酒吧`, `${month.drink_count} TAPs · ${month.bar_count} bars`) }
             </Text>
 
             <View style={styles.section}>
@@ -88,7 +94,7 @@ export default function TapReportScreen() {
                         key={item.style}
                         onPress={() => setSelectedStyle(item.style)}
                         style={({ pressed }) => [styles.filterChip, selected && styles.filterChipSelected, pressed && styles.pressed]}>
-                        <Text style={[styles.filterLabel, selected && styles.filterLabelSelected]}>{item.style === '全部' ? tr(language, '全部', 'All') : item.style}</Text>
+                        <Text style={[styles.filterLabel, selected && styles.filterLabelSelected]}>{item.style === '全部' ? tr(language, '全部', 'All') : language === 'en' ? STYLE_CATEGORY_EN[item.style] ?? item.style : item.style}</Text>
                         <Text style={[styles.filterCount, selected && styles.filterCountSelected]}>{item.count}</Text>
                       </Pressable>
                     )
@@ -105,7 +111,7 @@ export default function TapReportScreen() {
                     style={({ pressed }) => [styles.drinkItem, pressed && styles.pressed]}>
                     <BeerArtwork name={localized(drink.name, drink.name_en)} source={drink.image_url} size={100} />
                     <Text numberOfLines={2} style={styles.drinkName}>{localized(drink.name, drink.name_en)}</Text>
-                    <Text numberOfLines={1} style={styles.drinkMeta}>{localized(drink.brewery, drink.brewery_en) || drink.beer_style || tr(language, '精酿啤酒', 'Craft beer')}</Text>
+                    <Text numberOfLines={1} style={styles.drinkMeta}>{localized(drink.brewery, drink.brewery_en) || localizeBeerStyle(drink.beer_style, language, drink.beer_style_en) || tr(language, '精酿啤酒', 'Craft beer')}</Text>
                     <Text style={styles.drinkDate}>{formatMonthDay(drink.recorded_at)}</Text>
                   </Pressable>
                 ))}

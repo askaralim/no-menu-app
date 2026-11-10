@@ -1,0 +1,20 @@
+[Unit]
+Description=No Menu Consumer Intelligence projection, Feed and Assisted Visit worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=nomenu-ci
+Group=nomenu-ci
+WorkingDirectory=/opt/no-menu/consumer-intelligence
+EnvironmentFile=/etc/no-menu/consumer-intelligence-worker.env
+ExecStart=/usr/bin/python3 /usr/local/libexec/nomenu-ci/e1-reader-launcher.py /opt/no-menu/consumer-intelligence /etc/no-menu/e1-aware-readers.sha256 worker
+TimeoutStartSec=180
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=384M
+CPUQuota=50%
+TasksMax=64

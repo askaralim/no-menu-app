@@ -5,7 +5,8 @@ import ViewShot from 'react-native-view-shot'
 import { CachedImage } from '@/components/taplist/CachedImage'
 import { defaultBeerArtwork } from '@/components/taplist/defaultBeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
-import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
+import { localizedCompactOrigin, tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 import type { MyDrinkHistoryRow } from '@/lib/types'
 
 export type ShareableDrinkHistoryImageHandle = { capture: () => Promise<string | undefined> }
@@ -20,9 +21,10 @@ export const ShareableDrinkHistoryImage = forwardRef<
     .sort((left, right) => new Date(right.first_drank_at).getTime() - new Date(left.first_drank_at).getTime())
   const visibleVenues = venues.slice(0, 2)
   const hiddenVenueCount = Math.max(0, venues.length - visibleVenues.length)
-  const facts = [item.beer_style, typeof item.abv === 'number' ? `ABV ${item.abv}%` : null]
+  const facts = [localizeBeerStyle(item.beer_style, language, item.beer_style_en), typeof item.abv === 'number' ? `ABV ${item.abv}%` : null]
     .filter(Boolean)
     .join(' · ')
+  const origin = localizedCompactOrigin(language, item)
 
   useImperativeHandle(ref, () => ({ capture: async () => (await shotRef.current?.capture?.()) ?? undefined }))
 
@@ -47,11 +49,11 @@ export const ShareableDrinkHistoryImage = forwardRef<
             {localized(item.brewery, item.brewery_en) ? <Text style={styles.brewery}>{localized(item.brewery, item.brewery_en)} · </Text> : null}
             <Text style={styles.name}>{localized(item.name, item.name_en)}</Text>
           </Text>
-          {localizedLocation(language, item) ? <Text numberOfLines={1} style={styles.origin}>{localizedLocation(language, item)}</Text> : null}
+          {origin ? <Text numberOfLines={1} style={styles.origin}>{origin}</Text> : null}
           {facts ? <Text numberOfLines={1} style={styles.facts}>{facts}</Text> : null}
           {visibleVenues.length ? (
             <View style={styles.venueBlock}>
-              <Text style={styles.venueLabel}>{tr(language, '喝过的酒吧', 'VENUES')}</Text>
+              <Text style={styles.venueLabel}>{tr(language, '喝过的酒吧', 'BARS')}</Text>
               {visibleVenues.map((venue) => (
                 <View key={venue.tenant_id} style={styles.venueRow}>
                   <Text numberOfLines={1} style={styles.venueName}>{formatVenueTitle(venue, language)}</Text>
@@ -59,7 +61,7 @@ export const ShareableDrinkHistoryImage = forwardRef<
                 </View>
               ))}
               {hiddenVenueCount > 0 ? (
-                <Text style={styles.moreVenues}>{tr(language, `还在另外 ${hiddenVenueCount} 家酒吧喝过`, `Plus ${hiddenVenueCount} more venue${hiddenVenueCount === 1 ? '' : 's'}`)}</Text>
+                <Text style={styles.moreVenues}>{tr(language, `还在另外 ${hiddenVenueCount} 家酒吧喝过`, `Plus ${hiddenVenueCount} more bar${hiddenVenueCount === 1 ? '' : 's'}`)}</Text>
               ) : null}
             </View>
           ) : null}

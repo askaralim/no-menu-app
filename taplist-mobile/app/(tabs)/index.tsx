@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { Link, useFocusEffect } from 'expo-router'
-import { ActivityIndicator, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Image, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -11,6 +11,8 @@ import { AtmosphereImage } from '@/components/taplist/AtmosphereImage'
 import { BrewingBadgeFromType } from '@/components/taplist/BrewingBadge'
 import { HOME_EVENT_BANNER_HEIGHT, HomeEventBanner } from '@/components/taplist/HomeEventBanner'
 import { NewTapRailCard } from '@/components/taplist/NewTapRailCard'
+import { HomeBeerFeed } from '@/components/taplist/HomeBeerFeed'
+import { INTELLIGENCE_ENABLED } from '@/lib/intelligenceHttp'
 import { NearbyLocationSheet } from '@/components/taplist/NearbyLocationSheet'
 import {
   RAIL_CARD_GAP,
@@ -21,7 +23,7 @@ import {
 } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
 import { TAPLIST_LEGAL_DISCLAIMER, TAPLIST_LEGAL_DISCLAIMER_EN } from '@/constants/compliance'
-import { fetchPublicBars, fetchPublicEvents, fetchPublicNewDrinks } from '@/lib/api/taplist'
+import { fetchPublicBars, fetchPublicEvents, fetchPublicCampaigns, fetchPublicNewDrinks } from '@/lib/api/taplist'
 import { trackEvent } from '@/lib/analytics'
 import { formatRelativeUpdatedAt, sortPublicBarsByMenuUpdated } from '@/lib/formatTaplist'
 import { formatDistance, publicBarCoordinates, sortBarsByDistance, type Coordinates } from '@/lib/nearbyBars'
@@ -29,10 +31,11 @@ import { tr, useLanguage } from '@/lib/i18n'
 import { fetchNearbyLocation, getNearbyPermissionState, requestNearbyPermission } from '@/lib/nearbyLocation'
 import { taplistCityMatches, useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
-import type { PublicBarRow, PublicEventRow, PublicNewTapRow, PublicTaplistCity } from '@/lib/types'
+import type { HomeDiscoveryEvent, PublicBarRow, PublicEventRow, PublicNewTapRow, PublicTaplistCity } from '@/lib/types'
 
 const HOME_STALE_TIME = 2 * 60_000
 const LOCATION_CACHE_TIME = 5 * 60_000
+const BAR_SEARCH_MIN_COUNT = 8
 
 type NearbyFailure = 'denied' | 'failed' | null
 
@@ -115,12 +118,15 @@ export default function TonightScreen() {
   const { selectedCity, cities, canSelectCity, selectCity } = useTaplistCity()
   const [cityPickerVisible, setCityPickerVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [feedRefreshVersion, setFeedRefreshVersion] = useState(0)
+  const feedScrollObserver = useRef<(() => void) | null>(null)
   const [sortMode, setSortMode] = useState<'latest' | 'nearby'>('latest')
   const [nearbySheetVisible, setNearbySheetVisible] = useState(false)
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [nearbyOrigin, setNearbyOrigin] = useState<Coordinates | null>(null)
   const [detectedCity, setDetectedCity] = useState<PublicTaplistCity | null>(null)
   const [nearbyFailure, setNearbyFailure] = useState<NearbyFailure>(null)
+  const [barSearchQuery, setBarSearchQuery] = useState('')
   const locationCacheRef = useRef<{
     coordinates: Coordinates
     detectedCity: PublicTaplistCity | null
@@ -138,7 +144,7 @@ export default function TonightScreen() {
   const newTapsQuery = useQuery({
     queryKey: ['taplist', 'new-drinks', selectedCityName],
     queryFn: () => fetchPublicNewDrinks(selectedCityName),
-    enabled: configured,
+    enabled: configured && !INTELLIGENCE_ENABLED,
     staleTime: HOME_STALE_TIME,
   })
 
@@ -149,14 +155,24 @@ export default function TonightScreen() {
     staleTime: HOME_STALE_TIME,
   })
 
+  const campaignsQuery = useQuery({
+    queryKey: ['taplist', 'campaigns', selectedCityName],
+    queryFn: () => fetchPublicCampaigns(selectedCityName),
+    enabled: configured,
+    staleTime: HOME_STALE_TIME,
+  })
+
   useFocusEffect(
     useCallback(() => {
       const now = Date.now()
       if (barsQuery.dataUpdatedAt > 0 && now - barsQuery.dataUpdatedAt >= HOME_STALE_TIME) {
         void barsQuery.refetch()
       }
-      if (newTapsQuery.dataUpdatedAt > 0 && now - newTapsQuery.dataUpdatedAt >= HOME_STALE_TIME) {
+      if (!INTELLIGENCE_ENABLED && newTapsQuery.dataUpdatedAt > 0 && now - newTapsQuery.dataUpdatedAt >= HOME_STALE_TIME) {
         void newTapsQuery.refetch()
+      }
+      if (campaignsQuery.dataUpdatedAt > 0 && now - campaignsQuery.dataUpdatedAt >= HOME_STALE_TIME) {
+        void campaignsQuery.refetch()
       }
       if (eventsQuery.dataUpdatedAt > 0 && now - eventsQuery.dataUpdatedAt >= HOME_STALE_TIME) {
         void eventsQuery.refetch()
@@ -164,6 +180,8 @@ export default function TonightScreen() {
     }, [
       barsQuery.dataUpdatedAt,
       barsQuery.refetch,
+      campaignsQuery.dataUpdatedAt,
+      campaignsQuery.refetch,
       eventsQuery.dataUpdatedAt,
       eventsQuery.refetch,
       newTapsQuery.dataUpdatedAt,
@@ -174,11 +192,13 @@ export default function TonightScreen() {
   const handleRefresh = async () => {
     if (!configured || refreshing) return
     setRefreshing(true)
+    setFeedRefreshVersion((value) => value + 1)
     try {
       await Promise.allSettled([
         barsQuery.refetch(),
-        newTapsQuery.refetch(),
+        ...(!INTELLIGENCE_ENABLED ? [newTapsQuery.refetch()] : []),
         eventsQuery.refetch(),
+        campaignsQuery.refetch(),
       ])
     } finally {
       setRefreshing(false)
@@ -193,10 +213,26 @@ export default function TonightScreen() {
       : bars.map((bar) => ({ bar, distanceMeters: null })),
     [bars, nearbyOrigin, sortMode],
   )
+  const normalizedBarSearchQuery = barSearchQuery.trim().toLocaleLowerCase()
+  const filteredBars = useMemo(
+    () => normalizedBarSearchQuery
+      ? displayedBars.filter(({ bar }) => [bar.display_name, bar.display_name_en, bar.name]
+        .some((value) => value?.toLocaleLowerCase().includes(normalizedBarSearchQuery)))
+      : displayedBars,
+    [displayedBars, normalizedBarSearchQuery],
+  )
   const newTaps = newTapsQuery.data ?? []
   const events = eventsQuery.data ?? []
+  const discoveryEvents: HomeDiscoveryEvent[] = [
+    ...(campaignsQuery.isError ? [] : campaignsQuery.data ?? []),
+    ...(eventsQuery.isError ? [] : events),
+  ]
   const firstEventsByTenant = firstEventByTenant(eventsQuery.isError ? [] : events)
   const cityMismatch = detectedCity && !taplistCityMatches(detectedCity.city, selectedCity.city)
+
+  useEffect(() => {
+    setBarSearchQuery('')
+  }, [selectedCityName])
 
   const loadNearbyLocation = async () => {
     if (nearbyLoading) return
@@ -272,32 +308,50 @@ export default function TonightScreen() {
   }
 
   return (
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
     <ScrollView
       style={styles.screen}
+      contentInsetAdjustmentBehavior="never"
+      onScroll={() => feedScrollObserver.current?.()}
+      scrollEventThrottle={32}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => void handleRefresh()}
           tintColor={palette.amber}
-          progressViewOffset={insets.top + spacing.md}
+          progressViewOffset={spacing.md}
         />
       }
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
+      contentContainerStyle={[styles.content, { paddingTop: spacing.xs }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>TONIGHT</Text>
-        <Text style={styles.cityPreposition}>in</Text>
-        {canSelectCity ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={tr(language, '选择城市', 'Select city')}
-            onPress={() => setCityPickerVisible(true)}
-            style={({ pressed }) => [styles.cityButton, pressed && styles.cityButtonPressed]}>
-            <Text style={styles.city}>{localized(selectedCity.label, selectedCity.label_en)}</Text>
-            <FontAwesome name="angle-down" size={18} color={palette.tungsten} />
-          </Pressable>
-        ) : (
-          <Text style={styles.city}>{localized(selectedCity.label, selectedCity.label_en)}</Text>
-        )}
+        <View pointerEvents="none" style={styles.brandCenter}>
+          <Image source={require('../../assets/brand/no-menu-v3/no-menu-primary-stacked.png')} style={styles.logo} resizeMode="contain" accessible accessibilityLabel="No Menu" />
+        </View>
+        <View style={styles.cityActivityRow}>
+          {canSelectCity ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tr(language, '选择城市', 'Select city')}
+              onPress={() => setCityPickerVisible(true)}
+              style={({ pressed }) => [styles.cityButton, pressed && styles.cityButtonPressed]}>
+              <Text style={styles.city} numberOfLines={1}>{localized(selectedCity.label, selectedCity.label_en)}</Text>
+              <FontAwesome name="angle-down" size={16} color={palette.tungsten} style={styles.cityChevron} />
+            </Pressable>
+          ) : (
+            <View style={styles.cityButton}>
+              <Text style={styles.city}>{localized(selectedCity.label, selectedCity.label_en)}</Text>
+            </View>
+          )}
+          {discoveryEvents.length > 0 ? (
+            <Link href="/events" asChild>
+              <Pressable
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
+                <Text style={styles.moreText}>{tr(language, '全部活动 ›', 'All events ›')}</Text>
+              </Pressable>
+            </Link>
+          ) : null}
+        </View>
       </View>
       <CityPickerModal
         visible={cityPickerVisible}
@@ -306,9 +360,6 @@ export default function TonightScreen() {
         onClose={() => setCityPickerVisible(false)}
         onSelect={(city) => {
           setCityPickerVisible(false)
-          if (!taplistCityMatches(city.city, selectedCity.city)) {
-            trackEvent('city_changed', { from_city: selectedCity.city, to_city: city.city })
-          }
           void selectCity(city)
         }}
       />
@@ -323,18 +374,17 @@ export default function TonightScreen() {
       {barsQuery.isLoading ? (
         <View style={styles.loading}>
           <ActivityIndicator color={palette.amber} />
-          <Text style={styles.muted}>{tr(language, '正在加载酒吧...', 'Loading venues...')}</Text>
+          <Text style={styles.muted}>{tr(language, '正在加载酒吧...', 'Loading bars...')}</Text>
         </View>
       ) : null}
 
-      {events.length > 0 && !eventsQuery.isError ? (
-        <TonightEventsSection
-          compactBottom={newTaps.length === 0 || newTapsQuery.isError}
-          events={events.slice(0, 5)}
-        />
+      {discoveryEvents.length > 0 ? (
+        <TonightEventsSection events={discoveryEvents.slice(0, 5)} />
       ) : null}
 
-      {newTaps.length > 0 && !newTapsQuery.isError ? (
+      {INTELLIGENCE_ENABLED && configured ? <HomeBeerFeed city={selectedCityName} refreshVersion={feedRefreshVersion} suspended={cityPickerVisible || nearbySheetVisible} scrollObserver={feedScrollObserver} /> : null}
+
+      {!INTELLIGENCE_ENABLED && newTaps.length > 0 && !newTapsQuery.isError ? (
         <NewTapTodaySection drinks={newTaps} />
       ) : null}
 
@@ -383,6 +433,34 @@ export default function TonightScreen() {
               </View>
             ) : null}
           </View>
+          {bars.length >= BAR_SEARCH_MIN_COUNT ? (
+            <View style={styles.barSearchBox}>
+              <FontAwesome name="search" size={19} color={palette.faint} />
+              <TextInput
+                accessibilityLabel={tr(language, `搜索${selectedCity.label}的酒吧`, `Search bars in ${localized(selectedCity.label, selectedCity.label_en)}`)}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="never"
+                onChangeText={setBarSearchQuery}
+                placeholder={tr(language, `找一家${selectedCity.label}酒吧`, `Find a bar in ${localized(selectedCity.label, selectedCity.label_en)}`)}
+                placeholderTextColor={palette.faint}
+                returnKeyType="search"
+                selectionColor={palette.amber}
+                style={styles.barSearchInput}
+                value={barSearchQuery}
+              />
+              {barSearchQuery ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={tr(language, '清除酒吧搜索', 'Clear bar search')}
+                  hitSlop={10}
+                  onPress={() => setBarSearchQuery('')}
+                  style={({ pressed }) => [styles.barSearchClear, pressed && styles.cityButtonPressed]}>
+                  <FontAwesome name="times-circle" size={17} color={palette.faint} />
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
           {cityMismatch && detectedCity ? (
             <View style={styles.nearbyNoticeRow}>
               <Text style={styles.nearbyNoticeText} numberOfLines={2}>
@@ -424,17 +502,22 @@ export default function TonightScreen() {
         <EmptyState title={tr(language, '尚未连接酒单服务', 'Taplist service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看实时公开酒单。', 'Configure Supabase to view live public taplists.')} />
       ) : barsQuery.isError ? (
         <EmptyState
-          title={tr(language, '暂时无法加载酒吧', 'Unable to load venues')}
+          title={tr(language, '暂时无法加载酒吧', 'Unable to load bars')}
           body={tr(language, '若系统询问是否允许使用网络，请选择「无线局域网与蜂窝网络」，然后点重试。', 'Check network access, then try again.')}
           actionLabel={tr(language, '重试', 'Retry')}
           onAction={() => void handleRefresh()}
           actionLoading={refreshing}
         />
       ) : bars.length === 0 && !barsQuery.isLoading ? (
-        <EmptyState title={tr(language, '暂无公开酒吧', 'No public venues yet')} body={tr(language, '当前城市还没有已发布的公开酒单。', 'No public taplists have been published in this city.')} />
+        <EmptyState title={tr(language, '暂无公开酒吧', 'No public bars yet')} body={tr(language, '当前城市还没有已发布的公开酒单。', 'No public taplists have been published in this city.')} />
+      ) : filteredBars.length === 0 ? (
+        <EmptyState
+          title={tr(language, '没有找到这家酒吧', 'No matching bar')}
+          body={tr(language, '试试输入其他酒吧名称。', 'Try another bar name.')}
+        />
       ) : (
         <View style={styles.feed}>
-          {displayedBars.map(({ bar, distanceMeters }) => (
+          {filteredBars.map(({ bar, distanceMeters }) => (
             <BarFeedCard
               key={bar.id}
               bar={bar}
@@ -449,6 +532,7 @@ export default function TonightScreen() {
         <Text style={styles.complianceText}>{language === 'en' ? TAPLIST_LEGAL_DISCLAIMER_EN : TAPLIST_LEGAL_DISCLAIMER}</Text>
       </View>
     </ScrollView>
+    </View>
   )
 }
 
@@ -550,13 +634,10 @@ function CityPickerModal({
 }
 
 function TonightEventsSection({
-  compactBottom = false,
   events,
 }: {
-  compactBottom?: boolean
-  events: PublicEventRow[]
+  events: HomeDiscoveryEvent[]
 }) {
-  const { language } = useLanguage()
   const scrollRef = useRef<ScrollView>(null)
   const [pageWidth, setPageWidth] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
@@ -574,20 +655,7 @@ function TonightEventsSection({
   }
 
   return (
-    <View style={[
-      styles.discoverySection,
-      styles.eventsDiscoverySection,
-      compactBottom && styles.eventsDiscoverySectionCompact,
-    ]}>
-      <View style={[styles.discoveryHeaderRow, styles.eventsDiscoveryHeaderRow]}>
-        <Link href="/events" asChild>
-          <Pressable
-            hitSlop={{ top: 10, right: 4, bottom: 10, left: 12 }}
-            style={({ pressed }) => [styles.moreLink, pressed && styles.moreLinkPressed]}>
-            <Text style={styles.moreText}>{tr(language, '更多 ›', 'More ›')}</Text>
-          </Pressable>
-        </Link>
-      </View>
+    <View style={styles.discoverySection}>
       <View
         onLayout={(event) => setPageWidth(event.nativeEvent.layout.width)}
         style={styles.eventCarouselViewport}>
@@ -665,7 +733,7 @@ function BarFeedCard({
   const { language, localized } = useLanguage()
   const location = shortBarLocation(bar, language)
   const feedStatus = compactStatusCounts(bar, language)
-  const updatedLabel = formatRelativeUpdatedAt(bar.last_menu_updated_at)
+  const updatedLabel = formatRelativeUpdatedAt(bar.last_menu_updated_at, language)
   const distanceLabel = formatDistance(distanceMeters)
   const openingStatus = bar.is_open_now === true ? tr(language, '营业中', 'Open now') : null
 
@@ -684,7 +752,9 @@ function BarFeedCard({
           <AtmosphereImage source={bar.cover_image_url} aspectRatio={4 / 3} overlayOpacity={0.24}>
             <View style={styles.cardOverlay}>
               <View style={styles.cardRule} />
-              <Text style={styles.barName}>{localized(bar.display_name || bar.name, bar.display_name_en)}</Text>
+              <Text style={styles.barName} numberOfLines={2} ellipsizeMode="tail">
+                {localized(bar.display_name || bar.name, bar.display_name_en)}
+              </Text>
               <BrewingBadgeFromType
                 brewingType={bar.brewing_type}
                 brewingLabel={bar.brewing_label}
@@ -802,49 +872,49 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
   },
   header: {
+    alignItems: 'stretch',
+    marginBottom: 0,
+  },
+  cityActivityRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
   city: {
     ...typography.title,
     color: palette.tungsten,
-    marginTop: spacing.xxs,
-    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 20,
+    flexShrink: 1,
+    includeFontPadding: false,
   },
   cityButton: {
-    marginTop: spacing.xxs,
-    minHeight: 38,
+    alignSelf: 'flex-start',
+    flexShrink: 1,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 0,
     borderRadius: 8,
+  },
+  cityChevron: {
+    lineHeight: 20,
+    includeFontPadding: false,
   },
   cityButtonPressed: {
     opacity: 0.72,
   },
-  cityPreposition: {
-    ...typography.caption,
-    color: palette.faint,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
-  title: {
-    ...typography.displayXL,
-    fontSize: 62,
-    lineHeight: 62,
-    color: palette.text,
-    textAlign: 'center',
-    textShadowColor: 'rgba(245,241,230,0.12)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 18,
-  },
+  // The square logo asset includes transparent space below the visible wordmark.
+  brandCenter: { alignItems: 'center', justifyContent: 'center', marginBottom: -spacing.md },
+  logo: { width: 128, height: 104 },
   barListHeader: {
     marginBottom: spacing.md,
   },
   barListToolbar: {
-    minHeight: 40,
+    minHeight: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -856,6 +926,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '400',
+  },
+  barSearchBox: {
+    minHeight: 44,
+    marginTop: spacing.xxs,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: palette.line,
+    borderRadius: 8,
+    backgroundColor: palette.panelElevated,
+  },
+  barSearchInput: {
+    ...typography.body,
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 0,
+    color: palette.text,
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  barSearchClear: {
+    width: 28,
+    height: 44,
+    marginRight: -spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sortActions: {
     minHeight: 38,
@@ -1029,13 +1127,7 @@ const styles = StyleSheet.create({
     color: palette.muted,
   },
   discoverySection: {
-    marginBottom: spacing.xl,
-  },
-  eventsDiscoverySection: {
-    marginBottom: spacing.xxl,
-  },
-  eventsDiscoverySectionCompact: {
-    marginBottom: spacing.lg,
+    marginBottom: 20,
   },
   discoveryHeaderRow: {
     flexDirection: 'row',
@@ -1043,9 +1135,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
     marginBottom: spacing.xxs,
-  },
-  eventsDiscoveryHeaderRow: {
-    justifyContent: 'flex-end',
   },
   discoveryTitle: {
     ...typography.title,
@@ -1057,7 +1146,7 @@ const styles = StyleSheet.create({
   },
   moreLink: {
     marginLeft: 'auto',
-    alignSelf: 'flex-end',
+    minHeight: 44,
     paddingLeft: spacing.md,
     paddingRight: 2,
     justifyContent: 'center',
@@ -1122,7 +1211,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   feed: {
-    gap: spacing.xl,
+    gap: spacing.md,
   },
   feedCard: {
     borderRadius: 8,
@@ -1141,9 +1230,9 @@ const styles = StyleSheet.create({
   },
   cardOverlay: {
     position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
-    bottom: spacing.lg,
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
     alignItems: 'flex-start',
   },
   cardRule: {
@@ -1155,11 +1244,13 @@ const styles = StyleSheet.create({
   barName: {
     ...typography.displayL,
     color: palette.text,
+    fontSize: 30,
+    lineHeight: 36,
   },
   barMeta: {
     ...typography.caption,
     color: palette.muted,
-    marginTop: spacing.xs,
+    marginTop: spacing.xxs,
   },
   openingStatus: {
     ...typography.label,
@@ -1221,7 +1312,7 @@ const styles = StyleSheet.create({
   },
   barFooterRow: {
     width: '100%',
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

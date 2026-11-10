@@ -89,7 +89,7 @@ function RoadmapStopRow({
 }) {
   const router = useRouter()
   const { language } = useLanguage()
-  const hoursLabel = formatRoadmapHoursLabel(stop)
+  const hoursLabel = formatRoadmapHoursLabel(stop, language)
   const navigationUrl =
     Platform.OS === 'ios' && leg ? navigationUrlForLeg(stops, leg) : null
   const showActions = !isStart

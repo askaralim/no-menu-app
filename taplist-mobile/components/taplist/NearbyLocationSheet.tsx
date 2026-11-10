@@ -30,9 +30,9 @@ export function NearbyLocationSheet({
           <View style={styles.iconWrap}>
             <FontAwesome name="location-arrow" size={24} color={palette.amber} />
           </View>
-          <Text style={styles.title}>{tr(language, '查看离你最近的酒吧', 'Find nearby venues')}</Text>
+          <Text style={styles.title}>{tr(language, '查看离你最近的酒吧', 'Find nearby bars')}</Text>
           <Text style={styles.body}>
-            {tr(language, `No Menu 会使用你当前的大致位置，为${cityLabel}的酒吧按直线距离排序。`, `No Menu uses your approximate location to sort venues in ${cityLabel} by distance.`)}
+            {tr(language, `No Menu 会使用你当前的大致位置，为${cityLabel}的酒吧按直线距离排序。`, `No Menu uses your approximate location to sort bars in ${cityLabel} by distance.`)}
           </Text>
           <View style={styles.privacyRow}>
             <FontAwesome name="shield" size={14} color={palette.tungsten} />

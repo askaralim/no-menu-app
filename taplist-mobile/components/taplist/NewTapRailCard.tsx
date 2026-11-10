@@ -19,6 +19,8 @@ import {
 import { palette, spacing, typography } from '@/constants/design'
 import { formatPrimaryBrewery } from '@/lib/formatTaplist'
 import { trackEvent, type AnalyticsSource } from '@/lib/analytics'
+import { useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 import type { PublicNewTapRow } from '@/lib/types'
 
 export function NewTapRailCard({
@@ -29,9 +31,15 @@ export function NewTapRailCard({
   source?: AnalyticsSource
 }) {
   const router = useRouter()
-  const typeLine = drink.beer_style ?? null
-  const brandLine = formatPrimaryBrewery(drink.brewery, drink.brand_name)
-  const accessibilityLabel = [drink.name, typeLine, brandLine, `@ ${drink.tenant_display_name}`]
+  const { language, localized } = useLanguage()
+  const drinkName = localized(drink.name, drink.name_en)
+  const typeLine = localizeBeerStyle(drink.beer_style, language, drink.beer_style_en) || null
+  const brandLine = formatPrimaryBrewery(
+    localized(drink.brewery, drink.brewery_en),
+    drink.brand_name,
+  )
+  const venueName = localized(drink.tenant_display_name, drink.tenant_display_name_en)
+  const accessibilityLabel = [drinkName, typeLine, brandLine, `@ ${venueName}`]
     .filter(Boolean)
     .join('，')
   const hasImage = Boolean(drink.image_url)
@@ -40,7 +48,7 @@ export function NewTapRailCard({
   const textBlock = (
     <View style={styles.newTapCardBody}>
       <Text style={styles.newTapDrinkName} numberOfLines={2} ellipsizeMode="tail">
-        {drink.name}
+        {drinkName}
       </Text>
       {typeLine ? (
         <Text
@@ -61,7 +69,7 @@ export function NewTapRailCard({
     </View>
   )
 
-  const venueBadge = <RailVenueBadge name={drink.tenant_display_name} />
+  const venueBadge = <RailVenueBadge name={venueName} />
 
   return (
     <Pressable

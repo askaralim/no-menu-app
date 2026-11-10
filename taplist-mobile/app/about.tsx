@@ -61,7 +61,7 @@ export default function AboutScreen() {
         </View>
         <Text style={styles.body}>{tr(language, '今晚有什么，打开就知道。', 'See what is on tap tonight.')}</Text>
         <Text style={styles.description}>
-          {tr(language, '查看合作酒吧公开的精酿酒单、门店信息与当晚在售规格，快速找到今晚想喝的生啤。', 'Browse public craft beer taplists, venue details, and serving sizes from partner bars.')}
+          {tr(language, '查看合作酒吧公开的精酿酒单、门店信息与当晚在售规格，快速找到今晚想喝的生啤。', 'Browse public craft beer taplists, bar details, and serving sizes from partner bars.')}
         </Text>
         <Text style={styles.version}>{localized(selectedCity.label, selectedCity.label_en)} · {formatAppVersionLabel()}</Text>
       </View>
@@ -71,7 +71,7 @@ export default function AboutScreen() {
         <View style={styles.card}>
           <View style={styles.row}>
             <View style={styles.rowCopy}>
-              <Text style={styles.rowTitle}>{tr(language, '酒吧入驻与信息更正', 'Venue onboarding and corrections')}</Text>
+              <Text style={styles.rowTitle}>{tr(language, '酒吧入驻与信息更正', 'Bar onboarding and corrections')}</Text>
               <Text style={styles.rowDescription}>{tr(language, `添加微信 ${contactNumber}`, `WeChat: ${contactNumber}`)}</Text>
             </View>
             <Text selectable style={styles.link}>{contactNumber}</Text>
@@ -110,9 +110,9 @@ export default function AboutScreen() {
             <FontAwesome name="angle-right" size={20} color={palette.faint} />
           </Pressable>
           <View style={[styles.row, styles.rowBorder]}>
-            <Text style={styles.rowTitle}>{tr(language, '匿名产品分析', 'Anonymous analytics')}</Text>
+            <Text style={styles.rowTitle}>{tr(language, '使用情况分析', 'Usage analytics')}</Text>
             <Switch
-              accessibilityLabel={tr(language, '匿名产品分析', 'Anonymous product analytics')}
+              accessibilityLabel={tr(language, '使用情况分析', 'Usage analytics')}
               value={analyticsEnabled}
               onValueChange={onAnalyticsEnabledChange}
               trackColor={{ false: palette.line, true: palette.olive }}

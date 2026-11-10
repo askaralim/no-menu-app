@@ -94,7 +94,9 @@ export function eventMetaLine(event: PublicEventRow, language: Language = 'zh') 
   return eventDisplayStateLabel(event.display_state, language)
 }
 
-export function eventDateLabel(event: PublicEventRow) {
+type EventDates = Pick<PublicEventRow, 'start_at' | 'end_at'> & { date_label?: string | null }
+
+export function eventDateLabel(event: EventDates) {
   const start = eventCalendarDateParts(event.start_at)
   const end = eventCalendarDateParts(event.end_at)
 
@@ -108,7 +110,7 @@ export function eventDateLabel(event: PublicEventRow) {
   return fallbackEventDateLabel(event)
 }
 
-export function compactEventDateLabel(event: PublicEventRow) {
+export function compactEventDateLabel(event: EventDates) {
   const start = eventCalendarDateParts(event.start_at)
   const end = eventCalendarDateParts(event.end_at)
 
@@ -126,7 +128,7 @@ export function compactEventDateLabel(event: PublicEventRow) {
   return fallbackEventDateLabel(event)
 }
 
-function fallbackEventDateLabel(event: PublicEventRow) {
+function fallbackEventDateLabel(event: EventDates) {
   const label = event.date_label?.trim()
   if (!label) return null
 

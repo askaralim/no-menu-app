@@ -131,7 +131,7 @@ export default function DrinkStatusSheet({
               <Ionicons name="chevron-forward" size={18} color={T.faint} />
             </TouchableOpacity>
 
-            {tapNumber ? (
+            {tapNumber && drink.public_status !== 'coming_soon' ? (
               <>
                 <Text style={styles.sectionLabel}>酒头操作</Text>
                 <TouchableOpacity

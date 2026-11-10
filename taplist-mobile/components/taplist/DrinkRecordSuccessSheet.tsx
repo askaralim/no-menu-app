@@ -50,7 +50,7 @@ export function DrinkRecordSuccessSheet({ result, insights, insightsLoading, dri
             ) : null}
           </View>
           <View style={[styles.check, compact && styles.checkCompact]}><FontAwesome name="check" size={compact ? 16 : 18} color={palette.tungsten} /></View>
-          <Text style={[styles.title, compact && styles.titleCompact]}>{result?.created_light ? tr(language, `第 ${result.drink_count} 款 TAP 已记录`, `TAP #${result.drink_count} recorded`) : tr(language, '已新增这家酒吧', 'Venue added to this TAP')}</Text>
+          <Text style={[styles.title, compact && styles.titleCompact]}>{result?.created_light ? tr(language, `第 ${result.drink_count} 款 TAP 已记录`, `TAP #${result.drink_count} recorded`) : tr(language, '已新增这家酒吧', 'Bar added to this TAP')}</Text>
           {insightsLoading ? <ActivityIndicator color={palette.amber} style={styles.insightsLoading} /> : tonightCount > 0 ? (
             <Text style={styles.tonight}>{tr(language, `今晚新记录 ${tonightCount} 款`, `${tonightCount} new tonight`)}</Text>
           ) : null}

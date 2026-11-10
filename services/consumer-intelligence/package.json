@@ -1,0 +1,28 @@
+{
+  "name": "@nomenu/consumer-intelligence-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "check:openapi": "redocly lint contracts/openapi.json --config redocly.yaml",
+    "test": "node --test contracts/test/*.test.js test/unit.test.js test/supabase.test.js test/assisted-visits.test.js test/e1/phase1.test.js test/e1/phase2.test.js test/e1/reason.test.js",
+    "test:integration": "node --test --test-concurrency=1 test/integration.test.js test/maintenance.test.js test/e1/integration.test.js test/e1/disconnect.test.js test/e1/sql-batch.test.js test/e1/reason-integration.test.js test/campaign-integration.test.js",
+    "check": "npm run check:openapi && npm test",
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "migrate": "node --env-file-if-exists=.env src/migrate.js",
+    "worker": "node --env-file-if-exists=.env src/worker.js",
+    "ops:check": "node --env-file-if-exists=.env src/ops-check.js",
+    "report:campaign": "node --env-file-if-exists=.env src/campaign-report.js"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.72.1"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "pg": "8.23.1"
+  }
+}

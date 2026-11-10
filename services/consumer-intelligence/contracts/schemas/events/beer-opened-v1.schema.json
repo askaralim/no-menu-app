@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/events/beer-opened-v1.schema.json",
+  "allOf": [
+    {
+      "$ref": "./envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "beer_opened"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "source": {
+          "$ref": "../common/primitives.schema.json#/$defs/source"
+        },
+        "selected_city_code": {
+          "anyOf": [
+            {
+              "$ref": "../common/primitives.schema.json#/$defs/city"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "product_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        "source_drink_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        "tenant_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        "campaign": {
+          "$ref": "./campaign-context.schema.json"
+        }
+      },
+      "required": [
+        "event_name",
+        "schema_version",
+        "source",
+        "selected_city_code"
+      ]
+    }
+  ],
+  "unevaluatedProperties": false,
+  "anyOf": [
+    {
+      "required": [
+        "product_id"
+      ]
+    },
+    {
+      "required": [
+        "source_drink_id"
+      ]
+    }
+  ]
+}

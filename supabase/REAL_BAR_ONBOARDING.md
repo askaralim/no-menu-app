@@ -23,6 +23,8 @@ Temp passwords are letters+digits only (no `!`), so WeChat copy/paste is less er
 
 Re-binding a mobile that already changed its password keeps that password and adds the owner role on the new bar. A brand-new mobile, or one still on its temporary password, still gets a temp password and must change it on first login. Binding replaces the previous owner role on that bar only; other bars tied to the same mobile stay attached.
 
+To reset a forgotten password, use **平台管理 → 重置密码** on that bar. It sets a new temporary password and forces a change on the next POS login. It does not replace the owner.
+
 ## How login works (no SMS)
 
 POS shows “手机号”, but Auth uses a synthetic email:

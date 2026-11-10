@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/events/campaign-interaction-v1.schema.json",
+  "allOf": [
+    {
+      "$ref": "./envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "campaign_interaction"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "source": {
+          "$ref": "../common/primitives.schema.json#/$defs/source"
+        },
+        "selected_city_code": {
+          "anyOf": [
+            {
+              "$ref": "../common/primitives.schema.json#/$defs/city"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "campaign": {
+          "$ref": "./campaign-context.schema.json"
+        },
+        "action": {
+          "enum": [
+            "banner_impression",
+            "banner_clicked",
+            "map_opened",
+            "map_stop_selected",
+            "details_opened",
+            "detail_image_previewed",
+            "benefits_opened",
+            "bar_clicked",
+            "related_beer_clicked",
+            "checkin_started",
+            "checkin_cancelled",
+            "login_required",
+            "login_authenticated",
+            "checkin_submitted",
+            "checkin_result",
+            "undo_result",
+            "poster_opened",
+            "poster_generation_started",
+            "poster_generation_result",
+            "poster_save_clicked",
+            "poster_save_result",
+            "poster_share_clicked",
+            "page_share_requested",
+            "purchase_clicked",
+            "purchase_handoff_result",
+            "purchase_qr_viewed",
+            "purchase_qr_save_result",
+            "navigation_result",
+            "purchase_qr_save_clicked"
+          ]
+        },
+        "tenant_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        "source_drink_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        "attempt_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        "completion_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        "result": {
+          "enum": [
+            "success",
+            "failure",
+            "cancelled",
+            "already_completed",
+            "unavailable"
+          ]
+        },
+        "error_code": {
+          "enum": [
+            "AUTH_REQUIRED",
+            "NOT_PUBLIC",
+            "NOT_STARTED",
+            "ENDED",
+            "STOP_NOT_FOUND",
+            "DRINK_NOT_AVAILABLE",
+            "UNDO_EXPIRED",
+            "NETWORK_OR_UNKNOWN",
+            "PERMISSION_DENIED",
+            "UNSUPPORTED",
+            "SHARE_CODE_MISSING"
+          ]
+        },
+        "completed_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400000
+        },
+        "artwork_fallback": {
+          "type": "boolean"
+        },
+        "image_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "visibility_threshold": {
+          "const": 0.5
+        },
+        "visible_duration_ms": {
+          "type": "integer",
+          "minimum": 750,
+          "maximum": 86400000
+        },
+        "target_drink_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        }
+      },
+      "required": [
+        "event_name",
+        "schema_version",
+        "source",
+        "selected_city_code",
+        "campaign",
+        "action"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "checkin_result",
+                  "undo_result",
+                  "poster_generation_result",
+                  "poster_save_result",
+                  "purchase_handoff_result",
+                  "purchase_qr_save_result",
+                  "navigation_result"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "result"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "banner_impression"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "visibility_threshold",
+              "visible_duration_ms"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "unevaluatedProperties": false
+}

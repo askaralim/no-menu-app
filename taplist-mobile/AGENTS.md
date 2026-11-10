@@ -199,7 +199,7 @@ Large Chinese headings should stay controlled and breathable.
 
 The home screen is the primary consumer entry point.
 
-- Keep `TONIGHT` as the main first-viewport identity.
+- Use the compact No Menu logo and city selector as the first-viewport identity (2026-11-06 user decision); do not restore the oversized `TONIGHT` / `in` header. Preserve safe-area spacing and a minimum 44pt city-selector touch target.
 - Public city metadata belongs under the city header.
 - `NEW ON TAP` is a lightweight discovery section for drinks with public status `new`.
 - `NEW ON TAP` should stay visually secondary to the large bar cards.

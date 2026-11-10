@@ -14,7 +14,10 @@ export function formatBarStatusSummary(counts?: PublicBarStatusCounts | null) {
   return parts.join(' · ')
 }
 
-export function formatRelativeUpdatedAt(value?: string | null): string | null {
+export function formatRelativeUpdatedAt(
+  value?: string | null,
+  language: 'zh' | 'en' = 'zh',
+): string | null {
   if (!value) return null
   const then = new Date(value).getTime()
   if (Number.isNaN(then)) return null
@@ -23,15 +26,21 @@ export function formatRelativeUpdatedAt(value?: string | null): string | null {
   if (diffMs < 0) return null
 
   const minutes = Math.floor(diffMs / 60_000)
-  if (minutes < 1) return '刚刚更新'
-  if (minutes < 60) return `${minutes} 分钟前更新`
+  if (minutes < 1) return language === 'en' ? 'Updated just now' : '刚刚更新'
+  if (minutes < 60) {
+    return language === 'en' ? `Updated ${minutes} min ago` : `${minutes} 分钟前更新`
+  }
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} 小时前更新`
+  if (hours < 24) {
+    return language === 'en' ? `Updated ${hours} hr ago` : `${hours} 小时前更新`
+  }
 
   const days = Math.floor(hours / 24)
-  if (days === 1) return '昨天更新'
-  if (days < 7) return `${days} 天前更新`
+  if (days === 1) return language === 'en' ? 'Updated yesterday' : '昨天更新'
+  if (days < 7) {
+    return language === 'en' ? `Updated ${days} days ago` : `${days} 天前更新`
+  }
 
   return null
 }

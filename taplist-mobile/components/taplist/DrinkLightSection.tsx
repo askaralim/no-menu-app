@@ -79,10 +79,10 @@ export function useDrinkLightController({ drinkId, tenantId }: Props) {
   })
 
   const buttonLabel = state?.is_current_venue_lit
-    ? tr(language, '已喝过', 'Tried')
+    ? tr(language, '已记录', 'Tapped')
     : state?.is_lit
-      ? tr(language, '记录这里', 'Tried here')
-      : tr(language, '喝过', 'Tried')
+      ? tr(language, '记录此店', 'Tap here')
+      : tr(language, '记一杯', 'Tap it')
   return {
     state,
     buttonLabel,
@@ -111,12 +111,13 @@ export function DrinkLightAction({
     return (
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={tr(language, '查看喝过记录', 'View beer history')}
+        accessibilityLabel={tr(language, '查看 TAP 记录', 'View TAP history')}
+        hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
         onPress={onOpenHistory}
         style={({ pressed }) => [styles.historyButton, pressed && styles.buttonPressed]}>
-        <FontAwesome name="check-circle-o" size={14} color={palette.amber} />
-        <Text style={styles.historyButtonText}>{tr(language, '已喝过', 'Tried')}</Text>
-        <FontAwesome name="angle-right" size={15} color={palette.faint} />
+        <FontAwesome name="check-circle-o" size={11} color={palette.amber} />
+        <Text style={styles.historyButtonText}>{tr(language, '已记录', 'Tapped')}</Text>
+        <FontAwesome name="angle-right" size={11} color={palette.faint} />
       </Pressable>
     )
   }
@@ -126,6 +127,7 @@ export function DrinkLightAction({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={buttonLabel}
+        hitSlop={{ top: 7, bottom: 7, left: 4, right: 4 }}
         disabled={state?.is_current_venue_lit || lightMutation.isPending}
         onPress={() => lightMutation.mutate()}
         style={({ pressed }) => [styles.button, state?.is_current_venue_lit && styles.buttonComplete, pressed && styles.buttonPressed]}>
@@ -134,17 +136,17 @@ export function DrinkLightAction({
         ) : (
           <FontAwesome
             name={state?.is_current_venue_lit ? 'check' : 'lightbulb-o'}
-            size={16}
+            size={12}
             color={state?.is_current_venue_lit ? palette.faint : palette.amber}
           />
         )}
+        <Text style={[styles.buttonText, state?.is_current_venue_lit && styles.completeText]}>{buttonLabel}</Text>
       </Pressable>
       {showUndo && state?.light_id ? (
         <View style={styles.stateRow}>
-          <Text style={[styles.buttonText, styles.completeText]}>{tr(language, '已喝过', 'Tried')}</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={tr(language, '撤销刚才的喝过', 'Undo the latest record')}
+            accessibilityLabel={tr(language, '撤销刚才的记录', 'Undo the latest record')}
             disabled={undoMutation.isPending}
             hitSlop={10}
             onPress={() => undoMutation.mutate()}
@@ -152,9 +154,7 @@ export function DrinkLightAction({
             <Text style={styles.undo}>{undoMutation.isPending ? tr(language, '撤销中', 'Undoing') : tr(language, '撤销', 'Undo')}</Text>
           </Pressable>
         </View>
-      ) : (
-        <Text style={[styles.buttonText, state?.is_current_venue_lit && styles.completeText]}>{buttonLabel}</Text>
-      )}
+      ) : null}
     </View>
   )
 }
@@ -178,36 +178,41 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   button: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    minWidth: 68,
+    height: 30,
+    paddingHorizontal: 8,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: palette.goldMuted,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    backgroundColor: 'rgba(211,154,69,0.08)',
   },
   buttonComplete: {
     borderColor: palette.line,
   },
   buttonPressed: { opacity: 0.82 },
   historyButton: {
-    minWidth: 92,
-    height: 40,
-    borderRadius: 12,
+    minWidth: 68,
+    height: 30,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: 'rgba(211,154,69,0.24)',
-    backgroundColor: 'rgba(211,154,69,0.08)',
-    paddingHorizontal: spacing.sm,
+    backgroundColor: 'rgba(211,154,69,0.035)',
+    paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: 4,
   },
   historyButtonText: {
     ...typography.caption,
     color: palette.tungsten,
+    fontSize: 11,
   },
-  buttonText: { ...typography.micro, color: palette.amber, fontSize: 10 },
+  buttonText: { ...typography.micro, color: palette.amber, fontSize: 11 },
   completeText: { color: palette.faint },
   stateRow: { minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },
   undoButton: { minHeight: 28, minWidth: 28, alignItems: 'center', justifyContent: 'center' },

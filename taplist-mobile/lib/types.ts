@@ -101,6 +101,7 @@ export type PublicBeerProfile = {
   /** Co-breweries (0–3); bar taplist / detail / share as `主酒厂 × 合酿…`. */
   collab_breweries?: string[] | null
   beer_style: string | null
+  beer_style_en?: string | null
   abv: number | null
   ibu: number | null
   country: string | null
@@ -236,6 +237,7 @@ export type PublicTaplistSearchResult = {
    */
   collab_breweries?: string[] | null
   beer_style: string | null
+  beer_style_en?: string | null
   abv: number | null
   default_serving: PublicSearchServingOption | null
   venue_count?: number
@@ -303,6 +305,7 @@ export type MiniProductSearchResult = {
   origin_city?: string | null
   origin_city_en?: string | null
   beer_style: string | null
+  beer_style_en?: string | null
   abv: number | null
   venue_count: number
   last_menu_updated_at: string | null
@@ -344,6 +347,7 @@ export type MiniProductDetail = {
   brewery_en?: string | null
   collab_breweries: string[] | null
   beer_style: string | null
+  beer_style_en?: string | null
   abv: number | null
   ibu: number | null
   country: string | null
@@ -365,6 +369,33 @@ export type MiniProductDetailRpc =
   | { ok: false; code?: string }
 
 export type PublicEventDisplayState = 'TONIGHT' | 'ONGOING' | 'UPCOMING'
+
+export type PublicCampaignSummary = {
+  kind: 'campaign'
+  id: string
+  slug: string
+  title: string
+  subtitle: string | null
+  card_image_url: string | null
+  start_at: string
+  end_at: string
+  stop_count: number
+  tenant_display_name: string | null
+}
+
+export type PublicCampaignDetail = Omit<PublicCampaignSummary, 'kind' | 'stop_count' | 'tenant_display_name'> & {
+  description: string | null
+  detail_image_urls: string[]
+  has_started: boolean
+  has_ended: boolean
+  stops: { id: string; tenant_name: string; brewery_label: string; drink_name: string }[]
+}
+
+export type PublicCampaignRpc =
+  | { ok: true; campaign: PublicCampaignDetail }
+  | { ok: false; code?: string }
+
+export type HomeDiscoveryEvent = PublicEventRow | PublicCampaignSummary
 
 export type PublicEventRow = {
   id: string
@@ -510,6 +541,7 @@ export type MyDrinkHistoryRow = {
   brewery: string | null
   brewery_en?: string | null
   beer_style: string | null
+  beer_style_en?: string | null
   abv: number | null
   ibu: number | null
   country: string | null
@@ -563,6 +595,7 @@ export type MyDrinkInsightRow = {
   brewery: string | null
   brewery_en?: string | null
   beer_style: string | null
+  beer_style_en?: string | null
   image_url: string | null
   recorded_at: string
   bar_names: string[]

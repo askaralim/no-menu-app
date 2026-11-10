@@ -7,6 +7,6 @@ export const AMAP_ROUTE_ATTRIBUTION =
 
 /** English mirror (App Store metadata / review notes). */
 export const TAPLIST_LEGAL_DISCLAIMER_EN =
-  'This app only displays publicly available bar menu information. It does not provide alcohol sales, delivery, or payment services. Please drink responsibly. Persons under the legal drinking age must not consume alcohol. Menus, pricing, and availability are subject to the venue.'
+  'This app only displays publicly available bar menu information. It does not provide alcohol sales, delivery, or payment services. Please drink responsibly. Persons under the legal drinking age must not consume alcohol. Menus, pricing, and availability are subject to the bar.'
 
 export const TAPLIST_AGE_NOTICE_TITLE = '请确认您已满法定饮酒年龄'

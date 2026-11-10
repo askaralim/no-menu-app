@@ -11,6 +11,8 @@ import {
 import { handleAnalyticsAuthChange } from '@/lib/analyticsIdentity'
 import { getTaplistSupabase } from '@/lib/supabase'
 import { useTaplistCity } from '@/lib/taplistCity'
+import { fetchFeedCities } from '@/lib/api/beerFeed'
+import { INTELLIGENCE_ENABLED } from '@/lib/intelligenceHttp'
 
 export function AnalyticsTracker() {
   const pathname = usePathname()
@@ -24,6 +26,7 @@ export function AnalyticsTracker() {
     void initializeAnalytics().finally(() => {
       if (!cancelled) setReady(true)
     })
+    if (INTELLIGENCE_ENABLED) void fetchFeedCities().catch(() => {})
     return () => {
       cancelled = true
     }
@@ -67,6 +70,7 @@ function analyticsRoute(
   if (pathname === '/about') return { name: 'about', properties: {} }
   if (pathname === '/mine') return { name: 'drink_log', properties: {} }
   if (pathname === '/events') return { name: 'events', properties: {} }
+  if (pathname === '/new-beers') return { name: 'new_beers', properties: {} }
   if (pathname === '/+not-found') return { name: 'not_found', properties: {} }
   if (/^\/bar\/[^/]+\/beer\/[^/]+$/.test(pathname)) {
     return {

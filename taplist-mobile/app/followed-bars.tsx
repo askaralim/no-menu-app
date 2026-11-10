@@ -2,6 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { router, useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
+import { trackEvent } from '@/lib/analytics'
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -63,7 +64,7 @@ export default function FollowedBarsScreen() {
   }
 
   const removeFollow = (bar: FollowedBarRow) => {
-    Alert.alert(tr(language, '取消关注这家酒吧？', 'Unfollow this venue?'), tr(language, '取消后将不再收到这家酒吧的上新通知。', 'You will no longer receive new-tap alerts from this venue.'), [
+    Alert.alert(tr(language, '取消关注这家酒吧？', 'Unfollow this bar?'), tr(language, '取消后将不再收到这家酒吧的上新通知。', 'You will no longer receive new-tap alerts from this bar.'), [
       { text: tr(language, '保留关注', 'Keep following'), style: 'cancel' },
       {
         text: tr(language, '取消关注', 'Unfollow'),
@@ -109,7 +110,7 @@ export default function FollowedBarsScreen() {
         ) : barsQuery.isError ? (
           <View style={styles.empty}><Text style={styles.emptyTitle}>{tr(language, '暂时无法加载', 'Unable to load')}</Text><Text style={styles.emptyBody}>{tr(language, '请稍后重试。', 'Please try again.')}</Text></View>
         ) : bars.length === 0 ? (
-          <View style={styles.empty}><Text style={styles.emptyTitle}>{tr(language, '还没有关注酒吧', 'No followed venues yet')}</Text><Text style={styles.emptyBody}>{tr(language, '在酒吧详情页点“关注”，它就会出现在这里。', 'Tap Follow on a venue page to keep it here.')}</Text></View>
+          <View style={styles.empty}><Text style={styles.emptyTitle}>{tr(language, '还没有关注酒吧', 'No followed bars yet')}</Text><Text style={styles.emptyBody}>{tr(language, '在酒吧详情页点“关注”，它就会出现在这里。', 'Tap Follow on a bar page to keep it here.')}</Text></View>
         ) : (
           <View style={styles.list}>
             {bars.map((bar) => {
@@ -124,7 +125,10 @@ export default function FollowedBarsScreen() {
                 <View key={bar.tenant_id} style={[styles.row, removingFollow && styles.rowBusy]}>
                   <Pressable
                     accessibilityRole="link"
-                    onPress={() => router.push(`/bar/${bar.tenant_slug}`)}
+                    onPress={() => {
+                      trackEvent('bar_opened', { tenant_id: bar.tenant_id, source: 'followed_bars' })
+                      router.push(`/bar/${bar.tenant_slug}`)
+                    }}
                     style={({ pressed }) => [styles.barLink, pressed && styles.pressed]}>
                     <View style={styles.artSlot}>
                       {bar.cover_image_url ? <CachedImage source={bar.cover_image_url} ossStyle="nm-thumb" style={styles.art} /> : null}

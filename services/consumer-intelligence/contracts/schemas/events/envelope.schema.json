@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/events/envelope.schema.json",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "$ref": "../common/primitives.schema.json#/$defs/uuid"
+    },
+    "occurred_at": {
+      "$ref": "../common/primitives.schema.json#/$defs/time"
+    },
+    "session_id": {
+      "$ref": "../common/primitives.schema.json#/$defs/uuid"
+    },
+    "session_started_at": {
+      "$ref": "../common/primitives.schema.json#/$defs/time"
+    }
+  },
+  "required": [
+    "event_id",
+    "occurred_at",
+    "session_id",
+    "session_started_at"
+  ]
+}

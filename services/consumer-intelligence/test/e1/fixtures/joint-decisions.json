@@ -1,0 +1,462 @@
+{
+  "global_changes": [
+    {
+      "raw_style": "单一世纪酒花 西海岸IPA",
+      "old_key": "unknown",
+      "style_key": "ipa.west_coast",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "琥珀艾尔",
+      "old_key": "unknown",
+      "style_key": "amber_red_brown.amber",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "农舍硬苏打",
+      "old_key": "unknown",
+      "style_key": "hard_seltzer.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "多特蒙德拉格",
+      "old_key": "unknown",
+      "style_key": "lager.dortmunder_export",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "芭乐莓莓雪葩果泥西打",
+      "old_key": "unknown",
+      "style_key": "cider.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "茉莉花茶小麦",
+      "old_key": "unknown",
+      "style_key": "wheat.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "草本酸艾尔",
+      "old_key": "unknown",
+      "style_key": "sour.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "莓果大红袍冰淇淋果泥西打果酒",
+      "old_key": "unknown",
+      "style_key": "cider.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "爱尔兰干世涛",
+      "old_key": "unknown",
+      "style_key": "stout.dry",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "三月拉格",
+      "old_key": "unknown",
+      "style_key": "lager.marzen",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "北德风格皮尔森",
+      "old_key": "unknown",
+      "style_key": "pilsner.german",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "山楂洛神酸艾尔",
+      "old_key": "unknown",
+      "style_key": "sour.fruited",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "柳橙酸艾尔 / Orange Sour Ale",
+      "old_key": "unknown",
+      "style_key": "sour.fruited",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "柳橙酸艾尔啤酒",
+      "old_key": "unknown",
+      "style_key": "sour.fruited",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "泰国青柠茉莉花酸艾尔",
+      "old_key": "unknown",
+      "style_key": "sour.fruited",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "浆果玫瑰酸艾尔",
+      "old_key": "unknown",
+      "style_key": "sour.fruited",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "甜菜根柏林酸",
+      "old_key": "unknown",
+      "style_key": "sour.berliner_weisse",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "秦岭稻米拉格",
+      "old_key": "unknown",
+      "style_key": "lager.rice",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "红色双倍IPA",
+      "old_key": "ipa.generic",
+      "style_key": "ipa.red",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "美式棕色艾尔",
+      "old_key": "unknown",
+      "style_key": "amber_red_brown.brown",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "美式野菌酸艾尔",
+      "old_key": "unknown",
+      "style_key": "wild.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "英式柔和艾尔",
+      "old_key": "unknown",
+      "style_key": "english.mild",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "英式棕色艾尔",
+      "old_key": "unknown",
+      "style_key": "amber_red_brown.brown",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "金桔茉莉花酸艾尔",
+      "old_key": "unknown",
+      "style_key": "sour.fruited",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "APA",
+      "old_key": "unknown",
+      "style_key": "pale_ale.american",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "三倍浑浊ipa",
+      "old_key": "unknown",
+      "style_key": "ipa.hazy",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "加州蒸汽啤酒",
+      "old_key": "unknown",
+      "style_key": "lager.california_common",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "印度淡色拉格",
+      "old_key": "unknown",
+      "style_key": "lager.hoppy",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "双倍鲜花ipa",
+      "old_key": "unknown",
+      "style_key": "ipa.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "双料博克",
+      "old_key": "unknown",
+      "style_key": "bock.doppel",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "德式清亮啤酒(60天熟成版)",
+      "old_key": "unknown",
+      "style_key": "lager.helles",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "德式清亮拉格",
+      "old_key": "unknown",
+      "style_key": "lager.helles",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "摩登深色拉格",
+      "old_key": "unknown",
+      "style_key": "lager.dark",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "柳橙酸艾尔",
+      "old_key": "unknown",
+      "style_key": "sour.fruited",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "法兰德斯红色艾尔",
+      "old_key": "unknown",
+      "style_key": "sour.flanders_red",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "清香柚子科隆",
+      "old_key": "unknown",
+      "style_key": "kolsch.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "盐渍菠萝糯香荔枝帝国西打",
+      "old_key": "unknown",
+      "style_key": "cider.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "茉莉花小麦",
+      "old_key": "unknown",
+      "style_key": "wheat.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "野菌酸艾",
+      "old_key": "unknown",
+      "style_key": "wild.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "野菌酸艾尔",
+      "old_key": "unknown",
+      "style_key": "wild.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "麝香葡萄增味野菌艾尔",
+      "old_key": "unknown",
+      "style_key": "wild.generic",
+      "group": "approved_alias"
+    },
+    {
+      "raw_style": "增味酸世涛",
+      "old_key": "stout.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "酸浑浊IPA",
+      "old_key": "ipa.hazy",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "野菌拉格",
+      "old_key": "lager.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "西番莲凤梨酸浑浊IPA",
+      "old_key": "ipa.hazy",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "酸比利时IPA",
+      "old_key": "ipa.belgian",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "青柚酸白IPA",
+      "old_key": "ipa.white",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "酸酒花拉格",
+      "old_key": "lager.hoppy",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "酸混浊IPA",
+      "old_key": "ipa.hazy",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "甜点酸艾尔",
+      "old_key": "sour.smoothie",
+      "style_key": "unknown",
+      "group": "dessert_sour_hold"
+    },
+    {
+      "raw_style": "双倍干投酸浑浊IPA",
+      "old_key": "ipa.hazy",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "咖啡梅果巧克力酸世涛",
+      "old_key": "stout.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "无醇IPA",
+      "old_key": "ipa.generic",
+      "style_key": "unknown",
+      "group": "nonalcoholic_hold"
+    },
+    {
+      "raw_style": "无麸质甜点酸艾尔",
+      "old_key": "sour.smoothie",
+      "style_key": "unknown",
+      "group": "dessert_sour_hold"
+    },
+    {
+      "raw_style": "桶陈甜点酸艾尔",
+      "old_key": "sour.smoothie",
+      "style_key": "unknown",
+      "group": "dessert_sour_hold"
+    },
+    {
+      "raw_style": "热带酸浑浊IPA",
+      "old_key": "ipa.hazy",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "白葡萄海盐酒花酸拉格",
+      "old_key": "lager.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "酸西海岸IPA",
+      "old_key": "ipa.west_coast",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "香柠佛手柑酸混浊IPA",
+      "old_key": "ipa.hazy",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "桶陈野菌世涛",
+      "old_key": "stout.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "桶陈野菌拉格",
+      "old_key": "lager.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "西海岸酸IPA",
+      "old_key": "ipa.west_coast",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "酒花酸拉格",
+      "old_key": "lager.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "酸世涛",
+      "old_key": "stout.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "酸双倍冷 IPA",
+      "old_key": "ipa.cold",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "酸拉格",
+      "old_key": "lager.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "酸比利时ipa",
+      "old_key": "ipa.belgian",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "酸波特",
+      "old_key": "porter.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    },
+    {
+      "raw_style": "酸浑浊IPA / Sour Hazy IPA",
+      "old_key": "ipa.hazy",
+      "style_key": "ipa.sour",
+      "group": "sour_ipa"
+    },
+    {
+      "raw_style": "陈桶野菌拉格",
+      "old_key": "lager.generic",
+      "style_key": "unknown",
+      "group": "composite_hold"
+    }
+  ],
+  "product_overrides": [
+    {
+      "canonical_beer": "product:cfd46882-1934-4590-8cba-f0d061d1828c",
+      "raw_style": "咖啡黑麦艾尔",
+      "style_key": "english.mild",
+      "product": "咖啡黑麦 / 云石"
+    },
+    {
+      "canonical_beer": "product:c7348e47-8537-46c3-a45b-a67ed99d14e5",
+      "raw_style": "德式窖藏啤酒",
+      "style_key": "lager.kellerbier",
+      "product": "自然之子 / 艾根伯格"
+    },
+    {
+      "canonical_beer": "product:349fc503-dc97-4a4c-b9eb-b8fee5827849",
+      "raw_style": null,
+      "style_key": "lager.helles",
+      "product": "南部之星 / 彼岸酿造"
+    },
+    {
+      "canonical_beer": "product:4c350db4-171e-4f2e-9efe-de21b44d0842",
+      "raw_style": null,
+      "style_key": "pilsner.czech",
+      "product": "布拉格金色愿望 / 风土酿造"
+    },
+    {
+      "canonical_beer": "product:5259308e-a0d5-4583-acd8-cb452b6d8218",
+      "raw_style": "桂花米酒混酿柏林酸",
+      "style_key": "sour.berliner_weisse",
+      "product": "金秋桂花迟 / 彼岸酿造"
+    },
+    {
+      "canonical_beer": "product:ec933a92-2394-4251-bf77-ab2801451314",
+      "raw_style": "萨克森未过滤拉格",
+      "style_key": "lager.kellerbier",
+      "product": "德累斯顿的晚风 / 彼岸酿造"
+    }
+  ]
+}

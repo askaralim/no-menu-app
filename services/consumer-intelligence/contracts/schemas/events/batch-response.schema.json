@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/events/batch-response.schema.json",
+  "allOf": [
+    {
+      "$ref": "../common/primitives.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "accepted": {
+          "type": "array",
+          "items": {
+            "$ref": "../common/primitives.schema.json#/$defs/uuid"
+          },
+          "uniqueItems": true
+        },
+        "duplicates": {
+          "type": "array",
+          "items": {
+            "$ref": "../common/primitives.schema.json#/$defs/uuid"
+          },
+          "uniqueItems": true
+        },
+        "rejected": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "event_index": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 19
+              },
+              "event_id": {
+                "anyOf": [
+                  {
+                    "$ref": "../common/primitives.schema.json#/$defs/uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "retryable": {
+                "type": "boolean"
+              },
+              "field": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "event_index",
+              "event_id",
+              "code",
+              "retryable"
+            ]
+          }
+        }
+      },
+      "required": [
+        "accepted",
+        "duplicates",
+        "rejected"
+      ]
+    }
+  ],
+  "description": "202 confirms committed new events only. A transaction failure or uncertain commit returns 503 without accepted IDs. Retry the original IDs; a committed retry becomes duplicate."
+}

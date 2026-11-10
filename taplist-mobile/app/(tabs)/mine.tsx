@@ -12,13 +12,14 @@ import { getMyConsumerProfile } from '@/lib/api/consumerProfile'
 import { getMyDrinkHistory, getMyDrinkInsights, getMyDrinkSummary } from '@/lib/api/drinkLog'
 import { deleteDrinkLogAccount, getAccountProtectionState, isAppleCancellation, protectDrinkLogWithApple } from '@/lib/drinkLogAuth'
 import { getTaplistSupabase } from '@/lib/supabase'
-import { tr, useLanguage, type LanguagePreference } from '@/lib/i18n'
+import { tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 import type { AccountProtectionState, MyDrinkHistoryRow, MyDrinkInsights } from '@/lib/types'
 
 export default function MineScreen() {
   const insets = useSafeAreaInsets()
   const queryClient = useQueryClient()
-  const { language, localized, preference, setPreference, text } = useLanguage()
+  const { language, localized } = useLanguage()
   const [protection, setProtection] = useState<AccountProtectionState>('unavailable')
 
   const sessionQuery = useQuery({
@@ -75,7 +76,7 @@ export default function MineScreen() {
 
   const deleteAccount = () => Alert.alert(
     tr(language, '删除账号与全部记录？', 'Delete account and all data?'),
-    tr(language, '所有喝过记录、关注的酒吧和通知设置都会永久删除，且无法恢复。', 'All beer history, followed venues, and notification settings will be permanently deleted.'),
+    tr(language, '所有喝过记录、关注的酒吧和通知设置都会永久删除，且无法恢复。', 'All beer history, followed bars, and notification settings will be permanently deleted.'),
     [
       { text: tr(language, '取消', 'Cancel'), style: 'cancel' },
       {
@@ -101,7 +102,7 @@ export default function MineScreen() {
   const month = insightsQuery.data?.month
   const tonightCount = insightsQuery.data?.tonight.drink_count ?? 0
   const tapCardMeta = month?.drink_count
-    ? tr(language, `${formatMonthName(month.month_start)}TAP ${month.drink_count} 款 · 来自 ${month.bar_count} 家酒吧`, `${month.drink_count} TAPs this month · ${month.bar_count} venues`)
+    ? tr(language, `${formatMonthName(month.month_start)}TAP ${month.drink_count} 款 · 来自 ${month.bar_count} 家酒吧`, `${month.drink_count} TAPs this month · ${month.bar_count} bars`)
     : tr(language, '查看月度报告与分享记录', 'View monthly report and share your history')
 
   return (
@@ -120,7 +121,7 @@ export default function MineScreen() {
               </Text>
               {hasDrinks ? (
                 <Text numberOfLines={1} style={styles.identitySummary}>
-                  {tr(language, `${summary?.drink_count} 款酒 · ${summary?.bar_count} 家酒吧`, `${summary?.drink_count} beers · ${summary?.bar_count} venues`)}
+                  {tr(language, `${summary?.drink_count} 款酒 · ${summary?.bar_count} 家酒吧`, `${summary?.drink_count} beers · ${summary?.bar_count} bars`)}
                 </Text>
               ) : null}
             </View>
@@ -155,36 +156,18 @@ export default function MineScreen() {
         </View>
 
         <View style={styles.featureCards}>
-          <Text style={styles.historyTitle}>{text.language}</Text>
-          {([
-            ['auto', text.followSystem],
-            ['zh', text.chinese],
-            ['en', text.english],
-          ] as Array<[LanguagePreference, string]>).map(([value, label]) => (
-            <Pressable
-              key={value}
-              accessibilityRole="button"
-              accessibilityState={{ selected: preference === value }}
-              onPress={() => void setPreference(value)}
-              style={({ pressed }) => [styles.protectionRow, pressed && styles.pressed]}>
-              <Text style={styles.protectionText}>{label}</Text>
-              {preference === value ? <FontAwesome name="check" size={15} color={palette.amber} /> : null}
-            </Pressable>
-          ))}
-        </View>
-
-        {hasSession ? (
-          <View style={styles.featureCards}>
+          {hasSession ? (
+            <>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={tr(language, '关注酒吧，管理已关注的酒吧', 'Manage followed venues')}
+              accessibilityLabel={tr(language, '关注酒吧，管理已关注的酒吧', 'Manage followed bars')}
               onPress={() => router.push('/followed-bars' as Href)}
               style={({ pressed }) => [styles.featureCard, pressed && styles.pressed]}>
               <FontAwesome name="bell-o" size={18} color={palette.amber} style={styles.featureIcon} />
               <View style={styles.featureCopy}>
-                <Text style={styles.featureTitle}>{tr(language, '关注酒吧', 'Followed venues')}</Text>
+                <Text style={styles.featureTitle}>{tr(language, '关注酒吧', 'Followed bars')}</Text>
                 <Text style={styles.featureBody}>
-                  {Platform.OS === 'ios' ? tr(language, '管理关注和上新通知', 'Manage follows and new-tap alerts') : tr(language, '管理已关注的酒吧', 'Manage followed venues')}
+                  {Platform.OS === 'ios' ? tr(language, '管理关注和上新通知', 'Manage follows and new-tap alerts') : tr(language, '管理已关注的酒吧', 'Manage followed bars')}
                 </Text>
               </View>
               <FontAwesome name="angle-right" size={20} color={palette.faint} />
@@ -217,8 +200,21 @@ export default function MineScreen() {
                 <FontAwesome name="angle-right" size={18} color={palette.faint} />
               </Pressable>
             ) : null}
-          </View>
-        ) : null}
+            </>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tr(language, '设置语言与偏好', 'Open language and preferences')}
+            onPress={() => router.push('/settings' as Href)}
+            style={({ pressed }) => [styles.featureCard, pressed && styles.pressed]}>
+            <FontAwesome name="cog" size={19} color={palette.amber} style={styles.featureIcon} />
+            <View style={styles.featureCopy}>
+              <Text style={styles.featureTitle}>{tr(language, '设置', 'Settings')}</Text>
+              <Text style={styles.featureBody}>{tr(language, '语言与偏好', 'Language and preferences')}</Text>
+            </View>
+            <FontAwesome name="angle-right" size={20} color={palette.faint} />
+          </Pressable>
+        </View>
 
         <View style={styles.historyHeader}>
           <Text style={styles.historyTitle}>{tr(language, 'TAP 记录', 'TAP history')}</Text>
@@ -229,7 +225,7 @@ export default function MineScreen() {
         ) : groups.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>{tr(language, '还没有 TAP 记录', 'No TAP history yet')}</Text>
-            <Text style={styles.emptyBody}>{tr(language, '看到喝过的酒，点一下“喝过”，它就会留在这里。', 'Tap “Tried” on a beer to keep it here.')}</Text>
+            <Text style={styles.emptyBody}>{tr(language, '看到喝过的酒，点一下「记一杯」，它就会留在这里。', 'Choose “Tap it” on a beer to keep it here.')}</Text>
             <Link href="/search" asChild>
               <Pressable style={styles.emptyButton}>
                 <Text style={styles.emptyButtonText}>{tr(language, '去搜索酒款', 'Search beers')}</Text>
@@ -305,7 +301,7 @@ function MonthlyArchiveCard({ month }: { month: MyDrinkInsights['month'] }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={tr(language, `我的 TAP，${archiveMonth.year}年${Number(archiveMonth.month)}月，${month.drink_count}款，来自${month.bar_count}家酒吧，查看月报`, `My TAPs, ${archiveMonth.month}/${archiveMonth.year}, ${month.drink_count} beers from ${month.bar_count} venues. View report`)}
+      accessibilityLabel={tr(language, `我的 TAP，${archiveMonth.year}年${Number(archiveMonth.month)}月，${month.drink_count}款，来自${month.bar_count}家酒吧，查看月报`, `My TAPs, ${archiveMonth.month}/${archiveMonth.year}, ${month.drink_count} beers from ${month.bar_count} bars. View report`)}
       onPress={() => router.push('/tap-report' as Href)}
       style={({ pressed }) => [styles.monthArchiveCard, pressed && styles.pressed]}>
       <View pointerEvents="none" style={styles.archiveAtmosphere} />
@@ -320,7 +316,7 @@ function MonthlyArchiveCard({ month }: { month: MyDrinkInsights['month'] }) {
           <Text style={styles.archiveCountUnit}>TAP</Text>
         </View>
         <Text style={styles.archiveBars}>
-          {tr(language, '来自 ', 'From ')}<Text style={styles.archiveBarsAccent}>{month.bar_count}</Text>{tr(language, ' 家酒吧', ` venue${month.bar_count === 1 ? '' : 's'}`)}
+          {tr(language, '来自 ', 'From ')}<Text style={styles.archiveBarsAccent}>{month.bar_count}</Text>{tr(language, ' 家酒吧', ` bar${month.bar_count === 1 ? '' : 's'}`)}
         </Text>
         <View style={styles.archiveShareChip}>
           <Text style={styles.archiveShareText}>{tr(language, '查看月报', 'View report')}</Text>
@@ -359,7 +355,7 @@ function DrinkGridItem({ item }: { item: MyDrinkHistoryRow }) {
             {item.image_url ? <CachedImage source={item.image_url} ossStyle="nm-card" style={styles.art} /> : null}
           </View>
           <Text numberOfLines={2} style={styles.drinkName}>{localized(item.name, item.name_en)}</Text>
-          <Text numberOfLines={1} style={styles.drinkMeta}>{localized(item.brewery, item.brewery_en) || item.beer_style || tr(language, '精酿啤酒', 'Craft beer')}</Text>
+          <Text numberOfLines={1} style={styles.drinkMeta}>{localized(item.brewery, item.brewery_en) || localizeBeerStyle(item.beer_style, language, item.beer_style_en) || tr(language, '精酿啤酒', 'Craft beer')}</Text>
         </Pressable>
       </Link>
     </View>

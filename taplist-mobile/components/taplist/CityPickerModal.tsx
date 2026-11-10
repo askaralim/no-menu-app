@@ -6,6 +6,7 @@ import { palette, spacing, typography } from '@/constants/design'
 import { taplistCityMatches } from '@/lib/taplistCity'
 import { useLanguage } from '@/lib/i18n'
 import type { PublicTaplistCity } from '@/lib/types'
+import { trackEvent } from '@/lib/analytics'
 
 type CityPickerEntry =
   | { kind: 'city'; city: PublicTaplistCity }
@@ -37,7 +38,10 @@ export function CityPickerModal({
         accessibilityRole="button"
         accessibilityLabel={`${text.selectCity}: ${localized(city.label, city.label_en || city.city)}`}
         accessibilityState={{ selected }}
-        onPress={() => onSelect(city)}
+        onPress={() => {
+          if (!selected) trackEvent('city_changed', { from_city: selectedCity.city, to_city: city.city })
+          onSelect(city)
+        }}
         style={({ pressed }) => [
           styles.cityOption,
           nested && styles.cityOptionNested,
@@ -197,8 +201,8 @@ const styles = StyleSheet.create({
     color: palette.tungsten,
     fontSize: 11,
     lineHeight: 16,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xxs,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
   },
   cityOption: {
     minHeight: 52,
@@ -207,7 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  cityOptionNested: { paddingLeft: spacing.sm },
+  cityOptionNested: { paddingLeft: spacing.md },
   cityOptionSibling: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.line },
   cityOptionSelected: { borderBottomWidth: 1, borderBottomColor: 'rgba(211,154,69,0.38)' },
   cityOptionLabel: {

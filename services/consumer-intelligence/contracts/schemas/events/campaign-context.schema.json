@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/events/campaign-context.schema.json",
+  "type": "object",
+  "properties": {
+    "campaign_id": {
+      "$ref": "../common/primitives.schema.json#/$defs/uuid"
+    },
+    "stop_id": {
+      "$ref": "../common/primitives.schema.json#/$defs/uuid"
+    },
+    "visit_id": {
+      "$ref": "../common/primitives.schema.json#/$defs/uuid"
+    },
+    "entry_source": {
+      "enum": [
+        "home_banner",
+        "event_list",
+        "beer_badge",
+        "share_card",
+        "share_timeline",
+        "poster_code",
+        "campaign_code",
+        "unknown"
+      ]
+    },
+    "environment": {
+      "enum": [
+        "develop",
+        "trial",
+        "release"
+      ]
+    }
+  },
+  "required": [
+    "campaign_id",
+    "visit_id",
+    "entry_source",
+    "environment"
+  ],
+  "additionalProperties": false
+}

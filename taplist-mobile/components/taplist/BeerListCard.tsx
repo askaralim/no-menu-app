@@ -19,6 +19,7 @@ import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/
 import { trackEvent } from '@/lib/analytics'
 import type { PublicDrinkRow } from '@/lib/types'
 import { tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 
 type BeerListCardProps = {
   drink: PublicDrinkRow
@@ -37,7 +38,7 @@ export function BeerListCard({ drink, slug, tenantId, isLit = false }: BeerListC
     drink.beer?.collab_breweries,
     drink.brand_name,
   )
-  const style = drink.beer?.beer_style ?? null
+  const style = localizeBeerStyle(drink.beer?.beer_style, language, drink.beer?.beer_style_en) || null
   const metaLine = [brewery, style].filter(Boolean).join(' · ')
   const abv = typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null
   const servingOptions = displayServingOptions(drink.serving_options)

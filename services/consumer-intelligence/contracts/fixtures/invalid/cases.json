@@ -1,0 +1,625 @@
+[
+  {
+    "name": "beer_opened unknown version",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 2,
+      "event_name": "beer_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "product_id": "00000007-0000-4000-8000-000000000000",
+      "source_drink_id": "00000006-0000-4000-8000-000000000000",
+      "tenant_id": "00000005-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "bar_opened unknown version",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 2,
+      "event_name": "bar_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "tenant_id": "00000005-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "search_result_opened unknown version",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 2,
+      "event_name": "search_result_opened",
+      "source": "search_result",
+      "selected_city_code": "shanghai",
+      "result": {
+        "type": "beer",
+        "product_id": "00000007-0000-4000-8000-000000000000"
+      },
+      "display_position": 1
+    }
+  },
+  {
+    "name": "activity_opened unknown version",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 2,
+      "event_name": "activity_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "activity_id": "00000008-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "city_changed unknown version",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 2,
+      "event_name": "city_changed",
+      "source": "direct",
+      "selected_city_code": "qingdao",
+      "from_city_code": "shanghai",
+      "to_city_code": "qingdao"
+    }
+  },
+  {
+    "name": "map_navigation_clicked unknown version",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 2,
+      "event_name": "map_navigation_clicked",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "tenant_id": "00000005-0000-4000-8000-000000000000",
+      "provider": "apple_maps"
+    }
+  },
+  {
+    "name": "feed_shown unknown version",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 2,
+      "event_name": "feed_shown",
+      "feed": {
+        "feed_instance_id": "00000004-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "name": "feed_item_impression unknown version",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 2,
+      "event_name": "feed_item_impression",
+      "feed": {
+        "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+        "item_id": "beer-venue-cycle-1",
+        "display_position": 1
+      },
+      "properties": {
+        "visible_duration_ms": 812,
+        "visibility_threshold": 0.5
+      }
+    }
+  },
+  {
+    "name": "feed_item_opened unknown version",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 2,
+      "event_name": "feed_item_opened",
+      "feed": {
+        "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+        "item_id": "beer-venue-cycle-1",
+        "display_position": 1
+      }
+    }
+  },
+  {
+    "name": "beer missing both identities",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "beer_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "tenant_id": "00000005-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "forged event user",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "bar_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "tenant_id": "00000005-0000-4000-8000-000000000000",
+      "user_id": "00000001-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "feed client model forbidden",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "feed_item_opened",
+      "feed": {
+        "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+        "item_id": "beer-venue-cycle-1",
+        "display_position": 1,
+        "model_version": "forged"
+      }
+    }
+  },
+  {
+    "name": "short impression",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "feed_item_impression",
+      "feed": {
+        "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+        "item_id": "beer-venue-cycle-1",
+        "display_position": 1
+      },
+      "properties": {
+        "visible_duration_ms": 749,
+        "visibility_threshold": 0.5
+      }
+    }
+  },
+  {
+    "name": "low impression visibility",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "feed_item_impression",
+      "feed": {
+        "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+        "item_id": "beer-venue-cycle-1",
+        "display_position": 1
+      },
+      "properties": {
+        "visible_duration_ms": 812,
+        "visibility_threshold": 0.49
+      }
+    }
+  },
+  {
+    "name": "activity uses analytics ID only",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "activity_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai"
+    }
+  },
+  {
+    "name": "invalid uuid",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "not-a-uuid",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "bar_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "tenant_id": "00000005-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "username null",
+    "schema": "consumer/profile-patch.schema.json",
+    "data": {
+      "consumer_username": null
+    }
+  },
+  {
+    "name": "unsupported profile field",
+    "schema": "consumer/profile-patch.schema.json",
+    "data": {
+      "display_name": "Askar"
+    }
+  },
+  {
+    "name": "display city is not code",
+    "schema": "consumer/profile-patch.schema.json",
+    "data": {
+      "home_city_code": "Shanghai"
+    }
+  },
+  {
+    "name": "only installation header",
+    "schema": "feed/analytics-headers.schema.json",
+    "data": {
+      "X-Installation-ID": "00000002-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "empty source",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "bar_opened",
+      "source": "",
+      "selected_city_code": "shanghai",
+      "tenant_id": "00000005-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "wrong for you limit",
+    "schema": "feed/request.schema.json",
+    "data": {
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "limit": 21
+    }
+  },
+  {
+    "name": "for you cursor forbidden",
+    "schema": "feed/request.schema.json",
+    "data": {
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "cursor": "x"
+    }
+  },
+  {
+    "name": "reason too long",
+    "schema": "feed/reason.schema.json",
+    "data": {
+      "code": "style",
+      "text": "酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸酸"
+    }
+  },
+  {
+    "name": "reason newline",
+    "schema": "feed/reason.schema.json",
+    "data": {
+      "code": "style",
+      "text": "hello\nworld"
+    }
+  },
+  {
+    "name": "unknown identity action",
+    "schema": "identity/operation.schema.json",
+    "data": {
+      "operation_id": "00000012-0000-4000-8000-000000000000",
+      "action": "alias",
+      "installation_id": "00000002-0000-4000-8000-000000000000",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "occurred_at": "2026-10-31T10:00:00Z"
+    }
+  },
+  {
+    "name": "client identity subject forbidden",
+    "schema": "identity/operation.schema.json",
+    "data": {
+      "operation_id": "00000012-0000-4000-8000-000000000000",
+      "action": "link",
+      "installation_id": "00000002-0000-4000-8000-000000000000",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "user_key": "A"
+    }
+  },
+  {
+    "name": "oversized batch count",
+    "schema": "events/batch.schema.json",
+    "data": {
+      "batch_id": "00000011-0000-4000-8000-000000000000",
+      "installation_id": "00000002-0000-4000-8000-000000000000",
+      "client": {
+        "application": "ios",
+        "platform": "ios",
+        "app_version": "1.0.0"
+      },
+      "events": [
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000001-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        }
+      ]
+    }
+  }
+]

@@ -35,7 +35,7 @@ export const ShareableDrinkLogImage = forwardRef<
         </Text>
         <View style={styles.headerRule} />
         <Text style={styles.contextLabel}>
-          {tr(language, `来自 ${month.bar_count} 家酒吧`, `From ${month.bar_count} venue${month.bar_count === 1 ? '' : 's'}`)}
+          {tr(language, `来自 ${month.bar_count} 家酒吧`, `From ${month.bar_count} bar${month.bar_count === 1 ? '' : 's'}`)}
           {month.drink_count > drinks.length ? tr(language, ` · 展示最近 ${drinks.length} 款`, ` · Latest ${drinks.length}`) : ''}
         </Text>
         <View style={[styles.grid, columns < 3 && styles.gridCentered, drinks.length <= 2 && styles.gridSpacious]}>
@@ -49,7 +49,7 @@ export const ShareableDrinkLogImage = forwardRef<
               <Text numberOfLines={1} style={styles.name}>
                 {[localized(drink.brewery, drink.brewery_en), localized(drink.name, drink.name_en)].filter(Boolean).join(' · ')}
               </Text>
-              <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ') || tr(language, '未知酒吧', 'Unknown venue')}</Text>
+              <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ') || tr(language, '未知酒吧', 'Unknown bar')}</Text>
             </View>
           ))}
         </View>

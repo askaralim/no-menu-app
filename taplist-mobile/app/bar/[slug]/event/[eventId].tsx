@@ -1,5 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
+import { useIntelligenceDetail } from '@/lib/useIntelligenceDetail'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -32,6 +33,7 @@ export default function EventDetailScreen() {
 
   const result = eventQuery.data
   const event = result?.ok ? result.event : null
+  useIntelligenceDetail('activity_opened', { activity_id: event?.id, tenant_id: event?.tenant_id })
   const dateLabel = event ? eventDateLabel(event) : null
 
   return (
@@ -45,7 +47,7 @@ export default function EventDetailScreen() {
         ) : eventQuery.isLoading ? (
           <Text style={styles.loadingText}>{tr(language, '正在加载活动...', 'Loading event...')}</Text>
         ) : eventQuery.isError ? (
-          <EmptyState title={tr(language, '暂时无法加载活动', 'Unable to load event')} body={tr(language, '请稍后重试，或以门店现场信息为准。', 'Try again later. Venue information takes precedence.')} />
+          <EmptyState title={tr(language, '暂时无法加载活动', 'Unable to load event')} body={tr(language, '请稍后重试，或以门店现场信息为准。', 'Try again later. Bar information takes precedence.')} />
         ) : result?.ok === false ? (
           <EmptyState title={eventErrorTitle(result.code, language)} body={tr(language, '该活动可能已结束、取消，或不再公开展示。', 'This event may have ended, been cancelled, or is no longer public.')} />
         ) : event ? (
@@ -80,7 +82,7 @@ export default function EventDetailScreen() {
 
               <Pressable
                 accessibilityRole="link"
-                accessibilityLabel={tr(language, `查看${event.tenant_display_name}酒吧详情`, `View ${event.tenant_display_name} venue`)}
+                accessibilityLabel={tr(language, `查看${event.tenant_display_name}酒吧详情`, `View ${event.tenant_display_name} bar`)}
                 onPress={() => {
                   trackEvent('bar_opened', {
                     tenant_id: event.tenant_id,
@@ -120,7 +122,7 @@ export default function EventDetailScreen() {
               ) : null}
 
               <View style={styles.complianceFooter}>
-                <Text style={styles.eventDisclaimer}>{tr(language, '活动信息由门店提供，时间、内容与供应情况以门店现场为准。', 'Event details are provided by the venue. On-site information takes precedence.')}</Text>
+                <Text style={styles.eventDisclaimer}>{tr(language, '活动信息由门店提供，时间、内容与供应情况以门店现场为准。', 'Event details are provided by the bar. On-site information takes precedence.')}</Text>
                 <Text style={styles.complianceText}>{TAPLIST_LEGAL_DISCLAIMER}</Text>
               </View>
             </View>

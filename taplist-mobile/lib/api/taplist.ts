@@ -1,5 +1,7 @@
 import { getTaplistSupabase } from '@/lib/supabase'
 import type {
+  PublicCampaignSummary,
+  PublicCampaignRpc,
   BeerRoadmapResponse,
   MiniProductSearchRpc,
   MiniProductDetailRpc,
@@ -173,10 +175,17 @@ export async function listMiniBreweries(
 }
 
 export async function fetchPublicBrewery(brewery: string, city?: string | null) {
-  const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_brewery', {
+  const client = getTaplistSupabase()
+  let { data, error } = await client.rpc('get_public_taplist_brewery_i18n', {
     p_city: city ?? null,
     p_brewery: brewery,
   })
+  if (error && isMissingPublicDrinkRpc(error)) {
+    ;({ data, error } = await client.rpc('get_public_taplist_brewery', {
+      p_city: city ?? null,
+      p_brewery: brewery,
+    }))
+  }
   if (error) throw error
   return data as PublicTaplistBreweryRpc
 }
@@ -205,6 +214,19 @@ export async function fetchPublicEvents(city?: string | null) {
   return payload.results ?? []
 }
 
+export async function fetchPublicCampaigns(city?: string | null) {
+  const { data, error } = await getTaplistSupabase().rpc('list_public_campaigns', { p_city: city ?? null })
+  if (error) throw error
+  const payload = data as { ok: boolean; results?: PublicCampaignSummary[] } | null
+  return payload?.ok === true ? payload.results ?? [] : []
+}
+
+export async function fetchPublicCampaign(id: string) {
+  const { data, error } = await getTaplistSupabase().rpc('get_public_campaign', { p_id_or_slug: id })
+  if (error) throw error
+  return data as PublicCampaignRpc
+}
+
 export async function fetchPublicTenantEvents(tenantId: string) {
   const { data, error } = await getTaplistSupabase().rpc('get_public_taplist_events', {
     p_city: null,
@@ -226,10 +248,17 @@ export async function fetchPublicEvent(eventId: string) {
 }
 
 export async function searchPublicTaplist(city: string | null, query: string) {
-  const { data, error } = await getTaplistSupabase().rpc('search_public_taplist', {
+  const client = getTaplistSupabase()
+  let { data, error } = await client.rpc('search_public_taplist_i18n', {
     p_city: city ?? null,
     p_query: query,
   })
+  if (error && isMissingPublicDrinkRpc(error)) {
+    ;({ data, error } = await client.rpc('search_public_taplist', {
+      p_city: city ?? null,
+      p_query: query,
+    }))
+  }
   if (error) throw error
   const payload = data as PublicTaplistSearchRpc
   if (!payload || payload.ok !== true) return []

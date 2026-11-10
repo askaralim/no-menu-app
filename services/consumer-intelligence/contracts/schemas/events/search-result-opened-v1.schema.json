@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/events/search-result-opened-v1.schema.json",
+  "allOf": [
+    {
+      "$ref": "./envelope.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_name": {
+          "const": "search_result_opened"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "source": {
+          "$ref": "../common/primitives.schema.json#/$defs/source"
+        },
+        "selected_city_code": {
+          "anyOf": [
+            {
+              "$ref": "../common/primitives.schema.json#/$defs/city"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "beer"
+                },
+                "product_id": {
+                  "$ref": "../common/primitives.schema.json#/$defs/uuid"
+                },
+                "source_drink_id": {
+                  "$ref": "../common/primitives.schema.json#/$defs/uuid"
+                },
+                "tenant_id": {
+                  "$ref": "../common/primitives.schema.json#/$defs/uuid"
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "additionalProperties": false,
+              "anyOf": [
+                {
+                  "required": [
+                    "product_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "source_drink_id"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "bar"
+                },
+                "tenant_id": {
+                  "$ref": "../common/primitives.schema.json#/$defs/uuid"
+                }
+              },
+              "required": [
+                "type",
+                "tenant_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "activity"
+                },
+                "activity_id": {
+                  "$ref": "../common/primitives.schema.json#/$defs/uuid"
+                }
+              },
+              "required": [
+                "type",
+                "activity_id"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "display_position": {
+          "$ref": "../common/primitives.schema.json#/$defs/positive"
+        },
+        "search_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        }
+      },
+      "required": [
+        "event_name",
+        "schema_version",
+        "source",
+        "selected_city_code",
+        "result",
+        "display_position"
+      ]
+    }
+  ],
+  "unevaluatedProperties": false
+}

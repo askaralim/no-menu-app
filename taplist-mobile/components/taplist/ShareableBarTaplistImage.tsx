@@ -6,6 +6,7 @@ import { BeerArtwork } from '@/components/taplist/BeerArtwork'
 import { palette, spacing, typography } from '@/constants/design'
 import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/lib/formatTaplist'
 import { tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 import type { PublicDrinkRow, PublicTenantDetail } from '@/lib/types'
 
 export type ShareableBarTaplistImageHandle = {
@@ -72,7 +73,7 @@ function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boo
   const servingOptions = displayServingOptions(drink.serving_options)
   const publicStatus = drink.public_status ? drink.public_status : null
   const isSoldOut = publicStatus === '售罄'
-  const beerStyle = drink.beer?.beer_style ?? null
+  const beerStyle = localizeBeerStyle(drink.beer?.beer_style, language, drink.beer?.beer_style_en) || null
   const brewery = formatBreweryWithCollab(
     drink.beer?.brewery,
     drink.beer?.collab_breweries,

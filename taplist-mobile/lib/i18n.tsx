@@ -27,7 +27,7 @@ const copy: Record<Language, Copy> = {
   },
   en: {
     tonight: 'Tonight', search: 'Search', mine: 'Mine', selectCity: 'Select city', close: 'Close',
-    publicVenues: (count: number) => `${count} public venue${count === 1 ? '' : 's'}`, language: 'Language', followSystem: 'Follow system',
+    publicVenues: (count: number) => `${count} public bar${count === 1 ? '' : 's'}`, language: 'Language', followSystem: 'Follow system',
     chinese: '中文', english: 'English', loading: 'Loading', retry: 'Retry', back: 'Back',
     origin: 'Origin', brewery: 'Brewery', style: 'Style', available: 'Available', comingSoon: 'Coming soon',
     recentlySoldOut: 'Recently sold out', follow: 'Follow', following: 'Following', tried: 'Tried', undo: 'Undo',
@@ -105,6 +105,20 @@ export function localizedLocation(
     seen.add(key)
     return true
   }).join(' · ')
+}
+
+export function localizedCompactOrigin(
+  language: Language,
+  value: {
+    country?: string | null
+    country_en?: string | null
+    origin_city?: string | null
+    origin_city_en?: string | null
+  },
+) {
+  const country = language === 'en' ? value.country_en || value.country : value.country
+  const city = language === 'en' ? value.origin_city_en || value.origin_city : value.origin_city
+  return (city || country)?.trim() ?? ''
 }
 
 export function tr(language: Language, chinese: string, english: string) {

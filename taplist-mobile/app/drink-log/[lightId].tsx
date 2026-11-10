@@ -12,7 +12,8 @@ import { ShareImagePreviewModal } from '@/components/taplist/ShareImagePreviewMo
 import { palette, spacing, typography } from '@/constants/design'
 import { trackEvent } from '@/lib/analytics'
 import { getMyDrinkHistoryItem, removeMyDrinkVenue, unlightMyDrink } from '@/lib/api/drinkLog'
-import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
+import { localizedCompactOrigin, tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 
 export default function DrinkLogDetailScreen() {
   const { language, localized } = useLanguage()
@@ -28,7 +29,7 @@ export default function DrinkLogDetailScreen() {
     queryFn: () => getMyDrinkHistoryItem(lightId),
   })
   const item = historyQuery.data
-  const itemLocation = item ? localizedLocation(language, item) : ''
+  const itemLocation = item ? localizedCompactOrigin(language, item) : ''
 
   const refreshAndLeaveIfEmpty = async (isLit: boolean) => {
     await queryClient.invalidateQueries({ queryKey: ['drink-log'] })
@@ -46,7 +47,7 @@ export default function DrinkLogDetailScreen() {
     },
   })
 
-  const confirmUnlight = () => Alert.alert(tr(language, '删除整款 TAP 记录？', 'Delete this entire TAP record?'), tr(language, '这款酒在所有酒吧的记录都会被删除。', 'This beer will be removed from every venue in your history.'), [
+  const confirmUnlight = () => Alert.alert(tr(language, '删除整款 TAP 记录？', 'Delete this entire TAP record?'), tr(language, '这款酒在所有酒吧的记录都会被删除。', 'This beer will be removed from every bar in your history.'), [
     { text: tr(language, '取消', 'Cancel'), style: 'cancel' },
     { text: tr(language, '删除', 'Delete'), style: 'destructive', onPress: () => unlight.mutate() },
   ])
@@ -95,7 +96,7 @@ export default function DrinkLogDetailScreen() {
                 {item.brewery ? <Text style={styles.identityBrewery}>{localized(item.brewery, item.brewery_en)}</Text> : null}
               </View>
               <View style={styles.factGrid}>
-                {item.beer_style ? <Fact label={tr(language, '风格', 'Style')} value={item.beer_style} /> : null}
+                {item.beer_style ? <Fact label={tr(language, '风格', 'Style')} value={localizeBeerStyle(item.beer_style, language, item.beer_style_en)} /> : null}
                 {typeof item.abv === 'number' ? <Fact label="ABV" value={`${item.abv}%`} /> : null}
                 {typeof item.ibu === 'number' ? <Fact label="IBU" value={`${item.ibu}`} /> : null}
                 {itemLocation ? <Fact label={tr(language, '产地', 'Origin')} value={itemLocation} /> : null}
@@ -105,7 +106,7 @@ export default function DrinkLogDetailScreen() {
             <View style={styles.historyHeader}>
               <Text style={styles.historyTitle}>{tr(language, '喝过记录', 'Tried at')}</Text>
               <View style={styles.historyHeaderActions}>
-                <Text style={styles.historyCount}>{tr(language, `${item.venue_count} 家`, `${item.venue_count} venues`)}</Text>
+                <Text style={styles.historyCount}>{tr(language, `${item.venue_count} 家`, `${item.venue_count} bars`)}</Text>
                 {item.source_drink_is_public ? (
                   <Pressable
                     accessibilityRole="button"
@@ -135,7 +136,7 @@ export default function DrinkLogDetailScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={tr(language, `移除${venue.tenant_name}记录`, `Remove ${localized(venue.tenant_name, venue.tenant_name_en)} record`)}
                     style={({ pressed }) => [styles.removeVenueButton, pressed && styles.pressed]}
-                    onPress={() => Alert.alert(tr(language, '移除这家酒吧？', 'Remove this venue?'), tr(language, '其他酒吧记录不会受到影响。', 'Records from other venues will not be affected.'), [
+                    onPress={() => Alert.alert(tr(language, '移除这家酒吧？', 'Remove this bar?'), tr(language, '其他酒吧记录不会受到影响。', 'Records from other bars will not be affected.'), [
                       { text: tr(language, '取消', 'Cancel'), style: 'cancel' },
                       { text: tr(language, '移除', 'Remove'), style: 'destructive', onPress: () => removeVenue.mutate({ tenantId: venue.tenant_id }) },
                     ])}>

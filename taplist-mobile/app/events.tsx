@@ -1,14 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { router } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { EventListSection } from '@/components/taplist/EventListSection'
+import { HomeEventBanner } from '@/components/taplist/HomeEventBanner'
 import { SPARSE_EVENT_LIST_THRESHOLD } from '@/components/taplist/railCardStyle'
 import { TAPLIST_LEGAL_DISCLAIMER, TAPLIST_LEGAL_DISCLAIMER_EN } from '@/constants/compliance'
 import { palette, spacing, typography } from '@/constants/design'
-import { fetchPublicEvents } from '@/lib/api/taplist'
+import { fetchPublicEvents, fetchPublicCampaigns } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import { tr, useLanguage } from '@/lib/i18n'
@@ -19,6 +21,14 @@ export default function EventsScreen() {
   const configured = useTaplistSupabaseReady()
   const { selectedCity } = useTaplistCity()
   const selectedCityName = selectedCity.city
+  const [campaignWidth, setCampaignWidth] = useState(0)
+  const campaignsQuery = useQuery({
+    queryKey: ['taplist', 'campaigns', selectedCityName],
+    queryFn: () => fetchPublicCampaigns(selectedCityName),
+    enabled: configured,
+    refetchOnMount: 'always',
+  })
+  const campaigns = campaignsQuery.isError ? [] : campaignsQuery.data ?? []
 
   const eventsQuery = useQuery({
     queryKey: ['taplist', 'events', selectedCityName],
@@ -57,6 +67,14 @@ export default function EventsScreen() {
           </Text>
         </View>
 
+        {campaigns.length > 0 ? (
+          <View style={{ gap: spacing.md, marginTop: spacing.lg }} onLayout={event => setCampaignWidth(event.nativeEvent.layout.width)}>
+            {campaignWidth > 0 ? campaigns.map((campaign, index) => (
+              <HomeEventBanner key={campaign.id} event={campaign} width={campaignWidth} index={index} total={1} />
+            )) : null}
+          </View>
+        ) : null}
+
         {!configured ? (
           <EmptyState title={tr(language, '尚未连接酒单服务', 'Taplist service is not connected')} body={tr(language, '请配置 Supabase 环境变量后查看公开活动。', 'Configure Supabase to view public events.')} />
         ) : eventsQuery.isLoading ? (
@@ -65,9 +83,9 @@ export default function EventsScreen() {
             <Text style={styles.loadingText}>{tr(language, '正在加载活动...', 'Loading events...')}</Text>
           </View>
         ) : eventsQuery.isError ? (
-          <EmptyState title={tr(language, '暂时无法加载活动', 'Unable to load events')} body={tr(language, '请稍后重试，或以门店现场信息为准。', 'Please try again, or confirm details with the venue.')} />
-        ) : events.length === 0 ? (
-          <EmptyState title={tr(language, '暂无公开活动', 'No public events')} body={tr(language, '今晚还没有酒吧发布活动。', 'No venues have published events for tonight.')} />
+          <EmptyState title={tr(language, '暂时无法加载活动', 'Unable to load events')} body={tr(language, '请稍后重试，或以门店现场信息为准。', 'Please try again, or confirm details with the bar.')} />
+        ) : events.length === 0 && campaigns.length === 0 && !campaignsQuery.isLoading ? (
+          <EmptyState title={tr(language, '暂无公开活动', 'No public events')} body={tr(language, '今晚还没有酒吧发布活动。', 'No bars have published events for tonight.')} />
         ) : (
           <>
             {tonightEvents.length > 0 ? (

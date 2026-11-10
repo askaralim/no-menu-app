@@ -2,11 +2,11 @@
 
 Home-screen / App Store display name: **No Menu Tonight** (`expo.name` in `app.json`).  
 App Store subtitle (listed v1): **酒吧实时酒单管理**.  
-**Status (2026-10-25): App Store `1.1.2` build 24 + production OTA live.** The current OTA adds beer-label recognition, unified drink entry, product-pool search parity and the status action sheet. Follow-up hotfixes for the iOS Modal transition and preserving the target tap through recognition/save are verified in production.
+**Status (2026-11-03): App Store `1.1.2` build 24 + production OTA live.** The current OTA includes beer-label recognition, unified drink entry, product-pool search parity, multi-store switching, tap lifecycle and keg records, paginated operation history, brewery labels, safe operator names and the lightweight new-feature reminder. Follow-up hotfixes for the iOS Modal transition and preserving the target tap through recognition/save are verified in production.
 
-Current POS OTA: [`docs/POS_RECOGNITION_OTA_2026-10-23.md`](./docs/POS_RECOGNITION_OTA_2026-10-23.md) · flow: [`docs/DRINK_ENTRY_AND_RECOGNITION_FLOW.md`](./docs/DRINK_ENTRY_AND_RECOGNITION_FLOW.md) · status actions: [`docs/TAPLIST_STATUS_ACTION_FLOW.md`](./docs/TAPLIST_STATUS_ACTION_FLOW.md).
+Recognition OTA record: [`docs/POS_RECOGNITION_OTA_2026-10-23.md`](./docs/POS_RECOGNITION_OTA_2026-10-23.md) · flow: [`docs/DRINK_ENTRY_AND_RECOGNITION_FLOW.md`](./docs/DRINK_ENTRY_AND_RECOGNITION_FLOW.md) · status and lifecycle actions: [`docs/TAPLIST_STATUS_ACTION_FLOW.md`](./docs/TAPLIST_STATUS_ACTION_FLOW.md).
 
-**Next OTA (pending, not live):** when the signed-in account belongs to multiple stores, the store name in the tap-list header is now a visible switch-store entry. It reuses the existing authenticated store-selection flow; single-store accounts are unchanged. This is a JavaScript-only UI change with no schema or native dependency update.
+**Next OTA (pending, not live):** hide the「记录换桶」entry when a drink is「即将上新」. The client handler and server already reject that operation, so this is a JavaScript-only UI consistency fix with no schema, native dependency or lifecycle-data change.
 
 ASC docs: [`docs/APP_STORE_CONNECT_1.1.2.md`](./docs/APP_STORE_CONNECT_1.1.2.md) (current binary) · [`docs/APP_STORE_CONNECT_1.1.1.md`](./docs/APP_STORE_CONNECT_1.1.1.md) (previous) · [`docs/APP_STORE_CONNECT_1.1.0.md`](./docs/APP_STORE_CONNECT_1.1.0.md) (historical) · [`docs/APP_STORE_LISTED_V1.md`](./docs/APP_STORE_LISTED_V1.md) (`1.0.0` baseline) · agent notes: [`AGENTS.md`](./AGENTS.md) · index: [`../docs/INDEX.md`](../docs/INDEX.md).
 

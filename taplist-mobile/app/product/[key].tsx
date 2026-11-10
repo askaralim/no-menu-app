@@ -1,5 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { useQuery } from '@tanstack/react-query'
+import { useIntelligenceDetail } from '@/lib/useIntelligenceDetail'
+import { trackEvent } from '@/lib/analytics'
 import { type Href, router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -11,6 +13,7 @@ import { fetchMiniProduct } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 
 export default function ProductDetailScreen() {
   const { language, localized } = useLanguage()
@@ -26,6 +29,7 @@ export default function ProductDetailScreen() {
   })
   const result = detailQuery.data
   const product = result?.ok ? result.product : null
+  useIntelligenceDetail('beer_opened', { product_id: product?.product_id, source_drink_id: product?.drink_id })
   const venues = result?.ok ? result.venues.filter((venue) => venue.available) : []
   const collabBreweries = (product?.collab_breweries ?? [])
     .map((brewery) => brewery.trim())
@@ -34,7 +38,7 @@ export default function ProductDetailScreen() {
   const location = product ? localizedLocation(language, product) : ''
   const metadata = product
     ? [
-        product.beer_style ? { label: tr(language, '风格', 'Style'), value: product.beer_style } : null,
+        product.beer_style ? { label: tr(language, '风格', 'Style'), value: localizeBeerStyle(product.beer_style, language, product.beer_style_en) } : null,
         typeof product.abv === 'number' ? { label: 'ABV', value: `${product.abv}%` } : null,
         typeof product.ibu === 'number' ? { label: 'IBU', value: `${product.ibu}` } : null,
         location ? { label: tr(language, '产地', 'Origin'), value: location } : null,
@@ -103,14 +107,17 @@ export default function ProductDetailScreen() {
                 </View>
               ) : null}
               <Text style={styles.sectionTitle}>
-                {venues.length > 0 ? tr(language, `${venues.length} 家门店供应`, `Available at ${venues.length} venue${venues.length === 1 ? '' : 's'}`) : tr(language, '供应门店', 'Available at')}
+                {venues.length > 0 ? tr(language, `${venues.length} 家门店供应`, `Available at ${venues.length} bar${venues.length === 1 ? '' : 's'}`) : tr(language, '供应门店', 'Available at')}
               </Text>
               {venues.length > 0 ? venues.map((venue) => (
                 <Pressable
                   key={venue.id}
                   accessibilityRole="link"
                   accessibilityLabel={tr(language, `查看${venue.name}酒吧详情`, `View ${localized(venue.name, venue.display_name_en)}`)}
-                  onPress={() => router.push(`/bar/${venue.slug}` as Href)}
+                  onPress={() => {
+                    trackEvent('bar_opened', { tenant_id: venue.id, source: 'product_venues' })
+                    router.push(`/bar/${venue.slug}` as Href)
+                  }}
                   style={({ pressed }) => [styles.venueCard, pressed && styles.pressed]}>
                   <View style={styles.venueIcon}>
                     <FontAwesome name="map-marker" size={15} color={palette.amber} />

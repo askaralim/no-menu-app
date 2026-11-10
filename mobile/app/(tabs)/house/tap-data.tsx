@@ -117,21 +117,38 @@ function withTap(label: string, tap: number | null | undefined): string {
   return prefix ? `${prefix} ${label}` : label
 }
 
+function drinkIdentity(
+  drinkName: string | null | undefined,
+  breweryName: string | null | undefined,
+): string | null {
+  const drink = drinkName?.trim()
+  if (!drink) return null
+  const brewery = breweryName?.trim()
+  return brewery ? `${brewery} · ${drink}` : drink
+}
+
 function operationDetail(operation: TapLifecycleOperation): string | null {
   if (operation.action === 'replace') {
-    const previous = operation.previous_drink_name?.trim()
-    const next = operation.next_drink_name?.trim()
+    const previous = drinkIdentity(
+      operation.previous_drink_name,
+      operation.previous_brewery_name,
+    )
+    const next = drinkIdentity(operation.next_drink_name, operation.next_brewery_name)
     if (previous && next) return `${previous} → ${next}`
-    return next || previous || operation.drink_name?.trim() || null
+    return next || previous || drinkIdentity(operation.drink_name, operation.brewery_name)
   }
 
   if (operation.action === 'swap') {
-    const previous = operation.previous_drink_name?.trim()
-    const next = operation.next_drink_name?.trim()
+    const previous = drinkIdentity(
+      operation.previous_drink_name,
+      operation.previous_brewery_name,
+    )
+    const next = drinkIdentity(operation.next_drink_name, operation.next_brewery_name)
     if (previous && next) return `${previous} / ${next}`
+    return previous || next || drinkIdentity(operation.drink_name, operation.brewery_name)
   }
 
-  return operation.drink_name?.trim() || null
+  return drinkIdentity(operation.drink_name, operation.brewery_name)
 }
 
 function clearLabel(reason: string | null | undefined): string {

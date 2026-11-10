@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>No Menu 南京 / PAPOO 小红书工具</title>
+  <title>No Menu 成都 / 大鱼 BigFish Craftory 小红书工具</title>
   <style>
     :root{color-scheme:dark;--bg:#0d0e0c;--panel:#151613;--line:#34352f;--text:#f4efe5;--muted:#aaa89f;--paper:#e8dfcf;--ink:#171814;--rust:#b64b32;--teal:#315d61}
     *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
@@ -16,16 +16,16 @@
   <main class="shell">
     <aside class="sidebar">
       <h1>NO MENU<br>城市 / 酒吧上线海报</h1>
-      <p class="intro">用一组克制的门店与实时酒单图片，介绍南京 PAPOO。</p>
+      <p class="intro">用一组克制的门店与实时酒单图片，介绍成都大鱼 BigFish Craftory。</p>
       <section class="group">
         <h2 class="group-title">FEATURE INFO</h2>
         <div class="grid">
-          <div class="field"><label>城市</label><input id="city" value="南京"></div>
-          <div class="field"><label>城市英文</label><input id="cityEn" value="NANJING"></div>
-          <div class="field"><label>当前 Tap</label><input id="tapCount" value="10"></div>
+          <div class="field"><label>城市</label><input id="city" value="成都"></div>
+          <div class="field"><label>城市英文</label><input id="cityEn" value="CHENGDU"></div>
+          <div class="field"><label>当前 Tap</label><input id="tapCount" value="24"></div>
         </div>
-        <div class="field"><label>酒吧</label><input id="bar" value="PAPOO"></div>
-        <div class="field"><label>地址</label><input id="address" value="鼓楼区 · 湖南街道青岛路2-4"></div>
+        <div class="field"><label>酒吧</label><input id="bar" value="大鱼 BigFish Craftory"></div>
+        <div class="field"><label>地址</label><input id="address" value="锦江区 · 宏济新路335号附1号"></div>
         <div class="field"><label>营业时间</label><input id="hours" value="18:00–02:00"></div>
       </section>
       <section class="group">
@@ -36,7 +36,7 @@
       <section class="group">
         <h2 class="group-title">PREVIEW / EXPORT</h2>
         <div class="field"><label>页面</label><select id="page"></select></div>
-        <div class="field"><label>文件名</label><input id="filename" value="no-menu-nanjing-papoo"></div>
+        <div class="field"><label>文件名</label><input id="filename" value="no-menu-chengdu-bigfish"></div>
         <div class="actions"><button class="action primary" id="download">下载当前页</button><button class="action" id="downloadAll">下载全部</button></div>
       </section>
     </aside>
@@ -45,17 +45,32 @@
   <script>
     if(new URLSearchParams(location.search).get('export')==='1')document.body.classList.add('export-mode')
     const items=[
-      {name:'自然而然·山柚子',brewery:'大阳酿造',style:'干型西打',abv:'4.5%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/a3b98b53-024d-48b6-8bfd-542b5dcb96e3/drinks/4e26e827-bbb6-4b7e-860c-87f33f544b5a/mvte3vzy-ov28vfnl1a.jpg'},
-      {name:'莓莓提苏',brewery:'大阳酿造',style:'水果古斯啤酒',abv:'6.2%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/a3b98b53-024d-48b6-8bfd-542b5dcb96e3/drinks/1cee7c5f-af32-49a6-bb7f-5b27cfa51a50/mvqq9zag-bcc7dyly30.jpg'},
-      {name:'青BB · 黑化版',brewery:'BeerHead',style:'巨峰葡萄硬苏打',abv:'4.5%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/a3b98b53-024d-48b6-8bfd-542b5dcb96e3/drinks/12f2ae0c-869a-4f47-8a1e-2b9bc2c9da34/mv2ak9hn-682pzhexos.jpg'},
-      {name:'姜戈',brewery:'分野酿造',style:'意大利风格皮尔森',abv:'5.5%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/a3b98b53-024d-48b6-8bfd-542b5dcb96e3/drinks/ad1a2702-1f7d-4113-946c-1bd8da820a7e/mv2alvo4-tbcuwjcwfr.jpg'},
-      {name:'实验款墨西哥拉格',brewery:'大九酿造',style:'墨西哥拉格',abv:'5.5%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/products/427ec0a4-11b6-4864-8984-65f95722be04/fcf5bd04-379d-404d-b1dd-2bb9fb6753c6.jpg'},
-      {name:'浮士德黑啤',brewery:'望泸精酿 × 火跃酿造',style:'黑啤',abv:'4.8%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/a3b98b53-024d-48b6-8bfd-542b5dcb96e3/drinks/85a7262d-3aa9-4a96-938b-9c6d19d8e70b/mvte61vz-npa4xipdtu.jpg'},
-      {name:'泠泠七弦',brewery:'大阳酿造',style:'大米冷IPA',abv:'6.2%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/a3b98b53-024d-48b6-8bfd-542b5dcb96e3/drinks/28c6892f-bae2-42cc-93e8-005396ba3646/mvte6vqe-vbiogf7959.jpg'},
-      {name:'城市负片',brewery:'望泸精酿',style:'摩登西海岸IPA',abv:'7%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/a3b98b53-024d-48b6-8bfd-542b5dcb96e3/drinks/e0d608ce-fe90-42f5-8b28-fffb528da4a6/mvte8u0r-aurp7y3f2m.jpg'},
-      {name:'实验款浑浊IPA',brewery:'大九酿造',style:'浑浊IPA',abv:'6.4%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/a3b98b53-024d-48b6-8bfd-542b5dcb96e3/drinks/786f4d11-cf20-4cda-abb4-b8c5c4723883/mvteaj2q-crj6egm313.jpg'},
-      {name:'天使的分享2026',brewery:'美西啤酒',style:'过波本桶帝国世涛',abv:'12%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/a3b98b53-024d-48b6-8bfd-542b5dcb96e3/drinks/652d4cf7-2f9f-4af6-8232-f796ea15490b/muvpsoex-c1pg2su9l3.jpg'}
+      {name:'岁岁如意11',brewery:'波莫纳岛',style:'柚子酸IPA',abv:'6.5%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/0bb13b79-8694-465a-84de-3b120400135f/mw59jh7f-sbzzandkdz.jpg'},
+      {name:'草莓咸柠古斯',brewery:'酒花民族',style:'水果古斯',abv:'4.7%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/e609eeac-627e-476c-b98b-a34b97a99117/mw5bjk0t-6b8polfyze.jpg'},
+      {name:'六度虚幻',brewery:'一滴',style:'水果酸艾尔',abv:'6.66%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/12d8f9d0-502c-43c0-b76d-da96ba0fc629/mw5bmmn1-42ljw051ll.jpg'},
+      {name:'果子交响',brewery:'玻璃金字塔',style:'果泥酸艾尔',abv:'7%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/f1ef92db-718d-4791-a777-05ec9206c282/mw5bozku-lmfufg0cey.jpg'},
+      {name:'弗雷昆·红绯蔻',brewery:'猫宁',style:'野菌苹果酒',abv:'5.5%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/dd0ab374-a3e5-4700-b4bc-e88e8fdebbdf/mw5brj7u-01etdfvk7n.jpg'},
+      {name:'流体芝士',brewery:'一滴',style:'芝士蛋糕果泥酸艾尔',abv:'7.5%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/fd56ee2b-7fac-4de5-a609-d15ac0416838/mw5bu45v-l4ifo31gjz.jpg'},
+      {name:'蓝调迷踪',brewery:'一滴',style:'果泥酸艾尔',abv:'7.9%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/e6307388-20f3-4d36-845b-1a8727793d4d/mw5bvwh5-j89q61w95w.jpg'},
+      {name:'暗黑荣耀',brewery:'一滴',style:'奶油水果果昔酸艾尔',abv:'6.6%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/d4a4dfcb-dafa-4584-90e3-73beebd5f612/mw5bxodk-seqnr4zs6k.jpg'},
+      {name:'莓浆',brewery:'本澜',style:'红加仑过桶酸艾尔',abv:'5.5%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/57f02433-5c2c-4454-bb29-e4b1c3dfaa82/222bd10c-6ed8-46bc-8cf1-af382971ce76.jpg'},
+      {name:'白水',brewery:'本澜',style:'低温窖藏桶陈塞松',abv:'5%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/8dcf5a2c-6637-4e4c-91ed-455d7283c7c9/mw5c4qt7-g7z8fn5ypz.jpg'},
+      {name:'弦月',brewery:'本澜',style:'鼠尾草桶陈古斯',abv:'5%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/458895fb-7cd5-4f69-8528-d5a2ed659d05/4a785a01-cc8b-4dbf-8e99-9f874b6a1fb6.jpg'},
+      {name:'踪迹',brewery:'SOMA',style:'西海岸IPA',abv:'6.5%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/3fef35a0-a693-411f-801b-d43321c46b20/mw5c9meg-hg7pqkcbpm.jpg'},
+      {name:'暗流',brewery:'SOMA',style:'双倍浑浊IPA',abv:'8%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/12685a04-901d-4ad3-b8ba-db6d7a900b41/mw5cb66s-wdymdtaj5o.jpg'},
+      {name:'自由落体',brewery:'SOMA',style:'浑浊IPA',abv:'7%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/008b5b86-4a10-4644-9d93-4942e46b3c20/e116995e-a0b2-4d04-8457-4f4542fc9f4c.png'},
+      {name:'热烈人生',brewery:'SOMA',style:'双倍浑浊IPA',abv:'8%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/cb959154-ea41-4fe2-96c1-d08d13721a37/e7d88f2b-ed08-415c-b86c-3407a35700d4.png'},
+      {name:'乐谱',brewery:'SOMA',style:'三倍浑浊IPA',abv:'10%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/d23f8c60-adb7-46eb-b95f-44bfad973107/mw5cjbbl-aaex8iax5a.jpg'},
+      {name:'酒颂',brewery:'SOMA',style:'四倍浑浊IPA',abv:'12%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/1c6937d5-6737-4fec-a5f3-f7aa45aa17da/mw5ckh1j-rsale4cdv9.jpg'},
+      {name:'东极漩涡',brewery:'丹顿',style:'三倍浑浊IPA',abv:'10%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/6a87da83-8d9e-48cb-8f60-f322e7c6d2d4/mw5clref-ln0vtfhg45.jpg'},
+      {name:'赤羽暴跳',brewery:'雪梨山',style:'血橙增味淡色艾尔',abv:'4.5%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/d76169b5-0611-488e-9bc9-ab27ffe8f0b1/542ed699-b041-469f-a51d-123b9bd3f9f2.jpg'},
+      {name:'黑金暴徒',brewery:'一滴',style:'帝国甜品世涛',abv:'10.7%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/2323bd4c-e1f5-4d26-aa2d-27c59ef6f206/mw5ghkol-jsvbw4690k.jpg'},
+      {name:'墨本黑',brewery:'酒花民族',style:'氮气干世涛',abv:'4.3%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/a7a78b86-a59b-4227-be43-81cd9bb8c936/mw5gjye9-ncfy105sij.jpg'},
+      {name:'法兰西风情',brewery:'布鲁斯奇酿酒厂',style:'法式拉格',abv:'4.7%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/6b96948f-51e6-4574-b122-acd9add39a48/mw5gm4qr-qupqprax1j.jpg'},
+      {name:'丝绒苦啤',brewery:'安荷酒厂',style:'氮气苦啤',abv:'3.4%',status:'在售',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/02661db1-9110-4e6c-b3dc-c36e5a12219e/mw5gp3s6-uf2eyumijk.jpg'},
+      {name:'巴伐利亚海勒斯',brewery:'涧溪',style:'拉格',abv:'4.2%',status:'上新',servings:[],image:'https://img.nomenuapp.com/prod/tenants/31632118-d79a-431f-aae0-122a160d4604/drinks/96aa8943-aa36-4725-8225-ad922d641018/mw5hn6uf-a5veh26mi4.jpg'}
     ]
+    const breweryCountries={'波莫纳岛':'英国','酒花民族':'澳大利亚','一滴':'澳大利亚','玻璃金字塔':'芬兰','猫宁':'新西兰','本澜':'英国','SOMA':'西班牙','丹顿':'澳大利亚','雪梨山':'澳大利亚','布鲁斯奇酿酒厂':'加拿大','安荷酒厂':'英国'}
     const $=id=>document.getElementById(id),canvas=$('canvas'),ctx=canvas.getContext('2d'),images=new Map();let data=structuredClone(items)
     const fields={city:$('city'),cityEn:$('cityEn'),tapCount:$('tapCount'),bar:$('bar'),address:$('address'),hours:$('hours'),data:$('data'),page:$('page'),filename:$('filename')};fields.data.value=JSON.stringify(data,null,2)
     function font(size,weight=400,mono=false){return `${weight} ${size}px ${mono?'"SFMono-Regular",Menlo,monospace':'"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif'}`}
@@ -70,7 +85,7 @@
     function menuPageCount(){return Math.ceil(data.length/6)}
     function menuPageSize(){return Math.ceil(data.length/menuPageCount())}
     function formatServings(item){return (item.servings||[]).map(s=>{const size=s.label||s.volume_ml?`${s.label||''}${s.label&&s.volume_ml?' · ':''}${s.volume_ml?`${s.volume_ml}ml`:''}`:'';return `${size}${size&&s.price!=null?' ':''}${s.price!=null?`¥${s.price}`:''}`.trim()}).filter(Boolean).join(' / ')}
-    function drawMenu(page){paper();const size=menuPageSize(),start=page*size,subset=data.slice(start,start+size);text('NO MENU',62,54,26,650,'#315d61','left',true);text(`${fields.city.value} · ${fields.bar.value}`,1018,58,22,600,'#315d61','right');line(62,118,1018,118,'#315d61',2);text('实时酒单',62,172,54,650);text(`${data.length} TAPS`,1018,190,22,650,'#b64b32','right',true);subset.forEach((item,i)=>{const y=286+i*190;text(String(start+i+1).padStart(2,'0'),62,y+10,22,650,'#b64b32','left',true);const img=images.get(item.image);if(img){coverImage(img,120,y-4,84,84);ctx.strokeStyle='#b8af9f';ctx.lineWidth=1;ctx.strokeRect(120,y-4,84,84)}fit(`${item.brewery} · ${item.name}`,228,y,640,32,19,{weight:650});text(item.abv,1018,y+8,22,650,'#315d61','right',true);fit(item.style,228,y+52,640,22,16,{color:'#5f6059'});const servings=formatServings(item);if(servings)fit(servings,228,y+88,790,20,15,{weight:500,color:'#8a5749',mono:true});line(120,y+143,1018,y+143,'#b8af9f',1)})}
+    function drawMenu(page){paper();const size=menuPageSize(),start=page*size,subset=data.slice(start,start+size);text('NO MENU',62,54,26,650,'#315d61','left',true);text(`${fields.city.value} · ${fields.bar.value}`,1018,58,22,600,'#315d61','right');line(62,118,1018,118,'#315d61',2);text('实时酒单',62,172,54,650);text(`${data.length} TAPS`,1018,190,22,650,'#b64b32','right',true);subset.forEach((item,i)=>{const y=286+i*190;text(String(start+i+1).padStart(2,'0'),62,y+10,22,650,'#b64b32','left',true);const img=images.get(item.image);if(img){coverImage(img,120,y-4,84,84);ctx.strokeStyle='#b8af9f';ctx.lineWidth=1;ctx.strokeRect(120,y-4,84,84)}const country=item.country||breweryCountries[item.brewery];if(country)text(country,228,y-7,15,500,'#777870');fit(`${item.brewery} · ${item.name}`,228,y+22,640,30,18,{weight:650});text(item.abv,1018,y+30,22,650,'#315d61','right',true);fit(item.style,228,y+66,640,22,16,{color:'#5f6059'});const servings=formatServings(item);if(servings)fit(servings,228,y+100,790,20,15,{weight:500,color:'#8a5749',mono:true});line(120,y+143,1018,y+143,'#b8af9f',1)})}
     function pageCount(){return 2+menuPageCount()}
     function rebuildPages(){const requested=Number(new URLSearchParams(location.search).get('page')),current=Number.isFinite(requested)?Math.min(Math.max(requested,0),pageCount()-1):Math.min(Number(fields.page.value)||0,pageCount()-1),menuPages=pageCount()-2;fields.page.innerHTML='';['01 城市封面','02 酒吧与精选',...Array.from({length:menuPages},(_,i)=>`${String(i+3).padStart(2,'0')} 酒单 ${i+1}/${menuPages}`)].forEach((label,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=label;fields.page.appendChild(option)});fields.page.value=String(current)}
     function draw(){const p=Number(fields.page.value);ctx.clearRect(0,0,1080,1440);if(p===0)drawCover();else if(p===1)drawBar();else drawMenu(p-2)}

@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/feed/reason.schema.json",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "pattern": "^[^\\r\\n]*$",
+      "description": "Plain text only. Never parse as HTML/Markdown or auto-link. Server must not emit markup or URLs. Length is Unicode code points, not UTF-8 bytes.",
+      "allOf": [
+        {
+          "not": {
+            "pattern": "[<>`*\\[\\]]"
+          }
+        },
+        {
+          "not": {
+            "pattern": "(?:[A-Za-z][A-Za-z0-9+.-]*://|[Ww][Ww][Ww]\\.)"
+          }
+        },
+        {
+          "not": {
+            "pattern": "(?:^#{1,6}\\s|__[^_]+__)"
+          }
+        }
+      ]
+    },
+    "params": {
+      "type": "object"
+    },
+    "version": {
+      "const": "e1-reason-v2"
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Frozen at snapshot generation. Aggregate canonical-deduplicated TAP evidence only; total includes Unknown. No TAP identities or individual history records.",
+      "properties": {
+        "candidate_style_key": {
+          "type": "string",
+          "pattern": "^[a-z_]+\\.[a-z_]+$",
+          "maxLength": 64
+        },
+        "candidate_style_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "candidate_granularity": {
+          "enum": [
+            "broad",
+            "specific"
+          ]
+        },
+        "matched_unique_taps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total_unique_taps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "matched_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "100 * matched_unique_taps / total_unique_taps, unrounded. This is a share of recorded unique beers, not a preference probability."
+        },
+        "witnesses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 84,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "properties": {
+              "style_key": {
+                "type": "string",
+                "pattern": "^[a-z_]+\\.[a-z_]+$",
+                "maxLength": 64
+              },
+              "style_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "granularity": {
+                "enum": [
+                  "broad",
+                  "specific"
+                ]
+              },
+              "unique_taps": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "style_key",
+              "style_label",
+              "granularity",
+              "unique_taps"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "candidate_style_key",
+        "candidate_style_label",
+        "candidate_granularity",
+        "matched_unique_taps",
+        "total_unique_taps",
+        "matched_percentage",
+        "witnesses"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "code",
+    "text"
+  ],
+  "dependentRequired": {
+    "version": [
+      "evidence"
+    ],
+    "evidence": [
+      "version"
+    ]
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "version"
+        ]
+      },
+      "then": {
+        "properties": {
+          "code": {
+            "enum": [
+              "style_exact",
+              "style_bridge"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

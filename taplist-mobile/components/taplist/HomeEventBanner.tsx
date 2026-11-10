@@ -13,13 +13,13 @@ import {
 } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
 import { trackEvent } from '@/lib/analytics'
-import type { PublicEventRow } from '@/lib/types'
+import type { HomeDiscoveryEvent } from '@/lib/types'
 import { tr, useLanguage } from '@/lib/i18n'
 
 export const HOME_EVENT_BANNER_HEIGHT = 184
 
 type HomeEventBannerProps = {
-  event: PublicEventRow
+  event: HomeDiscoveryEvent
   width: number
   index: number
   total: number
@@ -28,8 +28,11 @@ type HomeEventBannerProps = {
 export function HomeEventBanner({ event, width, index, total }: HomeEventBannerProps) {
   const router = useRouter()
   const { language } = useLanguage()
-  const stateLabel = event.display_state === 'UPCOMING' ? tr(language, '即将开始', 'Upcoming') : tr(language, '进行中', 'Now')
-  const dateLabel = compactEventDateLabel(event)
+  const campaign = 'kind' in event && event.kind === 'campaign' ? event : null
+  const upcoming = 'display_state' in event ? event.display_state === 'UPCOMING' : new Date(event.start_at).getTime() > Date.now()
+  const imageUrl = 'image_url' in event ? event.image_url : event.card_image_url
+  const stateLabel = upcoming ? tr(language, '即将开始', 'Upcoming') : tr(language, '进行中', 'Now')
+  const dateLabel = compactEventDateLabel(event)?.replace(/[—–]/g, '-')
   const pageLabel = total > 1 ? tr(language, `第 ${index + 1} 场，共 ${total} 场`, `Event ${index + 1} of ${total}`) : null
   const copy = (
     <>
@@ -63,18 +66,22 @@ export function HomeEventBanner({ event, width, index, total }: HomeEventBannerP
         .join('，')}
       onPress={() => {
         trackEvent('event_opened', {
-          tenant_id: event.tenant_id,
+          tenant_id: 'tenant_id' in event ? event.tenant_id : undefined,
           event_id: event.id,
           source: 'home_event',
         })
-        router.push({
-          pathname: '/bar/[slug]/event/[eventId]',
-          params: { slug: event.tenant_slug, eventId: event.id },
-        })
+        if (campaign) {
+          router.push({ pathname: '/campaign/[id]', params: { id: campaign.id } })
+        } else if ('tenant_slug' in event) {
+          router.push({
+            pathname: '/bar/[slug]/event/[eventId]',
+            params: { slug: event.tenant_slug, eventId: event.id },
+          })
+        }
       }}
       style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}>
-      {event.image_url ? (
-        <CachedImageBackground source={event.image_url} ossStyle="nm-card" style={styles.fill} imageStyle={styles.image}>
+      {imageUrl ? (
+        <CachedImageBackground source={imageUrl} ossStyle="nm-card" style={styles.fill} imageStyle={styles.image}>
           <LinearGradient
             colors={RAIL_IMAGE_SCRIM_COLORS}
             locations={RAIL_IMAGE_SCRIM_LOCATIONS}
@@ -83,7 +90,7 @@ export function HomeEventBanner({ event, width, index, total }: HomeEventBannerP
           </LinearGradient>
         </CachedImageBackground>
       ) : null}
-      {!event.image_url ? (
+      {!imageUrl ? (
         <LinearGradient
           colors={RAIL_TEXT_ONLY_SCRIM_COLORS}
           locations={RAIL_TEXT_ONLY_SCRIM_LOCATIONS}
@@ -147,8 +154,8 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title,
     color: palette.text,
-    fontSize: 19,
-    lineHeight: 25,
+    fontSize: 18,
+    lineHeight: 24,
     fontWeight: '600',
   },
   date: {
@@ -167,6 +174,8 @@ const styles = StyleSheet.create({
   },
   venue: {
     ...typography.caption,
+    fontSize: 12,
+    lineHeight: 17,
     color: palette.muted,
     flex: 1,
     minWidth: 0,

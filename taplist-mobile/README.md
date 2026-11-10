@@ -13,8 +13,16 @@ consumer app must not depend on POS UI or mutate POS workflows.
 
 Monorepo doc index: [`../docs/INDEX.md`](../docs/INDEX.md).  
 
-**Status (2026-10-25):** App Store `1.3.2` (build 48) + production OTA is **Approved / live**. In addition to brewery discovery, the current experience marks previously tasted drinks in bar tap lists, clarifies beer-detail state and improves TAP record layout and deletion wording. The matching WeChat mini-program has passed review and is live with the same private “喝过” semantics and updated analytics. See [`docs/CONSUMER_TAP_HISTORY_ROLLOUT_2026-10-25.md`](docs/CONSUMER_TAP_HISTORY_ROLLOUT_2026-10-25.md) and [`docs/BREWERY_DISCOVERY_2026-10-09.md`](docs/BREWERY_DISCOVERY_2026-10-09.md). ASC: [`docs/APP_STORE_CONNECT_1.3.2.md`](docs/APP_STORE_CONNECT_1.3.2.md).
+**Status (2026-11-10):** App Store `1.3.2` (build48) + production OTA 已发布，用户确认实际使用正常，记录为用户验收通过。最新记录的 OTA group 为 `47314e59-5d47-4d4b-9990-f3f8814ffac5`；包含 E1 Feed、Reason V2、英文风格、活动展示及 UI 微调，详见 [OTA发布与回退记录](docs/OTA_CANDIDATE_2026-11-10.md)。微信小程序线上仍为1.4.0，1.5.0正式开关已开启、准备提交审核，尚不能视为已发布。
+**OTA 后本地改动：** 最新 TAP 按钮尺寸与「记一杯 / Tap it」「已记录 / Tapped」「记录此店 / Tap here」文案已与小程序对齐，TypeScript 检查通过；尚未再次 OTA，不属于上方已验收的发布资产。
+
+当前功能、客户端边界和发布状态以 [产品能力矩阵（2026-11-10）](docs/PRODUCT_SURFACES_2026-11-10.md) 为准；历史发布文档用于追溯，不应单独作为线上能力判断依据。
+
+**6×6 活动展示：** 首页入口、活动详情内容与全部图片已 OTA，用户于2026-11-10确认验证完成。线上护照、打卡与海报生成仍由小程序承接；小程序1.5.0准备提审。正式活动小程序码已配置，发布后扫码验收及后台维护规则见 [活动上线记录](../services/consumer-intelligence/CAMPAIGN_ANALYTICS.md#正式活动码与后台维护2026-11-10)。
+
 Tonight POS `1.1.2` is also **Approved / live** — see `mobile/docs/APP_STORE_CONNECT_1.1.2.md`.
+
+English beer styles are database-owned Product Pool fields. Current iOS screens consume `beer_style_en` from Supabase `_i18n` RPCs and fall back to the raw style. ECS Feed, Reason V2 and first-party analytics are included in the published OTA; user acceptance is confirmed, while detailed analytics reconciliation remains a separate check. See [integration and manual acceptance](docs/CONSUMER_INTELLIGENCE_PORT_2026-11-10.md) and the [shared runtime contract](../docs/CONSUMER_STYLE_LOCALIZATION_RUNTIME.md). The published OTA also includes joint-campaign frontend integration, as recorded in the OTA release scope. Do not restore client-side V1.2 matching or infer styles from keywords.
 
 ## Setup
 
@@ -54,13 +62,14 @@ Apply the repository-level `supabase/migrations/` before expecting corresponding
 
 ## Product surfaces
 
-- `今晚`: city feed, public bars, events, and new taps
+- `今晚`: city feed, campaign entry, public bars and events, plus `适合你 / For You` and `全部上新 / Latest` feeds
 - `搜索`: public beer, brewery, and bar discovery
-- `我的`: private 我的 TAP, followed bars entry, Apple protection, sharing, and account deletion
-- `关于`: product, privacy, compliance, and analytics controls, opened from the fixed top action in `我的`
+- `我的`: private 我的 TAP, followed bars, monthly review/share images, Apple protection, language/settings, and account deletion
+- `关于`: product, privacy, compliance, analytics controls, and Chinese / English / system-language selection
 - Bar detail: live public tap list + compact private follow control
-- Beer detail: beer information, serving prices, sharing, and `喝过`
+- Beer detail: beer information, serving prices, sharing, and private TAP recording
 - Followed bars: private list + per-bar iOS new-tap notification toggles
+- Nearby ordering: user-triggered foreground location, computed on device without uploading precise location
 
 我的 TAP is private history, not a purchase receipt, rating, public check-in, or social feed.
 One canonical beer counts once; distinct bar experiences can accumulate.
@@ -124,8 +133,8 @@ See **[docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)** (TestFlight) and **[docs/APP_ST
   generation, and Apple-link outcomes.
 - The analytics preference remains device-local, so enabled and disabled populations cannot be
   counted exactly. PostHog users are “observable users”, not all installs or all registered users.
-- App and screen opens, bar/beer opens and TAP actions are covered. Push opens are not yet tracked;
-  `apple_maps_opened` covers iOS map intent only; list/card impressions are not implemented.
+- App and screen opens, bar/beer opens, TAP actions, and consented Feed shown/impression/open events are covered in the published OTA. Push opens are not yet tracked;
+  `apple_maps_opened` covers iOS map intent only. General list/card impressions remain unimplemented.
 - QR, map, share and push interactions must not be interpreted as a store visit.
 - The current cross-client contract and rollout status are in
   [`docs/CONSUMER_ANALYTICS.md`](docs/CONSUMER_ANALYTICS.md).

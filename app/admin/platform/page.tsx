@@ -13,12 +13,14 @@ function isRealBar(t: TenantInfo) {
 }
 
 type BoundOwnerCreds = {
+  kind: 'bind' | 'reset'
   tenantName: string
   mobile: string
   loginEmail: string
   temporaryPassword: string
   created: boolean
   passwordReset: boolean
+  otherBars: string[]
 }
 
 export default function PlatformAdminPage() {
@@ -36,6 +38,7 @@ export default function PlatformAdminPage() {
   })
   const [lastBound, setLastBound] = useState<BoundOwnerCreds | null>(null)
   const [bindingId, setBindingId] = useState<string | null>(null)
+  const [resettingId, setResettingId] = useState<string | null>(null)
 
   useEffect(() => {
     const checkRoleAndFetch = async () => {
@@ -116,18 +119,61 @@ export default function PlatformAdminPage() {
       const passwordReset = json.password_reset !== false
 
       setLastBound({
+        kind: 'bind',
         tenantName,
         mobile: json.mobile || mobile,
         loginEmail: json.login_email || '',
         temporaryPassword: passwordReset ? (json.temporary_password || password) : '',
         created: !!json.created,
         passwordReset,
+        otherBars: [],
       })
       await fetchTenants()
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : '绑定店主失败')
     } finally {
       setBindingId(null)
+    }
+  }
+
+  const resetOwnerPassword = async (tenantId: string, tenantName: string, ownerPassword?: string) => {
+    const password = (ownerPassword || '').trim() || generateTempOwnerPassword(String(Date.now()))
+    if (password.length < 6) {
+      alert('临时密码至少 6 位')
+      return
+    }
+    if (!confirm(`将重置「${tenantName}」店主的登录密码。对方下次登录必须修改密码。这不会更换店主。确认继续？`)) {
+      return
+    }
+
+    setResettingId(tenantId)
+    try {
+      const { data, error: rpcError } = await supabase.rpc('admin_reset_owner_password', {
+        p_tenant_id: tenantId,
+        p_password: password,
+      })
+      if (rpcError) throw rpcError
+
+      const json = data as {
+        mobile?: string
+        login_email?: string
+        temporary_password?: string | null
+        other_tenant_names?: string[]
+      }
+      setLastBound({
+        kind: 'reset',
+        tenantName,
+        mobile: json.mobile || '',
+        loginEmail: json.login_email || '',
+        temporaryPassword: json.temporary_password || password,
+        created: false,
+        passwordReset: true,
+        otherBars: Array.isArray(json.other_tenant_names) ? json.other_tenant_names : [],
+      })
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '重置密码失败')
+    } finally {
+      setResettingId(null)
     }
   }
 
@@ -328,9 +374,11 @@ export default function PlatformAdminPage() {
             }}
           >
             <strong style={{ color: '#fbbf24' }}>
-              {lastBound.passwordReset
-                ? `店主账号已${lastBound.created ? '创建并' : ''}绑定（请复制发给微信）`
-                : '已绑定到现有店主账号（沿用原密码）'}
+              {lastBound.kind === 'reset'
+                ? '店主密码已重置（请复制发给微信）'
+                : lastBound.passwordReset
+                  ? `店主账号已${lastBound.created ? '创建并' : ''}绑定（请复制发给微信）`
+                  : '已绑定到现有店主账号（沿用原密码）'}
             </strong>
             <p style={{ margin: '0.5rem 0 0', color: '#e5e7eb', fontSize: '0.95rem' }}>
               门店：{lastBound.tenantName}
@@ -343,7 +391,12 @@ export default function PlatformAdminPage() {
                   <code style={{ fontSize: '1.15rem', letterSpacing: 1 }}>{lastBound.temporaryPassword}</code>
                   <br />
                   <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
-                    No Menu Tonight 使用手机号 + 密码登录；首次登录会要求改密码。
+                    {lastBound.kind === 'reset'
+                      ? '店主用手机号和这个临时密码登录 No Menu Tonight，登录后必须修改密码。'
+                      : 'No Menu Tonight 使用手机号 + 密码登录；首次登录会要求改密码。'}
+                    {lastBound.otherBars.length > 0
+                      ? ` 这个账号还管理：${lastBound.otherBars.join('、')}，那些店也要用新密码。`
+                      : ''}
                   </span>
                 </>
               ) : (
@@ -360,9 +413,11 @@ export default function PlatformAdminPage() {
               className="admin-button admin-button-secondary"
               style={{ marginTop: 12 }}
               onClick={() => {
-                const text = lastBound.passwordReset
-                  ? `【No Menu Tonight】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n临时密码：${lastBound.temporaryPassword}\n请打开 No Menu Tonight 登录后修改密码。`
-                  : `【No Menu Tonight】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n这家店已绑定到你的现有账号。请用原来的密码登录，然后在店内切换门店。`
+                const text = lastBound.kind === 'reset'
+                  ? `【No Menu Tonight】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n临时密码：${lastBound.temporaryPassword}\n请打开 No Menu Tonight 登录，然后立即修改密码。`
+                  : lastBound.passwordReset
+                    ? `【No Menu Tonight】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n临时密码：${lastBound.temporaryPassword}\n请打开 No Menu Tonight 登录后修改密码。`
+                    : `【No Menu Tonight】${lastBound.tenantName}\n手机号：${lastBound.mobile}\n这家店已绑定到你的现有账号。请用原来的密码登录，然后在店内切换门店。`
                 void navigator.clipboard.writeText(text)
                 alert('已复制微信文案')
               }}
@@ -485,6 +540,19 @@ export default function PlatformAdminPage() {
                         style={{ fontSize: '0.85rem' }}
                       >
                         {bindingId === tenant.id ? '绑定中…' : '绑定店主'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const pwd = window.prompt('临时密码（留空自动生成）', '')
+                          if (pwd === null) return
+                          void resetOwnerPassword(tenant.id, tenant.name, pwd)
+                        }}
+                        disabled={resettingId === tenant.id}
+                        className="admin-button admin-button-secondary"
+                        style={{ fontSize: '0.85rem' }}
+                      >
+                        {resettingId === tenant.id ? '重置中…' : '重置密码'}
                       </button>
                       <button
                         type="button"

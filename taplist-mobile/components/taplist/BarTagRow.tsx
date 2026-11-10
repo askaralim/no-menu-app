@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 
 import { palette, spacing, typography } from '@/constants/design'
+import { useLanguage } from '@/lib/i18n'
 import type { PublicBarTag } from '@/lib/types'
 
 type BarTagRowProps = {
@@ -8,13 +9,14 @@ type BarTagRowProps = {
 }
 
 export function BarTagRow({ tags }: BarTagRowProps) {
+  const { localized } = useLanguage()
   if (tags.length === 0) return null
 
   return (
     <View style={styles.row}>
       {tags.map((tag) => (
         <View key={tag.key} style={styles.pill}>
-          <Text style={styles.label}>{tag.label}</Text>
+          <Text style={styles.label}>{localized(tag.label, tag.label_en)}</Text>
         </View>
       ))}
     </View>

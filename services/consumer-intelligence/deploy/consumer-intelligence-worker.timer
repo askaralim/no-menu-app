@@ -1,0 +1,11 @@
+[Unit]
+Description=Sync Consumer Intelligence business projections every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=60s
+RandomizedDelaySec=5s
+Unit=consumer-intelligence-worker.service
+
+[Install]
+WantedBy=timers.target

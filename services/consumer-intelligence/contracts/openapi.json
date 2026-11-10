@@ -1,0 +1,1352 @@
+{
+  "openapi": "3.1.1",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "No Menu Consumer Intelligence V1",
+    "version": "1.0.0",
+    "description": "Shared service contract. Deployment exposure and client handoff are documented in ../CLIENT_INTEGRATION.md; contract presence does not imply public availability. Consumer endpoints belong to the business layer. Client compatibility guarantees shape, not ranking implementation. Ignore unknown optional response fields. No listed server is a production endpoint."
+  },
+  "servers": [
+    {
+      "url": "https://consumer-api.example.invalid",
+      "description": "Documentation placeholder"
+    }
+  ],
+  "security": [],
+  "paths": {
+    "/api/feed/v1/new-beers": {
+      "get": {
+        "operationId": "getNewBeerFeed",
+        "summary": "Read personalized or latest recent-beer results",
+        "description": "for_you requires a verified Supabase consumer token, including a valid Supabase anonymous consumer session. latest permits no token. A supplied invalid token returns 401, not anonymous fallback.\nAnalytics headers must both be present or both absent. They are client-declared pseudonymous context, not authentication credentials. With both, create an immutable analytics installation/session binding. Without both, no Feed measurement can be accepted for this instance, even if authenticated. Consent-off never prevents Feed use.\nOwner is token-derived user_key when authenticated, otherwise null. An anonymous untracked latest instance contains public content only; instance/cursor possession is not authorization for private data. Retries/pages preserve owner, analytics pair, city, mode and surface; mismatches return 409. Generate a new instance when context changes.\nfor_you default limit 20, max 20; home explicitly requests 6. latest default 20, max 50. No for_you cursor. A signed latest cursor binds instance, query and scan position. First latest request captures a complete ordered manifest. Later pages scan/filter currently ineligible entries and never add new candidates. Rank is original rank; display_position is observed UI position. for_you can request a smaller prefix of its frozen ranking without rebinding.\npagination_expires_at=created_at+30 minutes; record_retention_until=created_at+30 days. Expired pagination returns 410 without disabling delayed event enrichment. Latest summary is present on first page and null on cursor pages, counts initial manifest, uses city timezone and may span 15 dates for a rolling 14-day window.\ncatalog age >600s makes both modes 503 PROJECTION_STALE; consumer age >600s makes only for_you 503. Fresh projections with an outdated snapshot return stale plus current qualification filtering, never request-time ranking. data_as_of is the lower-bound source timestamp of the exact generations used to produce the returned ranking/list; later projection refresh never changes an old snapshot's data_as_of.\nCold start is 200 with personalization.status=cold_start, snapshot=null, items=[], empty_reason=null. Eligible building uses a building snapshot and refresh_pending. Computed empty results retain snapshot and an open empty_reason. Never 204.\nInternal home_city_code_at_creation/away_city_at_creation/home_city_source_as_of capture trustworthy available profile context at creation, not event-time live profile. Anonymous or unavailable context stays null. Never backfill after profile changes/login; never expose these fields publicly or use them in V1 ranking. Responses are no-store.\nFor You instance items capture only the initially delivered prefix, not all unseen snapshot items. Smaller-prefix retries are allowed; expanding beyond initial limit requires a new instance (409 otherwise). Home and full page therefore use different instances over the same snapshot. Refreshing a cold-start/building/empty presentation into a new result uses a new instance; never rewrite historical membership.\nReason V2 preserves code/text and optionally adds version=e1-reason-v2 and aggregate evidence. Evidence and text are fixed at snapshot creation; old instances retain their saved reason. matched_percentage=100*matched_unique_taps/total_unique_taps, with Unknown included in total. Generic Bridge is association, not an exact preference; follow boost and ranking penalties do not alter counts. Latest carries no personal reason evidence. Different home/feed instances can share a snapshot, but this API has no snapshot_id request parameter; a worker refresh between requests can yield different snapshots.",
+        "security": [
+          {},
+          {
+            "ConsumerToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "HTTP-attempt correlation only. Generate if absent; never use as event idempotency key."
+          },
+          {
+            "name": "city_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "for_you",
+                "latest"
+              ]
+            }
+          },
+          {
+            "name": "surface",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "home",
+                "feed_page"
+              ]
+            }
+          },
+          {
+            "name": "feed_instance_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "description": "for_you maximum 20."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "description": "Signed opaque latest cursor; forbidden for for_you."
+          },
+          {
+            "name": "X-Installation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Only with analytics consent; requires X-Analytics-Session-ID."
+          },
+          {
+            "name": "X-Analytics-Session-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Requires X-Installation-ID; pair preserved across pages."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas/feed/response.schema.json"
+                },
+                "examples": {
+                  "for_you": {
+                    "value": {
+                      "api_version": "1",
+                      "requestId": "00000010-0000-4000-8000-000000000000",
+                      "server_time": "2026-10-31T10:00:00Z",
+                      "data_as_of": "2026-10-31T09:59:00Z",
+                      "city_code": "shanghai",
+                      "mode": "for_you",
+                      "surface": "home",
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "ranking_version": "rules-v1",
+                      "personalization": {
+                        "status": "eligible",
+                        "unique_tap_count": 12,
+                        "required_tap_count": 5
+                      },
+                      "snapshot": {
+                        "state": "fresh",
+                        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+                        "model_version": "rules-v1",
+                        "generated_at": "2026-10-31T09:59:30Z"
+                      },
+                      "empty_reason": null,
+                      "total_items": 1,
+                      "items": [
+                        {
+                          "item_id": "beer-venue-cycle-1",
+                          "rank": 1,
+                          "tenant_id": "00000005-0000-4000-8000-000000000000",
+                          "tenant_slug": "example-bar",
+                          "tenant_name": "示例酒吧",
+                          "tenant_name_en": "Example Bar",
+                          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+                          "product_id": "00000007-0000-4000-8000-000000000000",
+                          "beer_name": "示例酸啤",
+                          "beer_name_en": "Example Sour",
+                          "brewery": "示例酒厂",
+                          "brewery_en": "Example Brewery",
+                          "style": "Fruit Sour",
+                          "style_en": "Fruited Sour",
+                          "style_family": "酸啤",
+                          "image_url": null,
+                          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+                          "reason": {
+                            "code": "style_affinity",
+                            "text": "因为你常喝酸啤",
+                            "params": {
+                              "style_family": "酸啤",
+                              "evidence_count": 4
+                            }
+                          },
+                          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+                        }
+                      ],
+                      "summary": null,
+                      "page": null
+                    }
+                  },
+                  "latest": {
+                    "value": {
+                      "api_version": "1",
+                      "requestId": "00000010-0000-4000-8000-000000000000",
+                      "server_time": "2026-10-31T10:00:00Z",
+                      "data_as_of": "2026-10-31T09:59:00Z",
+                      "city_code": "shanghai",
+                      "mode": "latest",
+                      "surface": "feed_page",
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "ranking_version": "latest-v1",
+                      "personalization": null,
+                      "snapshot": null,
+                      "empty_reason": null,
+                      "total_items": 1,
+                      "items": [
+                        {
+                          "item_id": "beer-venue-cycle-1",
+                          "rank": 1,
+                          "tenant_id": "00000005-0000-4000-8000-000000000000",
+                          "tenant_slug": "example-bar",
+                          "tenant_name": "示例酒吧",
+                          "tenant_name_en": "Example Bar",
+                          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+                          "product_id": "00000007-0000-4000-8000-000000000000",
+                          "beer_name": "示例酸啤",
+                          "beer_name_en": "Example Sour",
+                          "brewery": "示例酒厂",
+                          "brewery_en": "Example Brewery",
+                          "style": "Fruit Sour",
+                          "style_en": "Fruited Sour",
+                          "style_family": "酸啤",
+                          "image_url": null,
+                          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+                          "reason": null,
+                          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+                        }
+                      ],
+                      "summary": {
+                        "as_of": "2026-10-31T10:00:00Z",
+                        "timezone": "Asia/Shanghai",
+                        "total_items": 1,
+                        "days": [
+                          {
+                            "date": "2026-10-30",
+                            "count": 1
+                          }
+                        ]
+                      },
+                      "page": {
+                        "as_of": "2026-10-31T10:00:00Z",
+                        "has_more": false,
+                        "next_cursor": null,
+                        "expires_at": "2026-10-31T10:30:00Z"
+                      }
+                    }
+                  },
+                  "cold_start": {
+                    "value": {
+                      "api_version": "1",
+                      "requestId": "00000010-0000-4000-8000-000000000000",
+                      "server_time": "2026-10-31T10:00:00Z",
+                      "data_as_of": "2026-10-31T09:59:00Z",
+                      "city_code": "shanghai",
+                      "mode": "for_you",
+                      "surface": "home",
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "ranking_version": "rules-v1",
+                      "personalization": {
+                        "status": "cold_start",
+                        "unique_tap_count": 2,
+                        "required_tap_count": 5
+                      },
+                      "snapshot": null,
+                      "empty_reason": null,
+                      "total_items": 0,
+                      "items": [],
+                      "summary": null,
+                      "page": null
+                    }
+                  },
+                  "building": {
+                    "value": {
+                      "api_version": "1",
+                      "requestId": "00000010-0000-4000-8000-000000000000",
+                      "server_time": "2026-10-31T10:00:00Z",
+                      "data_as_of": "2026-10-31T09:59:00Z",
+                      "city_code": "shanghai",
+                      "mode": "for_you",
+                      "surface": "home",
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "ranking_version": "rules-v1",
+                      "personalization": {
+                        "status": "eligible",
+                        "unique_tap_count": 12,
+                        "required_tap_count": 5
+                      },
+                      "snapshot": {
+                        "state": "building",
+                        "snapshot_id": null,
+                        "model_version": null,
+                        "generated_at": null
+                      },
+                      "empty_reason": "refresh_pending",
+                      "total_items": 0,
+                      "items": [],
+                      "summary": null,
+                      "page": null
+                    }
+                  },
+                  "stale_snapshot": {
+                    "value": {
+                      "api_version": "1",
+                      "requestId": "00000010-0000-4000-8000-000000000000",
+                      "server_time": "2026-10-31T10:00:00Z",
+                      "data_as_of": "2026-10-31T09:59:00Z",
+                      "city_code": "shanghai",
+                      "mode": "for_you",
+                      "surface": "home",
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "ranking_version": "rules-v1",
+                      "personalization": {
+                        "status": "eligible",
+                        "unique_tap_count": 12,
+                        "required_tap_count": 5
+                      },
+                      "snapshot": {
+                        "state": "stale",
+                        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+                        "model_version": "rules-v1",
+                        "generated_at": "2026-10-31T09:59:30Z"
+                      },
+                      "empty_reason": null,
+                      "total_items": 1,
+                      "items": [
+                        {
+                          "item_id": "beer-venue-cycle-1",
+                          "rank": 1,
+                          "tenant_id": "00000005-0000-4000-8000-000000000000",
+                          "tenant_slug": "example-bar",
+                          "tenant_name": "示例酒吧",
+                          "tenant_name_en": "Example Bar",
+                          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+                          "product_id": "00000007-0000-4000-8000-000000000000",
+                          "beer_name": "示例酸啤",
+                          "beer_name_en": "Example Sour",
+                          "brewery": "示例酒厂",
+                          "brewery_en": "Example Brewery",
+                          "style": "Fruit Sour",
+                          "style_en": "Fruited Sour",
+                          "style_family": "酸啤",
+                          "image_url": null,
+                          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+                          "reason": {
+                            "code": "style_affinity",
+                            "text": "因为你常喝酸啤",
+                            "params": {
+                              "style_family": "酸啤",
+                              "evidence_count": 4
+                            }
+                          },
+                          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+                        }
+                      ],
+                      "summary": null,
+                      "page": null
+                    }
+                  },
+                  "no_matches": {
+                    "value": {
+                      "api_version": "1",
+                      "requestId": "00000010-0000-4000-8000-000000000000",
+                      "server_time": "2026-10-31T10:00:00Z",
+                      "data_as_of": "2026-10-31T09:59:00Z",
+                      "city_code": "shanghai",
+                      "mode": "for_you",
+                      "surface": "home",
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "ranking_version": "rules-v1",
+                      "personalization": {
+                        "status": "eligible",
+                        "unique_tap_count": 12,
+                        "required_tap_count": 5
+                      },
+                      "snapshot": {
+                        "state": "fresh",
+                        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+                        "model_version": "rules-v1",
+                        "generated_at": "2026-10-31T09:59:30Z"
+                      },
+                      "empty_reason": "no_matching_style",
+                      "total_items": 0,
+                      "items": [],
+                      "summary": null,
+                      "page": null
+                    }
+                  },
+                  "e1_reason_v2_exact": {
+                    "summary": "Fictional integration fixture; one qualifying item is valid",
+                    "value": {
+                      "api_version": "1",
+                      "requestId": "00000010-0000-4000-8000-000000000000",
+                      "server_time": "2026-10-31T10:00:00Z",
+                      "data_as_of": "2026-10-31T09:59:00Z",
+                      "city_code": "shanghai",
+                      "mode": "for_you",
+                      "surface": "home",
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "ranking_version": "rules-v2-e1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "personalization": {
+                        "status": "eligible",
+                        "unique_tap_count": 126,
+                        "required_tap_count": 5
+                      },
+                      "snapshot": {
+                        "state": "fresh",
+                        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+                        "model_version": "rules-v2-e1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "generated_at": "2026-10-31T09:59:30Z"
+                      },
+                      "empty_reason": null,
+                      "total_items": 1,
+                      "items": [
+                        {
+                          "item_id": "beer-venue-cycle-1",
+                          "rank": 1,
+                          "tenant_id": "00000005-0000-4000-8000-000000000000",
+                          "tenant_slug": "example-bar",
+                          "tenant_name": "示例酒吧",
+                          "tenant_name_en": "Example Bar",
+                          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+                          "product_id": "00000007-0000-4000-8000-000000000000",
+                          "beer_name": "示例拉格",
+                          "beer_name_en": "Example Sour",
+                          "brewery": "示例酒厂",
+                          "brewery_en": "Example Brewery",
+                          "style": "拉格",
+                          "style_en": "Fruited Sour",
+                          "style_family": "Lager",
+                          "image_url": null,
+                          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+                          "reason": {
+                            "code": "style_exact",
+                            "version": "e1-reason-v2",
+                            "text": "你记录过15款拉格类酒",
+                            "evidence": {
+                              "candidate_style_key": "lager.generic",
+                              "candidate_style_label": "拉格类酒",
+                              "candidate_granularity": "broad",
+                              "matched_unique_taps": 15,
+                              "total_unique_taps": 126,
+                              "matched_percentage": 11.904761904761903,
+                              "witnesses": [
+                                {
+                                  "style_key": "lager.generic",
+                                  "style_label": "拉格类酒",
+                                  "granularity": "broad",
+                                  "unique_taps": 15
+                                }
+                              ]
+                            }
+                          },
+                          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+                        }
+                      ],
+                      "summary": null,
+                      "page": null
+                    }
+                  },
+                  "e1_reason_v2_bridge": {
+                    "summary": "Fictional integration fixture; one qualifying item is valid",
+                    "value": {
+                      "api_version": "1",
+                      "requestId": "00000010-0000-4000-8000-000000000000",
+                      "server_time": "2026-10-31T10:00:00Z",
+                      "data_as_of": "2026-10-31T09:59:00Z",
+                      "city_code": "shanghai",
+                      "mode": "for_you",
+                      "surface": "home",
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "ranking_version": "rules-v2-e1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "personalization": {
+                        "status": "eligible",
+                        "unique_tap_count": 10,
+                        "required_tap_count": 5
+                      },
+                      "snapshot": {
+                        "state": "fresh",
+                        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+                        "model_version": "rules-v2-e1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "generated_at": "2026-10-31T09:59:30Z"
+                      },
+                      "empty_reason": null,
+                      "total_items": 1,
+                      "items": [
+                        {
+                          "item_id": "beer-venue-cycle-1",
+                          "rank": 1,
+                          "tenant_id": "00000005-0000-4000-8000-000000000000",
+                          "tenant_slug": "example-bar",
+                          "tenant_name": "示例酒吧",
+                          "tenant_name_en": "Example Bar",
+                          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+                          "product_id": "00000007-0000-4000-8000-000000000000",
+                          "beer_name": "示例IPA",
+                          "beer_name_en": "Example Sour",
+                          "brewery": "示例酒厂",
+                          "brewery_en": "Example Brewery",
+                          "style": "IPA",
+                          "style_en": "Fruited Sour",
+                          "style_family": "IPA",
+                          "image_url": null,
+                          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+                          "reason": {
+                            "code": "style_bridge",
+                            "version": "e1-reason-v2",
+                            "text": "你记录过3款西海岸IPA、2款浑浊IPA，这款是关联风格",
+                            "evidence": {
+                              "candidate_style_key": "ipa.generic",
+                              "candidate_style_label": "IPA类酒",
+                              "candidate_granularity": "broad",
+                              "matched_unique_taps": 5,
+                              "total_unique_taps": 10,
+                              "matched_percentage": 50,
+                              "witnesses": [
+                                {
+                                  "style_key": "ipa.west_coast",
+                                  "style_label": "西海岸IPA",
+                                  "granularity": "specific",
+                                  "unique_taps": 3
+                                },
+                                {
+                                  "style_key": "ipa.hazy",
+                                  "style_label": "浑浊IPA",
+                                  "granularity": "specific",
+                                  "unique_taps": 2
+                                }
+                              ]
+                            }
+                          },
+                          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+                        }
+                      ],
+                      "summary": null,
+                      "page": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error410"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/consumer/v1/cities": {
+      "get": {
+        "operationId": "getConsumerCities",
+        "summary": "Read the business city directory",
+        "description": "Independent of Intelligence projection. Stable server-defined city_code maps source_city to display_name/timezone. No client lowercasing or second Intelligence city definition.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "HTTP-attempt correlation only. Generate if absent; never use as event idempotency key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas/consumer/cities.schema.json"
+                },
+                "example": {
+                  "api_version": "1",
+                  "requestId": "00000010-0000-4000-8000-000000000000",
+                  "server_time": "2026-10-31T10:00:00Z",
+                  "cities": [
+                    {
+                      "city_code": "shanghai",
+                      "source_city": "Shanghai",
+                      "display_name": "上海",
+                      "timezone": "Asia/Shanghai"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/consumer/v1/profile": {
+      "get": {
+        "operationId": "getConsumerProfile",
+        "summary": "Read the authenticated business profile",
+        "description": "Supabase business source, no Intelligence dependency. Subject comes from token. Existing username RPC remains compatible.",
+        "security": [
+          {
+            "ConsumerToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "HTTP-attempt correlation only. Generate if absent; never use as event idempotency key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas/consumer/profile.schema.json"
+                },
+                "example": {
+                  "api_version": "1",
+                  "requestId": "00000010-0000-4000-8000-000000000000",
+                  "server_time": "2026-10-31T10:00:00Z",
+                  "consumer_username": "Askar",
+                  "is_default": false,
+                  "home_city_code": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchConsumerProfile",
+        "summary": "Partially update the authenticated business profile",
+        "description": "Merge Patch over writable fields. Omission preserves value; home_city_code:null removes setting and canonical response emits null. {} performs no write/version change. Null username and unknown/read-only fields return 400. Validate existing username rules and business city directory. All fields commit atomically; username conflict is 409. Home city never switches browsing city, rewrites history or affects V1 ranking. Unsupported media type is 415. Existing username RPC must preserve home city.",
+        "security": [
+          {
+            "ConsumerToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "HTTP-attempt correlation only. Generate if absent; never use as event idempotency key."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/merge-patch+json": {
+              "schema": {
+                "$ref": "./schemas/consumer/profile-patch.schema.json"
+              },
+              "example": {
+                "home_city_code": "shanghai"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas/consumer/profile.schema.json"
+                },
+                "example": {
+                  "api_version": "1",
+                  "requestId": "00000010-0000-4000-8000-000000000000",
+                  "server_time": "2026-10-31T10:00:00Z",
+                  "consumer_username": "Askar",
+                  "is_default": false,
+                  "home_city_code": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/analytics/v1/identity-operations": {
+      "post": {
+        "operationId": "recordIdentityOperation",
+        "summary": "Durably accept an identity operation",
+        "description": "Accept immutable operations, not directly editable links. Token supplies subject; body cannot contain user_id/user_key. Retain payload, verified subject, received_at and server-validated effective time. Client occurred_at alone cannot authorize retrospective association. Operation must be within its session, <=7 days old and <=5 minutes ahead. Time bounds alone are NOT identity proof: production admission must verify subject/session provenance before establishing a trusted interval. Unverifiable records cannot attribute events. Reference resolver in this package consumes trusted records, not raw HTTP requests.\nRotate analytics session at login identity change/logout. Never retry old operations under a different account. Same operation_id, normalized payload and subject is duplicate; different content/subject returns 409. 202 follows durable commit only; uncertain persistence is 503. Reconcile half-open intervals independently of arrival order. Preserve unlink-before-link boundaries. Overlapping subjects are integrity errors, never last-writer-wins.",
+        "security": [
+          {
+            "ConsumerToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "HTTP-attempt correlation only. Generate if absent; never use as event idempotency key."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas/identity/operation.schema.json"
+              },
+              "example": {
+                "operation_id": "00000012-0000-4000-8000-000000000000",
+                "action": "link",
+                "installation_id": "00000002-0000-4000-8000-000000000000",
+                "session_id": "00000003-0000-4000-8000-000000000000",
+                "session_started_at": "2026-10-31T09:00:00Z",
+                "occurred_at": "2026-10-31T10:00:00Z"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Operation committed or already persisted; resolution may still be pending.",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas/identity/accepted.schema.json"
+                },
+                "example": {
+                  "api_version": "1",
+                  "requestId": "00000010-0000-4000-8000-000000000000",
+                  "server_time": "2026-10-31T10:00:00Z",
+                  "operation_id": "00000012-0000-4000-8000-000000000000",
+                  "status": "accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/api/analytics/v1/events/batch": {
+      "post": {
+        "operationId": "ingestAnalyticsEvents",
+        "summary": "Validate independently and acknowledge persisted events",
+        "description": "Client must honor analytics consent. Max 20 event objects, 65536 UTF-8 body bytes, 8192 bytes per event. Validate envelope first and objects independently against AnalyticsEventV1; unknown event/version and invalid objects reject only that item. Events can be <=7 days old and <=5 minutes ahead, within their declared session. Missing/invalid event_id is reported using event_index and event_id:null. Upload token never relabels historical events.\nFeed events require retained instance, original analytics installation/session, and item membership where applicable. Event must not precede instance creation. Pagination expiry does not prevent historical enrichment. Anonymous context is correlation, not authenticated identity. Trusted identity conflicts with an authenticated instance owner must not be attributed. Enrich exclusively from immutable instance/items, never current catalog.\nTransport dedupe uses event_id, not batch_id; same ID/content is duplicate, changed content is rejected. Semantic impression dedupe is installation+instance+item; feed_shown dedupe is installation+instance. Repeated legitimate opens use distinct IDs.\nValidate first, then atomically commit valid new events and dedupe keys. Acknowledge 202 accepted only AFTER commit; invalid siblings do not block valid records. All-invalid batches can return 202 with accepted empty. Persistence failure, unavailable validation dependency or uncertain commit returns 503 without success IDs. 503 does not prove zero writes; retry original IDs. Temporary lookup failures must not become permanent invalid-instance rejections.",
+        "security": [
+          {},
+          {
+            "ConsumerToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "HTTP-attempt correlation only. Generate if absent; never use as event idempotency key."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schemas/events/batch.schema.json"
+              },
+              "example": {
+                "batch_id": "00000011-0000-4000-8000-000000000000",
+                "installation_id": "00000002-0000-4000-8000-000000000000",
+                "client": {
+                  "application": "ios",
+                  "platform": "ios",
+                  "app_version": "1.0.0"
+                },
+                "events": [
+                  {
+                    "event_id": "00000100-0000-4000-8000-000000000000",
+                    "occurred_at": "2026-10-31T10:00:00Z",
+                    "session_id": "00000003-0000-4000-8000-000000000000",
+                    "session_started_at": "2026-10-31T09:00:00Z",
+                    "schema_version": 1,
+                    "event_name": "beer_opened",
+                    "source": "direct",
+                    "selected_city_code": "shanghai",
+                    "product_id": "00000007-0000-4000-8000-000000000000",
+                    "source_drink_id": "00000006-0000-4000-8000-000000000000",
+                    "tenant_id": "00000005-0000-4000-8000-000000000000"
+                  },
+                  {
+                    "event_id": "00000101-0000-4000-8000-000000000000",
+                    "occurred_at": "2026-10-31T10:00:00Z",
+                    "session_id": "00000003-0000-4000-8000-000000000000",
+                    "session_started_at": "2026-10-31T09:00:00Z",
+                    "schema_version": 1,
+                    "event_name": "bar_opened",
+                    "source": "direct",
+                    "selected_city_code": "shanghai",
+                    "tenant_id": "00000005-0000-4000-8000-000000000000"
+                  },
+                  {
+                    "event_id": "00000102-0000-4000-8000-000000000000",
+                    "occurred_at": "2026-10-31T10:00:00Z",
+                    "session_id": "00000003-0000-4000-8000-000000000000",
+                    "session_started_at": "2026-10-31T09:00:00Z",
+                    "schema_version": 1,
+                    "event_name": "search_result_opened",
+                    "source": "search_result",
+                    "selected_city_code": "shanghai",
+                    "result": {
+                      "type": "beer",
+                      "product_id": "00000007-0000-4000-8000-000000000000"
+                    },
+                    "display_position": 1
+                  },
+                  {
+                    "event_id": "00000103-0000-4000-8000-000000000000",
+                    "occurred_at": "2026-10-31T10:00:00Z",
+                    "session_id": "00000003-0000-4000-8000-000000000000",
+                    "session_started_at": "2026-10-31T09:00:00Z",
+                    "schema_version": 1,
+                    "event_name": "activity_opened",
+                    "source": "direct",
+                    "selected_city_code": "shanghai",
+                    "activity_id": "00000008-0000-4000-8000-000000000000"
+                  },
+                  {
+                    "event_id": "00000104-0000-4000-8000-000000000000",
+                    "occurred_at": "2026-10-31T10:00:00Z",
+                    "session_id": "00000003-0000-4000-8000-000000000000",
+                    "session_started_at": "2026-10-31T09:00:00Z",
+                    "schema_version": 1,
+                    "event_name": "city_changed",
+                    "source": "direct",
+                    "selected_city_code": "qingdao",
+                    "from_city_code": "shanghai",
+                    "to_city_code": "qingdao"
+                  },
+                  {
+                    "event_id": "00000105-0000-4000-8000-000000000000",
+                    "occurred_at": "2026-10-31T10:00:00Z",
+                    "session_id": "00000003-0000-4000-8000-000000000000",
+                    "session_started_at": "2026-10-31T09:00:00Z",
+                    "schema_version": 1,
+                    "event_name": "map_navigation_clicked",
+                    "source": "direct",
+                    "selected_city_code": "shanghai",
+                    "tenant_id": "00000005-0000-4000-8000-000000000000",
+                    "provider": "apple_maps"
+                  },
+                  {
+                    "event_id": "00000106-0000-4000-8000-000000000000",
+                    "occurred_at": "2026-10-31T10:00:00Z",
+                    "session_id": "00000003-0000-4000-8000-000000000000",
+                    "session_started_at": "2026-10-31T09:00:00Z",
+                    "schema_version": 1,
+                    "event_name": "feed_shown",
+                    "feed": {
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000"
+                    }
+                  },
+                  {
+                    "event_id": "00000107-0000-4000-8000-000000000000",
+                    "occurred_at": "2026-10-31T10:00:00Z",
+                    "session_id": "00000003-0000-4000-8000-000000000000",
+                    "session_started_at": "2026-10-31T09:00:00Z",
+                    "schema_version": 1,
+                    "event_name": "feed_item_impression",
+                    "feed": {
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "item_id": "beer-venue-cycle-1",
+                      "display_position": 1
+                    },
+                    "properties": {
+                      "visible_duration_ms": 812,
+                      "visibility_threshold": 0.5
+                    }
+                  },
+                  {
+                    "event_id": "00000108-0000-4000-8000-000000000000",
+                    "occurred_at": "2026-10-31T10:00:00Z",
+                    "session_id": "00000003-0000-4000-8000-000000000000",
+                    "session_started_at": "2026-10-31T09:00:00Z",
+                    "schema_version": 1,
+                    "event_name": "feed_item_opened",
+                    "feed": {
+                      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+                      "item_id": "beer-venue-cycle-1",
+                      "display_position": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted entries committed; duplicates already exist; rejected entries were not accepted.",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas/events/batch-response.schema.json"
+                },
+                "example": {
+                  "api_version": "1",
+                  "requestId": "00000010-0000-4000-8000-000000000000",
+                  "server_time": "2026-10-31T10:00:00Z",
+                  "accepted": [
+                    "00000100-0000-4000-8000-000000000000",
+                    "00000101-0000-4000-8000-000000000000",
+                    "00000102-0000-4000-8000-000000000000",
+                    "00000103-0000-4000-8000-000000000000",
+                    "00000104-0000-4000-8000-000000000000",
+                    "00000105-0000-4000-8000-000000000000",
+                    "00000106-0000-4000-8000-000000000000",
+                    "00000107-0000-4000-8000-000000000000",
+                    "00000108-0000-4000-8000-000000000000"
+                  ],
+                  "duplicates": [],
+                  "rejected": []
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "getLiveness",
+        "summary": "Check process liveness",
+        "description": "Process is alive.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas/common/health.schema.json"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "getReadiness",
+        "summary": "Check storage/schema readiness",
+        "description": "503 when this service storage/schema is unavailable. Consumer projection staleness alone must not fail readiness: latest can remain available. Check mode-specific age on Feed requests.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schemas/common/health.schema.json"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ConsumerToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Supabase consumer access token"
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "Invalid request/envelope/header pair or business input. Individual invalid events use 202 rejected.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./schemas/common/error.schema.json"
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "Missing required or invalid consumer token. Verification outage returns 503, not 401.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./schemas/common/error.schema.json"
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "Forbidden subject or instance access.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./schemas/common/error.schema.json"
+            }
+          }
+        }
+      },
+      "Error409": {
+        "description": "INSTANCE_CONTEXT_CONFLICT, OPERATION_ID_CONFLICT or USERNAME_TAKEN. Immutable bindings cannot be overwritten.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./schemas/common/error.schema.json"
+            }
+          }
+        }
+      },
+      "Error410": {
+        "description": "FEED_INSTANCE_EXPIRED: pagination expiry, not deletion of historical records.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./schemas/common/error.schema.json"
+            }
+          }
+        }
+      },
+      "Error413": {
+        "description": "Payload exceeds the documented UTF-8 byte limit.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./schemas/common/error.schema.json"
+            }
+          }
+        }
+      },
+      "Error415": {
+        "description": "Unsupported media type.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./schemas/common/error.schema.json"
+            }
+          }
+        }
+      },
+      "Error429": {
+        "description": "Rate limited; honor Retry-After.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./schemas/common/error.schema.json"
+            }
+          }
+        },
+        "headers": {
+          "Retry-After": {
+            "description": "Retry delay in seconds.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      },
+      "Error503": {
+        "description": "SERVICE_UNAVAILABLE, AUTH_UNAVAILABLE, PROJECTION_STALE or PERSISTENCE_UNAVAILABLE. An uncertain commit never produces accepted IDs; retry original IDs.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "./schemas/common/error.schema.json"
+            }
+          }
+        },
+        "headers": {
+          "Retry-After": {
+            "description": "Retry delay in seconds.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "AnalyticsEventV1": {
+        "$ref": "./schemas/events/event.schema.json"
+      },
+      "FeedQuery": {
+        "$ref": "./schemas/feed/request.schema.json"
+      },
+      "FeedAnalyticsHeaders": {
+        "$ref": "./schemas/feed/analytics-headers.schema.json"
+      }
+    }
+  }
+}

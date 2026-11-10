@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/consumer/cities.schema.json",
+  "allOf": [
+    {
+      "$ref": "../common/primitives.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "cities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "city_code": {
+                "$ref": "../common/primitives.schema.json#/$defs/city"
+              },
+              "source_city": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "display_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "timezone": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "city_code",
+              "source_city",
+              "display_name",
+              "timezone"
+            ]
+          }
+        }
+      },
+      "required": [
+        "cities"
+      ]
+    }
+  ]
+}

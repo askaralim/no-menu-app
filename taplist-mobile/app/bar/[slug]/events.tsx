@@ -46,7 +46,7 @@ export default function BarEventsScreen() {
         style={styles.screen}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.xxxl }]}>
         <Text style={styles.kicker}>TONIGHT EVENTS</Text>
-        <Text style={styles.title}>{tenant ? localized(tenant.display_name || tenant.name, tenant.display_name_en) : tr(language, '酒吧活动', 'Venue events')}</Text>
+        <Text style={styles.title}>{tenant ? localized(tenant.display_name || tenant.name, tenant.display_name_en) : tr(language, '酒吧活动', 'Bar events')}</Text>
         <Text style={styles.subtitle}>{tr(language, '看看这家店今晚和近期有什么活动', 'See what is happening here tonight and soon.')}</Text>
 
         {!configured ? (
@@ -57,11 +57,11 @@ export default function BarEventsScreen() {
             <Text style={styles.loadingText}>{tr(language, '正在加载活动...', 'Loading events...')}</Text>
           </View>
         ) : tenantQuery.isError || tenantResult?.ok === false ? (
-          <EmptyState title={tr(language, '找不到这家酒吧', 'Venue not found')} body={tr(language, '该酒吧可能尚未发布公开酒单，或链接已经失效。', 'Its public tap list may be unavailable or this link has expired.')} />
+          <EmptyState title={tr(language, '找不到这家酒吧', 'Bar not found')} body={tr(language, '该酒吧可能尚未发布公开酒单，或链接已经失效。', 'Its public tap list may be unavailable or this link has expired.')} />
         ) : eventsQuery.isError ? (
-          <EmptyState title={tr(language, '暂时无法加载活动', 'Unable to load events')} body={tr(language, '请稍后重试，或以门店现场信息为准。', 'Try again later. Venue information takes precedence.')} />
+          <EmptyState title={tr(language, '暂时无法加载活动', 'Unable to load events')} body={tr(language, '请稍后重试，或以门店现场信息为准。', 'Try again later. Bar information takes precedence.')} />
         ) : events.length === 0 ? (
-          <EmptyState title={tr(language, '暂无公开活动', 'No public events')} body={tr(language, '这家酒吧当前还没有发布今晚活动。', 'This venue has not published an event for tonight.')} />
+          <EmptyState title={tr(language, '暂无公开活动', 'No public events')} body={tr(language, '这家酒吧当前还没有发布今晚活动。', 'This bar has not published an event for tonight.')} />
         ) : (
           <>
             {tonightEvents.length > 0 ? (

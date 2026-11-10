@@ -1,0 +1,980 @@
+[
+  {
+    "name": "beer_opened",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "beer_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "product_id": "00000007-0000-4000-8000-000000000000",
+      "source_drink_id": "00000006-0000-4000-8000-000000000000",
+      "tenant_id": "00000005-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "bar_opened",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "bar_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "tenant_id": "00000005-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "search_result_opened",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "search_result_opened",
+      "source": "search_result",
+      "selected_city_code": "shanghai",
+      "result": {
+        "type": "beer",
+        "product_id": "00000007-0000-4000-8000-000000000000"
+      },
+      "display_position": 1
+    }
+  },
+  {
+    "name": "activity_opened",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "activity_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "activity_id": "00000008-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "city_changed",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "city_changed",
+      "source": "direct",
+      "selected_city_code": "qingdao",
+      "from_city_code": "shanghai",
+      "to_city_code": "qingdao"
+    }
+  },
+  {
+    "name": "map_navigation_clicked",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "map_navigation_clicked",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "tenant_id": "00000005-0000-4000-8000-000000000000",
+      "provider": "apple_maps"
+    }
+  },
+  {
+    "name": "feed_shown",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "feed_shown",
+      "feed": {
+        "feed_instance_id": "00000004-0000-4000-8000-000000000000"
+      }
+    }
+  },
+  {
+    "name": "feed_item_impression",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "feed_item_impression",
+      "feed": {
+        "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+        "item_id": "beer-venue-cycle-1",
+        "display_position": 1
+      },
+      "properties": {
+        "visible_duration_ms": 812,
+        "visibility_threshold": 0.5
+      }
+    }
+  },
+  {
+    "name": "feed_item_opened",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "feed_item_opened",
+      "feed": {
+        "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+        "item_id": "beer-venue-cycle-1",
+        "display_position": 1
+      }
+    }
+  },
+  {
+    "name": "global beer without venue",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "beer_opened",
+      "source": "direct",
+      "selected_city_code": "shanghai",
+      "product_id": "00000007-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "unknown source",
+    "schema": "events/event.schema.json",
+    "data": {
+      "event_id": "00000001-0000-4000-8000-000000000000",
+      "occurred_at": "2026-10-31T10:00:00Z",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "schema_version": 1,
+      "event_name": "bar_opened",
+      "source": "future_brewery_page",
+      "selected_city_code": "shanghai",
+      "tenant_id": "00000005-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "for_you",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "rules-v1",
+      "personalization": {
+        "status": "eligible",
+        "unique_tap_count": 12,
+        "required_tap_count": 5
+      },
+      "snapshot": {
+        "state": "fresh",
+        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+        "model_version": "rules-v1",
+        "generated_at": "2026-10-31T09:59:30Z"
+      },
+      "empty_reason": null,
+      "total_items": 1,
+      "items": [
+        {
+          "item_id": "beer-venue-cycle-1",
+          "rank": 1,
+          "tenant_id": "00000005-0000-4000-8000-000000000000",
+          "tenant_slug": "example-bar",
+          "tenant_name": "示例酒吧",
+          "tenant_name_en": "Example Bar",
+          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+          "product_id": "00000007-0000-4000-8000-000000000000",
+          "beer_name": "示例酸啤",
+          "beer_name_en": "Example Sour",
+          "brewery": "示例酒厂",
+          "brewery_en": "Example Brewery",
+          "style": "Fruit Sour",
+          "style_en": "Fruited Sour",
+          "style_family": "酸啤",
+          "image_url": null,
+          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+          "reason": {
+            "code": "style_affinity",
+            "text": "因为你常喝酸啤",
+            "params": {
+              "style_family": "酸啤",
+              "evidence_count": 4
+            }
+          },
+          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+        }
+      ],
+      "summary": null,
+      "page": null
+    }
+  },
+  {
+    "name": "latest",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "latest",
+      "surface": "feed_page",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "latest-v1",
+      "personalization": null,
+      "snapshot": null,
+      "empty_reason": null,
+      "total_items": 1,
+      "items": [
+        {
+          "item_id": "beer-venue-cycle-1",
+          "rank": 1,
+          "tenant_id": "00000005-0000-4000-8000-000000000000",
+          "tenant_slug": "example-bar",
+          "tenant_name": "示例酒吧",
+          "tenant_name_en": "Example Bar",
+          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+          "product_id": "00000007-0000-4000-8000-000000000000",
+          "beer_name": "示例酸啤",
+          "beer_name_en": "Example Sour",
+          "brewery": "示例酒厂",
+          "brewery_en": "Example Brewery",
+          "style": "Fruit Sour",
+          "style_en": "Fruited Sour",
+          "style_family": "酸啤",
+          "image_url": null,
+          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+          "reason": null,
+          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+        }
+      ],
+      "summary": {
+        "as_of": "2026-10-31T10:00:00Z",
+        "timezone": "Asia/Shanghai",
+        "total_items": 1,
+        "days": [
+          {
+            "date": "2026-10-30",
+            "count": 1
+          }
+        ]
+      },
+      "page": {
+        "as_of": "2026-10-31T10:00:00Z",
+        "has_more": false,
+        "next_cursor": null,
+        "expires_at": "2026-10-31T10:30:00Z"
+      }
+    }
+  },
+  {
+    "name": "stale snapshot",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "rules-v1",
+      "personalization": {
+        "status": "eligible",
+        "unique_tap_count": 12,
+        "required_tap_count": 5
+      },
+      "snapshot": {
+        "state": "stale",
+        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+        "model_version": "rules-v1",
+        "generated_at": "2026-10-31T09:59:30Z"
+      },
+      "empty_reason": null,
+      "total_items": 1,
+      "items": [
+        {
+          "item_id": "beer-venue-cycle-1",
+          "rank": 1,
+          "tenant_id": "00000005-0000-4000-8000-000000000000",
+          "tenant_slug": "example-bar",
+          "tenant_name": "示例酒吧",
+          "tenant_name_en": "Example Bar",
+          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+          "product_id": "00000007-0000-4000-8000-000000000000",
+          "beer_name": "示例酸啤",
+          "beer_name_en": "Example Sour",
+          "brewery": "示例酒厂",
+          "brewery_en": "Example Brewery",
+          "style": "Fruit Sour",
+          "style_en": "Fruited Sour",
+          "style_family": "酸啤",
+          "image_url": null,
+          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+          "reason": {
+            "code": "style_affinity",
+            "text": "因为你常喝酸啤",
+            "params": {
+              "style_family": "酸啤",
+              "evidence_count": 4
+            }
+          },
+          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+        }
+      ],
+      "summary": null,
+      "page": null
+    }
+  },
+  {
+    "name": "cold start",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "rules-v1",
+      "personalization": {
+        "status": "cold_start",
+        "unique_tap_count": 2,
+        "required_tap_count": 5
+      },
+      "snapshot": null,
+      "empty_reason": null,
+      "total_items": 0,
+      "items": [],
+      "summary": null,
+      "page": null
+    }
+  },
+  {
+    "name": "building",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "rules-v1",
+      "personalization": {
+        "status": "eligible",
+        "unique_tap_count": 12,
+        "required_tap_count": 5
+      },
+      "snapshot": {
+        "state": "building",
+        "snapshot_id": null,
+        "model_version": null,
+        "generated_at": null
+      },
+      "empty_reason": "refresh_pending",
+      "total_items": 0,
+      "items": [],
+      "summary": null,
+      "page": null
+    }
+  },
+  {
+    "name": "no matches",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "rules-v1",
+      "personalization": {
+        "status": "eligible",
+        "unique_tap_count": 12,
+        "required_tap_count": 5
+      },
+      "snapshot": {
+        "state": "fresh",
+        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+        "model_version": "rules-v1",
+        "generated_at": "2026-10-31T09:59:30Z"
+      },
+      "empty_reason": "no_matching_style",
+      "total_items": 0,
+      "items": [],
+      "summary": null,
+      "page": null
+    }
+  },
+  {
+    "name": "future ranking and reason",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "embedding-v9",
+      "personalization": {
+        "status": "eligible",
+        "unique_tap_count": 12,
+        "required_tap_count": 5
+      },
+      "snapshot": {
+        "state": "fresh",
+        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+        "model_version": "rules-v1",
+        "generated_at": "2026-10-31T09:59:30Z"
+      },
+      "empty_reason": null,
+      "total_items": 1,
+      "items": [
+        {
+          "item_id": "beer-venue-cycle-1",
+          "rank": 1,
+          "tenant_id": "00000005-0000-4000-8000-000000000000",
+          "tenant_slug": "example-bar",
+          "tenant_name": "示例酒吧",
+          "tenant_name_en": "Example Bar",
+          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+          "product_id": "00000007-0000-4000-8000-000000000000",
+          "beer_name": "示例酸啤",
+          "beer_name_en": "Example Sour",
+          "brewery": "示例酒厂",
+          "brewery_en": "Example Brewery",
+          "style": "Fruit Sour",
+          "style_en": "Fruited Sour",
+          "style_family": "酸啤",
+          "image_url": null,
+          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+          "reason": {
+            "code": "future_reason",
+            "text": "和你喜欢的风格相近",
+            "params": {}
+          },
+          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+        }
+      ],
+      "summary": null,
+      "page": null,
+      "future_optional": {
+        "ok": true
+      }
+    }
+  },
+  {
+    "name": "future empty reason",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "rules-v1",
+      "personalization": {
+        "status": "eligible",
+        "unique_tap_count": 12,
+        "required_tap_count": 5
+      },
+      "snapshot": {
+        "state": "fresh",
+        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+        "model_version": "rules-v1",
+        "generated_at": "2026-10-31T09:59:30Z"
+      },
+      "empty_reason": "future_holdout",
+      "total_items": 0,
+      "items": [],
+      "summary": null,
+      "page": null
+    }
+  },
+  {
+    "name": "feed request",
+    "schema": "feed/request.schema.json",
+    "data": {
+      "city_code": "shanghai",
+      "mode": "latest",
+      "surface": "feed_page",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "limit": 20
+    }
+  },
+  {
+    "name": "analytics headers",
+    "schema": "feed/analytics-headers.schema.json",
+    "data": {
+      "X-Installation-ID": "00000002-0000-4000-8000-000000000000",
+      "X-Analytics-Session-ID": "00000003-0000-4000-8000-000000000000"
+    }
+  },
+  {
+    "name": "no analytics headers",
+    "schema": "feed/analytics-headers.schema.json",
+    "data": {}
+  },
+  {
+    "name": "cities",
+    "schema": "consumer/cities.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "cities": [
+        {
+          "city_code": "shanghai",
+          "source_city": "Shanghai",
+          "display_name": "上海",
+          "timezone": "Asia/Shanghai"
+        }
+      ]
+    }
+  },
+  {
+    "name": "profile",
+    "schema": "consumer/profile.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "consumer_username": "Askar",
+      "is_default": false,
+      "home_city_code": null
+    }
+  },
+  {
+    "name": "patch username",
+    "schema": "consumer/profile-patch.schema.json",
+    "data": {
+      "consumer_username": "Askar"
+    }
+  },
+  {
+    "name": "patch city",
+    "schema": "consumer/profile-patch.schema.json",
+    "data": {
+      "home_city_code": "shanghai"
+    }
+  },
+  {
+    "name": "patch clear",
+    "schema": "consumer/profile-patch.schema.json",
+    "data": {
+      "home_city_code": null
+    }
+  },
+  {
+    "name": "patch noop",
+    "schema": "consumer/profile-patch.schema.json",
+    "data": {}
+  },
+  {
+    "name": "identity link",
+    "schema": "identity/operation.schema.json",
+    "data": {
+      "operation_id": "00000012-0000-4000-8000-000000000000",
+      "action": "link",
+      "installation_id": "00000002-0000-4000-8000-000000000000",
+      "session_id": "00000003-0000-4000-8000-000000000000",
+      "session_started_at": "2026-10-31T09:00:00Z",
+      "occurred_at": "2026-10-31T10:00:00Z"
+    }
+  },
+  {
+    "name": "identity accepted",
+    "schema": "identity/accepted.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "operation_id": "00000012-0000-4000-8000-000000000000",
+      "status": "accepted"
+    }
+  },
+  {
+    "name": "batch",
+    "schema": "events/batch.schema.json",
+    "data": {
+      "batch_id": "00000011-0000-4000-8000-000000000000",
+      "installation_id": "00000002-0000-4000-8000-000000000000",
+      "client": {
+        "application": "ios",
+        "platform": "ios",
+        "app_version": "1.0.0"
+      },
+      "events": [
+        {
+          "event_id": "00000100-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "beer_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "product_id": "00000007-0000-4000-8000-000000000000",
+          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000101-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "bar_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000102-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "search_result_opened",
+          "source": "search_result",
+          "selected_city_code": "shanghai",
+          "result": {
+            "type": "beer",
+            "product_id": "00000007-0000-4000-8000-000000000000"
+          },
+          "display_position": 1
+        },
+        {
+          "event_id": "00000103-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "activity_opened",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "activity_id": "00000008-0000-4000-8000-000000000000"
+        },
+        {
+          "event_id": "00000104-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "city_changed",
+          "source": "direct",
+          "selected_city_code": "qingdao",
+          "from_city_code": "shanghai",
+          "to_city_code": "qingdao"
+        },
+        {
+          "event_id": "00000105-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "map_navigation_clicked",
+          "source": "direct",
+          "selected_city_code": "shanghai",
+          "tenant_id": "00000005-0000-4000-8000-000000000000",
+          "provider": "apple_maps"
+        },
+        {
+          "event_id": "00000106-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "feed_shown",
+          "feed": {
+            "feed_instance_id": "00000004-0000-4000-8000-000000000000"
+          }
+        },
+        {
+          "event_id": "00000107-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "feed_item_impression",
+          "feed": {
+            "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+            "item_id": "beer-venue-cycle-1",
+            "display_position": 1
+          },
+          "properties": {
+            "visible_duration_ms": 812,
+            "visibility_threshold": 0.5
+          }
+        },
+        {
+          "event_id": "00000108-0000-4000-8000-000000000000",
+          "occurred_at": "2026-10-31T10:00:00Z",
+          "session_id": "00000003-0000-4000-8000-000000000000",
+          "session_started_at": "2026-10-31T09:00:00Z",
+          "schema_version": 1,
+          "event_name": "feed_item_opened",
+          "feed": {
+            "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+            "item_id": "beer-venue-cycle-1",
+            "display_position": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "batch response",
+    "schema": "events/batch-response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "accepted": [
+        "00000100-0000-4000-8000-000000000000",
+        "00000101-0000-4000-8000-000000000000",
+        "00000102-0000-4000-8000-000000000000",
+        "00000103-0000-4000-8000-000000000000",
+        "00000104-0000-4000-8000-000000000000",
+        "00000105-0000-4000-8000-000000000000",
+        "00000106-0000-4000-8000-000000000000",
+        "00000107-0000-4000-8000-000000000000",
+        "00000108-0000-4000-8000-000000000000"
+      ],
+      "duplicates": [],
+      "rejected": []
+    }
+  },
+  {
+    "name": "error",
+    "schema": "common/error.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "code": "PROJECTION_STALE",
+      "message": "Required projection is stale",
+      "retryable": true,
+      "details": {
+        "scope": "consumer"
+      }
+    }
+  },
+  {
+    "name": "health",
+    "schema": "common/health.schema.json",
+    "data": {
+      "status": "ok"
+    }
+  },
+  {
+    "name": "E1 Reason V2 Exact single item",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "rules-v2-e1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "personalization": {
+        "status": "eligible",
+        "unique_tap_count": 126,
+        "required_tap_count": 5
+      },
+      "snapshot": {
+        "state": "fresh",
+        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+        "model_version": "rules-v2-e1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generated_at": "2026-10-31T09:59:30Z"
+      },
+      "empty_reason": null,
+      "total_items": 1,
+      "items": [
+        {
+          "item_id": "beer-venue-cycle-1",
+          "rank": 1,
+          "tenant_id": "00000005-0000-4000-8000-000000000000",
+          "tenant_slug": "example-bar",
+          "tenant_name": "示例酒吧",
+          "tenant_name_en": "Example Bar",
+          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+          "product_id": "00000007-0000-4000-8000-000000000000",
+          "beer_name": "示例拉格",
+          "beer_name_en": "Example Sour",
+          "brewery": "示例酒厂",
+          "brewery_en": "Example Brewery",
+          "style": "拉格",
+          "style_en": "Fruited Sour",
+          "style_family": "Lager",
+          "image_url": null,
+          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+          "reason": {
+            "code": "style_exact",
+            "version": "e1-reason-v2",
+            "text": "你记录过15款拉格类酒",
+            "evidence": {
+              "candidate_style_key": "lager.generic",
+              "candidate_style_label": "拉格类酒",
+              "candidate_granularity": "broad",
+              "matched_unique_taps": 15,
+              "total_unique_taps": 126,
+              "matched_percentage": 11.904761904761903,
+              "witnesses": [
+                {
+                  "style_key": "lager.generic",
+                  "style_label": "拉格类酒",
+                  "granularity": "broad",
+                  "unique_taps": 15
+                }
+              ]
+            }
+          },
+          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+        }
+      ],
+      "summary": null,
+      "page": null
+    }
+  },
+  {
+    "name": "E1 Reason V2 Bridge multiple witnesses",
+    "schema": "feed/response.schema.json",
+    "data": {
+      "api_version": "1",
+      "requestId": "00000010-0000-4000-8000-000000000000",
+      "server_time": "2026-10-31T10:00:00Z",
+      "data_as_of": "2026-10-31T09:59:00Z",
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000",
+      "ranking_version": "rules-v2-e1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "personalization": {
+        "status": "eligible",
+        "unique_tap_count": 10,
+        "required_tap_count": 5
+      },
+      "snapshot": {
+        "state": "fresh",
+        "snapshot_id": "00000009-0000-4000-8000-000000000000",
+        "model_version": "rules-v2-e1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generated_at": "2026-10-31T09:59:30Z"
+      },
+      "empty_reason": null,
+      "total_items": 1,
+      "items": [
+        {
+          "item_id": "beer-venue-cycle-1",
+          "rank": 1,
+          "tenant_id": "00000005-0000-4000-8000-000000000000",
+          "tenant_slug": "example-bar",
+          "tenant_name": "示例酒吧",
+          "tenant_name_en": "Example Bar",
+          "source_drink_id": "00000006-0000-4000-8000-000000000000",
+          "product_id": "00000007-0000-4000-8000-000000000000",
+          "beer_name": "示例IPA",
+          "beer_name_en": "Example Sour",
+          "brewery": "示例酒厂",
+          "brewery_en": "Example Brewery",
+          "style": "IPA",
+          "style_en": "Fruited Sour",
+          "style_family": "IPA",
+          "image_url": null,
+          "current_cycle_started_at": "2026-10-30T08:00:00Z",
+          "reason": {
+            "code": "style_bridge",
+            "version": "e1-reason-v2",
+            "text": "你记录过3款西海岸IPA、2款浑浊IPA，这款是关联风格",
+            "evidence": {
+              "candidate_style_key": "ipa.generic",
+              "candidate_style_label": "IPA类酒",
+              "candidate_granularity": "broad",
+              "matched_unique_taps": 5,
+              "total_unique_taps": 10,
+              "matched_percentage": 50,
+              "witnesses": [
+                {
+                  "style_key": "ipa.west_coast",
+                  "style_label": "西海岸IPA",
+                  "granularity": "specific",
+                  "unique_taps": 3
+                },
+                {
+                  "style_key": "ipa.hazy",
+                  "style_label": "浑浊IPA",
+                  "granularity": "specific",
+                  "unique_taps": 2
+                }
+              ]
+            }
+          },
+          "deep_link": "nomenu://bars/example-bar/drinks/00000006-0000-4000-8000-000000000000"
+        }
+      ],
+      "summary": null,
+      "page": null
+    }
+  },
+  {
+    "name": "home six request",
+    "schema": "feed/request.schema.json",
+    "data": {
+      "city_code": "shanghai",
+      "mode": "for_you",
+      "surface": "home",
+      "limit": 6,
+      "feed_instance_id": "00000004-0000-4000-8000-000000000000"
+    }
+  }
+]

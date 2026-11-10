@@ -79,6 +79,7 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="events" options={{ headerShown: false }} />
+        <Stack.Screen name="new-beers" options={{ headerShown: false }} />
         <Stack.Screen name="bar/[slug]" options={{ headerShown: false }} />
         <Stack.Screen name="bar/[slug]/events" options={{ headerShown: false }} />
         <Stack.Screen name="bar/[slug]/event/[eventId]" options={{ headerShown: false }} />
@@ -90,6 +91,7 @@ function RootLayoutNav() {
         <Stack.Screen name="tap-report" options={{ headerShown: false }} />
         <Stack.Screen name="tonight-recap" options={{ headerShown: false }} />
         <Stack.Screen name="followed-bars" options={{ headerShown: false }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
         <Stack.Screen name="about" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />

@@ -126,6 +126,7 @@ export async function getMyDrinkInsights(at?: string) {
         ...drink,
         name_en: historyByLightId.get(drink.light_id)?.name_en ?? null,
         brewery_en: historyByLightId.get(drink.light_id)?.brewery_en ?? null,
+        beer_style_en: historyByLightId.get(drink.light_id)?.beer_style_en ?? null,
         bar_names: [...new Set(
           (historyByLightId.get(drink.light_id)?.venues ?? [])
             .filter((venue) => new Date(venue.first_drank_at).getTime() >= businessDayStart)
@@ -142,6 +143,7 @@ export async function getMyDrinkInsights(at?: string) {
         ...drink,
         name_en: historyByLightId.get(drink.light_id)?.name_en ?? null,
         brewery_en: historyByLightId.get(drink.light_id)?.brewery_en ?? null,
+        beer_style_en: historyByLightId.get(drink.light_id)?.beer_style_en ?? null,
         bar_names: [...new Set(
           (historyByLightId.get(drink.light_id)?.venues ?? [])
             .filter((venue) => {

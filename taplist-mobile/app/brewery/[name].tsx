@@ -3,6 +3,8 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Link, type Href, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
+import { trackEvent } from '@/lib/analytics'
+import { listCapsuleVenueBadgeStyle } from '@/components/taplist/listCapsuleCardStyle'
 import {
   ActivityIndicator,
   Pressable,
@@ -36,6 +38,7 @@ import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { MiniProductSearchResult } from '@/lib/types'
 import { localizedLocation, tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 
 export default function BreweryScreen() {
   const { language, localized } = useLanguage()
@@ -158,12 +161,12 @@ export default function BreweryScreen() {
 
 function BreweryProductCard({ product }: { product: MiniProductSearchResult }) {
   const { language, localized } = useLanguage()
-  const meta = [localized(product.brewery, product.brewery_en), product.beer_style].filter(Boolean).join(' · ')
+  const meta = [localized(product.brewery, product.brewery_en), localizeBeerStyle(product.beer_style, language, product.beer_style_en)].filter(Boolean).join(' · ')
   const abv = typeof product.abv === 'number' ? `ABV ${product.abv}%` : null
 
   return (
     <Link href={`/product/${encodeURIComponent(product.key)}` as Href} asChild>
-      <Pressable style={({ pressed }) => [
+      <Pressable onPress={() => trackEvent('beer_opened', { product_id: product.product_id, drink_id: product.drink_id, source: 'brewery' })} style={({ pressed }) => [
         listCapsuleCardStyles.card,
         pressed && listCapsuleCardStyles.cardPressed,
       ]}>
@@ -192,7 +195,7 @@ function BreweryProductCard({ product }: { product: MiniProductSearchResult }) {
               {abv ? <Text style={listCapsuleSecondaryStyle}>{abv}</Text> : null}
               {product.venues.length > 0 ? (
                 <>
-                  <Text style={styles.availability}>{tr(language, `${product.venue_count} 家有售`, `Available at ${product.venue_count} venues`)}</Text>
+                  <Text style={styles.availability}>{tr(language, `${product.venue_count} 家有售`, `Available at ${product.venue_count} bar${product.venue_count === 1 ? '' : 's'}`)}</Text>
                   <View style={styles.venueRow}>
                     {product.venues.slice(0, 2).map((venue) => (
                       <View key={venue.id} style={styles.venuePill}>
@@ -248,11 +251,7 @@ const styles = StyleSheet.create({
   list: { gap: BEER_CARD_GAP },
   availability: { ...typography.micro, color: palette.tungsten, marginTop: spacing.xxs },
   venueRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.xxs },
-  venuePill: {
-    maxWidth: '100%', paddingHorizontal: spacing.xs, paddingVertical: spacing.xxs,
-    borderRadius: 6, borderWidth: 1, borderColor: 'rgba(214,176,105,0.16)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
+  venuePill: listCapsuleVenueBadgeStyle,
   venuePillText: { ...typography.micro, color: palette.muted },
   unavailable: { ...typography.micro, color: palette.faint, marginTop: spacing.xxs },
 })

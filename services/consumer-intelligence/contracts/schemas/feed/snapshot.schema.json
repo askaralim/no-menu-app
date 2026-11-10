@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/feed/snapshot.schema.json",
+  "type": "object",
+  "properties": {
+    "state": {
+      "enum": [
+        "fresh",
+        "stale",
+        "building"
+      ]
+    },
+    "snapshot_id": {
+      "anyOf": [
+        {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "model_version": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "generated_at": {
+      "anyOf": [
+        {
+          "$ref": "../common/primitives.schema.json#/$defs/time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "state",
+    "snapshot_id",
+    "model_version",
+    "generated_at"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "building"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "snapshot_id": {
+            "type": "null"
+          },
+          "model_version": {
+            "type": "null"
+          },
+          "generated_at": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "model_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  ]
+}

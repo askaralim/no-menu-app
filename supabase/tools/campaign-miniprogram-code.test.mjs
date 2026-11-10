@@ -17,3 +17,11 @@ test('campaign code accepts WebAdmin hexadecimal codes and rejects malformed ide
   assert.throws(() => validateInput('campaign', 'ABC23456', 'release'), /campaign id/)
   assert.throws(() => validateInput(campaignId, '1234567!', 'release'), /QR code/)
 })
+
+test('prepublication poster code keeps the release environment and stable routing code', () => {
+  assert.deepEqual(buildRequestBody('8b60ed3b', 'release', { allowUnpublishedPage: true, poster: true }), {
+    scene: 'p_8b60ed3b', page: 'pages/campaign/campaign', check_path: false, env_version: 'release', width: 430,
+  })
+  assert.equal(buildRequestBody('8b60ed3b', 'release', { poster: true }).check_path, true)
+  assert.throws(() => buildRequestBody('p_8b60ed3b', 'release', { poster: true }), /QR code/)
+})

@@ -1,0 +1,390 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.nomenu.invalid/v1/feed/response.schema.json",
+  "allOf": [
+    {
+      "$ref": "../common/primitives.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "data_as_of": {
+          "$ref": "../common/primitives.schema.json#/$defs/time"
+        },
+        "city_code": {
+          "$ref": "../common/primitives.schema.json#/$defs/city"
+        },
+        "mode": {
+          "enum": [
+            "for_you",
+            "latest"
+          ]
+        },
+        "surface": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "feed_instance_id": {
+          "$ref": "../common/primitives.schema.json#/$defs/uuid"
+        },
+        "ranking_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "personalization": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "eligible",
+                    "cold_start"
+                  ]
+                },
+                "unique_tap_count": {
+                  "$ref": "../common/primitives.schema.json#/$defs/nonnegative"
+                },
+                "required_tap_count": {
+                  "$ref": "../common/primitives.schema.json#/$defs/positive"
+                }
+              },
+              "required": [
+                "status",
+                "unique_tap_count",
+                "required_tap_count"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot": {
+          "anyOf": [
+            {
+              "$ref": "./snapshot.schema.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "empty_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "total_items": {
+          "$ref": "../common/primitives.schema.json#/$defs/nonnegative"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "./item.schema.json"
+          }
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "as_of": {
+                  "$ref": "../common/primitives.schema.json#/$defs/time"
+                },
+                "timezone": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "total_items": {
+                  "$ref": "../common/primitives.schema.json#/$defs/nonnegative"
+                },
+                "days": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "count": {
+                        "$ref": "../common/primitives.schema.json#/$defs/nonnegative"
+                      }
+                    },
+                    "required": [
+                      "date",
+                      "count"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "as_of",
+                "timezone",
+                "total_items",
+                "days"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "as_of": {
+                  "$ref": "../common/primitives.schema.json#/$defs/time"
+                },
+                "has_more": {
+                  "type": "boolean"
+                },
+                "next_cursor": {
+                  "anyOf": [
+                    {
+                      "$ref": "../common/primitives.schema.json#/$defs/cursor"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "expires_at": {
+                  "$ref": "../common/primitives.schema.json#/$defs/time"
+                }
+              },
+              "required": [
+                "as_of",
+                "has_more",
+                "next_cursor",
+                "expires_at"
+              ],
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "has_more": {
+                        "const": true
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "next_cursor": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "else": {
+                    "properties": {
+                      "next_cursor": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "data_as_of",
+        "city_code",
+        "mode",
+        "surface",
+        "feed_instance_id",
+        "ranking_version",
+        "personalization",
+        "snapshot",
+        "empty_reason",
+        "total_items",
+        "items",
+        "summary",
+        "page"
+      ]
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "latest"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "personalization": {
+            "type": "null"
+          },
+          "snapshot": {
+            "type": "null"
+          },
+          "page": {
+            "type": "object"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "personalization": {
+            "type": "object"
+          },
+          "summary": {
+            "type": "null"
+          },
+          "page": {
+            "type": "null"
+          },
+          "items": {
+            "maxItems": 20
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "for_you"
+          },
+          "personalization": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "cold_start"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "snapshot": {
+            "type": "null"
+          },
+          "items": {
+            "maxItems": 0
+          },
+          "total_items": {
+            "const": 0
+          },
+          "empty_reason": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "for_you"
+          },
+          "personalization": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "eligible"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "snapshot": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "for_you"
+          },
+          "snapshot": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "const": "building"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "items": {
+            "maxItems": 0
+          },
+          "total_items": {
+            "const": 0
+          },
+          "empty_reason": {
+            "const": "refresh_pending"
+          }
+        }
+      }
+    }
+  ],
+  "description": "data_as_of is the lower-bound source timestamp of the exact business-data generations used to produce the returned ranking/list. Fresh projections never rewrite the data_as_of of an old ranking. Unknown empty_reason/ranking/model/reason codes must not prevent rendering. Additional response fields must be tolerated.",
+  "not": {
+    "anyOf": [
+      {
+        "required": [
+          "home_city_code_at_creation"
+        ]
+      },
+      {
+        "required": [
+          "away_city_at_creation"
+        ]
+      },
+      {
+        "required": [
+          "home_city_source_as_of"
+        ]
+      },
+      {
+        "required": [
+          "user_feature_version"
+        ]
+      },
+      {
+        "required": [
+          "candidate_version"
+        ]
+      },
+      {
+        "required": [
+          "score"
+        ]
+      },
+      {
+        "required": [
+          "public_status"
+        ]
+      }
+    ]
+  }
+}

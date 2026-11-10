@@ -28,10 +28,13 @@ export type TapLifecycleOperation = {
   to_tap: number | null
   drink_id: string | null
   drink_name: string | null
+  brewery_name?: string | null
   previous_drink_id: string | null
   previous_drink_name: string | null
+  previous_brewery_name?: string | null
   next_drink_id: string | null
   next_drink_name: string | null
+  next_brewery_name?: string | null
   duration_seconds: number | null
   accuracy: TapLifecycleAccuracy | null
   end_reason: string | null

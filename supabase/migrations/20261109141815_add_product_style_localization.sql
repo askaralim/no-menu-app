@@ -345,7 +345,7 @@ VALUES
   ('红茶西打', 'Tea Cider', 'cider.generic', 'localized_display', 'style-localization-v1.2'),
   ('红醋栗樱桃桶陈蜂蜜酒', 'Barrel-Aged Fruited Mead', 'mead.generic', 'localized_display', 'style-localization-v1.2'),
   ('红米拉格', 'Rice Lager', 'lager.rice', 'localized_display', 'style-localization-v1.2'),
-  ('红色艾尔', 'Ale', 'amber_red_brown.red', 'localized_display', 'style-localization-v1.2'),
+  ('红色艾尔', 'Red Ale', 'amber_red_brown.red', 'localized_display', 'style-localization-v1.2'),
   ('红色裸麦IPA', 'Red Rye IPA', 'ipa.rye', 'localized_display', 'style-localization-v1.2'),
   ('红色双倍IPA', 'Double Red IPA', 'ipa.red', 'localized_display', 'style-localization-v1.2'),
   ('红色酸艾尔', 'Sour Ale', 'sour.generic', 'localized_display', 'style-localization-v1.2'),
@@ -1176,7 +1176,7 @@ VALUES
   ('柚子酸IPA', 'Fruited Sour IPA', 'ipa.sour', 'localized_display', 'style-localization-v1.2'),
   ('余甘子风味西打酒', 'Cider', 'cider.generic', 'localized_display', 'style-localization-v1.2'),
   ('玉米科隆', 'Kölsch', 'kolsch.generic', 'localized_display', 'style-localization-v1.2'),
-  ('玉米拉格', 'Rice Lager', 'lager.generic', 'localized_display', 'style-localization-v1.2'),
+  ('玉米拉格', 'Corn Lager', 'lager.generic', 'localized_display', 'style-localization-v1.2'),
   ('芋泥奶昔艾尔', 'Milkshake Ale', 'unknown', 'localized_display', 'style-localization-v1.2'),
   ('芋泥薰衣草冰淇淋奶昔', NULL, 'unknown', 'hold_for_manual_review', 'style-localization-v1.2'),
   ('原萃绿茶酸艾尔', 'Tea Sour Ale', 'sour.generic', 'localized_display', 'style-localization-v1.2'),
@@ -1418,33 +1418,78 @@ REVOKE ALL ON FUNCTION nomenu_i18n.apply_product_style_v12(uuid, boolean)
   FROM PUBLIC, anon, authenticated;
 
 -- Existing Product Pool rows receive the same exact-match materialization.
-UPDATE public.drink_products dp
-SET beer_style_en = m.display_en,
-    beer_style_en_source = CASE
-      WHEN m.consumer_delivery_tier = 'style_key_safe_fallback' THEN 'style_key_fallback'
-      ELSE 'dictionary'
-    END,
-    beer_style_en_status = 'approved',
-    beer_style_en_version = m.version
-FROM nomenu_i18n.style_localization_v12 m
-WHERE m.raw_style = nullif(trim(dp.beer_style), '')
-  AND m.consumer_delivery_tier IN ('localized_display', 'style_key_safe_fallback')
-  AND nullif(trim(m.display_en), '') IS NOT NULL
-  AND dp.beer_style_en_source IS DISTINCT FROM 'manual';
+-- The image constraint is NOT VALID because some legacy products still carry
+-- first-party drink URLs. PostgreSQL nevertheless checks those legacy rows on
+-- any UPDATE, including an unrelated localization update. Temporarily remove
+-- and restore the constraint inside this atomic block so the one-time backfill
+-- does not mutate or discard legacy images. The final constraint is unchanged.
+DO $style_localization_backfill$
+DECLARE
+  v_had_image_constraint boolean := false;
+  v_image_constraint_was_validated boolean := false;
+BEGIN
+  SELECT true, convalidated
+  INTO v_had_image_constraint, v_image_constraint_was_validated
+  FROM pg_constraint
+  WHERE conrelid = 'public.drink_products'::regclass
+    AND conname = 'drink_products_canonical_first_party_image';
 
-UPDATE public.drink_products dp
-SET beer_style_en = NULL,
-    beer_style_en_source = NULL,
-    beer_style_en_status = 'needs_review',
-    beer_style_en_version = 'style-localization-v1.2'
-WHERE dp.beer_style_en_source IS DISTINCT FROM 'manual'
-  AND NOT EXISTS (
-    SELECT 1
-    FROM nomenu_i18n.style_localization_v12 m
-    WHERE m.raw_style = nullif(trim(dp.beer_style), '')
-      AND m.consumer_delivery_tier IN ('localized_display', 'style_key_safe_fallback')
-      AND nullif(trim(m.display_en), '') IS NOT NULL
-  );
+  IF v_had_image_constraint THEN
+    ALTER TABLE public.drink_products
+      DROP CONSTRAINT drink_products_canonical_first_party_image;
+  END IF;
+
+  UPDATE public.drink_products dp
+  SET beer_style_en = m.display_en,
+      beer_style_en_source = CASE
+        WHEN m.consumer_delivery_tier = 'style_key_safe_fallback' THEN 'style_key_fallback'
+        ELSE 'dictionary'
+      END,
+      beer_style_en_status = 'approved',
+      beer_style_en_version = m.version
+  FROM nomenu_i18n.style_localization_v12 m
+  WHERE m.raw_style = nullif(trim(dp.beer_style), '')
+    AND m.consumer_delivery_tier IN ('localized_display', 'style_key_safe_fallback')
+    AND nullif(trim(m.display_en), '') IS NOT NULL
+    AND dp.beer_style_en_source IS DISTINCT FROM 'manual';
+
+  UPDATE public.drink_products dp
+  SET beer_style_en = NULL,
+      beer_style_en_source = NULL,
+      beer_style_en_status = 'needs_review',
+      beer_style_en_version = 'style-localization-v1.2'
+  WHERE dp.beer_style_en_source IS DISTINCT FROM 'manual'
+    AND NOT EXISTS (
+      SELECT 1
+      FROM nomenu_i18n.style_localization_v12 m
+      WHERE m.raw_style = nullif(trim(dp.beer_style), '')
+        AND m.consumer_delivery_tier IN ('localized_display', 'style_key_safe_fallback')
+        AND nullif(trim(m.display_en), '') IS NOT NULL
+    );
+
+  IF v_had_image_constraint THEN
+    ALTER TABLE public.drink_products
+      ADD CONSTRAINT drink_products_canonical_first_party_image
+      CHECK (
+        image_url IS NULL
+        OR image_url ~ (
+          '^https://img\.nomenuapp\.com/prod/products/' ||
+          id::text ||
+          '/[A-Za-z0-9_-][A-Za-z0-9._-]{0,119}$'
+        )
+        OR (
+          image_url !~ '^https://img\.nomenuapp\.com/'
+          AND image_url !~ '^https://agtujigvxxdppngirqtu\.supabase\.co/storage/v1/object/public/taplist-media/'
+        )
+      ) NOT VALID;
+
+    IF v_image_constraint_was_validated THEN
+      ALTER TABLE public.drink_products
+        VALIDATE CONSTRAINT drink_products_canonical_first_party_image;
+    END IF;
+  END IF;
+END;
+$style_localization_backfill$;
 
 CREATE OR REPLACE FUNCTION public.admin_set_drink_product_style_localization(
   p_product_id uuid,

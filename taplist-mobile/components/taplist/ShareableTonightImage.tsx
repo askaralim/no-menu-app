@@ -46,7 +46,7 @@ export const ShareableTonightImage = forwardRef<
               <Text numberOfLines={1} style={styles.name}>
                 {[localized(drink.brewery, drink.brewery_en), localized(drink.name, drink.name_en)].filter(Boolean).join(' · ')}
               </Text>
-              <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ') || tr(language, '未知酒吧', 'Unknown venue')}</Text>
+              <Text numberOfLines={1} style={styles.venue}>{drink.bar_names.join(' · ') || tr(language, '未知酒吧', 'Unknown bar')}</Text>
             </View>
           ))}
         </View>

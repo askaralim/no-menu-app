@@ -31,6 +31,7 @@ import type { MiniProductSearchResult, PublicNewTapRow, PublicTaplistBreweryDisc
 import { trackEvent } from '@/lib/analytics'
 import { formatPrimaryBrewery } from '@/lib/formatTaplist'
 import { tr, useLanguage } from '@/lib/i18n'
+import { localizeBeerStyle } from '@/lib/styleLocalization'
 
 const searchPresets = [
   'IPA',
@@ -323,8 +324,8 @@ export default function SearchScreen() {
             </EmptyState>
           ) : (
             <>
-              {drinkResults.map((drink) => (
-                <DrinkResult key={drink.key} drink={drink} />
+              {drinkResults.map((drink, index) => (
+                <DrinkResult key={drink.key} drink={drink} position={index + 1} />
               ))}
               {drinksQuery.isFetchingNextPage ? (
                 <View style={styles.loadingMore}>
@@ -659,9 +660,9 @@ function BreweryTileCopy({ brewery }: { brewery: PublicTaplistBreweryDiscoveryRo
   )
 }
 
-function DrinkResult({ drink }: { drink: MiniProductSearchResult }) {
+function DrinkResult({ drink, position }: { drink: MiniProductSearchResult; position: number }) {
   const { language, localized } = useLanguage()
-  const styleLine = [localized(drink.brewery, drink.brewery_en), drink.beer_style, typeof drink.abv === 'number' ? `ABV ${drink.abv}%` : null]
+  const styleLine = [localized(drink.brewery, drink.brewery_en), localizeBeerStyle(drink.beer_style, language, drink.beer_style_en), typeof drink.abv === 'number' ? `ABV ${drink.abv}%` : null]
     .filter(Boolean)
     .join(' · ')
   const hasSupply = drink.venue_count > 0
@@ -675,6 +676,7 @@ function DrinkResult({ drink }: { drink: MiniProductSearchResult }) {
               product_id: drink.product_id,
               drink_id: drink.drink_id,
               source: 'search_result',
+              display_position: position,
             })
           }
           style={({ pressed }) => [styles.drinkPressable, pressed && styles.pressed]}>
@@ -695,7 +697,7 @@ function DrinkResult({ drink }: { drink: MiniProductSearchResult }) {
               </Text>
               {styleLine ? <Text style={styles.drinkStyle}>{styleLine}</Text> : null}
               <Text style={[styles.supplyLine, hasSupply && styles.supplyLineAvailable]}>
-                {hasSupply ? tr(language, `本城 ${drink.venue_count} 家有售`, `Available at ${drink.venue_count} venue${drink.venue_count === 1 ? '' : 's'}`) : tr(language, '当前城市暂无供应', 'Not available in this city')}
+                {hasSupply ? tr(language, `本城 ${drink.venue_count} 家有售`, `Available at ${drink.venue_count} bar${drink.venue_count === 1 ? '' : 's'}`) : tr(language, '当前城市暂无供应', 'Not available in this city')}
               </Text>
               {drink.venues.length > 0 ? (
                 <View style={styles.venuePills}>
