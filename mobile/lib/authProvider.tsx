@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Session, User } from '@supabase/supabase-js'
+import { Session, User, type AuthChangeEvent } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import { ensureUserProfile, getMyTenants, setActiveTenant, type MyTenant } from './membershipApi'
+import { getMyTenants, setActiveTenant, type MyTenant } from './membershipApi'
 import type { UserRole } from './types'
 
 const ACTIVE_TENANT_KEY = 'nomenu.activeTenantId'
+const MEMBERSHIP_REQUEST_TIMEOUT_MS = 15_000
 
 type AuthContextType = {
   session: Session | null
@@ -16,7 +17,9 @@ type AuthContextType = {
   memberships: MyTenant[]
   needsTenantSelection: boolean
   isLoading: boolean
-  refreshMembership: () => Promise<void>
+  authError: string | null
+  refreshMembership: () => Promise<MyTenant[]>
+  retryAuth: () => Promise<void>
   setActiveTenantId: (tenantId: string) => Promise<void>
 }
 
@@ -38,7 +41,9 @@ const AuthContext = createContext<AuthContextType>({
   memberships: [],
   needsTenantSelection: false,
   isLoading: true,
-  refreshMembership: async () => {},
+  authError: null,
+  refreshMembership: async () => [],
+  retryAuth: async () => {},
   setActiveTenantId: async () => {},
 })
 
@@ -64,18 +69,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [memberships, setMemberships] = useState<MyTenant[]>([])
   const [needsTenantSelection, setNeedsTenantSelection] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
   const initialized = useRef(false)
+  const sessionRef = useRef<Session | null>(null)
+  const membershipUserIdRef = useRef<string | null>(null)
+  const loadedMembershipUserIdRef = useRef<string | null>(null)
+  const membershipPromiseRef = useRef<Promise<MyTenant[]> | null>(null)
+  const membershipAbortControllerRef = useRef<AbortController | null>(null)
 
   const applyMemberships = useCallback(async (rows: MyTenant[]) => {
     setMemberships(rows)
     const stored = await AsyncStorage.getItem(ACTIVE_TENANT_KEY)
     const chosen = pickInitialTenant(rows, stored)
     if (chosen) {
-      try {
-        await setActiveTenant(chosen.tenant_id)
-      } catch (e) {
-        console.warn('set_active_tenant failed', e)
-      }
       setTenantId(chosen.tenant_id)
       setRole(chosen.role)
       setOrderingEnabled(resolveOrdering(chosen))
@@ -83,6 +89,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (stored !== chosen.tenant_id) {
         await AsyncStorage.setItem(ACTIVE_TENANT_KEY, chosen.tenant_id)
       }
+      void setActiveTenant(chosen.tenant_id).catch((e) => {
+        console.warn('set_active_tenant failed', e)
+      })
     } else if (rows.length > 1) {
       setTenantId(null)
       setRole(null)
@@ -97,29 +106,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const fetchMembership = useCallback(async (_userId: string) => {
-    try {
-      await ensureUserProfile()
-      const rows = await getMyTenants()
-      await applyMemberships(rows)
-    } catch (e) {
-      console.error('fetchMembership error:', e)
-      setMemberships([])
-      setTenantId(null)
-      setRole(null)
-      setOrderingEnabled(false)
-      setNeedsTenantSelection(false)
-    } finally {
-      setIsLoading(false)
+  const fetchMembership = useCallback((userId: string) => {
+    if (membershipUserIdRef.current === userId && membershipPromiseRef.current) {
+      return membershipPromiseRef.current
     }
+
+    membershipUserIdRef.current = userId
+    membershipAbortControllerRef.current?.abort()
+    let request: Promise<MyTenant[]>
+    const controller = new AbortController()
+    membershipAbortControllerRef.current = controller
+    const timeout = setTimeout(() => controller.abort(), MEMBERSHIP_REQUEST_TIMEOUT_MS)
+    request = getMyTenants(controller.signal)
+      .then(async (rows) => {
+        if (sessionRef.current?.user.id !== userId) return rows
+        await applyMemberships(rows)
+        loadedMembershipUserIdRef.current = userId
+        return rows
+      })
+      .finally(() => {
+        clearTimeout(timeout)
+        if (membershipPromiseRef.current === request) {
+          membershipPromiseRef.current = null
+          membershipAbortControllerRef.current = null
+        }
+      })
+    membershipPromiseRef.current = request
+    return request
   }, [applyMemberships])
 
   const refreshMembership = useCallback(async () => {
-    const { data } = await supabase.auth.getSession()
-    const uid = data.session?.user?.id
-    if (uid) {
-      setIsLoading(true)
-      await fetchMembership(uid)
+    let currentSession = sessionRef.current
+    if (!currentSession) {
+      const { data, error } = await supabase.auth.getSession()
+      if (error) throw error
+      currentSession = data.session
+      sessionRef.current = currentSession
+    }
+    if (!currentSession?.user?.id) return []
+    return fetchMembership(currentSession.user.id)
+  }, [fetchMembership])
+
+  const clearAuthState = useCallback(() => {
+    sessionRef.current = null
+    membershipUserIdRef.current = null
+    loadedMembershipUserIdRef.current = null
+    membershipAbortControllerRef.current?.abort()
+    membershipAbortControllerRef.current = null
+    membershipPromiseRef.current = null
+    setSession(null)
+    setUser(null)
+    setMemberships([])
+    setTenantId(null)
+    setRole(null)
+    setOrderingEnabled(false)
+    setNeedsTenantSelection(false)
+    setAuthError(null)
+    setIsLoading(false)
+    void AsyncStorage.removeItem(ACTIVE_TENANT_KEY)
+  }, [])
+
+  const restoreAuth = useCallback(async () => {
+    setIsLoading(true)
+    setAuthError(null)
+    try {
+      const { data, error } = await supabase.auth.getSession()
+      if (error) throw error
+      const nextSession = data.session
+      sessionRef.current = nextSession
+      setSession(nextSession)
+      setUser(nextSession?.user ?? null)
+      if (nextSession?.user) {
+        await fetchMembership(nextSession.user.id)
+      } else {
+        loadedMembershipUserIdRef.current = null
+        setMemberships([])
+        setTenantId(null)
+        setRole(null)
+        setOrderingEnabled(false)
+        setNeedsTenantSelection(false)
+      }
+    } catch (error) {
+      console.error('Auth init error:', error)
+      setAuthError('网络连接异常，请检查网络后重试')
+    } finally {
+      setIsLoading(false)
     }
   }, [fetchMembership])
 
@@ -141,61 +212,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (initialized.current) return
     initialized.current = true
 
-    const timeout = setTimeout(() => {
-      console.warn('Auth init timed out after 10s, proceeding without session')
-      setIsLoading(false)
-    }, 10000)
+    void restoreAuth()
 
-    const init = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession()
-        if (error) {
-          console.error('getSession error:', error)
-          setIsLoading(false)
-          return
-        }
-        const s = data.session
-        setSession(s)
-        setUser(s?.user ?? null)
-        if (s?.user) {
-          await fetchMembership(s.user.id)
-        } else {
-          setIsLoading(false)
-        }
-      } catch (err) {
-        console.error('Auth init error:', err)
-        setIsLoading(false)
-      } finally {
-        clearTimeout(timeout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, nextSession) => {
+      if (event === 'INITIAL_SESSION') return
+      if (event === 'SIGNED_OUT') {
+        clearAuthState()
+        return
       }
-    }
 
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      sessionRef.current = nextSession
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
-      const uid = nextSession?.user?.id
-      setTimeout(() => {
-        if (uid) {
-          void fetchMembership(uid)
-        } else {
-          setMemberships([])
-          setTenantId(null)
-          setRole(null)
-          setOrderingEnabled(false)
-          setNeedsTenantSelection(false)
-          setIsLoading(false)
-          void AsyncStorage.removeItem(ACTIVE_TENANT_KEY)
-        }
-      }, 0)
+      setAuthError(null)
+      if (
+        event === 'SIGNED_IN' &&
+        nextSession?.user?.id &&
+        loadedMembershipUserIdRef.current !== nextSession.user.id
+      ) {
+        setIsLoading(true)
+        setTimeout(() => {
+          void fetchMembership(nextSession.user.id).catch((error) => {
+            console.error('fetchMembership error:', error)
+            setAuthError('网络连接异常，请检查网络后重试')
+          }).finally(() => {
+            setIsLoading(false)
+          })
+        }, 0)
+      }
     })
 
     return () => {
-      clearTimeout(timeout)
       subscription.unsubscribe()
     }
-  }, [fetchMembership])
+  }, [clearAuthState, fetchMembership, restoreAuth])
 
   return (
     <AuthContext.Provider
@@ -208,7 +258,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         memberships,
         needsTenantSelection,
         isLoading,
+        authError,
         refreshMembership,
+        retryAuth: restoreAuth,
         setActiveTenantId,
       }}
     >

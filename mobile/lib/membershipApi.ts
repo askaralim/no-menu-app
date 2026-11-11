@@ -60,8 +60,10 @@ export async function ensureUserProfile(): Promise<void> {
   if (error) throw new Error(translate(error.message))
 }
 
-export async function getMyTenants(): Promise<MyTenant[]> {
-  const { data, error } = await supabase.rpc('get_my_tenants')
+export async function getMyTenants(signal?: AbortSignal): Promise<MyTenant[]> {
+  let request = supabase.rpc('get_my_tenants')
+  if (signal) request = request.abortSignal(signal)
+  const { data, error } = await request
   if (error) throw new Error(translate(error.message))
   return (data as MyTenant[]) ?? []
 }

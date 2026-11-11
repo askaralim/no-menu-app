@@ -50,6 +50,8 @@ const SOLD_OUT_UNDO_MS = 7000
 const TAP_NUMBER_HINT_KEY = 'taplist:tap-number-hint:v1'
 const TAP_NUMBER_HINT_MS = 6000
 const KEG_CHANGE_PENDING_KEY_PREFIX = 'taplist:keg-change-pending:v1'
+const TAPLIST_CACHE_KEY_PREFIX = 'taplist:owner-snapshot:v1'
+const TAPLIST_FOCUS_REFRESH_MS = 30_000
 
 type SoldOutUndo = {
   drinkId: string
@@ -100,6 +102,10 @@ type WebKegChangeDialog =
 
 function pendingKegChangeKey(tenantId: string, drinkId: string): string {
   return `${KEG_CHANGE_PENDING_KEY_PREFIX}:${tenantId}:${drinkId}`
+}
+
+function taplistCacheKey(tenantId: string): string {
+  return `${TAPLIST_CACHE_KEY_PREFIX}:${tenantId}`
 }
 
 function parsePendingKegChange(value: string | null): PendingKegChange | null {
@@ -177,7 +183,12 @@ export default function TaplistScreen() {
   const soldOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const tapNumberHintCheckedRef = useRef(false)
   const tenantIdRef = useRef(tenantId)
+  const previousTenantIdRef = useRef(tenantId)
+  const draftRef = useRef<TaplistDraft | null>(null)
+  const lastLoadAtRef = useRef(0)
+  const lastLoadedTenantIdRef = useRef<string | null>(null)
   const pendingKegChangesRef = useRef<Map<string, PendingKegChange>>(new Map())
+  tenantIdRef.current = tenantId
 
   const clearSoldOutUndo = useCallback(() => {
     if (soldOutTimerRef.current) {
@@ -189,35 +200,60 @@ export default function TaplistScreen() {
 
   useEffect(() => () => clearSoldOutUndo(), [clearSoldOutUndo])
 
-  const refreshDraft = useCallback(async () => {
-    const payload = await loadOwnerTaplist(tenantId)
+  useEffect(() => {
+    draftRef.current = draft
+  }, [draft])
+
+  const refreshDraft = useCallback(async (signal?: AbortSignal) => {
+    const requestTenantId = tenantId
+    const payload = await loadOwnerTaplist(requestTenantId, signal)
     const next = buildDraft(payload)
+    if (signal?.aborted || tenantIdRef.current !== requestTenantId) return next
     setDraft(next)
+    lastLoadAtRef.current = Date.now()
+    lastLoadedTenantIdRef.current = requestTenantId ?? null
+    if (requestTenantId) {
+      void AsyncStorage.setItem(
+        taplistCacheKey(requestTenantId),
+        JSON.stringify({ savedAt: lastLoadAtRef.current, draft: next }),
+      ).catch(() => {})
+    }
     return next
   }, [tenantId])
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (signal?: AbortSignal) => {
+    if (!draftRef.current) setLoading(true)
     setError(null)
     try {
-      await refreshDraft()
+      await refreshDraft(signal)
     } catch (e: any) {
+      if (signal?.aborted) return
+      if (draftRef.current) {
+        console.warn('taplist background refresh failed', e)
+        return
+      }
       setError(e?.message || '加载失败')
       setDraft(null)
     } finally {
-      setLoading(false)
+      if (!signal?.aborted) setLoading(false)
     }
   }, [refreshDraft])
 
   useFocusEffect(
     useCallback(() => {
-      load()
-    }, [load]),
+      if (
+        lastLoadedTenantIdRef.current === tenantId &&
+        Date.now() - lastLoadAtRef.current < TAPLIST_FOCUS_REFRESH_MS
+      ) return
+      const controller = new AbortController()
+      void load(controller.signal)
+      return () => controller.abort()
+    }, [load, tenantId]),
   )
 
   useEffect(() => {
-    if (tenantIdRef.current === tenantId) return
-    tenantIdRef.current = tenantId
+    if (previousTenantIdRef.current === tenantId) return
+    previousTenantIdRef.current = tenantId
     pendingKegChangesRef.current.clear()
     clearSoldOutUndo()
     setPreviewOpen(false)
@@ -234,10 +270,35 @@ export default function TaplistScreen() {
     setTonightShareOpen(false)
     setWebKegChangeDialog(null)
     setFilter('all')
+    draftRef.current = null
+    lastLoadAtRef.current = 0
+    lastLoadedTenantIdRef.current = null
     setDraft(null)
     setError(null)
     setLoading(true)
   }, [tenantId, clearSoldOutUndo])
+
+  useEffect(() => {
+    if (!tenantId) return
+    let active = true
+    void AsyncStorage.getItem(taplistCacheKey(tenantId))
+      .then((raw) => {
+        if (!active || tenantIdRef.current !== tenantId || !raw || draftRef.current) return
+        const cached = JSON.parse(raw) as { savedAt?: number; draft?: TaplistDraft }
+        if (
+          cached?.draft?.tenant?.id !== tenantId ||
+          !Array.isArray(cached.draft.drinks) ||
+          !Array.isArray(cached.draft.categories)
+        ) return
+        draftRef.current = cached.draft
+        setDraft(cached.draft)
+        setLoading(false)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [tenantId])
 
   const showKegChangeMessage = (title: string, message: string) => {
     if (Platform.OS === 'web') {
@@ -936,7 +997,7 @@ export default function TaplistScreen() {
       <SafeAreaView style={styles.center} edges={['top']}>
         <Ionicons name="wine-outline" size={40} color={T.muted} />
         <Text style={styles.errorText}>{error || '暂无酒单'}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={load}>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => void load()}>
           <Text style={styles.retryText}>重新加载</Text>
         </TouchableOpacity>
       </SafeAreaView>

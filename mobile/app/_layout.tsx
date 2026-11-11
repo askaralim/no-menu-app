@@ -10,12 +10,12 @@ import { COLORS } from '../lib/constants'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 function RootLayoutNav() {
-  const { session, tenantId, role, memberships, needsTenantSelection, isLoading } = useAuth()
+  const { session, tenantId, role, memberships, needsTenantSelection, isLoading, authError, retryAuth } = useAuth()
   const segments = useSegments() as string[]
   const router = useRouter()
 
   useEffect(() => {
-    if (isLoading) return
+    if (isLoading || authError) return
 
     const group = segments[0]
     const screen = segments[1]
@@ -63,12 +63,22 @@ function RootLayoutNav() {
         router.replace('/(tabs)/taplist')
       }
     }
-  }, [session, tenantId, role, memberships, needsTenantSelection, isLoading, segments])
+  }, [session, tenantId, role, memberships, needsTenantSelection, isLoading, authError, segments])
 
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
         <ActivityIndicator size="large" color={COLORS.gold} />
+      </View>
+    )
+  }
+
+  if (authError) {
+    return (
+      <View style={styles.authErrorWrap}>
+        <Text style={styles.authErrorTitle}>暂时无法连接</Text>
+        <Text style={styles.authErrorBody}>{authError}</Text>
+        <Text style={styles.authErrorAction} onPress={() => void retryAuth()}>重新连接</Text>
       </View>
     )
   }
@@ -124,5 +134,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  authErrorWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 28,
+    backgroundColor: COLORS.background,
+  },
+  authErrorTitle: { color: COLORS.text, fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  authErrorBody: { color: COLORS.muted, fontSize: 14, textAlign: 'center', marginBottom: 20 },
+  authErrorAction: { color: COLORS.gold, fontSize: 15, fontWeight: '700', padding: 12 },
 })
 

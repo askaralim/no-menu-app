@@ -10,6 +10,7 @@ const LOCAL_DEFAULT_ANON_KEY =
 const HOSTED_SUPABASE_URL = 'https://agtujigvxxdppngirqtu.supabase.co'
 const PRODUCTION_PROXY_URL = 'https://nomenuapp.com/api/supabase'
 const PRODUCTION_AUTH_STORAGE_KEY = 'sb-agtujigvxxdppngirqtu-auth-token'
+const SUPABASE_REQUEST_TIMEOUT_MS = 15_000
 
 /** Placeholder so createClient never throws at import time in a broken production build. */
 const PLACEHOLDER_URL = 'https://example.invalid'
@@ -65,6 +66,26 @@ if (!isSupabaseConfigured) {
 const clientUrl = supabaseUrl || PLACEHOLDER_URL
 const authStorageKey = resolveAuthStorageKey(clientUrl)
 
+const fetchWithTimeout: typeof fetch = async (input, init = {}) => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+  if (!url.includes('/auth/v1/')) return fetch(input, init)
+
+  const controller = new AbortController()
+  const upstreamSignal = init.signal
+  const abort = () => controller.abort()
+  const timeout = setTimeout(abort, SUPABASE_REQUEST_TIMEOUT_MS)
+
+  if (upstreamSignal?.aborted) abort()
+  else upstreamSignal?.addEventListener('abort', abort, { once: true })
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+    upstreamSignal?.removeEventListener('abort', abort)
+  }
+}
+
 /**
  * Always construct a client. When misconfigured, calls fail network-wise instead of
  * crashing the whole app at import (TestFlight blank/crash on launch).
@@ -80,5 +101,6 @@ export const supabase: SupabaseClient = createClient(
       persistSession: true,
       detectSessionInUrl: false,
     },
+    global: { fetch: fetchWithTimeout },
   },
 )

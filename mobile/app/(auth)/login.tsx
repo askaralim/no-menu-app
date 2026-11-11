@@ -15,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/authProvider'
-import { getMyTenants } from '../../lib/membershipApi'
 import { mobileToLoginEmail, normalizeChinaMobile } from '../../lib/phoneAuth'
 import { COLORS } from '../../lib/constants'
 
@@ -32,28 +31,24 @@ function translateAuthError(message: string | undefined | null): string {
   if (m.includes('email not confirmed')) return '账号尚未完成验证，请联系管理员'
   if (m.includes('user not found')) return '账号不存在，请确认手机号或联系管理员开通'
   if (m.includes('too many requests') || m.includes('rate limit')) return '尝试次数过多，请稍后再试'
-  if (m.includes('network') || m.includes('fetch')) return '网络异常，请检查网络后重试'
+  if (m.includes('network') || m.includes('fetch') || m.includes('abort')) return '网络异常，请检查网络后重试'
   return message || '登录失败，请重试'
 }
 
 export default function LoginScreen() {
   const router = useRouter()
   const params = useLocalSearchParams<{ next?: string }>()
-  const { refreshMembership, setActiveTenantId } = useAuth()
+  const { refreshMembership } = useAuth()
 
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function routeAfterAuth() {
-    const { data } = await supabase.auth.getUser()
-    if (mustChangePassword(data.user)) {
+  async function routeAfterAuth(user: { user_metadata?: Record<string, unknown> }, tenants: Awaited<ReturnType<typeof refreshMembership>>) {
+    if (mustChangePassword(user)) {
       router.replace('/(auth)/change-password')
       return
     }
-
-    await refreshMembership()
-    const tenants = await getMyTenants()
 
     if (params.next === 'accept-invite' || tenants.length === 0) {
       if (params.next === 'accept-invite') {
@@ -67,8 +62,6 @@ export default function LoginScreen() {
       router.replace('/(auth)/select-tenant')
       return
     }
-    const only = tenants[0]
-    await setActiveTenantId(only.tenant_id)
     router.replace('/(tabs)/taplist')
   }
 
@@ -86,7 +79,7 @@ export default function LoginScreen() {
 
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password,
       })
@@ -94,7 +87,9 @@ export default function LoginScreen() {
         Alert.alert('登录失败', translateAuthError(error.message))
         return
       }
-      await routeAfterAuth()
+      if (!data.user || !data.session) throw new Error('登录状态未保存，请重试')
+      const tenants = await refreshMembership()
+      await routeAfterAuth(data.user, tenants)
     } catch (e: any) {
       Alert.alert('登录失败', translateAuthError(e?.message) || '网络异常，请重试')
     } finally {

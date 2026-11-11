@@ -71,10 +71,27 @@ function normalizeCollabBreweries(raw: unknown): string[] {
 // Load
 // ---------------------------------------------------------------------------
 
-export async function loadOwnerTaplist(tenantId?: string | null): Promise<OwnerTaplistPayload> {
-  const { data, error } = await supabase.rpc('get_owner_taplist_payload', {
+export async function loadOwnerTaplist(
+  tenantId?: string | null,
+  signal?: AbortSignal,
+): Promise<OwnerTaplistPayload> {
+  let payloadRequest = supabase.rpc('get_owner_taplist_payload', {
     p_tenant_id: tenantId ?? null,
   })
+  if (signal) payloadRequest = payloadRequest.abortSignal(signal)
+
+  let countRequest = tenantId
+    ? supabase.rpc('get_tenant_tap_slot_count', { p_tenant_id: tenantId })
+    : null
+  if (signal && countRequest) countRequest = countRequest.abortSignal(signal)
+
+  const [{ data, error }, prefetchedCount] = await Promise.all([
+    payloadRequest,
+    countRequest?.then(
+      (result) => result,
+      () => undefined,
+    ) ?? Promise.resolve(null),
+  ])
   if (error) throw new Error(error.message)
   const payload = data as OwnerTaplistPayload
   if (!payload?.ok) {
@@ -84,10 +101,16 @@ export async function loadOwnerTaplist(tenantId?: string | null): Promise<OwnerT
   }
   const fallbackCount = tapSlotCount(payload.drinks ?? [])
   try {
-    const { data: countData, error: countError } = await supabase.rpc(
-      'get_tenant_tap_slot_count',
-      { p_tenant_id: payload.tenant.id },
-    )
+    if (prefetchedCount === undefined) throw new Error('tap slot count request failed')
+    let countResult = prefetchedCount
+    if (!countResult) {
+      let request = supabase.rpc('get_tenant_tap_slot_count', {
+        p_tenant_id: payload.tenant.id,
+      })
+      if (signal) request = request.abortSignal(signal)
+      countResult = await request
+    }
+    const { data: countData, error: countError } = countResult
     if (countError) throw countError
     const count = Number((countData as { tap_slot_count?: number } | null)?.tap_slot_count)
     payload.tenant.tap_slot_count =
