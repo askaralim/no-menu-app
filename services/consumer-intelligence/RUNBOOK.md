@@ -1,6 +1,6 @@
 # Consumer Intelligence 服务端运行说明
 
-当前独立后端在上海 ECS / RDS 运行。最新状态为2026-11-08的 **E1 内部测试 + Reason V2**：For You 沿用现有认证，无新增 Cohort；首页最多6款、完整个性化 Feed 最多20款，Latest 独立。Feed GET 已开放 HTTPS，Profile/health 保持内网。本次不新增客户端入口，不代表消费者正式发布。下文按时间保留实施记录，早期环境、两款首页及“尚未部署”描述仅代表当时状态；当前发布详情与回退命令见文末。
+当前独立后端在上海 ECS / RDS 运行。2026-11-08后端基线为 **E1 内部测试 + Reason V2**：For You 沿用现有认证，无新增 Cohort；首页最多6款、完整个性化 Feed 最多20款，Latest 独立。Feed GET 已开放 HTTPS，Profile/health 保持内网。该后端部署记录本身不代表客户端发布；Taplist生产OTA已获用户验收，用户于2026-11-11确认小程序1.5.0审核通过并正式发布。下文按时间保留实施记录，早期环境、两款首页及“尚未部署”描述仅代表当时状态；当前发布详情与回退命令见文末。
 
 ## 2026-11-10 联名活动采集部署
 
@@ -10,7 +10,7 @@
 - 候选契约113项通过，包含小程序生成的合成事件跨端验证；E1预检验证2个保留引用；readiness正常，公网Latest返回200。小程序开启开关后的preflight全部295项通过。
 - 公网采集验证：活动详情、活动交互和旧门店事件共3条被接受；同批重发3条均判重；非法 `purchase_success` 被拒绝。RDS确认3条事件、3条receipt，无重复。
 - 合成验证使用独立随机活动和安装ID，`environment=develop`、`app_version=campaign-deploy-smoke-20261110`，不纳入正式活动报表。上海时间14:09:36发生、14:09:38入库，延迟2.406秒。
-- `campaignAnalyticsReleaseEnabled=true`，有效客户端版本1.5.0；当前准备提审，尚未确认提交或正式发布。用户体验版操作已收到，不能据此声称正式版用户事件已验收。
+- `campaignAnalyticsReleaseEnabled=true`，有效客户端版本1.5.0；2026-11-11用户确认1.5.0审核通过并正式发布。用户体验版操作已收到，不能据此声称正式版用户事件已验收。
 - 用户操作后检查：`/tmp/check-campaign-events.mjs`，以nomenu-ci及现有API EnvironmentFile运行，只读聚合正式/测试活动最近2小时的动作、环境、版本、发生和入库时间，不输出个人标识。14:13基线收到正式活动2条develop环境banner_impression；后续15:37—15:40核对测试活动17条trial事件及17条receipt，平均延迟0.461秒、最大1.572秒，无重复或缺失receipt。已覆盖浏览、导航、海报生成/分享点击和购票跳转；该轮未收到新增打卡/相册保存事件。
 - 正式活动码已生成并写入活动数据：短码 `8b60ed3b`，scene `p_8b60ed3b`，release码；图片与公开RPC核验通过。Taplist活动展示已OTA并获用户验收，小程序发布后再核对正式扫码及release来源；固定入口与后台维护规则见 [活动码记录](CAMPAIGN_ANALYTICS.md#正式活动码与后台维护2026-11-10)。本次状态更新未重新部署服务。
 - 第一份候选因macOS隐藏元数据影响契约解析而未激活；后续激活检查遇Python3.6参数不兼容，自动恢复旧版本。改用干净tar和兼容脚本后部署成功。未删除候选或旧版目录。
@@ -491,12 +491,29 @@ API 与 Worker drop-in 备份分别为：
 文档交付验证：Node26.0.0下`npm run check`通过，OpenAPI校验及160/160测试通过（较11月8日增加3个契约样例测试），无失败或跳过；文档链接与空白检查通过。此次未重跑PostgreSQL集成测试，既有46项结果仍属于11月8日验收；未访问生产、提交或推送。
 
 
-### 2026-11-10：Taplist用户验收与小程序提审准备
+### 客户端发布状态（更新至2026-11-11）
 
-Taplist 已发布生产 OTA，用户确认使用正常，记为用户验收通过。小程序 1.5.0 正准备提交审核，线上仍为 1.4.0；Feed 与活动采集正式开关均已开启，release 事件版本为 1.5.0，最近本地 preflight 为295/295通过。ECS 活动采集已部署并验证接收、去重和入库。最终候选包验收、微信后台合法域名及隐私指引仍需按清单收口；准备提审不等于已提交或已发布。
+2026-11-11（Asia/Shanghai），用户确认小程序1.5.0已通过微信审核并正式发布，取代1.4.0；精确发布时间以微信后台记录为准。Taplist生产OTA及用户验收状态保持不变。Feed与活动采集正式开关已开启；此前295/295预检及ECS接收、去重、入库证据保留原日期。本次仅同步发布状态，不将发布确认等同于新增逐项测试或正式版事件对账。
 
 Taplist 已记录的生产 OTA group 为 `47314e59-5d47-4d4b-9990-f3f8814ffac5`，App Store 基线仍为1.3.2/build48；发布资产见 [OTA记录](../../taplist-mobile/docs/OTA_CANDIDATE_2026-11-10.md)。用户验收不能替代小程序最终包验证，也不代表所有历史分析事件已逐项对账。
 
-首次检查发现的release入口关闭、有效版本1.3.0、活动后端未部署均已收口；早期日志保留历史证据，不再作为当前阻断。小程序当前候选与逐项清单见 [1.5.0提审记录](../../../no-menu-miniprogram/docs/releases/2026-11-10-consumer-localization-feed-candidate.md)。常驻城市设置与普通搜索/切城ECS事件未完整接入，需明确发布范围，不能将其标记已完成；这不改变现有Feed资格或排序。
+首次检查发现的release入口关闭、有效版本1.3.0、活动后端未部署均已收口；早期日志保留历史证据，不再作为当前阻断。小程序发布范围与逐项清单见 [1.5.0发布记录](../../../no-menu-miniprogram/docs/releases/2026-11-10-consumer-localization-feed-candidate.md)。常驻城市设置与普通搜索/切城ECS事件未完整接入，需明确发布范围，不能将其标记已完成；这不改变现有Feed资格或排序。
 
-本次仅同步文档，没有上传、提交审核、部署、提交或推送。最近自动预检记录为295 PASS、0 FAIL、0 SKIP；最终官方包与手机验证以候选记录为准。
+本次仅同步文档，没有上传、提交审核、部署、提交或推送。最近自动预检记录为295 PASS、0 FAIL、0 SKIP；正式构建与手机验证证据以发布记录为准。
+
+### 2026-11-11：小程序1.5.0正式发布确认
+
+用户明确确认审核成功、发布成功；1.5.0为当前线上版本，1.4.0为历史版本。发布依据为用户确认，本轮未登录微信后台、未重新部署或重跑生产验证。历史验收缺口、正式活动码扫码及release事件对账不能仅因发布成功自动标记通过。发布范围与保留的历史清单见 [小程序1.5.0发布记录](../../../no-menu-miniprogram/docs/releases/2026-11-10-consumer-localization-feed-candidate.md)。
+
+
+### 2026-11-11：身份 503 脱敏诊断日志（已部署；根因待复现）
+
+- 本轮只部署 API 日志补丁，不改身份归属规则、HTTP 契约、数据库或 Worker。API 当前目录 `/opt/no-menu/releases/identity-logging-20261111`；前一 API 目录 `/opt/no-menu/releases/campaign-analytics-20261110-v2`。Worker 保持原目录。
+- 新日志只含固定阶段、公开错误码、受限错误类型、SQLSTATE（如有）、认证上游阶段/HTTP 状态，以及既有 requestId/route/status/duration。禁止记录 token、原始请求、用户/安装/session 标识、SQL、错误 message/detail/stack。
+- 身份阶段区分 authorize、body、validate、acquire、erasure_check、operation_lock、duplicate_check、bind_session、insert、reconcile、commit、response。阶段是失败时最后进入的步骤，不等于事务已提交；未知提交结果仍返回可重试 503。
+- 从运行中的基线 release 克隆，只替换 `src/server.js`、`src/identity.js`、`src/supabase.js`。基线 reader digest `004185251f2805bc910c7e57a086c1294c5367959ecdb76a2d774bcf9e85db49`；补丁 digest `de5f6584169cc3a647026222a49debffc5f68c2893b39788886e5c0aaff373ea`。独立核对文件清单与 hash 后加入现有 reader allowlist，原 E1 preflight/launcher 保留，check 通过。
+- API systemd drop-in 为 `/etc/systemd/system/consumer-intelligence.service.d/99-e1-reader-floor.conf`，旧配置备份 `/root/nomenu-identity-logging-20261111/api-before.conf`。回退应恢复这个 drop-in，daemon-reload 后仅重启 API，并检查 `http://127.0.0.1:8791/readyz`。第一次发布探针误用了 3100，已自动回退；修正为实际 8791 后重新发布，19:49:03（上海）起正常运行。
+- 19:49:03—20:03:12 的只读日志复核：identity 5 次 202，batch 21 次 202，Feed 9 次 200，cities 8 次 200；未见新 5xx。这一小段成功样本**不能证明历史 503 已修复**。
+- 历史 72 小时审计窗口内 identity 有 24 次 503。11月11日18:52:59/18:53:31两次耗时557/373ms，相关 Supabase Auth 请求为200；没有足够证据判断是认证响应读取、请求体或数据库阶段。旧日志无法追补原因。ECS 的 RDS DescribeErrorLogs 查询因缺少 CLI 凭据未执行成功；没有扩权或更换凭据。
+- 验证：服务端 `npm test` 为168通过、1条既有实采样本测试跳过、0失败；新增故障注入验证认证503、写入SQLSTATE、提交失败及日志脱敏。未向生产注入伪造事件或身份操作。
+- 后续真实503必须先按 requestId/failure.stage/error_code/SQLSTATE 定位再修复，不以增加重试或放宽身份校验替代诊断。Taplist上传优化属于下一次OTA，不是本次服务端部署内容；小程序未修改。

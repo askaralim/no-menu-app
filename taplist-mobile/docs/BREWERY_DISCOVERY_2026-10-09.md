@@ -5,6 +5,8 @@
 > iOS 基线：App Store `1.3.2`（build `48`），无需新二进制。
 > 本文记录本次客户端、RPC、上线顺序和已知数据问题，作为后续排障与回归依据。
 
+> 2026-11-11 后续扩展（尚未部署/尚未 OTA）：新客户端将酒厂 company ID 与展示名分离，ID 用于关联和跳转，旧名称仅作兼容回退；下文关于“必须使用原始 brewery 名称跳转”的内容只描述 2026-10-09 已上线版本。
+
 ## 1. 用户可见变化
 
 - 搜索页酒厂区域展示当前城市供应酒款最多的 8 家酒厂。
@@ -77,7 +79,7 @@ public.list_mini_breweries(
 - `20261009040316_add_paginated_mini_brewery_list.sql` 已生效，`list_mini_breweries` 的分页返回符合预期。
 - 2026-10-13 只读复核：上海热门酒厂数量为 `8`；分页 RPC 存在；首批结果的 `next_offset` 为 `20`。
 
-两个 Migration 的生产行为均已确认，本次酒厂功能不再有待执行的数据库步骤。若未来需要整理 Supabase migration history，应以生产函数定义为准，避免重复执行已生效的 SQL。
+就 2026-10-09 上线范围而言，两个 Migration 的生产行为均已确认，不再有待执行的数据库步骤。若未来需要整理 Supabase migration history，应以生产函数定义为准，避免重复执行已生效的 SQL；2026-11-11 扩展所需的新 migration 另见第 7 节。
 
 ## 4. 已完成验证
 
@@ -106,3 +108,13 @@ public.list_mini_breweries(
 - 修改标准酒厂资料或别名后，复查是否产生相同展示名的多行结果。
 - 修改分页 RPC 时，始终先全局排序再 `offset` / `limit`。
 - OTA 发布后确认 runtime 与 build `48` 一致，并在冷启动后检查更新生效。
+
+## 7. 2026-11-11 酒厂身份与旗标扩展（待发布）
+
+- 新增 `brewery_ref`：`id`、`name/name_en`、`country_code`、`display_name/display_name_en`。
+- 新客户端跳转优先使用 `drink_companies.id`；旧 RPC、旧名称路由和未关联商品池的自由文本酒厂仍可工作。
+- tenant 的 `show_brewery_country_flag` 默认 `false`；仅开启的门店在 V2 venue-scoped RPC 中显示“旗标 + 空格 + 酒厂名”。
+- 生产只读扫描发现 134 家酒厂缺少 `country_code`。独立回填 migration 可确定性补齐 133 家，不覆盖已有代码；“巴伐利亚武僧”因低置信度且缺少可靠来源继续留空。
+- Taplist 酒吧酒款列表同时对齐小程序：产地优先显示城市，缺少城市时回退国家，再显示酒厂和风格。
+- 发布顺序：先部署 `20261110143700_brewery_identity_and_country_flags.sql` 和 `20261111083729_backfill_drink_company_country_codes.sql`，验证旧 RPC 不变；再发布小程序版本和 Taplist production OTA；最后按 tenant 开启旗标并真机验收。
+- 当前验证：Taplist preflight 通过，小程序 preflight 297/297，SQL migration 与回归测试在隔离 PostgreSQL 夹具中通过。尚未记录生产 migration、OTA group 或真机验收。

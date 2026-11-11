@@ -8,7 +8,7 @@
   },
   "scripts": {
     "check:openapi": "redocly lint contracts/openapi.json --config redocly.yaml",
-    "test": "node --test contracts/test/*.test.js test/unit.test.js test/supabase.test.js test/assisted-visits.test.js test/e1/phase1.test.js test/e1/phase2.test.js test/e1/reason.test.js",
+    "test": "node --test contracts/test/*.test.js test/unit.test.js test/supabase.test.js test/error-logging.test.js test/assisted-visits.test.js test/e1/phase1.test.js test/e1/phase2.test.js test/e1/reason.test.js",
     "test:integration": "node --test --test-concurrency=1 test/integration.test.js test/maintenance.test.js test/e1/integration.test.js test/e1/disconnect.test.js test/e1/sql-batch.test.js test/e1/reason-integration.test.js test/campaign-integration.test.js",
     "check": "npm run check:openapi && npm test",
     "start": "node --env-file-if-exists=.env src/server.js",

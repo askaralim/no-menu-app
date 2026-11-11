@@ -1,0 +1,25 @@
+{
+  "campaign_id": "9b8edb9d-7d56-4a98-a49e-46e063f49c0f",
+  "slug": "shanghai-6x6-2026",
+  "permanent_qr_code": "8b60ed3b",
+  "scene": "p_8b60ed3b",
+  "page": "pages/campaign/campaign",
+  "env_version": "release",
+  "image_url": "https://img.nomenuapp.com/prod/campaigns/9b8edb9d-7d56-4a98-a49e-46e063f49c0f/mini-code/no-menu-release-p-8b60ed3b-v1.jpg",
+  "database_updated": true,
+  "public_rpc_verified_by": ["qr_code", "slug"],
+  "page_scene_resolution_verified": true,
+  "oss_and_cdn_sha256_verified": true,
+  "sha256": "aa070037e4df4b41d1b8e101089cff4219f7aed817401cf2c1d19542b7acd313",
+  "generator_and_venue_tests_passed": 7,
+  "campaign_page_analytics_poster_tests_passed": 21,
+  "mini_program_source_changed": false,
+  "mini_program_released_by_this_operation": false,
+  "remaining": "After publishing the candidate mini-program, scan this release code in WeChat and verify the formal activity and poster_code tracking. Approval alone is not publication.",
+  "maintenance": {
+    "keep_stable": ["campaign_id", "qr_code", "page"],
+    "database_managed": ["title", "subtitle", "description", "start_at", "end_at", "card_image_url", "detail_image_urls", "purchase_short_link", "purchase_qr_url", "mini_program_code_url", "campaign_stops"],
+    "still_bundled_in_client": ["campaign logo asset", "poster layout", "interaction logic"],
+    "note": "Update the same activity instead of deleting and recreating it. Existing exported poster pixels do not change, but their code opens the current activity data."
+  }
+}

@@ -29,11 +29,14 @@ export const ShareableBeerImage = forwardRef<ShareableBeerImageHandle, Shareable
     const personalRegion = localized(tenant.district, tenant.district_en).trim()
       || localized(tenant.city_label || localizeCity(tenant.city), tenant.city_label_en)
     const generatedAtLabel = formatGeneratedAt(new Date())
-    const breweryLine = localized(formatBreweryWithCollab(
-      drink.beer?.brewery,
+    const breweryLine = formatBreweryWithCollab(
+      localized(
+        drink.beer?.brewery_ref?.display_name || drink.beer?.brewery,
+        drink.beer?.brewery_ref?.display_name_en || drink.beer?.brewery_en,
+      ),
       drink.beer?.collab_breweries,
       drink.brand_name,
-    ), drink.beer?.brewery_en)
+    )
     const localizedStyle = localizeBeerStyle(drink.beer?.beer_style, language, drink.beer?.beer_style_en)
     const breweryStyle = [breweryLine, localizedStyle].filter(Boolean).join(' · ')
     const stats = beerStatsLine(drink)

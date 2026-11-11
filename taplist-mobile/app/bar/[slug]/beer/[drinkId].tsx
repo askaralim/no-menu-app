@@ -49,15 +49,22 @@ export default function BeerDetailScreen() {
   const tenant = detailResult?.ok ? detailResult.tenant : null
   const drink = detailResult?.ok ? detailResult.drink : null
   useIntelligenceDetail('beer_opened', { tenant_id: tenant?.id, source_drink_id: drink?.id, product_id: drink?.product_id }, fromPush === '1' ? 'push' : 'direct')
-  const primaryBreweryKey = drink
+  const primaryBreweryName = drink
     ? formatPrimaryBrewery(drink.beer?.brewery, drink.brand_name)
     : null
+  const primaryBreweryKey = drink?.beer?.brewery_ref?.id || primaryBreweryName
   const primaryBrewery = drink
-    ? formatPrimaryBrewery(localized(drink.beer?.brewery, drink.beer?.brewery_en), drink.brand_name)
+    ? formatPrimaryBrewery(
+        localized(
+          drink.beer?.brewery_ref?.display_name || drink.beer?.brewery,
+          drink.beer?.brewery_ref?.display_name_en || drink.beer?.brewery_en,
+        ),
+        drink.brand_name,
+      )
     : null
   const collabBreweries = (drink?.beer?.collab_breweries ?? [])
     .map((brewery) => brewery.trim())
-    .filter((brewery) => brewery && brewery !== primaryBreweryKey)
+    .filter((brewery) => brewery && brewery !== primaryBreweryName)
     .slice(0, 3)
   const artworkUrl = drink?.image_url
   const servingOptions = drink ? displayServingOptions(drink.serving_options) : []
@@ -528,8 +535,8 @@ const styles = StyleSheet.create({
   title: {
     ...typography.displayL,
     color: palette.text,
-    fontSize: 40,
-    lineHeight: 47,
+    fontSize: 36,
+    lineHeight: 43,
   },
   titleRow: {
     flexDirection: 'row',

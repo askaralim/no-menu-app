@@ -2,6 +2,19 @@
 
 Status: **published to production / iOS; user acceptance confirmed**. 用户已确认 OTA 后使用正常；这不等于下方每项分析对账均已重新执行。 This channel reaches compatible production installations, not just the operator's phone. The original preparation record below is retained; the latest publication is recorded here.
 
+## Latest publication — 2026-11-11 (user-provided EAS output)
+
+- Production branch, iOS update group: `756d0c78-7371-4829-87af-e1ef29e3fba5`.
+- iOS update ID: `01a1ca8e-5a84-749f-a141-b8c42c475764`.
+- Runtime: `ee7f9707efde823e12a9ee09ecebacef7af96f79`, matches the documented production baseline.
+- Message: 优化事件上传与队列重试，统一TAP交互和酒款信息展示.
+- EAS reported commit: `48b7da4677150ad29bfea0176946c436e673aece*`; the asterisk indicates a dirty working tree, so the commit alone is not a complete release snapshot.
+- Publication is confirmed by the user's CLI output, not an independent dashboard query. Device receipt, post-update ECS upload timing, and production brewery migration status remain unverified in this record.
+- This publication supersedes the “local / not published” status of the Taplist increments recorded below, including the analytics upload changes. Those sections describe preparation history, not the current release status.
+- Previous documented production group / rollback candidate: `47314e59-5d47-4d4b-9990-f3f8814ffac5`.
+- Historical identity503 remains undiagnosed; publishing the client queue improvements does not establish that the server error is fixed.
+- Dashboard: https://expo.dev/accounts/askar.alim/projects/no-menu-app/updates/756d0c78-7371-4829-87af-e1ef29e3fba5
+
 ## UI polish publication — 2026-11-10
 
 - User authorized five small UI changes and direct OTA publication on the existing production channel.
@@ -19,14 +32,18 @@ Status: **published to production / iOS; user acceptance confirmed**. 用户已�
 
 ## Joint campaign acceptance — 2026-11-10
 
-联名活动补充验收（2026-11-10，用户确认）：6×6 首页入口、点击后的活动内容及全部图片已随生产 OTA 展示并完成验证。Taplist 本轮只承担活动信息展示；不把小程序的线上护照、打卡、海报生成或 ECS 活动事件验收算作 Taplist 已实现功能。正式活动小程序码已配置，微信小程序 1.5.0 准备提审、尚未确认提交或发布；其扫码验收需在正式发布后单独完成。本次文档更新没有执行新的 OTA，也不改变下方其他本地增量的发布状态。
+联名活动补充验收（2026-11-10，用户确认）：6×6 首页入口、点击后的活动内容及全部图片已随生产 OTA 展示并完成验证。Taplist 本轮只承担活动信息展示；不把小程序的线上护照、打卡、海报生成或 ECS 活动事件验收算作 Taplist 已实现功能。正式活动小程序码已配置；2026-11-11用户确认微信小程序1.5.0审核通过并正式发布，正式码扫码仍需单独验收。本次文档更新没有执行新的 OTA，也不改变下方其他本地增量的发布状态。
 
 ## Post-OTA local changes — not published
 
 - Beer detail actions now distinguish `记一杯 / Tap it`, `已记录 / Tapped`, and `记录此店 / Tap here`; history uses `TAP 记录 / TAP history`. For You cold-start instructions use the same action label.
 - The compact inline icon/text control uses a 30pt visual height with additional touch padding; the supply-status label remains visually separate.
-- `npm run typecheck` passed for this change. No subsequent OTA or native-device acceptance is recorded for this increment. The accepted production group above remains the publication baseline.
-- Mini-program 1.5.0 contains the corresponding local changes and is preparing submission; Taplist acceptance does not replace its final package checks.
+- Brewery identity is separated from display text: new clients prefer `brewery_ref.id` for navigation and retain legacy-name routes as fallback. Venue-scoped `display_name/display_name_en` may contain `旗标 + 空格 + 酒厂` when the tenant switch is enabled; old RPCs and legacy brewery fields remain unchanged.
+- Bar-detail beer rows now match the mini-program compact-origin rule: display `origin_city` first and fall back to `country`, ordered as `产地 · 酒厂 · 风格`. The bar beer-detail title is reduced from `40/47` to `36/43`.
+- Repository migrations add the default-off tenant flag, additive V2 RPCs and a deterministic country-code backfill. Based on the 2026-11-11 production read-only snapshot, the backfill covers 133 companies and leaves only the unverified active company “巴伐利亚武僧” unresolved. These migrations are prepared, not recorded here as deployed.
+- Verification: Taplist `npm run preflight` passed after the origin/brewery changes; the subsequent title-size adjustment passed `npm run typecheck` and `git diff --check`. Mini-program preflight remains 297/297 from the brewery-ID compatibility work. SQL migrations and regression tests passed in isolated PostgreSQL fixtures.
+- No subsequent OTA, production migration, or native-device acceptance is recorded for this increment. The accepted production group above remains the publication baseline.
+- Mini-program 1.5.0 was confirmed approved and published by the user on 2026-11-11. This does not publish the separate Taplist increment or mark individual mini-program checks complete.
 
 ## Candidate and compatibility
 
@@ -61,13 +78,13 @@ The user subsequently accepted actual OTA use. Detailed iOS analytics reconcilia
 
 ## Publish and recovery
 
-Historical publication command (already executed; do not repeat merely to update this record): publish from `taplist-mobile` using the production environment and iOS platform. Recheck the candidate if source changes after preparation:
+The command below is the prepared command for the current combined local increment. It has **not** been executed. Deploy the brewery migrations first, rerun preflight if source changes, then publish from `taplist-mobile`:
 
 ```sh
-eas update --channel production --environment production --platform ios --message "上新 Feed、英文风格与第一方行为采集，优化首页和活动展示" --non-interactive
+eas update --channel production --environment production --platform ios --message "酒厂旗标与ID跳转、酒单产地展示、TAP与页面体验优化" --non-interactive
 ```
 
-Record the resulting update group/runtime before declaring publication complete. For recovery, republish the previous verified iOS group above to production using EAS; do not change channel mapping or runtime to force compatibility.
+Record the resulting update group/runtime and confirm `Builds: 1` before declaring publication complete. For recovery, republish the previous verified iOS group above to production using EAS; do not change channel mapping or runtime to force compatibility.
 
 ## Device acceptance and ECS inspection
 
@@ -80,3 +97,18 @@ Record the resulting update group/runtime before declaring publication complete.
 7. Compare navigation/impressions as auxiliary signals and venue/beer opens as primary evidence. Test actions validate the pipeline, not causal or verified physical visits.
 
 Known audit limits: non-retryable client rejections lack retained reason diagnostics; city directory initialization can leave city absent; source matching expires after 30 seconds. Raw event queue is bounded to 200 events/7 days. These limits are not resolved by passing the export.
+
+
+## 2026-11-11 analytics upload increment — local, next OTA
+
+Taplist first-party outbox now schedules a 3s batch deadline, flushes at 20 events, resumes on cold start/foreground, attempts background delivery, and drains up to 10 sequential batches per pass. Identity calls have independent locking/backoff so they cannot hold raw-event uploads. Consent, event IDs, retry/retention and account isolation remain intact; PostHog and mini-program unchanged. See [implementation and checks](CONSUMER_INTELLIGENCE_PORT_2026-11-10.md#2026-11-11-上传触发与队列消化本地下一次-ota).
+
+8 targeted tests passed; typecheck/Web export passed. No native dependencies or Taplist package scripts changed. This increment has **not been OTA-published**; verify the production fingerprint and combined candidate before the next OTA. ECS safe identity-error logging was independently deployed; historical identity503 remains undiagnosed pending fresh failure evidence, not fixed by this client increment.
+
+## 2026-11-11 post-OTA receipt check (20:38 Shanghai)
+
+User reported completing device operations. A read-only ECS check found one iOS Taplist installation/session with 27 events occurring 20:30:58–20:31:50, received 20:31:02–20:31:54. Mean delay 2.36s, median 2.69s, p95 3.47s, maximum 3.88s; all 27 resolved. Counts: bar_opened 2, beer_opened 3, feed_shown 3, feed_item_impression 18, feed_item_opened 1. Required venue/beer/source/city fields in those opens and server-enriched Feed ranking/item context were present. No newly created venue TAP experience appeared in the recent 15-minute projection window. This is receipt validation, not proof of zero client-side loss or an OTA ID attestation from telemetry.
+
+The broader service log window also contained two identity503s (20:24:04 and 20:31:56), both at identity_body, before validation/database writes, with no SQLSTATE. This narrows the failure to request-body processing; exact stream error/abort cause is still not recorded. Do not label PERSISTENCE_UNAVAILABLE as demonstrated database failure. Two Feed503s at20:27:55 were authorize/AUTH_UNAVAILABLE/transport at ~8s, consistent with the upstream auth timeout boundary; exact transport cause remains unverified. Logs are shared-service observations, not client-attributed requests. Event batch requests in the final rolling15-minute log sample:116×202, average37.22ms. Projection ages12s(catalog)/10s(consumer).
+
+Evidence: repository outputs/ota-upload-acceptance-20261111/{data,recent,logs}.json. No production writes or code changes in this verification. Client upload timing improved in this small sample; server503 remains open.

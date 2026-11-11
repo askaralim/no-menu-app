@@ -1,0 +1,136 @@
+[
+  {
+    "name": "藤椒菠萝酸艾尔",
+    "brewery": "TAPSTAR",
+    "style": "酸艾尔",
+    "abv": "4%",
+    "bar": "TAPSTAR TAPROOM【文昌北路店】",
+    "image": "https://img.nomenuapp.com/prod/tenants/842921bb-af0c-463e-9cf9-e4b16496d88d/drinks/0e87e245-0725-471e-a743-8b08e204f9c5/e9b25ebb-4401-47ac-a562-f7f7a7272051.jpg",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-11-04T07:29:17.849389+00:00",
+    "featured": true
+  },
+  {
+    "name": "甘来",
+    "brewery": "TAPSTAR",
+    "style": "英式苦啤",
+    "abv": "4.5%",
+    "bar": "TAPSTAR TAPROOM【文昌北路店】",
+    "image": "https://img.nomenuapp.com/prod/tenants/842921bb-af0c-463e-9cf9-e4b16496d88d/drinks/a4a060e4-d774-4341-91fa-0207d674c7c8/mv6olxpb-uiqm6fhcce.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-11-04T07:29:06.546271+00:00"
+  },
+  {
+    "name": "后院草本酸赛松",
+    "brewery": "TAPSTAR",
+    "style": "酸赛松",
+    "abv": "5.1%",
+    "bar": "TAPSTAR TAPROOM【文昌北路店】",
+    "image": "https://img.nomenuapp.com/prod/products/09c6ef3d-9f49-4f02-8c23-614e118332de/0278a810-0944-48e9-a88b-6b2937224e14.jpg",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-11-04T07:29:02.72481+00:00"
+  },
+  {
+    "name": "热情恰恰",
+    "brewery": "TAPSTAR",
+    "style": "水果咖啡酸艾尔",
+    "abv": "5.8%",
+    "bar": "TAPSTAR TAPROOM【文昌北路店】",
+    "image": "https://img.nomenuapp.com/prod/tenants/842921bb-af0c-463e-9cf9-e4b16496d88d/drinks/60183168-a44f-4fb8-b009-be8b409a7be9/2975db18-f084-477e-a154-d67cc5bb5d8a.jpg",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-11-04T07:28:59.28203+00:00"
+  },
+  {
+    "name": "鸵鸟的牙",
+    "brewery": "TAPSTAR",
+    "style": "双倍IPA",
+    "abv": "8.5%",
+    "bar": "TAPSTAR TAPROOM【文昌北路店】",
+    "image": "https://img.nomenuapp.com/prod/tenants/842921bb-af0c-463e-9cf9-e4b16496d88d/drinks/e85ad737-5c49-448b-9125-f4d24ebe0846/7f3feef7-aedc-4b05-8bb3-3902f646d4b6.jpg",
+    "group": "IPA",
+    "updated_at": "2026-11-04T07:28:57.035112+00:00"
+  },
+  {
+    "name": "麻芡（实验款）",
+    "brewery": "TAPSTAR",
+    "style": "格鲁特IPA",
+    "abv": "5.2%",
+    "bar": "TAPSTAR TAPROOM【阿云朵仓店】",
+    "image": "https://img.nomenuapp.com/prod/products/42e91f9b-8af1-421f-a2b2-f50577f57917/bac742fa-f611-46f4-ac8e-71e3604d1393.jpg",
+    "group": "IPA",
+    "updated_at": "2026-11-04T07:28:28.004281+00:00",
+    "featured": true
+  },
+  {
+    "name": "后院草本酸赛松",
+    "brewery": "TAPSTAR",
+    "style": "酸赛松",
+    "abv": "5.1%",
+    "bar": "TAPSTAR TAPROOM【阿云朵仓店】",
+    "image": "https://img.nomenuapp.com/prod/products/09c6ef3d-9f49-4f02-8c23-614e118332de/0278a810-0944-48e9-a88b-6b2937224e14.jpg",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-11-04T07:28:23.304039+00:00"
+  },
+  {
+    "name": "鸵鸟的牙",
+    "brewery": "TAPSTAR",
+    "style": "双倍IPA",
+    "abv": "8.5%",
+    "bar": "TAPSTAR TAPROOM【阿云朵仓店】",
+    "image": "https://img.nomenuapp.com/prod/products/86a48332-d35f-4653-bf54-b1bf40618dc1/78bc4bad-242a-46d7-9f17-017a8e012bfc.jpg",
+    "group": "IPA",
+    "updated_at": "2026-11-04T07:28:18.503687+00:00"
+  },
+  {
+    "name": "老伙计",
+    "brewery": "TAPSTAR",
+    "style": "西海岸IPA",
+    "abv": "8%",
+    "bar": "TAPSTAR TAPROOM【阿云朵仓店】",
+    "image": "https://img.nomenuapp.com/prod/products/13097010-978d-4ed6-ad60-5ff0552ca3f1/7906665c-759c-4579-93d3-c7f735614818.jpg",
+    "group": "IPA",
+    "updated_at": "2026-11-04T07:28:16.214207+00:00"
+  },
+  {
+    "name": "藤椒菠萝酸艾尔",
+    "brewery": "TAPSTAR",
+    "style": "酸艾尔",
+    "abv": "4%",
+    "bar": "TAPSTAR TAPROOM【阿云朵仓店】",
+    "image": "https://img.nomenuapp.com/prod/products/1f2bbb5f-30b6-4a5e-befb-5d99f156b0f5/013835c0-50d9-4d61-9846-a9d7f514a13f.jpg",
+    "group": "酸啤 / 西打",
+    "updated_at": "2026-11-04T07:28:05.810937+00:00"
+  },
+  {
+    "name": "日暮",
+    "brewery": "TAPSTAR",
+    "style": "维也纳拉格",
+    "abv": "5.1%",
+    "bar": "TAPSTAR TAPROOM【阿云朵仓店】",
+    "image": "https://img.nomenuapp.com/prod/products/e4be6f33-14f0-4c9d-8606-db5cd85b868c/7c44a4c7-c4b1-4386-973f-d43f0653103d.jpg",
+    "group": "拉格",
+    "updated_at": "2026-11-04T07:26:54.007599+00:00"
+  },
+  {
+    "name": "悖论",
+    "brewery": "Fork Road",
+    "style": "香草咖啡白世涛",
+    "abv": "5.3%",
+    "bar": "Fork Road",
+    "image": "https://img.nomenuapp.com/prod/products/e4aec1f2-c3bc-4e34-8fc4-5af5983e65f7/248adfb6-67db-4c89-929b-2bf61ef184cd.jpg",
+    "group": "其他风格",
+    "updated_at": "2026-11-02T11:34:54.575725+00:00",
+    "featured": true
+  },
+  {
+    "name": "朝阳社区",
+    "brewery": "八刀山",
+    "style": "新英格兰IPA",
+    "abv": "6.8%",
+    "bar": "八刀山 · 花溪店",
+    "image": "https://img.nomenuapp.com/prod/tenants/afa00b37-bde9-46de-8174-b739dea4331c/drinks/819848c8-2cce-4beb-82dd-07c8e809dd47/4c21fab8-0629-4945-97c0-75c2509e2bff.jpg",
+    "group": "IPA",
+    "updated_at": "2026-11-02T10:58:03.73838+00:00",
+    "featured": true
+  }
+]

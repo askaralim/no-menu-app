@@ -11,12 +11,12 @@ export function createSupabase(config, fetchImpl = fetch) {
       response = await fetchImpl(config.supabaseUrl + path, { method: body === undefined ? 'GET' : 'POST',
         redirect: 'error', headers: { apikey: key, Authorization: `Bearer ${token ?? key}`, 'Content-Type': 'application/json' },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(service ? 30000 : 8000) })
-    } catch { fail(503, auth ? 'AUTH_UNAVAILABLE' : 'SOURCE_UNAVAILABLE') }
+    } catch { fail(503, auth ? 'AUTH_UNAVAILABLE' : 'SOURCE_UNAVAILABLE', { phase: 'transport' }) }
     let data
-    try { data = await response.json() } catch { fail(503, auth ? 'AUTH_UNAVAILABLE' : 'SOURCE_UNAVAILABLE') }
+    try { data = await response.json() } catch { fail(503, auth ? 'AUTH_UNAVAILABLE' : 'SOURCE_UNAVAILABLE', { phase: 'response_body', status: response.status }) }
     if (!response.ok) {
       if ([401, 403].includes(response.status)) fail(401, 'UNAUTHORIZED')
-      if (auth) fail(503, 'AUTH_UNAVAILABLE')
+      if (auth) fail(503, 'AUTH_UNAVAILABLE', { phase: 'http_status', status: response.status })
       const known = ['USERNAME_TAKEN', 'USERNAME_INVALID', 'USERNAME_RESERVED', 'UNKNOWN_CITY', 'INVALID_PROFILE_PATCH']
       const code = known.find(c => String(data?.message).includes(c))
       if (code) fail(code === 'USERNAME_TAKEN' ? 409 : 400, code)
@@ -27,7 +27,7 @@ export function createSupabase(config, fetchImpl = fetch) {
   return {
     async authorize(token) {
       const user = await call('/auth/v1/user', { token, auth: true })
-      if (!user?.id || !/^[0-9a-f-]{36}$/i.test(user.id)) fail(503, 'AUTH_UNAVAILABLE')
+      if (!user?.id || !/^[0-9a-f-]{36}$/i.test(user.id)) fail(503, 'AUTH_UNAVAILABLE', { phase: 'user_shape' })
       // getUser above verifies this exact token with Auth. Claims are only read
       // after verification and never used to authorize metadata-defined roles.
       let claims

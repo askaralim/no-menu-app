@@ -608,7 +608,7 @@ function BreweryDiscovery({
                 accessibilityRole="link"
                 accessibilityLabel={tr(language, `查看${brewery.brewery_name}酒厂`, `View ${localized(brewery.brewery_name, brewery.brewery_name_en)}`)}
                 accessibilityHint={tr(language, '打开酒厂页', 'Open brewery page')}
-                onPress={() => router.push(`/brewery/${encodeURIComponent(brewery.brewery_name)}` as Href)}
+                onPress={() => router.push(`/brewery/${encodeURIComponent(brewery.brewery_ref?.id || brewery.brewery_name)}` as Href)}
                 style={({ pressed }) => [
                   styles.newTapTile,
                   { width: tileWidth, height: tileHeight },
@@ -645,6 +645,10 @@ function BreweryDiscovery({
 
 function BreweryTileCopy({ brewery }: { brewery: PublicTaplistBreweryDiscoveryRow }) {
   const { language, localized } = useLanguage()
+  const displayName = localized(
+    brewery.brewery_ref?.display_name || brewery.brewery_name,
+    brewery.brewery_ref?.display_name_en || brewery.brewery_name_en,
+  )
   return (
     <LinearGradient
       colors={['rgba(13,13,13,0.02)', 'rgba(13,13,13,0.38)', 'rgba(13,13,13,0.92)']}
@@ -652,7 +656,7 @@ function BreweryTileCopy({ brewery }: { brewery: PublicTaplistBreweryDiscoveryRo
       style={styles.newTapTileScrim}>
       <View style={styles.newTapTileCopy}>
         <Text style={styles.newTapTileName} numberOfLines={2} ellipsizeMode="tail">
-          {localized(brewery.brewery_name, brewery.brewery_name_en)}
+          {displayName}
         </Text>
         <Text style={styles.newTapTileBrewery}>{tr(language, `${brewery.tap_count} 款`, `${brewery.tap_count} beer${brewery.tap_count === 1 ? '' : 's'}`)}</Text>
       </View>

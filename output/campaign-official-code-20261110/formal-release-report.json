@@ -1,0 +1,13 @@
+{
+  "campaign_id": "9b8edb9d-7d56-4a98-a49e-46e063f49c0f",
+  "qr_code": "8b60ed3b",
+  "scene": "p_8b60ed3b",
+  "page": "pages/campaign/campaign",
+  "env_version": "release",
+  "check_path": false,
+  "content_type": "image/jpeg",
+  "extension": "jpg",
+  "bytes": 79475,
+  "sha256": "aa070037e4df4b41d1b8e101089cff4219f7aed817401cf2c1d19542b7acd313",
+  "next_step": "Upload this image as mini-program-code in WebAdmin; publishing stores its OSS URL in campaign_events.mini_program_code_url."
+}

@@ -75,7 +75,10 @@ function ExportBeerRow({ drink, isDense }: { drink: PublicDrinkRow; isDense: boo
   const isSoldOut = publicStatus === '售罄'
   const beerStyle = localizeBeerStyle(drink.beer?.beer_style, language, drink.beer?.beer_style_en) || null
   const brewery = formatBreweryWithCollab(
-    drink.beer?.brewery,
+    localized(
+      drink.beer?.brewery_ref?.display_name || drink.beer?.brewery,
+      drink.beer?.brewery_ref?.display_name_en || drink.beer?.brewery_en,
+    ),
     drink.beer?.collab_breweries,
     drink.brand_name,
   )

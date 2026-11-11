@@ -46,22 +46,30 @@ export async function reconcileSession(client, installation, session) {
     await client.query('UPDATE ci.events SET resolved_user_key=$2,identity_state=$3 WHERE event_id=$1', [row.event_id, identity.user_key, identity.identity_state])
   }
 }
-export async function acceptIdentity(pool, operation, user, now = Date.now()) {
+export async function acceptIdentity(pool, operation, user, now = Date.now(), onStage = () => {}) {
   assertSchema('identity/operation.schema.json', operation, 'INVALID_IDENTITY_OPERATION')
+  onStage('identity_acquire')
   return transaction(pool, async client => {
+    onStage('identity_erasure_check')
     await assertNotErased(client, user, operation.installation_id, operation.session_id)
+    onStage('identity_operation_lock')
     await lock(client, `operation:${operation.operation_id}`)
     const fingerprint = digest({ operation, user })
+    onStage('identity_duplicate_check')
     const prior = (await client.query('SELECT fingerprint FROM ci.identity_operations WHERE operation_id=$1', [operation.operation_id])).rows[0]
     if (prior) {
       if (prior.fingerprint !== fingerprint) fail(409, 'OPERATION_ID_CONFLICT')
       return { operation_id: operation.operation_id, status: 'duplicate' }
     }
     assertEventTime(operation, now)
+    onStage('identity_bind_session')
     await bindSession(client, operation.installation_id, operation.session_id, user, now)
+    onStage('identity_insert')
     await client.query(`INSERT INTO ci.identity_operations(operation_id,installation_id,session_id,user_key,fingerprint,received_at,payload)
       VALUES($1,$2,$3,$4,$5,$6,$7)`, [operation.operation_id, operation.installation_id, operation.session_id, user, fingerprint, iso(now), operation])
+    onStage('identity_reconcile')
     await reconcileSession(client, operation.installation_id, operation.session_id)
+    onStage('identity_commit')
     return { operation_id: operation.operation_id, status: 'accepted' }
   })
 }

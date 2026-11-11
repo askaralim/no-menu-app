@@ -34,6 +34,9 @@ let initializing: Promise<void> | null = null
 let lastActivity = 0
 let saving = Promise.resolve()
 let flushing = false
+let linking = false
+let flushTimer: ReturnType<typeof setTimeout> | null = null
+let flushDue = 0
 let retryAt = 0
 let identityRetryAt = 0
 let failures = 0
@@ -43,6 +46,20 @@ const seen = new Set<string>()
 function publish(update: Partial<State>) {
   state = { ...state, ...update }
   listeners.forEach((listener) => listener())
+}
+
+// Coalesce active browsing into short batches; never reset the deadline on
+// every new event. The 15s interval below is only a recovery fallback.
+function scheduleFlush(delay = 3000) {
+  if (!consent || AppState.currentState !== 'active') return
+  const due = Date.now() + delay
+  if (flushTimer !== null && flushDue <= due) return
+  if (flushTimer !== null) clearTimeout(flushTimer)
+  flushDue = due
+  flushTimer = setTimeout(() => {
+    flushTimer = null
+    void flushIntelligenceEvents()
+  }, Math.max(0, delay))
 }
 
 function persist() {
@@ -91,6 +108,7 @@ function acceptAuth(session: Session | null) {
         persist()
       }).catch(() => {})
     }
+    identityRetryAt = 0
     state = { ...state, owner }
     newSession()
   }
@@ -110,11 +128,19 @@ export async function initializeIntelligence(enabled: boolean) {
     })
     AppState.addEventListener('change', (status) => {
       if (status === 'active') { touchIntelligenceSession(); void flushIntelligenceEvents() }
-      else persist()
+      else {
+        if (flushTimer !== null) clearTimeout(flushTimer)
+        flushTimer = null
+        persist()
+        // Best effort only: iOS may suspend immediately; disk remains the fallback.
+        void flushIntelligenceEvents()
+      }
     })
     setInterval(() => {
       if (AppState.currentState === 'active') void flushIntelligenceEvents()
     }, 15_000)
+    // Resume a persisted outbox on cold start, not at the next interval tick.
+    void flushIntelligenceEvents()
   })().catch(() => { publish({ ready: true }) })
   return initializing
 }
@@ -127,6 +153,10 @@ export async function setIntelligenceConsent(enabled: boolean) {
     events = []
     operations = []
     retryAt = 0
+    identityRetryAt = 0
+    failures = 0
+    if (flushTimer !== null) clearTimeout(flushTimer)
+    flushTimer = null
     newSession()
     persist()
     return
@@ -164,62 +194,94 @@ function enqueue(payload: Payload, context = touchIntelligenceSession()): boolea
   if (JSON.stringify(event).length > 2000) return false
   events = [...events.filter((item) => Date.parse(item.occurred_at) > Date.now() - MAX_AGE), event].slice(-200)
   persist()
+  if (events.length >= 20) void flushIntelligenceEvents()
+  else scheduleFlush()
   return true
 }
 
+// Identity and raw delivery have independent locks/backoff. A slow or failed
+// identity call must not delay raw events; attribution is reconciled server-side.
 export async function flushIntelligenceEvents() {
+  await Promise.all([flushIdentityOperations(), flushRawEvents()])
+}
+
+async function flushIdentityOperations() {
+  const session = authSession
+  if (!consent || !installation || linking || !session?.expires_at
+    || session.expires_at * 1000 <= Date.now() || Date.now() < identityRetryAt) return
+  linking = true
+  const epoch = consentEpoch
+  try {
+    operations = operations.filter((op) => Date.parse(op.payload.occurred_at) > Date.now() - MAX_AGE).slice(-200)
+    for (const operation of operations.filter((op) => op.owner === session.user.id)) {
+      if (epoch !== consentEpoch || authSession?.user.id !== session.user.id) return
+      try {
+        await intelligenceRequest('/api/analytics/v1/identity-operations', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify(operation.payload),
+        })
+        if (epoch !== consentEpoch) return
+        operations = operations.filter((item) => item !== operation)
+        identityRetryAt = 0
+      } catch (error) {
+        if (epoch !== consentEpoch) return
+        if (error instanceof IntelligenceError && [400, 403, 409, 422].includes(error.status)) {
+          operations = operations.filter((item) => item !== operation)
+        } else {
+          identityRetryAt = Date.now() + Math.max(30_000, error instanceof IntelligenceError ? error.retryAfter : 0)
+          break
+        }
+      }
+      persist()
+    }
+  } finally {
+    linking = false
+    persist()
+    if (operations.some((op) => op.owner === authSession?.user.id)) scheduleFlush(Math.max(3000, identityRetryAt - Date.now()))
+  }
+}
+
+async function flushRawEvents() {
   if (!consent || !installation || flushing || Date.now() < retryAt) return
   flushing = true
   const epoch = consentEpoch
   try {
     events = events.filter((event) => Date.parse(event.occurred_at) > Date.now() - MAX_AGE)
-    operations = operations.filter((operation) => Date.parse(operation.payload.occurred_at) > Date.now() - MAX_AGE).slice(-200)
-    const session = authSession
-    if (session && session.expires_at && session.expires_at * 1000 > Date.now() && Date.now() >= identityRetryAt) {
-      for (const operation of operations.filter((op) => op.owner === session.user.id)) {
-        if (epoch !== consentEpoch || authSession?.user.id !== session.user.id) return
-        try {
-          await intelligenceRequest('/api/analytics/v1/identity-operations', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-            body: JSON.stringify(operation.payload),
-          })
-          operations = operations.filter((item) => item !== operation)
-        } catch (error) {
-          if (error instanceof IntelligenceError && [400, 403, 409, 422].includes(error.status)) {
-            operations = operations.filter((item) => item !== operation)
-          } else {
-            // Keep the immutable operation for reconciliation, but allow raw
-            // events to arrive even while the identity endpoint is unavailable.
-            identityRetryAt = Date.now() + Math.max(30_000, error instanceof IntelligenceError ? error.retryAfter : 0)
-            break
-          }
-        }
+    // Drain a bounded queue sequentially without waiting another 15s per batch.
+    for (let sent = 0; sent < 10 && events.length; sent++) {
+      if (epoch !== consentEpoch) return
+      const batch = events.slice(0, 20)
+      const result = await intelligenceRequest<{
+        accepted: string[]; duplicates: string[]; rejected: { event_id: string | null; event_index: number; retryable: boolean }[]
+      }>('/api/analytics/v1/events/batch', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch_id: randomUUID(), installation_id: installation,
+          client: { application: 'taplist', platform: Platform.OS, app_version: Constants.expoConfig?.version || 'unknown' }, events: batch }),
+      })
+      if (epoch !== consentEpoch) return
+      const removed = new Set([...(result.accepted || []), ...(result.duplicates || [])])
+      for (const rejection of result.rejected || []) {
+        const id = rejection.event_id || batch[rejection.event_index]?.event_id
+        if (!rejection.retryable && id) removed.add(id)
+      }
+      events = events.filter((event) => !removed.has(event.event_id))
+      failures = 0
+      retryAt = 0
+      persist() // Save acknowledgements after every batch, including before suspension.
+      if (batch.some((event) => !removed.has(event.event_id))) {
+        // A partial retryable response must not spin or drop original event IDs.
+        retryAt = Date.now() + 3000
+        break
       }
     }
-    if (epoch !== consentEpoch || !events.length) return
-    const batch = events.slice(0, 20)
-    const result = await intelligenceRequest<{
-      accepted: string[]; duplicates: string[]; rejected: { event_id: string | null; event_index: number; retryable: boolean }[]
-    }>('/api/analytics/v1/events/batch', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ batch_id: randomUUID(), installation_id: installation,
-        client: { application: 'taplist', platform: Platform.OS, app_version: Constants.expoConfig?.version || 'unknown' }, events: batch }),
-    })
-    if (epoch !== consentEpoch) return
-    const removed = new Set([...(result.accepted || []), ...(result.duplicates || [])])
-    for (const rejection of result.rejected || []) {
-      const id = rejection.event_id || batch[rejection.event_index]?.event_id
-      if (!rejection.retryable && id) removed.add(id)
-    }
-    events = events.filter((event) => !removed.has(event.event_id))
-    failures = 0
-    retryAt = Date.now() + 1_000
   } catch (error) {
+    if (epoch !== consentEpoch) return
     failures++
     retryAt = Date.now() + Math.max(Math.min(300_000, 2 ** Math.min(failures, 8) * 1_000), error instanceof IntelligenceError ? error.retryAfter : 0)
   } finally {
     flushing = false
     persist()
+    if (events.length) scheduleFlush(Math.max(1000, retryAt - Date.now()))
   }
 }
 

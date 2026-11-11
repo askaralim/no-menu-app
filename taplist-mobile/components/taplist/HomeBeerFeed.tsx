@@ -23,9 +23,11 @@ export function HomeBeerFeed({ city, refreshVersion = 0, suspended = false, scro
   const [explanationOpen, setExplanationOpen] = useState(false)
   const personal = useBeerFeed(city, 'for_you', 'home')
   const hasPersonal = !!personal.identity.owner && !!personal.data?.items.length
-  const latestEnabled = personal.identity.ready && (!personal.identity.owner || personal.isError || !!personal.data && !hasPersonal)
+  // Preload the fallback without displaying it before the personal result resolves.
+  const latestEnabled = personal.identity.ready
+  const showLatest = !personal.identity.owner || personal.isError || !!personal.data && !hasPersonal
   const latest = useBeerFeed(city, 'latest', 'home', latestEnabled)
-  const result = hasPersonal ? personal.data : latest.data
+  const result = hasPersonal ? personal.data : showLatest ? latest.data : undefined
   const mode = hasPersonal ? 'for_you' : 'latest'
   const exposure = useFeedExposure(result, focused && !suspended && !explanationOpen, insets.top, insets.bottom + 56)
   const rail = useRef<ScrollView>(null)

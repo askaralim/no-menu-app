@@ -29,6 +29,13 @@ export default function ProductDetailScreen() {
   })
   const result = detailQuery.data
   const product = result?.ok ? result.product : null
+  const breweryName = product
+    ? localized(
+        product.brewery_ref?.display_name || product.brewery,
+        product.brewery_ref?.display_name_en || product.brewery_en,
+      )
+    : ''
+  const breweryKey = product?.brewery_ref?.id || product?.brewery
   useIntelligenceDetail('beer_opened', { product_id: product?.product_id, source_drink_id: product?.drink_id })
   const venues = result?.ok ? result.venues.filter((venue) => venue.available) : []
   const collabBreweries = (product?.collab_breweries ?? [])
@@ -78,15 +85,15 @@ export default function ProductDetailScreen() {
           ) : product ? (
             <>
               <Text style={styles.title}>{localized(product.name, product.name_en)}</Text>
-              {product.brewery || collabBreweries.length > 0 ? (
+              {breweryName || collabBreweries.length > 0 ? (
                 <View style={styles.breweryRow}>
-                  {product.brewery ? (
+                  {breweryName && breweryKey ? (
                     <Pressable
                       accessibilityRole="link"
-                      accessibilityLabel={tr(language, `查看${product.brewery}酒厂`, `View ${localized(product.brewery, product.brewery_en)}`)}
-                      onPress={() => router.push(`/brewery/${encodeURIComponent(product.brewery!)}` as Href)}
+                      accessibilityLabel={tr(language, `查看${breweryName}酒厂`, `View ${breweryName}`)}
+                      onPress={() => router.push(`/brewery/${encodeURIComponent(breweryKey)}` as Href)}
                       style={({ pressed }) => [styles.breweryButton, pressed && styles.pressed]}>
-                      <Text style={styles.breweryButtonText}>{localized(product.brewery, product.brewery_en)}</Text>
+                      <Text style={styles.breweryButtonText}>{breweryName}</Text>
                       <FontAwesome name="angle-right" size={16} color={palette.tungsten} />
                     </Pressable>
                   ) : null}

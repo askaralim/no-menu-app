@@ -13,12 +13,13 @@ consumer app must not depend on POS UI or mutate POS workflows.
 
 Monorepo doc index: [`../docs/INDEX.md`](../docs/INDEX.md).  
 
-**Status (2026-11-10):** App Store `1.3.2` (build48) + production OTA 已发布，用户确认实际使用正常，记录为用户验收通过。最新记录的 OTA group 为 `47314e59-5d47-4d4b-9990-f3f8814ffac5`；包含 E1 Feed、Reason V2、英文风格、活动展示及 UI 微调，详见 [OTA发布与回退记录](docs/OTA_CANDIDATE_2026-11-10.md)。微信小程序线上仍为1.4.0，1.5.0正式开关已开启、准备提交审核，尚不能视为已发布。
-**OTA 后本地改动：** 最新 TAP 按钮尺寸与「记一杯 / Tap it」「已记录 / Tapped」「记录此店 / Tap here」文案已与小程序对齐，TypeScript 检查通过；尚未再次 OTA，不属于上方已验收的发布资产。
+**Status (2026-11-11):** App Store `1.3.2` (build48) + production OTA 已发布，用户确认实际使用正常，记录为用户验收通过。最新记录的 OTA group 为 `47314e59-5d47-4d4b-9990-f3f8814ffac5`；包含 E1 Feed、Reason V2、英文风格、活动展示及 UI 微调，详见 [OTA发布与回退记录](docs/OTA_CANDIDATE_2026-11-10.md)。用户于2026-11-11确认微信小程序1.5.0已审核通过并正式发布，取代1.4.0；Taplist本身的OTA状态不因此改变。
+
+**OTA 后本地改动（待下一次 production OTA）：** TAP 按钮尺寸及「记一杯 / Tap it」「已记录 / Tapped」「记录此店 / Tap here」文案已与小程序对齐；酒厂关联新增 company ID 跳转与旧名称回退，门店级 `display_name/display_name_en` 可按 tenant 配置显示“旗标 + 酒厂”；酒吧酒款列表补齐“城市优先、国家回退”的产地信息，酒款详情主标题由 `40/47` 调整为 `36/43`。相关 V2 RPC、tenant 开关和国家代码回填 migration 已准备但尚未部署，Taplist 也尚未再次 OTA，因此以上内容不属于上方已验收的发布资产。
 
 当前功能、客户端边界和发布状态以 [产品能力矩阵（2026-11-10）](docs/PRODUCT_SURFACES_2026-11-10.md) 为准；历史发布文档用于追溯，不应单独作为线上能力判断依据。
 
-**6×6 活动展示：** 首页入口、活动详情内容与全部图片已 OTA，用户于2026-11-10确认验证完成。线上护照、打卡与海报生成仍由小程序承接；小程序1.5.0准备提审。正式活动小程序码已配置，发布后扫码验收及后台维护规则见 [活动上线记录](../services/consumer-intelligence/CAMPAIGN_ANALYTICS.md#正式活动码与后台维护2026-11-10)。
+**6×6 活动展示：** 首页入口、活动详情内容与全部图片已 OTA，用户于2026-11-10确认验证完成。线上护照、打卡与海报生成仍由小程序承接；小程序1.5.0已于2026-11-11获用户确认正式发布。正式活动小程序码已配置，发布后扫码验收及后台维护规则见 [活动上线记录](../services/consumer-intelligence/CAMPAIGN_ANALYTICS.md#正式活动码与后台维护2026-11-10)。
 
 Tonight POS `1.1.2` is also **Approved / live** — see `mobile/docs/APP_STORE_CONNECT_1.1.2.md`.
 
@@ -80,6 +81,14 @@ One canonical beer counts once; distinct bar experiences can accumulate.
 npm run preflight
 eas build --platform ios --profile production
 ```
+
+当前兼容 build `48` 的待发布 iOS OTA 必须先部署仓库级 brewery migrations，再从本目录执行：
+
+```bash
+eas update --channel production --environment production --platform ios --message "酒厂旗标与ID跳转、酒单产地展示、TAP与页面体验优化" --non-interactive
+```
+
+发布后在 Expo Dashboard 确认 `Builds: 1` 并记录 update group/runtime；在真机完全重启两次后验收。不得仅为强制命中 OTA 而修改 production channel、EAS URL 或 runtime。
 
 Before an iOS release:
 

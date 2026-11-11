@@ -18,7 +18,7 @@ import { palette, spacing, typography } from '@/constants/design'
 import { displayServingOptions, formatBreweryWithCollab, servingParts } from '@/lib/formatTaplist'
 import { trackEvent } from '@/lib/analytics'
 import type { PublicDrinkRow } from '@/lib/types'
-import { tr, useLanguage } from '@/lib/i18n'
+import { localizedCompactOrigin, tr, useLanguage } from '@/lib/i18n'
 import { localizeBeerStyle } from '@/lib/styleLocalization'
 
 type BeerListCardProps = {
@@ -34,12 +34,16 @@ export function BeerListCard({ drink, slug, tenantId, isLit = false }: BeerListC
   const isSoldOut = publicStatus === '售罄'
   const isNew = publicStatus === '上新'
   const brewery = formatBreweryWithCollab(
-    localized(drink.beer?.brewery, drink.beer?.brewery_en),
+    localized(
+      drink.beer?.brewery_ref?.display_name || drink.beer?.brewery,
+      drink.beer?.brewery_ref?.display_name_en || drink.beer?.brewery_en,
+    ),
     drink.beer?.collab_breweries,
     drink.brand_name,
   )
+  const origin = drink.beer ? localizedCompactOrigin(language, drink.beer) : ''
   const style = localizeBeerStyle(drink.beer?.beer_style, language, drink.beer?.beer_style_en) || null
-  const metaLine = [brewery, style].filter(Boolean).join(' · ')
+  const metaLine = [origin, brewery, style].filter(Boolean).join(' · ')
   const abv = typeof drink.beer?.abv === 'number' ? `ABV ${drink.beer.abv}%` : null
   const servingOptions = displayServingOptions(drink.serving_options)
   const tapNumber = drink.public_sort_order > 0 ? drink.public_sort_order : null

@@ -33,7 +33,7 @@ import {
   BEER_CARD_PANEL_LOCATIONS,
 } from '@/components/taplist/railCardStyle'
 import { palette, spacing, typography } from '@/constants/design'
-import { fetchMiniBrewery, searchMiniProducts } from '@/lib/api/taplist'
+import { fetchMiniBrewery, searchMiniProducts, searchMiniProductsByBreweryId } from '@/lib/api/taplist'
 import { useTaplistCity } from '@/lib/taplistCity'
 import { useTaplistSupabaseReady } from '@/lib/useTaplistSupabaseReady'
 import type { MiniProductSearchResult } from '@/lib/types'
@@ -48,6 +48,7 @@ export default function BreweryScreen() {
   const { name } = useLocalSearchParams<{ name: string }>()
   const [cityPickerVisible, setCityPickerVisible] = useState(false)
   const breweryName = typeof name === 'string' ? name.trim() : ''
+  const breweryId = UUID_PATTERN.test(breweryName) ? breweryName : null
   const breweryQuery = useQuery({
     queryKey: ['taplist', 'mini-brewery', breweryName],
     queryFn: () => fetchMiniBrewery(breweryName),
@@ -56,12 +57,19 @@ export default function BreweryScreen() {
   const productsQuery = useInfiniteQuery({
     queryKey: ['taplist', 'mini-brewery-products', selectedCity.city, breweryName],
     initialPageParam: 0,
-    queryFn: ({ pageParam, signal }) => searchMiniProducts({
-      city: selectedCity.city,
-      brewery: breweryName,
-      offset: pageParam,
-      signal,
-    }),
+    queryFn: ({ pageParam, signal }) => breweryId
+      ? searchMiniProductsByBreweryId({
+          breweryId,
+          city: selectedCity.city,
+          offset: pageParam,
+          signal,
+        })
+      : searchMiniProducts({
+          city: selectedCity.city,
+          brewery: breweryName,
+          offset: pageParam,
+          signal,
+        }),
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
     enabled: configured && breweryName.length > 0,
   })
@@ -158,6 +166,8 @@ export default function BreweryScreen() {
     </View>
   )
 }
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function BreweryProductCard({ product }: { product: MiniProductSearchResult }) {
   const { language, localized } = useLanguage()

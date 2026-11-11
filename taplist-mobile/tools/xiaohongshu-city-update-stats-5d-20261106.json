@@ -1,0 +1,349 @@
+{
+  "checked_at": "2026-11-06T07:39:31.620Z",
+  "cutoff": "2026-11-01T07:39:31.620Z",
+  "cities": [
+    {
+      "city": "Shanghai",
+      "label": "上海",
+      "label_en": "Shanghai",
+      "total_public_bars": 44,
+      "updated_bars": 33,
+      "new_drinks": 117,
+      "bars": [
+        {
+          "bar": "GEER 嗝 · 浦东",
+          "count": 1,
+          "newest": "2026-11-06T07:21:32.056819+00:00"
+        },
+        {
+          "bar": "GEER 嗝 · 武夷路",
+          "count": 2,
+          "newest": "2026-11-06T07:17:03.571399+00:00"
+        },
+        {
+          "bar": "右晃 Taproom",
+          "count": 3,
+          "newest": "2026-11-06T07:12:59.423144+00:00"
+        },
+        {
+          "bar": "Start",
+          "count": 5,
+          "newest": "2026-11-06T06:13:42.588104+00:00"
+        },
+        {
+          "bar": "North Bank",
+          "count": 1,
+          "newest": "2026-11-06T05:39:36.389559+00:00"
+        },
+        {
+          "bar": "酒宵 Drunken Night",
+          "count": 1,
+          "newest": "2026-11-06T03:46:43.189706+00:00"
+        },
+        {
+          "bar": "啤汽 Beervibe",
+          "count": 13,
+          "newest": "2026-11-05T16:10:36.11027+00:00"
+        },
+        {
+          "bar": "Liquid's Tag",
+          "count": 4,
+          "newest": "2026-11-05T15:42:03.875056+00:00"
+        },
+        {
+          "bar": "夜游",
+          "count": 5,
+          "newest": "2026-11-05T15:39:52.41395+00:00"
+        },
+        {
+          "bar": "Catfish",
+          "count": 3,
+          "newest": "2026-11-05T15:38:50.159127+00:00"
+        },
+        {
+          "bar": "Empty Cup 空杯",
+          "count": 1,
+          "newest": "2026-11-05T14:25:28.196893+00:00"
+        },
+        {
+          "bar": "鲸迎Whale inn taproom",
+          "count": 2,
+          "newest": "2026-11-05T13:32:37.452974+00:00"
+        },
+        {
+          "bar": "造浪 BEER WAVE",
+          "count": 2,
+          "newest": "2026-11-05T11:40:44.815793+00:00"
+        },
+        {
+          "bar": "WE CHEERS",
+          "count": 6,
+          "newest": "2026-11-05T11:09:59.545885+00:00"
+        },
+        {
+          "bar": "蓝啤古（法华镇路店）",
+          "count": 5,
+          "newest": "2026-11-05T08:54:29.219754+00:00"
+        },
+        {
+          "bar": "Farside 月之暗面",
+          "count": 2,
+          "newest": "2026-11-05T08:48:55.220554+00:00"
+        },
+        {
+          "bar": "Breno",
+          "count": 1,
+          "newest": "2026-11-04T15:52:56.564729+00:00"
+        },
+        {
+          "bar": "撬啤",
+          "count": 2,
+          "newest": "2026-11-04T11:26:31.885884+00:00"
+        },
+        {
+          "bar": "窝精酿啤酒屋",
+          "count": 4,
+          "newest": "2026-11-04T10:39:26.549882+00:00"
+        },
+        {
+          "bar": "Spark Lab",
+          "count": 2,
+          "newest": "2026-11-03T15:41:13.14709+00:00"
+        },
+        {
+          "bar": "山雀",
+          "count": 4,
+          "newest": "2026-11-03T13:37:39.044896+00:00"
+        },
+        {
+          "bar": "藏拙TAPROOM",
+          "count": 18,
+          "newest": "2026-11-03T13:31:59.399927+00:00"
+        },
+        {
+          "bar": "Doubar",
+          "count": 3,
+          "newest": "2026-11-03T13:15:20.472132+00:00"
+        },
+        {
+          "bar": "52Hz",
+          "count": 1,
+          "newest": "2026-11-03T12:01:39.394971+00:00"
+        },
+        {
+          "bar": "Major Bar",
+          "count": 3,
+          "newest": "2026-11-03T11:51:03.991877+00:00"
+        },
+        {
+          "bar": "聚野",
+          "count": 3,
+          "newest": "2026-11-03T11:32:30.925946+00:00"
+        },
+        {
+          "bar": "吞吐 TuneTo",
+          "count": 4,
+          "newest": "2026-11-03T09:01:22.347323+00:00"
+        },
+        {
+          "bar": "No.1",
+          "count": 2,
+          "newest": "2026-11-03T08:50:17.126631+00:00"
+        },
+        {
+          "bar": "問·ASK",
+          "count": 4,
+          "newest": "2026-11-03T08:23:15.927688+00:00"
+        },
+        {
+          "bar": "FineBar 行吧",
+          "count": 1,
+          "newest": "2026-11-02T11:38:34.547306+00:00"
+        },
+        {
+          "bar": "懒海 · 瑞金二路",
+          "count": 5,
+          "newest": "2026-11-02T10:17:24.028257+00:00"
+        },
+        {
+          "bar": "DUN DUN",
+          "count": 2,
+          "newest": "2026-11-01T12:56:20.496292+00:00"
+        },
+        {
+          "bar": "2062",
+          "count": 2,
+          "newest": "2026-11-01T12:04:11.444701+00:00"
+        }
+      ]
+    },
+    {
+      "city": "Beijing",
+      "label": "北京",
+      "label_en": "Beijing",
+      "total_public_bars": 3,
+      "updated_bars": 0,
+      "new_drinks": 0,
+      "bars": []
+    },
+    {
+      "city": "Tianjin",
+      "label": "天津",
+      "label_en": "Tianjin",
+      "total_public_bars": 2,
+      "updated_bars": 0,
+      "new_drinks": 0,
+      "bars": []
+    },
+    {
+      "city": "Qingdao",
+      "label": "青岛",
+      "label_en": "Qingdao",
+      "total_public_bars": 5,
+      "updated_bars": 2,
+      "new_drinks": 7,
+      "bars": [
+        {
+          "bar": "山丘 Mountain Taproom",
+          "count": 3,
+          "newest": "2026-11-05T12:01:09.636711+00:00"
+        },
+        {
+          "bar": "瑰夏鲜啤GeishaLounge",
+          "count": 4,
+          "newest": "2026-11-04T17:43:45.649174+00:00"
+        }
+      ]
+    },
+    {
+      "city": "Shenyang",
+      "label": "沈阳",
+      "label_en": "Shenyang",
+      "total_public_bars": 2,
+      "updated_bars": 2,
+      "new_drinks": 10,
+      "bars": [
+        {
+          "bar": "牛棚 Bullpen",
+          "count": 3,
+          "newest": "2026-11-06T06:06:36.340173+00:00"
+        },
+        {
+          "bar": "普通公司 · 酸啤精选店",
+          "count": 7,
+          "newest": "2026-11-03T14:35:45.717602+00:00"
+        }
+      ]
+    },
+    {
+      "city": "Linxi",
+      "label": "临沂",
+      "label_en": "Linyi",
+      "total_public_bars": 1,
+      "updated_bars": 0,
+      "new_drinks": 0,
+      "bars": []
+    },
+    {
+      "city": "Changchun",
+      "label": "长春",
+      "label_en": "Changchun",
+      "total_public_bars": 1,
+      "updated_bars": 0,
+      "new_drinks": 0,
+      "bars": []
+    },
+    {
+      "city": "Binzhou",
+      "label": "滨州",
+      "label_en": "Binzhou",
+      "total_public_bars": 1,
+      "updated_bars": 0,
+      "new_drinks": 0,
+      "bars": []
+    },
+    {
+      "city": "Nanjing",
+      "label": "南京",
+      "label_en": "Nanjing",
+      "total_public_bars": 1,
+      "updated_bars": 1,
+      "new_drinks": 3,
+      "bars": [
+        {
+          "bar": "PAPOO",
+          "count": 3,
+          "newest": "2026-11-03T11:23:06.428779+00:00"
+        }
+      ]
+    },
+    {
+      "city": "Jiaxing",
+      "label": "嘉兴",
+      "label_en": "Jiaxing",
+      "total_public_bars": 1,
+      "updated_bars": 1,
+      "new_drinks": 2,
+      "bars": [
+        {
+          "bar": "低地",
+          "count": 2,
+          "newest": "2026-11-01T12:01:46.922985+00:00"
+        }
+      ]
+    },
+    {
+      "city": "Chengdu",
+      "label": "成都",
+      "label_en": "Chengdu",
+      "total_public_bars": 1,
+      "updated_bars": 0,
+      "new_drinks": 0,
+      "bars": []
+    },
+    {
+      "city": "Xi'an",
+      "label": "西安",
+      "label_en": "Xi'an",
+      "total_public_bars": 2,
+      "updated_bars": 0,
+      "new_drinks": 0,
+      "bars": []
+    },
+    {
+      "city": "Guiyang",
+      "label": "贵阳",
+      "label_en": "Guiyang",
+      "total_public_bars": 9,
+      "updated_bars": 5,
+      "new_drinks": 16,
+      "bars": [
+        {
+          "bar": "TAPSTAR TAPROOM【文昌北路店】",
+          "count": 5,
+          "newest": "2026-11-04T07:29:17.849389+00:00"
+        },
+        {
+          "bar": "TAPSTAR TAPROOM【阿云朵仓店】",
+          "count": 6,
+          "newest": "2026-11-04T07:28:28.004281+00:00"
+        },
+        {
+          "bar": "Fork Road",
+          "count": 3,
+          "newest": "2026-11-02T11:34:54.575725+00:00"
+        },
+        {
+          "bar": "八刀山 · 花溪店",
+          "count": 1,
+          "newest": "2026-11-02T10:58:03.73838+00:00"
+        },
+        {
+          "bar": "Tiny Devil",
+          "count": 1,
+          "newest": "2026-11-01T15:20:35.712882+00:00"
+        }
+      ]
+    }
+  ]
+}

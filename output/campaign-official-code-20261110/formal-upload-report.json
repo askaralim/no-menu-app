@@ -1,0 +1,17 @@
+{
+  "campaign_id": "9b8edb9d-7d56-4a98-a49e-46e063f49c0f",
+  "qr_code": "8b60ed3b",
+  "scene": "p_8b60ed3b",
+  "page": "pages/campaign/campaign",
+  "env_version": "release",
+  "check_path": false,
+  "content_type": "image/jpeg",
+  "extension": "jpg",
+  "bytes": 79475,
+  "sha256": "aa070037e4df4b41d1b8e101089cff4219f7aed817401cf2c1d19542b7acd313",
+  "object_path": "prod/campaigns/9b8edb9d-7d56-4a98-a49e-46e063f49c0f/mini-code/no-menu-release-p-8b60ed3b-v1.jpg",
+  "image_url": "https://img.nomenuapp.com/prod/campaigns/9b8edb9d-7d56-4a98-a49e-46e063f49c0f/mini-code/no-menu-release-p-8b60ed3b-v1.jpg",
+  "oss_verified": true,
+  "cdn_verified": true,
+  "database_ready": true
+}

@@ -158,9 +158,9 @@ export default function BreweriesScreen() {
           <View style={styles.list}>
             {visibleBreweries.map((brewery) => (
               <BreweryRow
-                key={brewery.brewery}
+                key={brewery.brewery_ref?.id || brewery.brewery}
                 brewery={brewery}
-                onPress={() => router.push(`/brewery/${encodeURIComponent(brewery.brewery)}` as Href)}
+                onPress={() => router.push(`/brewery/${encodeURIComponent(brewery.brewery_ref?.id || brewery.brewery)}` as Href)}
               />
             ))}
             {breweriesQuery.isFetchingNextPage ? <Loading label={tr(language, '正在加载更多...', 'Loading more...')} compact /> : null}
@@ -182,13 +182,17 @@ function BreweryRow({
   onPress: () => void
 }) {
   const { language, localized } = useLanguage()
+  const displayName = localized(
+    brewery.brewery_ref?.display_name || brewery.display_name,
+    brewery.brewery_ref?.display_name_en || brewery.name_en,
+  )
   const showEnglishName = brewery.name_en
-    && brewery.name_en.trim().toLocaleLowerCase() !== brewery.display_name.trim().toLocaleLowerCase()
+    && brewery.name_en.trim().toLocaleLowerCase() !== displayName.trim().toLocaleLowerCase()
 
   return (
     <Pressable
       accessibilityRole="link"
-      accessibilityLabel={tr(language, `查看${brewery.display_name}酒厂，本城在售${brewery.product_count}款`, `View ${localized(brewery.display_name, brewery.name_en)}, ${brewery.product_count} beers available`)}
+      accessibilityLabel={tr(language, `查看${displayName}酒厂，本城在售${brewery.product_count}款`, `View ${displayName}, ${brewery.product_count} beers available`)}
       accessibilityHint={tr(language, '打开酒厂在售酒款页', 'Open brewery beer list')}
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
@@ -204,7 +208,7 @@ function BreweryRow({
         </View>
       ) : <View style={styles.logoSpacer} />}
       <View style={styles.rowCopy}>
-        <Text style={styles.rowTitle} numberOfLines={2}>{localized(brewery.display_name, brewery.name_en)}</Text>
+        <Text style={styles.rowTitle} numberOfLines={2}>{displayName}</Text>
         {showEnglishName ? (
           <Text style={styles.rowEnglish} numberOfLines={1}>{brewery.name_en}</Text>
         ) : null}
@@ -231,8 +235,9 @@ function EmptyState({ body }: { body: string }) {
 function dedupeBreweries(breweries: MiniBreweryListRow[]) {
   const seen = new Set<string>()
   return breweries.filter((brewery) => {
-    if (seen.has(brewery.brewery)) return false
-    seen.add(brewery.brewery)
+    const key = brewery.brewery_ref?.id || brewery.brewery
+    if (seen.has(key)) return false
+    seen.add(key)
     return true
   })
 }

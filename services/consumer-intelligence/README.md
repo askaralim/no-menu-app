@@ -1,16 +1,16 @@
 # No Menu Consumer Intelligence
 
-2026-11-10 联合活动采集补充（ECS 已部署验证）：新增 `campaign_interaction`，现有活动/酒款/导航事件支持可选活动上下文；当前契约共10类。小程序正式版活动采集独立开关已开启，待新包上传及真机操作验收。范围、报表及发布顺序见 [联名活动数据追踪](CAMPAIGN_ANALYTICS.md)。
+2026-11-10 联合活动采集补充（ECS 已部署验证）：新增 `campaign_interaction`，现有活动/酒款/导航事件支持可选活动上下文；当前契约共10类。小程序正式版活动采集独立开关已开启，1.5.0已于2026-11-11由用户确认审核通过并正式发布；正式码扫码及release事件对账仍需单独验收。范围、报表及发布顺序见 [联名活动数据追踪](CAMPAIGN_ANALYTICS.md)。
 
 Product Pool 英文风格的数据库归属、ECS 请求/响应契约、小程序现状及 Taplist 对齐步骤见 [Consumer style localization runtime contract](../../docs/CONSUMER_STYLE_LOCALIZATION_RUNTIME.md)。
 
-状态（2026-11-10，Asia/Shanghai）：**E1 与 Recommendation Reason V2 保持不变；Product Pool approved `style_en` 已贯通 Feed。Taplist 已生产 OTA 并获用户验收，小程序 1.5.0 准备提交审核。**
+状态（2026-11-11，Asia/Shanghai）：**E1 与 Recommendation Reason V2 保持不变；Product Pool approved `style_en` 已贯通 Feed。Taplist 已生产 OTA 并获用户验收，小程序1.5.0已获用户确认审核通过并正式发布。**
 
 文档整理日期：2026-11-10。当天已复核线上 Reader、Worker 和匿名 Latest 的 `style_en`；authenticated For You/Reason 的最近服务端验收仍为2026-11-08。以下“已完成”指已记录的实现与验收，不表示推荐转化效果或正式发布验收已经完成。
 
 跨端交付要求：先完成小程序全部相关功能的测试与确认，再完整同步到Taplist。服务使用、请求/响应、身份与事件、异常状态和两端验收清单统一保留在 [客户端接入手册](CLIENT_INTEGRATION.md)，OpenAPI与可执行样例同步维护；不得仅移植UI或将文档完成标为客户端已验收。
 
-2026-11-10后续确认： Taplist 已发布生产 OTA，用户确认使用正常，记为用户验收通过。小程序 1.5.0 正准备提交审核，线上仍为 1.4.0；Feed 与活动采集正式开关均已开启，release 事件版本为 1.5.0，最近本地 preflight 为295/295通过。ECS 活动采集已部署并验证接收、去重和入库。最终候选包验收、微信后台合法域名及隐私指引仍需按清单收口；准备提审不等于已提交或已发布。
+2026-11-11发布确认： 2026-11-11（Asia/Shanghai），用户确认小程序1.5.0已通过微信审核并正式发布，取代1.4.0；精确发布时间以微信后台记录为准。Taplist生产OTA及用户验收状态保持不变。Feed与活动采集正式开关已开启；此前295/295预检及ECS接收、去重、入库证据保留原日期。本次仅同步发布状态，不将发布确认等同于新增逐项测试或正式版事件对账。
 
 当前 Reader 为 `e1-style-i18n-e42ce93cf00d`，现有认证后的 For You 默认采用已验收的 Taxonomy V2 + Exact / 有向 Generic Bridge + λ=1.0 风格覆盖重排；Follow 1.15、同店 TAP 排除、canonical 去重及有效上枪资格保持不变。此次只增加可空展示字段 `style_en`，没有新增测试账号白名单或客户端入口。首页最多6款，完整个性化 Feed 最多20款；Latest 独立，rules-v1 保留供关闭 E1 后使用。
 
@@ -24,8 +24,8 @@ V1 API 契约最初冻结于2026-10-31；本次仅兼容增加 Reason 可选字�
 | --- | --- | --- |
 | 风格分类与匹配 | 已批准的 Taxonomy V2 修正、canonical 单品覆盖、Exact及有向Generic Bridge | 证据不足的风格仍为Unknown；不以100%覆盖率为目标 |
 | 排序与列表 | λ=1.0、Follow1.15、同店TAP排除、canonical去重；首页6款为完整20款前缀 | 不保证凑足数量；真实点击、尝新与TAP转化改善尚未证实 |
-| 推荐解释 | Reason V2真实聚合计数、包含Unknown的分母、历史解释固定；服务端真实Instance验收通过 | Taplist 用户使用验收已确认；小程序最新提交包仍须完成登录后的端到端展示复验 |
-| 客户端发布 | Taplist 生产 OTA 已发布并获用户验收；小程序 1.5.0 正式 Feed/活动采集开关已开启 | 小程序准备提审，尚未确认提交或发布；两端最新 TAP 按钮增量不等于已有 OTA 内容 |
+| 推荐解释 | Reason V2真实聚合计数、包含Unknown的分母、历史解释固定；服务端真实Instance验收通过 | Taplist 用户使用验收已确认；小程序正式版登录后的端到端展示复验尚待记录 |
+| 客户端发布 | Taplist 生产 OTA 已发布并获用户验收；小程序 1.5.0 正式 Feed/活动采集开关已开启 | 用户于2026-11-11确认小程序已发布；Taplist后续按钮增量不自动视为已有OTA内容 |
 | 运行保障 | 多Bundle、持久刷新需求、断连恢复、可信部署及E1-aware回退 | 外部告警、自动保留期清理调度、完整数据恢复演练仍有待办；维护工具本身已实现 |
 | 效果分析 | 浏览与Feed事件采集、浏览→TAP的Assisted Visit关联计算 | 完整商户报表、可更正/撤销的长期归因结果及真实转化效果验证未完成；关联不能等同于真实到店 |
 

@@ -177,12 +177,12 @@ English Reason is separate from product write-time localization. The server free
 
 ## Current client state and Taplist parity
 
-As of 2026-11-10:
+Client release status updated 2026-11-11; runtime verification dates remain unchanged:
 
-- WeChat mini-program develop/trial Feed uses the ECS endpoint above. Home and full Latest render the server `style_en`; the client helper returns `serverStyleEn || rawStyle`.
+- WeChat mini-program 1.5.0 was confirmed approved and released by the product owner on 2026-11-11. Develop/trial/release Feed uses the ECS endpoint above when its environment flags are enabled. Home and full Latest render the server `style_en`; the client helper returns `serverStyleEn || rawStyle`. Post-release real-account Reason and campaign-code checks remain pending.
 - Mini-program bar, detail, search, TAP, and other non-Feed pages use Supabase `_i18n` RPC values with the same fallback rule.
 - Consumer iOS/Taplist already accepts `beer_style_en` on its Supabase RPC DTOs and applies the same fallback for existing screens.
-- Consumer iOS/Taplist now has a local ECS Feed adapter, home/full Feed, Reason V2 rendering and first-party instrumentation. It is **not yet tested or released**; see [implementation and manual acceptance](../taplist-mobile/docs/CONSUMER_INTELLIGENCE_PORT_2026-11-10.md). No joint-activity frontend was ported.
+- Consumer iOS/Taplist now has a local ECS Feed adapter, home/full Feed, Reason V2 rendering and first-party instrumentation. It has shipped in the production OTA and received user acceptance; see [implementation and manual acceptance](../taplist-mobile/docs/CONSUMER_INTELLIGENCE_PORT_2026-11-10.md). No joint-activity frontend was ported.
 
 Taplist ECS parity implementation and acceptance must follow this contract:
 

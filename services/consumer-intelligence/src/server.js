@@ -21,7 +21,7 @@ export function createServer({ pool, config, supabase = createSupabase(config), 
   const buckets = new Map()
   const server = http.createServer({ requestTimeout: 15000, headersTimeout: 10000, maxHeaderSize: 16384 }, async (req, res) => {
     const requestId = randomUUID(), started = clock()
-    let route = 'unknown'
+    let route = 'unknown', stage = 'request', failure = null
     const envelope = () => ({ api_version: '1', requestId, server_time: new Date(clock()).toISOString() })
     const send = (status, value, schema) => {
       if (schema && !valid(schema, value)) fail(500, 'RESPONSE_CONTRACT_VIOLATION')
@@ -62,7 +62,9 @@ export function createServer({ pool, config, supabase = createSupabase(config), 
       if (req.headers.authorization !== undefined) {
         const match = /^Bearer ([A-Za-z0-9._~-]+)$/.exec(req.headers.authorization)
         if (!match) fail(401, 'UNAUTHORIZED')
+        stage = 'authorize'
         auth = await supabase.authorize(match[1])
+        stage = 'handler'
       }
       const requireAuth = () => { if (!auth) fail(401, 'AUTH_REQUIRED'); return auth }
       if (req.method === 'GET' && route === '/api/feed/v1/new-beers') {
@@ -89,7 +91,12 @@ export function createServer({ pool, config, supabase = createSupabase(config), 
       }
       if (req.method === 'POST' && route === '/api/analytics/v1/identity-operations') {
         const { user_key } = requireAuth()
-        send(202, { ...envelope(), ...await acceptIdentity(pool, await body(req, 'application/json'), user_key, clock()) }, 'identity/accepted.schema.json'); return
+        stage = 'identity_body'
+        const operation = await body(req, 'application/json')
+        stage = 'identity_validate'
+        const result = await acceptIdentity(pool, operation, user_key, clock(), value => { stage = value })
+        stage = 'identity_response'
+        send(202, { ...envelope(), ...result }, 'identity/accepted.schema.json'); return
       }
       if (req.method === 'POST' && route === '/api/analytics/v1/events/batch') {
         // Deliberately do not pass the uploader's account into event attribution.
@@ -99,10 +106,16 @@ export function createServer({ pool, config, supabase = createSupabase(config), 
     } catch (error) {
       const known = error instanceof ServiceError
       const status = known ? error.status : 503
+      // Fixed categories only: never log messages, stacks, SQL, payloads or identifiers.
+      if (status >= 500) failure = { stage, error_code: known ? error.code : 'PERSISTENCE_UNAVAILABLE',
+        error_type: ['Error', 'TypeError', 'RangeError', 'SyntaxError'].includes(error?.name) ? error.name : 'Other',
+        ...(!known && /^[0-9A-Z]{5}$/.test(error?.code) ? { sqlstate: error.code } : {}),
+        ...(known && ['transport', 'response_body', 'http_status', 'user_shape'].includes(error.details?.phase) ? { upstream_phase: error.details.phase } : {}),
+        ...(known && Number.isInteger(error.details?.status) ? { upstream_status: error.details.status } : {}) }
       if (!res.headersSent) send(status, { ...envelope(), code: known ? error.code : 'PERSISTENCE_UNAVAILABLE', message: known ? error.code : 'Service temporarily unavailable', retryable: status >= 500 || status === 429 })
       else res.destroy()
     } finally {
-      log({ requestId, route, method: req.method, status: res.statusCode, duration_ms: clock() - started })
+      log({ requestId, route, method: req.method, status: res.statusCode, duration_ms: clock() - started, ...(failure && { failure }) })
     }
   })
   server.keepAliveTimeout = 5000

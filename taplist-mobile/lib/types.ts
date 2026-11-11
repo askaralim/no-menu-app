@@ -27,6 +27,17 @@ export type PublicBarTag = {
   label_en?: string | null
 }
 
+export type BreweryRef = {
+  /** Canonical drink_companies identity. Null for unlinked/free-text brewery data. */
+  id: string | null
+  name: string | null
+  name_en: string | null
+  country_code: string | null
+  /** Venue-aware display labels. These may include a leading country flag. */
+  display_name: string | null
+  display_name_en: string | null
+}
+
 export type PublicTaplistCity = {
   city: string
   label: string
@@ -98,6 +109,7 @@ export type PublicTenantDetail = {
 export type PublicBeerProfile = {
   brewery: string | null
   brewery_en?: string | null
+  brewery_ref?: BreweryRef | null
   /** Co-breweries (0–3); bar taplist / detail / share as `主酒厂 × 合酿…`. */
   collab_breweries?: string[] | null
   beer_style: string | null
@@ -225,6 +237,7 @@ export type PublicTaplistSearchResult = {
   tenant_address: string | null
   brewery: string | null
   brewery_en?: string | null
+  brewery_ref?: BreweryRef | null
   country?: string | null
   country_en?: string | null
   origin_region?: string | null
@@ -262,6 +275,7 @@ export type PublicNewTapRow = PublicTaplistSearchResult
 export type PublicTaplistBreweryDiscoveryRow = {
   brewery_name: string
   brewery_name_en?: string | null
+  brewery_ref?: BreweryRef | null
   tap_count: number
   logo_url: string | null
 }
@@ -270,6 +284,7 @@ export type MiniBreweryListRow = {
   brewery: string
   display_name: string
   name_en: string | null
+  brewery_ref?: BreweryRef | null
   product_count: number
   logo_url: string | null
 }
@@ -298,6 +313,7 @@ export type MiniProductSearchResult = {
   image_url: string | null
   brewery: string | null
   brewery_en?: string | null
+  brewery_ref?: BreweryRef | null
   country?: string | null
   country_en?: string | null
   origin_region?: string | null
@@ -345,6 +361,7 @@ export type MiniProductDetail = {
   image_url: string | null
   brewery: string | null
   brewery_en?: string | null
+  brewery_ref?: BreweryRef | null
   collab_breweries: string[] | null
   beer_style: string | null
   beer_style_en?: string | null
@@ -439,6 +456,8 @@ export type PublicTaplistBreweriesRpc =
       ok: true
       results: Array<{
         brewery: string
+        name_en?: string | null
+        brewery_ref?: BreweryRef | null
         product_count: number
         logo_url: string | null
       }>
@@ -446,6 +465,7 @@ export type PublicTaplistBreweriesRpc =
   | { ok: false; code?: string }
 
 export type MiniBrewery = {
+  id?: string | null
   name_zh: string | null
   name_en: string | null
   country: string | null
