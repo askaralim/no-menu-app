@@ -2,6 +2,8 @@
 
 Last updated: 2026-11-11（小程序1.5.0审核通过并已正式发布；Taplist生产OTA已获用户验收）。
 
+**2026-11-12 本地新增：** Web Admin「行为与 Feed 看板」包含发现与门店、Feed 与 TAP、数据质量三个视图。2026-11-13用户批准提交推送；Admin 托管发布结果待确认，ECS接口及数据库迁移尚未部署。权限、指标口径和部署步骤见 [内部看板](../services/consumer-intelligence/ADMIN_DASHBOARD.md)。
+
 Use this file to find the **canonical** doc for a topic. Prefer current ops docs over design-era `docs/` archives.
 
 Consumer beer-list UI: [统一视觉与复用约定](CONSUMER_BEER_LIST_UI.md). New Feed / brewery / bar lists must reuse the client’s shared beer-row styles.

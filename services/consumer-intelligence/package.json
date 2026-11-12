@@ -8,14 +8,16 @@
   },
   "scripts": {
     "check:openapi": "redocly lint contracts/openapi.json --config redocly.yaml",
-    "test": "node --test contracts/test/*.test.js test/unit.test.js test/supabase.test.js test/error-logging.test.js test/assisted-visits.test.js test/e1/phase1.test.js test/e1/phase2.test.js test/e1/reason.test.js",
+    "test": "node --test contracts/test/*.test.js test/unit.test.js test/supabase.test.js test/error-logging.test.js test/admin-report.test.js test/assisted-visits.test.js test/e1/phase1.test.js test/e1/phase2.test.js test/e1/reason.test.js",
     "test:integration": "node --test --test-concurrency=1 test/integration.test.js test/maintenance.test.js test/e1/integration.test.js test/e1/disconnect.test.js test/e1/sql-batch.test.js test/e1/reason-integration.test.js test/campaign-integration.test.js",
     "check": "npm run check:openapi && npm test",
     "start": "node --env-file-if-exists=.env src/server.js",
     "migrate": "node --env-file-if-exists=.env src/migrate.js",
     "worker": "node --env-file-if-exists=.env src/worker.js",
     "ops:check": "node --env-file-if-exists=.env src/ops-check.js",
-    "report:campaign": "node --env-file-if-exists=.env src/campaign-report.js"
+    "report:campaign": "node --env-file-if-exists=.env src/campaign-report.js",
+    "test:admin-report": "node --test test/admin-report.test.js",
+    "test:admin-report:integration": "node --test test/admin-report-integration.test.js"
   },
   "devDependencies": {
     "@redocly/cli": "2.72.1"

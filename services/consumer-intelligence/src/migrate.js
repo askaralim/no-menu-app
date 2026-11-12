@@ -7,7 +7,7 @@ export async function migrate(pool) {
     await lock(client, 'ci:migrate')
     await client.query('CREATE SCHEMA IF NOT EXISTS ci')
     await client.query('CREATE TABLE IF NOT EXISTS ci.schema_migrations(version text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())')
-    for (const version of ['001_initial', '002_assisted_visits', '003_data_maintenance', '004_e1_withdrawals', '005_e1_routing']) {
+    for (const version of ['001_initial', '002_assisted_visits', '003_data_maintenance', '004_e1_withdrawals', '005_e1_routing', '006_admin_report']) {
       const existing = await client.query('SELECT 1 FROM ci.schema_migrations WHERE version=$1', [version])
       if (!existing.rowCount) {
         await client.query(await readFile(new URL(`../db/${version}.sql`, import.meta.url), 'utf8'))

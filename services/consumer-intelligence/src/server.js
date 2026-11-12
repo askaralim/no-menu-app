@@ -1,4 +1,5 @@
 import http from 'node:http'
+import { reportScope, createAdminReports } from './admin-report.js'
 import { randomUUID } from 'node:crypto'
 import { loadConfig } from './config.js'
 import { createPool } from './db.js'
@@ -18,6 +19,7 @@ async function body(req, contentType) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { fail(400, 'INVALID_JSON') }
 }
 export function createServer({ pool, config, supabase = createSupabase(config), log = line => console.log(JSON.stringify(line)), clock = Date.now }) {
+  const reports = createAdminReports(pool, clock)
   const buckets = new Map()
   const server = http.createServer({ requestTimeout: 15000, headersTimeout: 10000, maxHeaderSize: 16384 }, async (req, res) => {
     const requestId = randomUUID(), started = clock()
@@ -30,7 +32,7 @@ export function createServer({ pool, config, supabase = createSupabase(config), 
     }
     try {
       const url = new URL(req.url, 'http://service.local')
-      const known = new Set(['/healthz', '/readyz', '/api/feed/v1/new-beers', '/api/consumer/v1/cities', '/api/consumer/v1/profile', '/api/analytics/v1/identity-operations', '/api/analytics/v1/events/batch'])
+      const known = new Set(['/api/internal/v1/intelligence-report', '/healthz', '/readyz', '/api/feed/v1/new-beers', '/api/consumer/v1/cities', '/api/consumer/v1/profile', '/api/analytics/v1/identity-operations', '/api/analytics/v1/events/batch'])
       if (!known.has(url.pathname)) fail(404, 'NOT_FOUND')
       route = url.pathname
       const origin = req.headers.origin
@@ -67,6 +69,13 @@ export function createServer({ pool, config, supabase = createSupabase(config), 
         stage = 'handler'
       }
       const requireAuth = () => { if (!auth) fail(401, 'AUTH_REQUIRED'); return auth }
+      if (req.method === 'GET' && route === '/api/internal/v1/intelligence-report') {
+        const { token } = requireAuth()
+        stage = 'admin_authorize'
+        if (await supabase.rpc('is_super_admin', {}, token) !== true) fail(403, 'ADMIN_REQUIRED')
+        stage = 'admin_report'
+        send(200, { ...envelope(), ...await reports(reportScope(url.searchParams, clock())) }); return
+      }
       if (req.method === 'GET' && route === '/api/feed/v1/new-beers') {
         const query = {}
         for (const [key, value] of url.searchParams) { if (key in query) fail(400, 'INVALID_FEED_REQUEST'); query[key] = key === 'limit' ? Number(value) : value }

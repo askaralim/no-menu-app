@@ -13,6 +13,7 @@ GRANT SELECT,INSERT ON ci.feed_snapshots TO ci_worker;
 GRANT SELECT,DELETE ON ci.refresh_requests TO ci_worker;
 GRANT SELECT ON ci.events TO ci_worker;
 GRANT SELECT,INSERT,UPDATE ON ci.assisted_visit_projection TO ci_worker;
+GRANT SELECT ON ci.admin_assisted_visit_summary TO ci_api;
 
 -- Runtime may read suppression records, never erase data or lift suppression.
 GRANT SELECT ON ci.erased_subjects,ci.erased_sessions TO ci_api,ci_worker;

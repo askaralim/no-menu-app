@@ -1,5 +1,7 @@
 # No Menu Consumer Intelligence
 
+2026-11-12 本地新增：[Web Admin 内部行为与 Feed 看板](ADMIN_DASHBOARD.md)。尚未部署，现有客户端及线上采集流程不变。
+
 2026-11-10 联合活动采集补充（ECS 已部署验证）：新增 `campaign_interaction`，现有活动/酒款/导航事件支持可选活动上下文；当前契约共10类。小程序正式版活动采集独立开关已开启，1.5.0已于2026-11-11由用户确认审核通过并正式发布；正式码扫码及release事件对账仍需单独验收。范围、报表及发布顺序见 [联名活动数据追踪](CAMPAIGN_ANALYTICS.md)。
 
 Product Pool 英文风格的数据库归属、ECS 请求/响应契约、小程序现状及 Taplist 对齐步骤见 [Consumer style localization runtime contract](../../docs/CONSUMER_STYLE_LOCALIZATION_RUNTIME.md)。
