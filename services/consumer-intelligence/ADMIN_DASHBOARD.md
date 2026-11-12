@@ -1,6 +1,6 @@
 # 内部行为与 Feed 看板
 
-2026-11-12：完成本地实现与验证。2026-11-13：用户批准提交并推送本轮看板代码；Admin 托管发布结果待确认，ECS / Nginx / 数据库迁移尚未部署。现有客户端无需更新。
+2026-11-12：完成本地实现与验证。2026-11-13：用户批准提交并推送本轮看板代码；ECS / Nginx / 数据库迁移已部署；实际 Admin origin 为 `https://no-menu-app.pages.dev`，生产预检 204、匿名 401、非允许来源 403 已验证。现有客户端无需更新。
 
 ## 入口与目的
 
@@ -42,7 +42,7 @@ Web Admin → 平台超级管理员菜单 → 行为与 Feed 看板
 - HTTP错误率、批次拒绝和重复上传计数未接入；health字段为null，UI显示未接入，不显示0或全绿。看板不是主动告警系统。
 - 当前包括测试账号及未显式隔离的开发行为；页面明确提示仅内部，禁止直接发布经营数字。
 
-## 部署步骤（尚未执行）
+## 部署步骤
 
 1. 沿用现有E1 reader发布流程，将新 `src/admin-report.js` 与 server.js 一同进入release，更新相应文件校验清单，不能仅复制server.js。
 2. 先以 Intelligence DB owner 执行迁移 `006_admin_report`，再应用 `db/runtime-grants.sql`。新增 occurred_at 索引与不含身份、证据的 `ci.admin_assisted_visit_summary` 只读视图；API 仅获得该视图 SELECT，仍不能读原始 assisted_visit_projection。已有 is_super_admin RPC 使用管理员 token 执行。迁移包含普通 CREATE INDEX，部署前按实际事件量选择低峰窗口。
@@ -59,6 +59,17 @@ Web Admin → 平台超级管理员菜单 → 行为与 Feed 看板
 - 测试仅允许127.0.0.1:55432/55433、入口库nomenu_ci_test；每轮新建独立库保留，不清理业务数据。
 - 已有测试容器可用 `node test/run-admin-report-local.cjs` 读取测试容器连接配置，不输出凭据。
 
-验证结果：TypeScript 检查及 Web Admin 静态生产构建通过（23 个页面，含新看板）；6 项 HTTP/错误日志测试通过；真实 PostgreSQL 集成测试通过（含运行账号权限、关联去重、曝光顺序及 24/48/72h 口径）。尚未进行生产部署和管理员真实浏览器验收。
+验证结果：TypeScript 检查及 Web Admin 静态生产构建通过（23 个页面，含新看板）；6 项 HTTP/错误日志测试通过；真实 PostgreSQL 集成测试通过（含运行账号权限、关联去重、曝光顺序及 24/48/72h 口径）。生产后端部署及聚合查询验证已完成；用户已能查看真实数据，修订后前端视觉待用户验收。
 
 构建沿用项目已有的字体/img lint 警告；受网络限制 Google Fonts 样式下载未成功，Next 跳过字体优化，构建仍成功。未改动这些已有问题。
+
+## 2026-11-13：连接、展示与日趋势口径修正
+
+- 原报表路径未转发到 API，OPTIONS 被 Nginx 返回 405；已增加精确路由和实际 Admin origin 的 CORS 白名单，保留超级管理员鉴权。
+- API release：`/opt/no-menu/releases/admin-report-20261113`，保留 E1 reader launcher 与 digest 校验；Worker 未变。迁移 006 已执行，API 可读聚合视图，仍不可读原始归因表。
+- 生产 1/7/30 天聚合只读查询通过，单次约 66–104ms；这不是浏览器端请求时延。备份与回退文件在 ECS `/root/nomenu-admin-report-20261113`，含敏感配置，不可公开。
+- 看板改为符合 Admin 的浅色样式。日趋势原文称详情浏览，但图表使用全事件量，已修正为 `beer_opens + bar_opens`。总量列改名“事件总量（含曝光）”，设备列明确为“安装标识数”，窗口首尾不完整日加标记。
+- 只读复核上海时间 2026-11-06 全日：1,447 条事件、6 个安装标识、87 个 session；全部上报 `miniprogram / 1.3.0-ci-trial`。其中曝光 1,198、Feed 展示 216、酒款打开 13、门店打开 10、Feed 点击 10。
+- 当日 04:00 后恰好复现截图 1,311 条：曝光 1,101、Feed 展示 177、酒款打开 13、门店打开 10、Feed 点击 10。符合滚动 7 天截断首日的行为；截图未包含 scope，无法确认原请求的精确秒级边界。
+- 全日 event_id 无重复；曝光按安装标识 + instance + item 去重仍为 1,198，跨 instance 按安装标识 + item 合计 227 对。不同 instance 可重复展示相同酒款，不能把曝光总量称为独立用户/酒款数量，也不能仅凭这些结果证明所有曝光都是真实自然使用。
+- 该日处于体验版阶段，混有开发/验收行为，不能拿这组数据评估正式发布后的自然用户转化。

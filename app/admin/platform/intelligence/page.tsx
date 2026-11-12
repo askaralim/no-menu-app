@@ -31,24 +31,29 @@ export default function IntelligencePage() {
         const value=await response.json()
         if (!value.scope || !value.health || !value.business) throw new Error('统计接口响应不完整。')
         if (active && !abort.signal.aborted) setReport(value)
-      } catch(e) { if (active && !abort.signal.aborted) setError(e instanceof Error ? e.message : '加载失败') }
+      } catch(e) { if (active && !abort.signal.aborted) setError(e instanceof TypeError ? '无法连接统计服务，请检查网络后重试。若持续失败，请检查接口与跨域配置。' : e instanceof Error ? e.message : '加载失败') }
       finally { clearTimeout(timer); if (active && !abort.signal.aborted) setLoading(false) }
     }
     load()
     return ()=>{ active=false; clearTimeout(timer); abort.abort() }
   },[days,application,refresh])
   const r=report
+  const daily = (r?.daily ?? []).map(d => {
+    const start = Date.parse(`${d.day}T00:00:00+08:00`)
+    const partial = start < Date.parse(r!.scope.from) || start + 86400000 > Date.parse(r!.scope.until)
+    return { ...d, day: d.day, day_label: `${d.day}${partial ? '（非完整日）' : ''}`, detail_opens: d.beer_opens + d.bar_opens }
+  })
   return <div className={styles.page}>
-    <header className={styles.header}><div><span className={styles.eyebrow}>NO MENU · INTERNAL</span><h1>发现、兴趣与后续行动</h1><p>让浏览有迹可循，让产品效果有据可查。</p></div><button disabled={loading} onClick={()=>setRefresh(n=>n+1)}>{loading?'读取中…':'刷新数据'}</button></header>
+    <header className={styles.header}><div><span className={styles.eyebrow}>NO MENU · INTERNAL</span><h1>行为与 Feed 看板</h1><p>查看发现、点击与后续 TAP，核对数据采集质量。</p></div><button disabled={loading} onClick={()=>setRefresh(n=>n+1)}>{loading?'读取中…':'刷新数据'}</button></header>
     <div className={styles.filters}><label>时间范围 <select value={days} onChange={e=>setDays(e.target.value)}><option value="1">最近 24 小时</option><option value="7">最近 7 天</option><option value="30">最近 30 天</option></select></label><label>行为渠道 <select value={application} onChange={e=>setApplication(e.target.value)}><option value="all">全部渠道</option><option value="taplist">Taplist</option><option value="ios">iOS（历史标识）</option><option value="miniprogram">小程序</option><option value="unknown">未知渠道</option></select></label><span>北京时间 · 按行为发生时间统计</span></div>
     <nav className={styles.tabs} aria-label="数据视图">{[['discovery','发现与门店'],['feed','Feed 与 TAP'],['quality','数据质量']].map(([id,label])=><button key={id} aria-pressed={tab===id} onClick={()=>setTab(id)}>{label}</button>)}</nav>
-    {error && <div role="alert" className={styles.notice}>{error}<button onClick={()=>setRefresh(n=>n+1)}>重试</button></div>}
+    {error && <div role="alert" className={styles.error}><div><strong>数据暂时无法加载</strong><p>{error}</p></div><button onClick={()=>setRefresh(n=>n+1)}>重试</button></div>}
     {loading && <p role="status" className={styles.empty}>正在读取 ECS 聚合数据…</p>}
     {r && <>
       <p className={styles.stamp}>生成于 {time(r.generated_at)} · {time(r.scope.from)} — {time(r.scope.until)} · 服务端缓存最多 60 秒</p>
       {tab==='discovery' && <>
-        <Metrics items={[[ '已入库行为',r.summary.events,'已去重的事件，不是请求数'],['观测设备',r.summary.installations,'安装标识去重，不等于人数'],['浏览会话',r.summary.sessions,'设备 + session 去重'],['已关联账号',r.summary.accounts,'仅统计身份已解析的账号']]}/>
-        <section><h2>用户是否发现了更多酒与门店？</h2><p>按天查看详情浏览趋势；不是首页卡片曝光，也不代表到店。</p><div className={styles.chart}>{r.daily.map(d=><div key={d.day}><span>{d.day.slice(5)}</span><div><i style={{width:`${Math.max(1,d.events/Math.max(1,...r.daily.map(x=>x.events))*100)}%`}} /></div><b>{number(d.events)}</b></div>)}</div><Table rows={r.daily} columns={[[ 'day','日期'],['events','行为'],['installations','设备'],['beer_opens','酒款打开'],['bar_opens','门店打开']]}/></section>
+        <Metrics items={[[ '已入库事件',r.summary.events,'包含曝光与展示，不等于主动点击'],['观测设备',r.summary.installations,'安装标识去重，不等于人数'],['浏览会话',r.summary.sessions,'设备 + session 去重'],['已关联账号',r.summary.accounts,'仅统计身份已解析的账号']]}/>
+        <section><h2>详情浏览趋势</h2><p>图表仅统计酒款打开 + 门店打开次数，不含 Feed 曝光或展示，不代表独立访客或到店。表格中的事件总量包含所有事件；首尾日期按筛选窗口截取，可能不是完整一天。</p><div className={styles.chart}>{daily.map(d=><div key={d.day} title={d.day_label}><span>{d.day.slice(5)}</span><div><i style={{width:`${d.detail_opens/Math.max(1,...daily.map(x=>x.detail_opens))*100}%`}} /></div><b>{number(d.detail_opens)}</b></div>)}</div><Table rows={daily} columns={[[ 'day_label','日期'],['events','事件总量（含曝光）'],['installations','安装标识数'],['beer_opens','酒款打开'],['bar_opens','门店打开']]}/></section>
         <section><h2>哪些门店获得了主动兴趣？</h2><p>Top 50 · 按门店、酒款与 Feed 点击总次数排列。同一次访问可能同时产生酒款打开和 Feed 点击，不应相加作为人数。</p><Table rows={r.venues} columns={[[ 'name','门店'],['bar_opens','门店打开'],['beer_opens','酒款打开'],['feed_opens','Feed 点击'],['installations','观测设备']]}/></section>
         <section><h2>哪些酒款被点开？</h2><p>Top 50 · 酒款 × 门店。名称来自当前目录，历史下架酒款可能只保留 ID；明细打开与 Feed 点击是不同事件，不应相加作为独立访问。</p><Table rows={r.beers} columns={[[ 'beer_name','酒款'],['venue_name','门店'],['detail_opens','详情打开'],['feed_opens','Feed 点击'],['installations','设备']]}/></section>
         <section><h2>用户正在浏览哪些城市？</h2><p>使用行为当时选择的城市，不等同于常驻城市或实际所在地；未知值不回填。</p><Table rows={r.cities} columns={[[ 'city','浏览城市'],['events','行为'],['installations','设备']]}/></section>

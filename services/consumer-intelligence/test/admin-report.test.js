@@ -21,3 +21,23 @@ test('anonymous and ordinary authenticated users cannot read internal aggregates
     assert.equal(reads,0);assert.equal(roleChecks,1)
   }finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve))}
 })
+
+test('admin preflight allows the configured origin without making report data public',async()=>{
+  const origin='https://no-menu-app.pages.dev'
+  const server=createServer({pool:{connect(){throw new Error('unexpected report query')}},
+    config:{...config,corsOrigins:new Set([origin])},log:()=>{}})
+  server.listen(0,'127.0.0.1');await once(server,'listening')
+  try {
+    const url=`http://127.0.0.1:${server.address().port}/api/internal/v1/intelligence-report?days=7&application=all`
+    const preflight=await fetch(url,{method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Method':'GET','Access-Control-Request-Headers':'authorization'}})
+    assert.equal(preflight.status,204)
+    assert.equal(preflight.headers.get('access-control-allow-origin'),origin)
+    assert.match(preflight.headers.get('access-control-allow-headers'),/Authorization/)
+    const anonymous=await fetch(url,{headers:{Origin:origin}})
+    assert.equal(anonymous.status,401)
+    assert.equal(anonymous.headers.get('access-control-allow-origin'),origin)
+    const denied=await fetch(url,{method:'OPTIONS',headers:{Origin:'https://untrusted.example'}})
+    assert.equal(denied.status,403)
+    assert.equal(denied.headers.get('access-control-allow-origin'),null)
+  } finally {server.closeAllConnections();await new Promise(resolve=>server.close(resolve))}
+})
