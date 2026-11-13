@@ -8,9 +8,12 @@ import CategorySection from '@/components/menu/CategorySection'
 
 type RpcErrorPayload = { ok: false; code: 'not_found' | 'suspended'; name?: string }
 
+type DisplayLanguage = 'zh' | 'en'
+const DISPLAY_LANGUAGE_KEY = 'nomenu.display.language'
+
 type RpcOkPayload = {
   ok: true
-  tenant: { id: string; name: string }
+  tenant: { id: string; name: string; name_en?: string | null }
   settings: Settings | null
   categories: Array<{
     id: string
@@ -28,6 +31,40 @@ function isOkPayload(p: DisplayRpcPayload): p is RpcOkPayload {
   return p.ok === true
 }
 
+function localized(language: DisplayLanguage, primary?: string | null, english?: string | null): string {
+  if (language === 'en' && english?.trim()) return english.trim()
+  return (primary || '').trim()
+}
+
+function DisplayLanguageToggle({
+  language,
+  onChange,
+}: {
+  language: DisplayLanguage
+  onChange: (language: DisplayLanguage) => void
+}) {
+  return (
+    <div className="display-lang" role="group" aria-label={language === 'en' ? 'Language' : '语言'}>
+      <button
+        type="button"
+        aria-pressed={language === 'zh'}
+        className={language === 'zh' ? 'is-active' : ''}
+        onClick={() => onChange('zh')}
+      >
+        中文
+      </button>
+      <button
+        type="button"
+        aria-pressed={language === 'en'}
+        className={language === 'en' ? 'is-active' : ''}
+        onClick={() => onChange('en')}
+      >
+        EN
+      </button>
+    </div>
+  )
+}
+
 function DisplayPageContent() {
   const searchParams = useSearchParams()
   const slug = searchParams.get('slug')
@@ -35,7 +72,19 @@ function DisplayPageContent() {
   const [categories, setCategories] = useState<CategoryWithDrinks[]>([])
   const [settings, setSettings] = useState<Settings | null>(null)
   const [tenantName, setTenantName] = useState<string>('No Menu')
+  const [tenantNameEn, setTenantNameEn] = useState<string | null>(null)
+  const [language, setLanguage] = useState<DisplayLanguage>('zh')
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(DISPLAY_LANGUAGE_KEY)
+    if (stored === 'zh' || stored === 'en') setLanguage(stored)
+  }, [])
+
+  const chooseLanguage = useCallback((next: DisplayLanguage) => {
+    setLanguage(next)
+    window.localStorage.setItem(DISPLAY_LANGUAGE_KEY, next)
+  }, [])
 
   const loadPayload = useCallback(async (quiet = false) => {
     const rawSlug = slug?.trim() ? slug.trim() : null
@@ -54,12 +103,14 @@ function DisplayPageContent() {
         } else {
           setTenantName('酒吧未找到')
         }
+        setTenantNameEn(null)
         setCategories([])
         setSettings(null)
         return
       }
 
       setTenantName(payload.tenant.name)
+      setTenantNameEn(payload.tenant.name_en ?? null)
 
       const sortedData: CategoryWithDrinks[] = (payload.categories || [])
         .map((category) => ({
@@ -74,9 +125,13 @@ function DisplayPageContent() {
             .map((drink) => ({
               id: drink.id,
               brand_name: drink.brand_name ?? null,
+              brand_name_en: drink.brand_name_en ?? null,
               name: drink.name,
+              name_en: drink.name_en ?? null,
               beer_style: drink.beer_style ?? null,
+              beer_style_en: drink.beer_style_en ?? null,
               origin_region: drink.origin_region ?? null,
+              origin_region_en: drink.origin_region_en ?? null,
               image_url: drink.image_url ?? null,
               volume_ml: drink.volume_ml ?? null,
               price: drink.price,
@@ -107,6 +162,7 @@ function DisplayPageContent() {
     } catch (e) {
       console.error('Error loading display payload:', e)
       setTenantName('加载失败')
+      setTenantNameEn(null)
       setCategories([])
       setSettings(null)
     } finally {
@@ -227,11 +283,16 @@ function DisplayPageContent() {
     }
   }, [categories, loading])
 
+  const headerName = localized(language, tenantName, tenantNameEn) || tenantName
+  const headerIsLatin = /[A-Za-z]/.test(headerName) && !/[\u3400-\u9fff]/.test(headerName)
+  const boardClass = language === 'en' ? 'display-board lang-en' : 'display-board'
+
   if (loading) {
     return (
-      <>
+      <div className={boardClass}>
+        <DisplayLanguageToggle language={language} onChange={chooseLanguage} />
         <header className="brand-header">
-          <div className="brand-name">{tenantName}</div>
+          <div className={`brand-name${headerIsLatin ? ' is-latin' : ''}`}>{headerName}</div>
           <div className="brand-sub">COCKTAIL · WHISKY · BEER</div>
         </header>
         <main className="menu-grid">
@@ -242,17 +303,18 @@ function DisplayPageContent() {
             opacity: 0.6,
             gridColumn: '1 / -1'
           }}>
-            <p style={{ fontSize: '18px', fontWeight: 400 }}>加载中...</p>
+            <p style={{ fontSize: '18px', fontWeight: 400 }}>{language === 'en' ? 'Loading...' : '加载中...'}</p>
           </div>
         </main>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
+    <div className={boardClass}>
+      <DisplayLanguageToggle language={language} onChange={chooseLanguage} />
       <header className="brand-header">
-        <div className="brand-name">{tenantName}</div>
+        <div className={`brand-name${headerIsLatin ? ' is-latin' : ''}`}>{headerName}</div>
         <div className="brand-sub">COCKTAIL · WHISKY · BEER</div>
       </header>
       <main className="menu-grid">
@@ -264,7 +326,7 @@ function DisplayPageContent() {
             opacity: 0.5,
             gridColumn: '1 / -1'
           }}>
-            <p style={{ fontSize: '18px', fontWeight: 400 }}>暂无酒单数据</p>
+            <p style={{ fontSize: '18px', fontWeight: 400 }}>{language === 'en' ? 'No drinks on the board' : '暂无酒单数据'}</p>
           </div>
         ) : (
           categories.map((category) => (
@@ -272,11 +334,12 @@ function DisplayPageContent() {
               key={category.id}
               name={category.name}
               drinks={category.drinks}
+              language={language}
             />
           ))
         )}
       </main>
-    </>
+    </div>
   )
 }
 

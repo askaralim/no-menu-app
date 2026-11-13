@@ -6,6 +6,20 @@ import { Drink, DrinkServingOption } from '@/lib/types'
 interface DrinkItemProps {
   drink: Drink
   disabled?: boolean
+  language?: 'zh' | 'en'
+}
+
+const SERVING_LABEL_EN: Record<string, string> = {
+  杯: 'Glass',
+  瓶: 'Bottle',
+  罐: 'Can',
+  扎: 'Pint',
+  生啤: 'Draft',
+}
+
+function localized(language: 'zh' | 'en', primary?: string | null, english?: string | null): string {
+  if (language === 'en' && english?.trim()) return english.trim()
+  return (primary || '').trim()
 }
 
 function activeServings(drink: Drink): DrinkServingOption[] {
@@ -14,25 +28,31 @@ function activeServings(drink: Drink): DrinkServingOption[] {
 
 type PriceLine = { amount: string; spec: string }
 
-function servingPrice(s: DrinkServingOption): PriceLine {
+function servingPrice(s: DrinkServingOption, language: 'zh' | 'en'): PriceLine {
   const label = (s.label || '').trim()
+  const specLabel = language === 'en' ? (SERVING_LABEL_EN[label] || label) : label
   const volume = s.volume_ml != null && s.volume_ml > 0 ? `${s.volume_ml}ml` : ''
   return {
     amount: `¥${Number(s.price).toFixed(0)}`,
-    spec: [label, volume].filter(Boolean).join(' '),
+    spec: [specLabel, volume].filter(Boolean).join(' '),
   }
 }
 
 /** Legacy cup/bottle columns — only when no serving options exist yet. */
-function legacyPrices(drink: Drink): PriceLine[] {
+function legacyPrices(drink: Drink, language: 'zh' | 'en'): PriceLine[] {
   const out: PriceLine[] = []
+  const cup = drink.price_unit || '杯'
+  const bottle = drink.price_unit_bottle || '瓶'
   if (drink.price && drink.price > 0) {
-    out.push({ amount: `¥${Number(drink.price).toFixed(0)}`, spec: drink.price_unit || '杯' })
+    out.push({
+      amount: `¥${Number(drink.price).toFixed(0)}`,
+      spec: language === 'en' ? (SERVING_LABEL_EN[cup] || cup) : cup,
+    })
   }
   if (drink.price_bottle && drink.price_bottle > 0) {
     out.push({
       amount: `¥${Number(drink.price_bottle).toFixed(0)}`,
-      spec: drink.price_unit_bottle || '瓶',
+      spec: language === 'en' ? (SERVING_LABEL_EN[bottle] || bottle) : bottle,
     })
   }
   return out
@@ -49,12 +69,16 @@ function splitBreweryAndName(drink: Drink): { brewery: string; name: string } {
   return { brewery, name }
 }
 
-export default function DrinkItem({ drink, disabled }: DrinkItemProps) {
+export default function DrinkItem({ drink, disabled, language = 'zh' }: DrinkItemProps) {
   const servings = activeServings(drink)
-  const prices = servings.length > 0 ? servings.map(servingPrice) : legacyPrices(drink)
-  const { brewery, name } = splitBreweryAndName(drink)
-  const origin = (drink.origin_region || '').trim()
-  const beerStyle = (drink.beer_style || '').trim()
+  const prices = servings.length > 0 ? servings.map((serving) => servingPrice(serving, language)) : legacyPrices(drink, language)
+  const { brewery, name } = splitBreweryAndName({
+    ...drink,
+    brand_name: localized(language, drink.brand_name, drink.brand_name_en),
+    name: localized(language, drink.name, drink.name_en),
+  })
+  const origin = localized(language, drink.origin_region, drink.origin_region_en)
+  const beerStyle = localized(language, drink.beer_style, drink.beer_style_en)
   const identity = `${brewery} ${name}`.toLowerCase()
   const styleAlreadyInName = beerStyle !== '' && identity.includes(beerStyle.toLowerCase())
   const [imageFailed, setImageFailed] = useState(false)
@@ -71,8 +95,8 @@ export default function DrinkItem({ drink, disabled }: DrinkItemProps) {
           />
         ) : null}
       </span>
-      <span className="drink-origin">{origin}</span>
       <span className="drink-copy">
+        {origin ? <span className="drink-origin">{origin}</span> : null}
         {brewery ? <span className="drink-brewery">{brewery}</span> : null}
         <span className="drink-title">{name}</span>
         {beerStyle && !styleAlreadyInName ? (

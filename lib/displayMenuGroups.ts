@@ -52,6 +52,28 @@ export function formatPriceGroupTitle(price: number | null): string {
   return `¥${Math.round(price)}`
 }
 
+const STYLE_GROUP_EN: Record<CraftStyleGroup, string> = {
+  IPA: 'IPA',
+  拉格: 'Lager',
+  酸啤: 'Sour',
+  小麦: 'Wheat',
+  世涛: 'Stout',
+  西打: 'Cider',
+  其他: 'Other',
+}
+
+export function displayGroupTitle(
+  group: Pick<DisplayDrinkGroup, 'key' | 'title'>,
+  language: 'zh' | 'en',
+): string {
+  if (language !== 'en') return group.title
+  if (group.key.startsWith('style:') && group.title in STYLE_GROUP_EN) {
+    return STYLE_GROUP_EN[group.title as CraftStyleGroup]
+  }
+  if (group.key === 'price:none') return 'Other'
+  return group.title
+}
+
 function classifyHaystack(raw: string, allowBareSour: boolean): CraftStyleGroup {
   const hay = raw.trim().toLowerCase()
   if (!hay) return '其他'

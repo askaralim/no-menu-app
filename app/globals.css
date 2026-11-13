@@ -94,6 +94,11 @@ body::after {
   margin-bottom: 12px;
 }
 
+.brand-name.is-latin {
+  letter-spacing: 0.12em;
+  font-size: 52px;
+}
+
 .brand-sub {
   font-family: 'Inter', sans-serif;
   font-size: 16px;
@@ -101,6 +106,49 @@ body::after {
   color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 300;
+}
+
+.display-lang {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 30;
+  display: flex;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.display-lang button {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(244, 244, 245, 0.72);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.display-lang button.is-active {
+  color: var(--gold);
+  background: rgba(212, 175, 55, 0.16);
+}
+
+.lang-en .drink-origin {
+  letter-spacing: 0.02em;
+}
+
+.lang-en .drink-brewery {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 /* =========================
@@ -218,19 +266,16 @@ body::after {
 }
 
 .drink-origin {
-  flex: 0 0 3.4em;
-  width: 3.4em;
-  align-self: center;
-  text-align: center;
+  display: block;
+  max-width: 100%;
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: 0.12em;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
   color: var(--gold);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .drink-row:hover {
@@ -340,12 +385,6 @@ body::after {
     flex-basis: 48px;
   }
 
-  .drink-origin {
-    flex-basis: 3.2em;
-    width: 3.2em;
-    font-size: 12px;
-  }
-
   .drink-title {
     font-size: 17px;
   }
@@ -370,12 +409,6 @@ body::after {
     width: 56px;
     height: 56px;
     flex-basis: 56px;
-  }
-
-  .drink-origin {
-    flex-basis: 3.4em;
-    width: 3.4em;
-    font-size: 13px;
   }
 
   .drink-title {
@@ -1066,12 +1099,6 @@ input:checked + .toggle-slider:hover {
 
   .drink-row {
     padding: 10px 12px;
-  }
-
-  .drink-origin {
-    flex-basis: 3.2em;
-    width: 3.2em;
-    font-size: 12px;
   }
 
   .drink-title {

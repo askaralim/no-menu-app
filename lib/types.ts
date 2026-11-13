@@ -22,11 +22,19 @@ export interface Drink {
   id: string
   category_id: string
   brand_name?: string | null
+  /** English brewery name. Display falls back to brand_name when empty. */
+  brand_name_en?: string | null
   name: string
+  /** English beer name from the linked product. Display falls back to name. */
+  name_en?: string | null
   /** Beer style from profile / product pool; used by in-bar /display */
   beer_style?: string | null
+  /** Approved Product Pool English style. Display falls back to beer_style. */
+  beer_style_en?: string | null
   /** Short origin shown in front of the name on in-bar /display */
   origin_region?: string | null
+  /** English twin of the displayed origin. Falls back to origin_region. */
+  origin_region_en?: string | null
   volume_ml?: number | null
   /** @deprecated POS uses drink_serving_options */
   price: number
