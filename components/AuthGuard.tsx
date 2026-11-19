@@ -8,11 +8,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [hasBarRole, setHasBarRole] = useState(false)
+  const [roleUnreachable, setRoleUnreachable] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [signingIn, setSigningIn] = useState(false)
   const mounted = useRef(true)
+  const checkSeq = useRef(0)
+  const confirmedRole = useRef(false)
 
   useEffect(() => {
     mounted.current = true
@@ -21,32 +24,60 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const lookupBarRole = async (userId: string, seq: number) => {
+    let emptyCount = 0
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (attempt > 0) await new Promise((resolve) => window.setTimeout(resolve, 700 * attempt))
+      if (!mounted.current || seq !== checkSeq.current) return 'stale' as const
+      const { data, error: roleError } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1)
+      if (!mounted.current || seq !== checkSeq.current) return 'stale' as const
+      if (!roleError && (data?.length ?? 0) > 0) return 'ready' as const
+      if (!roleError) {
+        emptyCount += 1
+        if (emptyCount >= 2) return 'unbound' as const
+      }
+    }
+    return 'offline' as const
+  }
+
   const applySession = async (next: Session | null) => {
     if (!mounted.current) return
 
     if (!next) {
+      checkSeq.current += 1
+      confirmedRole.current = false
       setSession(null)
       setHasBarRole(false)
+      setRoleUnreachable(false)
       setLoading(false)
       return
     }
 
+    const seq = ++checkSeq.current
     setSession(next)
-    const { data, error: roleError } = await supabase
-      .from('user_roles')
-      .select('id')
-      .eq('user_id', next.user.id)
-      .limit(1)
+    if (!confirmedRole.current) setLoading(true)
+    const result = await lookupBarRole(next.user.id, seq)
+    if (!mounted.current || seq !== checkSeq.current || result === 'stale') return
 
-    if (!mounted.current) return
-
-    if (roleError) {
-      setHasBarRole(false)
+    if (result === 'ready') {
+      confirmedRole.current = true
+      setHasBarRole(true)
+      setRoleUnreachable(false)
       setLoading(false)
       return
     }
 
-    setHasBarRole((data?.length ?? 0) > 0)
+    if (confirmedRole.current) {
+      setLoading(false)
+      return
+    }
+
+    setHasBarRole(false)
+    setRoleUnreachable(result === 'offline')
     setLoading(false)
   }
 
@@ -54,7 +85,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     let active = true
 
     void supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (active) void applySession(s)
+      if (!active) return
+      window.setTimeout(() => {
+        if (active) void applySession(s)
+      }, 0)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -62,7 +96,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         if (!active) return
         if (event === 'INITIAL_SESSION') return
         // A large admin query often refreshes the access token. Unmounting the
-        // page for that event drops in-memory filters and open editors.
+        // page, or treating a failed re-check as "no bar", drops a valid session.
         if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           if (nextSession) setSession(nextSession)
           return
@@ -149,9 +183,26 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       <div className="auth-container">
         <div className="auth-card">
           <h1 className="auth-title">管理后台</h1>
-          <p className="auth-subtitle">
-            您的账号尚未绑定酒吧。请使用 No Menu App 完成注册并创建酒吧，或联系管理员将您添加为员工。
-          </p>
+          {roleUnreachable ? (
+            <>
+              <p className="auth-subtitle">
+                网络不稳定，暂时无法确认账号权限。请检查网络或 VPN 后重试。
+              </p>
+              <button
+                type="button"
+                className="auth-button"
+                onClick={() => {
+                  if (session) void applySession(session)
+                }}
+              >
+                重试
+              </button>
+            </>
+          ) : (
+            <p className="auth-subtitle">
+              您的账号尚未绑定酒吧。请使用 No Menu App 完成注册并创建酒吧，或联系管理员将您添加为员工。
+            </p>
+          )}
         </div>
       </div>
     )
