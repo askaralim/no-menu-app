@@ -672,7 +672,7 @@ function TaplistAdminPageInner() {
           {tagCatalog.length > 0 ? (
             <div className="admin-form-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem' }}>
               <span className="admin-label">门店标签</span>
-              <p style={{ color: '#6b7280', margin: 0 }}>选择 3–6 个最能代表门店的标签</p>
+              <p style={{ color: '#6b7280', margin: 0 }}>建议选择 3–6 个最能代表门店的标签</p>
               {BAR_TAG_CATEGORY_ORDER.map((category) => {
                 const tags = groupedTags[category]
                 if (!tags?.length) return null

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import {
   isPromotableProductImageSource,
@@ -95,6 +95,27 @@ const DEFAULT_FILTERS: Filters = {
   unlinked_company_only: false,
 }
 
+const FILTER_STORAGE_KEY = 'nomenu.admin.productFilters'
+
+function readStoredFilters(): Filters {
+  if (typeof window === 'undefined') return DEFAULT_FILTERS
+  try {
+    const raw = window.sessionStorage.getItem(FILTER_STORAGE_KEY)
+    if (!raw) return DEFAULT_FILTERS
+    const parsed = JSON.parse(raw) as Partial<Filters>
+    const review = parsed.review_status
+    const status = parsed.status
+    return {
+      query: typeof parsed.query === 'string' ? parsed.query : '',
+      review_status: review === 'pending' || review === 'reviewed' || review === 'rejected' ? review : '',
+      status: status === 'active' || status === 'archived' || status === 'all' ? status : 'active',
+      unlinked_company_only: parsed.unlinked_company_only === true,
+    }
+  } catch {
+    return DEFAULT_FILTERS
+  }
+}
+
 function suggestNormalizedKey(brandName: string, productName: string) {
   const brand = brandName.trim().toLowerCase().replace(/\s+/g, ' ')
   const name = productName.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -127,6 +148,12 @@ export default function PlatformProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM)
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
+  const [filtersReady, setFiltersReady] = useState(false)
+  const [listRefreshing, setListRefreshing] = useState(false)
+  const [listReady, setListReady] = useState(false)
+  const filtersRef = useRef(filters)
+  const requestSeq = useRef(0)
+  filtersRef.current = filters
   const [normalizedKeyTouched, setNormalizedKeyTouched] = useState(false)
   const [companyQuery, setCompanyQuery] = useState('')
   const [companyOptions, setCompanyOptions] = useState<AdminDrinkCompanyRow[]>([])
@@ -138,42 +165,53 @@ export default function PlatformProductsPage() {
   )
 
   const loadProducts = useCallback(async () => {
-    const { data, error: rpcError } = await supabase.rpc('admin_list_drink_products', {
-      p_query: filters.query.trim() || null,
-      p_review_status: filters.review_status || null,
-      p_status: filters.status,
-      p_unlinked_company_only: filters.unlinked_company_only,
-    })
-    if (rpcError) throw rpcError
-    const payload = data as { ok?: boolean; products?: AdminDrinkProductRow[] }
-    if (!payload || payload.ok !== true || !Array.isArray(payload.products)) {
-      throw new Error('产品池列表返回格式异常')
+    const seq = ++requestSeq.current
+    const activeFilters = filtersRef.current
+    setListRefreshing(true)
+    try {
+      const { data, error: rpcError } = await supabase.rpc('admin_list_drink_products', {
+        p_query: activeFilters.query.trim() || null,
+        p_review_status: activeFilters.review_status || null,
+        p_status: activeFilters.status,
+        p_unlinked_company_only: activeFilters.unlinked_company_only,
+      })
+      if (rpcError) throw rpcError
+      if (seq !== requestSeq.current) return
+      const payload = data as { ok?: boolean; products?: AdminDrinkProductRow[] }
+      if (!payload || payload.ok !== true || !Array.isArray(payload.products)) {
+        throw new Error('产品池列表返回格式异常')
+      }
+      const listed = payload.products
+      if (!listed.length) {
+        setProducts([])
+        setListReady(true)
+        return
+      }
+      const { data: localizationData, error: localizationError } = await supabase.rpc(
+        'admin_get_drink_product_style_localizations',
+        { p_product_ids: listed.map((product) => product.id) }
+      )
+      if (localizationError) throw localizationError
+      if (seq !== requestSeq.current) return
+      const localizationPayload = localizationData as {
+        ok?: boolean
+        products?: Array<Pick<AdminDrinkProductRow, 'id' | 'beer_style_en' | 'beer_style_en_source' | 'beer_style_en_status' | 'beer_style_en_version'>>
+      }
+      const localizationById = new Map(
+        (localizationPayload.products ?? []).map((product) => [product.id, product])
+      )
+      setProducts(listed.map((product) => ({
+        ...product,
+        beer_style_en: localizationById.get(product.id)?.beer_style_en ?? null,
+        beer_style_en_source: localizationById.get(product.id)?.beer_style_en_source ?? null,
+        beer_style_en_status: localizationById.get(product.id)?.beer_style_en_status ?? 'needs_review',
+        beer_style_en_version: localizationById.get(product.id)?.beer_style_en_version ?? null,
+      })))
+      setListReady(true)
+    } finally {
+      if (seq === requestSeq.current) setListRefreshing(false)
     }
-    const listed = payload.products
-    if (!listed.length) {
-      setProducts([])
-      return
-    }
-    const { data: localizationData, error: localizationError } = await supabase.rpc(
-      'admin_get_drink_product_style_localizations',
-      { p_product_ids: listed.map((product) => product.id) }
-    )
-    if (localizationError) throw localizationError
-    const localizationPayload = localizationData as {
-      ok?: boolean
-      products?: Array<Pick<AdminDrinkProductRow, 'id' | 'beer_style_en' | 'beer_style_en_source' | 'beer_style_en_status' | 'beer_style_en_version'>>
-    }
-    const localizationById = new Map(
-      (localizationPayload.products ?? []).map((product) => [product.id, product])
-    )
-    setProducts(listed.map((product) => ({
-      ...product,
-      beer_style_en: localizationById.get(product.id)?.beer_style_en ?? null,
-      beer_style_en_source: localizationById.get(product.id)?.beer_style_en_source ?? null,
-      beer_style_en_status: localizationById.get(product.id)?.beer_style_en_status ?? 'needs_review',
-      beer_style_en_version: localizationById.get(product.id)?.beer_style_en_version ?? null,
-    })))
-  }, [filters])
+  }, [])
 
   const loadCompanies = useCallback(async (query: string) => {
     setCompanyLoading(true)
@@ -258,7 +296,7 @@ export default function PlatformProductsPage() {
         }
 
         setRole('super_admin')
-        await Promise.all([loadProducts(), loadUnlinkedDrinksCount()])
+        await loadUnlinkedDrinksCount()
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : '加载失败')
       } finally {
@@ -271,14 +309,27 @@ export default function PlatformProductsPage() {
   }, [])
 
   useEffect(() => {
-    if (role !== 'super_admin' || loading) return
+    setFilters(readStoredFilters())
+    setFiltersReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!filtersReady) return
+    window.sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters))
+  }, [filters, filtersReady])
+
+  useEffect(() => {
+    if (role !== 'super_admin' || !filtersReady) return
     const timer = window.setTimeout(() => {
       void loadProducts().catch((e: unknown) => {
         alert(e instanceof Error ? e.message : '刷新列表失败')
       })
-    }, 300)
-    return () => window.clearTimeout(timer)
-  }, [filters, role, loading, loadProducts])
+    }, filters.query.trim() ? 300 : 0)
+    return () => {
+      window.clearTimeout(timer)
+      requestSeq.current += 1
+    }
+  }, [filters, role, filtersReady, loadProducts])
 
   useEffect(() => {
     if (!drawerOpen) return
@@ -654,14 +705,17 @@ export default function PlatformProductsPage() {
             className="admin-input"
             placeholder="搜索名称、品牌、风格、key…"
             value={filters.query}
-            onChange={(e) => setFilters({ ...filters, query: e.target.value })}
+            onChange={(e) => setFilters((prev) => ({ ...prev, query: e.target.value }))}
             style={{ margin: 0 }}
           />
           <select
             className="admin-input"
             value={filters.review_status}
             onChange={(e) =>
-              setFilters({ ...filters, review_status: e.target.value as DrinkProductReviewStatus | '' })
+              setFilters((prev) => ({
+                ...prev,
+                review_status: e.target.value as DrinkProductReviewStatus | '',
+              }))
             }
             style={{ margin: 0 }}>
             <option value="">全部审核</option>
@@ -674,7 +728,7 @@ export default function PlatformProductsPage() {
           <select
             className="admin-input"
             value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value as Filters['status'] })}
+            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value as Filters['status'] }))}
             style={{ margin: 0 }}>
             <option value="active">仅 active</option>
             <option value="archived">仅 archived</option>
@@ -688,6 +742,9 @@ export default function PlatformProductsPage() {
             重置
           </button>
         </div>
+        {listRefreshing ? (
+          <p style={{ margin: '10px 0 0', color: '#6b7280', fontSize: '0.85rem' }}>正在按当前筛选刷新…</p>
+        ) : null}
       </div>
 
       <div className="admin-section" style={{ marginBottom: '1.5rem', padding: 0, overflow: 'hidden' }}>
@@ -710,7 +767,7 @@ export default function PlatformProductsPage() {
               {products.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{ ...tdStyle, color: '#6b7280', textAlign: 'center', padding: '2rem' }}>
-                    无匹配结果。试试调整筛选条件。
+                    {listReady ? '无匹配结果。试试调整筛选条件。' : '正在加载产品…'}
                   </td>
                 </tr>
               ) : (

@@ -32,7 +32,7 @@ export type BarTagDefinition = {
   sort_order: number
 }
 
-export const BAR_TAG_CATEGORY_ORDER = ['座位规模', '空间', '友好政策', '设施'] as const
+export const BAR_TAG_CATEGORY_ORDER = ['座位规模', '空间', '友好政策', '设施', '服务与体验'] as const
 
 export function groupBarTagsByCategory(tags: BarTagDefinition[]): Record<string, BarTagDefinition[]> {
   const grouped: Record<string, BarTagDefinition[]> = {}

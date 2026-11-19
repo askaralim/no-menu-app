@@ -51,19 +51,30 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    setLoading(true)
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      applySession(s)
+    let active = true
+
+    void supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (active) void applySession(s)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
-        setLoading(true)
-        applySession(nextSession)
+      (event, nextSession) => {
+        if (!active) return
+        if (event === 'INITIAL_SESSION') return
+        // A large admin query often refreshes the access token. Unmounting the
+        // page for that event drops in-memory filters and open editors.
+        if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          if (nextSession) setSession(nextSession)
+          return
+        }
+        void applySession(nextSession)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
