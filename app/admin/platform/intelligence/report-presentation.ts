@@ -6,6 +6,14 @@ export const surfaceLabel = (value: string) => ({ home: '首页', feed_page: '�
 export const identityLabel = (value: string) => ({ resolved: '已关联账号', unresolved: '未关联账号（含匿名）', ambiguous: '归属有歧义' }[value] || value)
 export const sourceLabel = (value: string) => ({ home: '首页', feed_page: '上新完整列表', bar_taplist: '门店酒单', search_discovery: '搜索 / 探索', direct: '直接进入', qr: '二维码', unknown: '未记录入口' }[value] || value || '未记录入口')
 export const displayVenue = (value: string) => /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(value) ? '历史门店（当前目录无名称）' : value
+export function entryPresentation(row: ReportRow) {
+  const known = (value: string) => value && value !== 'unknown'
+  return { ...row,
+    venue: row.tenant_slug || (row.tenant_id ? `${row.tenant_id}（slug 暂不可用）` : '未记录门店'),
+    placement_label: known(row.placement) ? (({ venue: '门店通用码', table: '桌面', counter: '吧台', poster: '海报' } as Record<string, string>)[row.placement] || row.placement) : row.source === 'qr' ? '未记录' : '未记录（无物料上下文）',
+    browser_label: row.channel !== 'consumer_web' ? '不适用' : known(row.browser) ? (({ wechat: '微信内', safari: 'Safari', chrome: 'Chrome', other: '其他浏览器' } as Record<string, string>)[row.browser] || row.browser) : '未记录',
+  }
+}
 export const sumField = (rows: ReportRow[], key: string) => rows.reduce((total, row) => total + Number(row[key] ?? 0), 0)
 export const clickRate = (row: ReportRow) => row.impressions > 0 ? `${(100 * row.opened_after_impression / row.impressions).toFixed(1)}%` : '—'
 export const englishSessionRate = (row: ReportRow) => row.sessions > 0 ? `${(100 * Number(row.english_sessions || 0) / row.sessions).toFixed(1)}%` : '—'

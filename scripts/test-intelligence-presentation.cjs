@@ -66,3 +66,17 @@ test('English session rate uses distinct session counts and keeps empty coverage
   assert.equal(englishSessionRate({sessions:0,english_sessions:0}),'—')
   assert.equal(englishSessionRate({sessions:4}), '0.0%')
 })
+
+test('entry labels distinguish missing tenant, current slug and non-web browser applicability',()=>{
+  const { entryPresentation }=compiled.exports
+  const row={channel:'consumer_web',tenant_id:'tenant-id',tenant_slug:'sh-test',source:'qr',placement:'venue',browser:'wechat',events:46}
+  const result=entryPresentation(row)
+  assert.equal(result.venue,'sh-test');assert.equal(result.placement_label,'门店通用码')
+  assert.equal(result.browser_label,'微信内');assert.equal(result.events,46)
+  assert.equal(row.placement,'venue')
+  assert.equal(entryPresentation({...row,tenant_slug:null}).venue,'tenant-id（slug 暂不可用）')
+  const missing=entryPresentation({channel:'miniprogram',source:'qr',placement:'unknown',browser:'unknown'})
+  assert.equal(missing.venue,'未记录门店');assert.equal(missing.placement_label,'未记录');assert.equal(missing.browser_label,'不适用')
+  assert.equal(entryPresentation({channel:'taplist',browser:'unknown'}).browser_label,'不适用')
+  assert.equal(entryPresentation({channel:'consumer_web',browser:'unknown'}).browser_label,'未记录')
+})

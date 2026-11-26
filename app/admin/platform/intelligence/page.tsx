@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './page.module.css'
-import { channelLabel, modeLabel, surfaceLabel, identityLabel, sourceLabel, displayVenue, sumField, clickRate, englishSessionRate, feedComparison, dailyPresentation, visitDays } from './report-presentation'
+import { channelLabel, modeLabel, surfaceLabel, identityLabel, sourceLabel, displayVenue, entryPresentation, sumField, clickRate, englishSessionRate, feedComparison, dailyPresentation, visitDays } from './report-presentation'
 
 type Row = Record<string, any>
 type Report = { generated_at: string; scope: Row; summary: Row; visits?: { scope: Row; summary: Row; daily: Row[]; channels: Row[]; behaviors?: Row[]; entries?: Row[] }; daily: Row[]; events: Row[]; sources: Row[]; cities: Row[]; beers: Row[]; identity: Row[]; feed: Row[]; feed_taps: Row[]; venues: Row[]; business: Row; health: Row }
@@ -69,7 +69,8 @@ export default function IntelligencePage() {
         </>}
       </>}
       {tab==='discovery' && <>
-        <section><h2>网页酒单与门店码来源</h2><p>本区使用访问页的北京时间自然日与正式环境口径。解析、可见、引导点击、页面成功分别统计；不证明到店或网页到小程序转化。物料来源仅表示已记录的配置。</p><Table rows={(r.visits?.entries || []).map(x=>({...x,channel:channelLabel(x.channel),action:labels[x.action]||x.action,source:sourceLabel(x.source)}))} columns={[[ 'channel','渠道'],['action','阶段'],['tenant_id','门店标识'],['source','入口'],['placement','物料'],['browser','环境'],['entry_scene','微信场景值'],['events','次数']]}/></section>
+        <section><h2>网页酒单与门店码来源</h2><p>本区使用访问页的北京时间自然日与正式环境口径。解析、可见、引导点击、页面成功分别统计；不证明到店或网页到小程序转化。物料仅表示码的配置，不证明实际摆放位置。网页浏览器不适用于小程序和 App。</p><Table rows={(r.visits?.entries || []).filter(x=>x.action!=='consumer_open').map(x=>({...entryPresentation(x),channel:channelLabel(x.channel),action:labels[x.action]||x.action,source:sourceLabel(x.source)}))} columns={[[ 'channel','渠道'],['action','阶段'],['venue','门店 slug'],['source','入口'],['placement_label','码物料'],['browser_label','网页浏览器'],['events','次数']]}/><p>门店 slug 来自当前目录；无法解析时保留 ID。历史门店码解析事件可能未记录门店 ID，不按会话猜测回填。入口分组最多显示 100 行。</p></section>
+        <section><h2>应用打开与微信入口场景</h2><p>应用打开不一定进入门店，不属于扫码次数，也不要求门店或物料信息。微信场景值表示启动入口；未记录入口不能推断为扫码。</p><Table rows={(r.visits?.entries || []).filter(x=>x.action==='consumer_open').map(x=>({...x,channel:channelLabel(x.channel),source:sourceLabel(x.source)}))} columns={[[ 'channel','渠道'],['source','已记录入口'],['entry_scene','微信场景值'],['events','打开次数']]}/></section>
         <div className={styles.intro}><h2>哪些门店和酒款被用户浏览？</h2><p>先看主动打开次数，再看具体门店。这里的“打开”可以由同一个人重复产生。</p></div>
         <Metrics items={[[ '门店详情打开',eventCount('bar_opened'),'用户打开门店页面的次数'],['酒款详情打开',eventCount('beer_opened'),'用户打开酒款详情的次数'],['从上新卡片点入',eventCount('feed_item_opened'),'可能随后产生详情打开，不与前两项相加'],['有行为的安装标识',r.summary.installations,'包括匿名；同一个人可有多个标识']]}/>
         <section><h2>每天有多少主动浏览？</h2><p>门店打开 + 酒款打开。首尾日期只覆盖筛选时段，不宜直接与完整一天比较。</p><div className={styles.chart}>{daily.map(d=><div key={d.day} title={d.day_label}><span>{d.day.slice(5)}{d.day_label.includes('非完整')?'*':''}</span><div><i style={{width:`${d.detail_opens/Math.max(1,...daily.map(x=>x.detail_opens))*100}%`}} /></div><b>{number(d.detail_opens)}</b></div>)}</div><details className={styles.details}><summary>查看每日明细 · * 表示非完整日</summary><Table rows={daily} columns={[[ 'day_label','日期'],['beer_opens','酒款打开'],['bar_opens','门店打开'],['installations','安装标识数']]}/></details></section>
